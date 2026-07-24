@@ -92,6 +92,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       }
     });
 
+    // Gated session died (a cookie-presenting REST call got 401): send the
+    // user back to the connect screen to sign in again (protocol §2.2).
+    ref.listen(sessionExpiredProvider, (previous, next) {
+      if (next && previous != true) {
+        ref.read(sessionExpiredProvider.notifier).acknowledge();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Session expired — sign in again.')),
+        );
+        context.go('/connect');
+      }
+    });
+
     final session = ref.watch(activeSessionProvider);
     final connectionState = ref.watch(connectionStateProvider);
 

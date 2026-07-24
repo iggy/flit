@@ -95,6 +95,58 @@ void main() {
       expect(loaded, isNotNull);
       expect(loaded!.authMode, AuthMode.token);
     });
+
+    test(
+      'round-trips a gated config (username + provider, no password)',
+      () async {
+        final store = ConnectionStore(InMemoryKeyValueStore());
+        final config = ConnectionConfig(
+          baseUrl: 'https://gw.example.com/',
+          authMode: AuthMode.password,
+          username: 'iggy',
+          authProvider: 'local',
+        );
+
+        await store.save(config);
+        final loaded = await store.load();
+
+        expect(loaded, config);
+        expect(loaded!.authMode, AuthMode.password);
+        expect(loaded.username, 'iggy');
+        expect(loaded.authProvider, 'local');
+        expect(loaded.token, isNull);
+      },
+    );
+
+    test('persists and clears the session cookies JSON', () async {
+      final store = ConnectionStore(InMemoryKeyValueStore());
+
+      expect(await store.loadSessionCookies(), isNull);
+      await store.saveSessionCookies('{"a":"1"}');
+      expect(await store.loadSessionCookies(), '{"a":"1"}');
+      await store.clearSessionCookies();
+      expect(await store.loadSessionCookies(), isNull);
+    });
+
+    test('forget() wipes config AND session cookies', () async {
+      final kv = InMemoryKeyValueStore();
+      final store = ConnectionStore(kv);
+      await store.save(
+        ConnectionConfig(
+          baseUrl: 'https://gw.example.com',
+          authMode: AuthMode.password,
+          username: 'iggy',
+          authProvider: 'local',
+        ),
+      );
+      await store.saveSessionCookies('{"a":"1"}');
+
+      await store.forget();
+
+      expect(await store.load(), isNull);
+      expect(await store.loadSessionCookies(), isNull);
+      expect(kv.values, isEmpty);
+    });
   });
 }
 

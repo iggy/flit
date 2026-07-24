@@ -39,8 +39,9 @@ A client connects to **one host/port** but uses two protocols against it:
    `hermes_cli/web_server.py:12711` via `tui_gateway/ws.py`.
 2. **REST/HTTP** on the same origin — profile management (`/api/profiles/*`),
    the kanban plugin (`/api/plugins/kanban/*`), status (`/api/status`), auth
-   ticket minting (`/api/auth/ws-ticket`), file downloads. These are FastAPI
-   routes in `hermes_cli/web_server.py` and plugin routers.
+   (`/auth/password-login`, `/api/auth/providers`, `/api/auth/ws-ticket`),
+   file downloads. These are FastAPI routes in `hermes_cli/web_server.py`,
+   `hermes_cli/dashboard_auth/`, and plugin routers.
 
 > **Why this matters:** the Flutter app needs *both* an RPC client and an HTTP
 > client, but they share a base URL and a token. Profiles and kanban are REST,

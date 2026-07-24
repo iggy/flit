@@ -35,8 +35,10 @@ recon fields — `hermes_home`, `config_path`, `env_path`, `gateway_pid`,
 
 - `auth_required == false` → **token mode** ("plaintext auth"): connect the WS
   with `?token=<session token>`.
-- `auth_required == true` → **OAuth mode**: mint a single-use ticket first
-  (see §2.2). This is a later-phase concern; the MVP targets token mode.
+- `auth_required == true` → **gated mode**: log in (user/pass, §2.2; OAuth,
+  §2.3) to get session cookies, then mint a single-use WS ticket per connect.
+  `auth_providers` lists the registered provider names; the interactive set
+  (with `supports_password` flags) comes from `GET /api/auth/providers`.
 
 ---
 
@@ -44,39 +46,84 @@ recon fields — `hermes_home`, `config_path`, `env_path`, `gateway_pid`,
 
 > **Critical:** WebSocket auth is **query-string only**. Browsers/clients can't
 > set custom headers on a WS upgrade, so there is **no** `Authorization` /
-> `X-Hermes-Session-Token` header check on `/api/ws`. REST is the opposite: it
-> uses headers (or cookies). Do not try to auth the WS via headers.
+> cookie header check on `/api/ws`. REST is the opposite: it uses headers
+> (session-token header in loopback mode, cookies in gated mode). Do not try
+> to auth the WS via headers.
 
-### 2.1 Token mode ("plaintext auth") — the MVP target
+There are **three** auth shapes, detected from `GET /api/status`:
+
+| Shape | Detect | REST credential | WS credential |
+|---|---|---|---|
+| **Loopback token** | `auth_required == false` | `X-Hermes-Session-Token: <token>` | `?token=<token>` |
+| **Gated user/pass** | `auth_required == true` + provider with `supports_password` | session **Cookie** header | `?ticket=<single-use>` |
+| **Gated OAuth** | `auth_required == true`, password-less providers (Phase 8) | session Cookie | `?ticket=<single-use>` |
+
+### 2.1 Token mode ("plaintext auth") — loopback / `--insecure`
 
 The gateway holds a session token in `_SESSION_TOKEN`
-(`web_server.py:265` — `HERMES_DASHBOARD_SESSION_TOKEN` env, else a random
-`secrets.token_urlsafe(32)`). Auth is a constant-time compare against it
-(`web_server.py:321,340`).
+(`web_server.py` — `HERMES_DASHBOARD_SESSION_TOKEN` env, else a random
+`secrets.token_urlsafe(32)`). Auth is a constant-time compare against it.
 
 - **WebSocket:** append `?token=<urlencoded token>` to the `/api/ws` URL.
-  URL construction mirrors `apps/desktop/electron/connection-config.cjs:65-71`:
-  scheme `ws` for `http:` / `wss` for `https:`; preserve any path prefix; then
-  `/api/ws?token=…`.
+  Scheme `ws` for `http:` / `wss` for `https:`; preserve any path prefix.
 - **REST (sensitive routes):** send header `X-Hermes-Session-Token: <token>`
   (legacy `Authorization: Bearer <token>` also accepted). Public routes
-  (`/api/status`) need nothing.
-- **Where does the token come from?** For local dev, the dashboard injects it
-  into the served HTML as `window.__HERMES_SESSION_TOKEN__` (`web_server.py`
-  `_serve_index`), and prints/logs it. In the app, the user pastes it (or, for
-  a bundled/desktop future, we adopt the served token as the Electron app does
-  in `dashboard-token.cjs`). For the MVP: **user supplies URL + token**.
+  (`/api/status`, `/api/auth/providers`) need nothing.
+- **Where does the token come from?** The dashboard injects it into the
+  served HTML and prints/logs it. In the app, the user pastes it.
 
-### 2.2 OAuth mode (later phase — Phase 8)
+### 2.2 Gated mode: username/password login (implemented post-MVP)
 
-REST is authed by an HttpOnly session cookie (`hermes_session_at` /
-`hermes_session_rt`, see `connection-config.cjs:37-38`). For the WS, you can't
-send a cookie on the upgrade reliably cross-platform, so you **mint a
-single-use ticket**: `POST /api/auth/ws-ticket` (cookie-authed) →
-`{ticket, ttl_seconds: 30}`, then connect `/api/ws?ticket=<ticket>`. The client
-detects this mode from `auth_required: true`. Full flow deferred to Phase 8.
+When `auth_required == true`, the dashboard-auth gate
+(`hermes_cli/dashboard_auth/`) protects every non-public route, and the
+legacy `?token=` WS path is **unconditionally rejected**
+(`web_server.py` `_ws_auth_reason`: "The legacy ``?token=`` path is
+unconditionally rejected in gated mode").
 
-### 2.3 WS upgrade rejection close codes
+The flow, grounded in `dashboard_auth/routes.py` + `middleware.py` +
+`cookies.py` + `ws_tickets.py`:
+
+1. **Discover providers** (public): `GET <base>/api/auth/providers` →
+   `{"providers":[{"name","display_name","supports_password"}]}`
+   (`routes.py:152`; 503 when none registered).
+2. **Log in:** `POST <base>/auth/password-login` with JSON body
+   `{provider, username, password, next}` (`routes.py:466`,
+   `_PasswordLoginBody`). Success → `200 {"ok":true,"next":<path>}` and the
+   response **sets the session cookies**. Failures are deliberately generic:
+   401 invalid credentials, 404 unknown/password-less provider, 429 rate
+   limited, 503 provider unreachable (`routes.py:468-533`).
+3. **Session cookies** (`cookies.py`): `hermes_session_at` (access token),
+   `hermes_session_rt` (refresh token, when the provider issues one),
+   `hermes_session_provider`. The exact cookie **names vary by deploy** —
+   `__Host-`/`__Secure-`/bare prefixes depending on HTTPS + path prefix
+   (`cookies.py:107` `_resolved_name`) — so a client must capture them
+   **verbatim from `Set-Cookie`**, never reconstruct names.
+4. **REST auth:** send the captured cookies as a `Cookie` header on every
+   gated request. The gate middleware verifies the access token and, when
+   expired, **refreshes it via the refresh token and re-sets rotated cookies
+   on the response** (`middleware.py`) — the client must update its cookie
+   store from `Set-Cookie` on **every** response.
+5. **WS auth — single-use ticket:** `POST <base>/api/auth/ws-ticket`
+   (cookie-authed, `routes.py:615`) → `{ticket, ttl_seconds: 30}`. Connect
+   `/api/ws?ticket=<ticket>`; the ticket is **consumed** on the upgrade
+   (`web_server.py` `_ws_auth_reason` → `consume_ticket`). **Mint a fresh
+   ticket for every connect and every reconnect attempt.**
+6. **Identity (optional):** `GET <base>/api/auth/me` (cookie-authed) →
+   `{user_id, email, display_name, org_id, provider, expires_at}`
+   (`routes.py:594`).
+7. **Logout:** `POST <base>/auth/logout` (cookie-authed) revokes the
+   refresh token best-effort and clears cookies (`routes.py:558`).
+
+### 2.3 Gated mode: OAuth (Phase 8)
+
+OAuth providers round-trip through `GET /auth/login?provider=N` (PKCE) and
+land on the same session cookies; from then on §2.2 steps 3–7 apply
+verbatim. The login redirect dance needs a browser view — deferred to
+Phase 8. The app detects OAuth-only gateways via
+`GET /api/auth/providers` (no `supports_password` provider) and should
+signal "not supported yet" rather than failing mysteriously.
+
+### 2.4 WS upgrade rejection close codes
 
 Rejected upgrades close with app-specific codes (`web_server.py` `gateway_ws`
 @12711, checks in order):

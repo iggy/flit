@@ -8,15 +8,21 @@
 library;
 
 /// How the gateway authenticates clients (advertised by `GET /api/status`
-/// via `auth_required`; docs/reference/01-gateway-protocol.md §1).
+/// via `auth_required`; docs/reference/01-gateway-protocol.md §2).
 enum AuthMode {
-  /// Legacy static dashboard session token. REST uses an
-  /// `X-Hermes-Session-Token` header; WS uses `?token=` (protocol §2.1).
+  /// Legacy static dashboard session token (loopback / `--insecure`). REST
+  /// uses an `X-Hermes-Session-Token` header; WS uses `?token=` (§2.1).
   token,
 
-  /// Hosted gateway behind an OAuth provider. REST uses an HttpOnly session
-  /// cookie; WS upgrades use a single-use `?ticket=` minted at
-  /// `POST /api/auth/ws-ticket` (protocol §2.2 — Phase 8).
+  /// Gated gateway with a username/password provider. Login via
+  /// `POST /auth/password-login` mints session cookies; REST sends them as a
+  /// `Cookie` header; WS uses a single-use `?ticket=` minted per connect at
+  /// `POST /api/auth/ws-ticket` (protocol §2.2).
+  password,
+
+  /// Gated gateway behind an OAuth-only provider. Same cookie+ticket
+  /// mechanics as [password], but the login redirect dance needs a browser
+  /// view — deferred to Phase 8 (protocol §2.3).
   oauth,
 }
 
@@ -30,15 +36,25 @@ final class ConnectionConfig {
     required String baseUrl,
     String? token,
     AuthMode authMode = AuthMode.token,
+    String? username,
+    String? authProvider,
   }) {
     return ConnectionConfig._(
       normalizeGatewayBaseUrl(baseUrl),
       token,
       authMode,
+      username,
+      authProvider,
     );
   }
 
-  const ConnectionConfig._(this.baseUrl, this.token, this.authMode);
+  const ConnectionConfig._(
+    this.baseUrl,
+    this.token,
+    this.authMode,
+    this.username,
+    this.authProvider,
+  );
 
   /// Normalized gateway base URL, e.g. `https://gw.example.com/hermes`.
   final String baseUrl;
@@ -49,23 +65,36 @@ final class ConnectionConfig {
   /// The auth mode the gateway uses.
   final AuthMode authMode;
 
+  /// The signed-in username (gated modes only). The password is NEVER
+  /// stored — the session lives in the cookie jar
+  /// (data/transport/session_cookie_jar.dart).
+  final String? username;
+
+  /// The sign-in provider slug (gated modes only, e.g. `local`) — needed to
+  /// render a working re-login form for a stored/expired session.
+  final String? authProvider;
+
   @override
   bool operator ==(Object other) {
     return other is ConnectionConfig &&
         other.baseUrl == baseUrl &&
         other.token == token &&
-        other.authMode == authMode;
+        other.authMode == authMode &&
+        other.username == username &&
+        other.authProvider == authProvider;
   }
 
   @override
-  int get hashCode => Object.hash(baseUrl, token, authMode);
+  int get hashCode =>
+      Object.hash(baseUrl, token, authMode, username, authProvider);
 
   /// Token-redacted representation — safe for logs (05-conventions.md:
   /// "No secrets in logs").
   @override
   String toString() {
     return 'ConnectionConfig(baseUrl: ${redactUrl(baseUrl)}, '
-        'authMode: ${authMode.name}, token: ${token == null ? 'null' : '***'})';
+        'authMode: ${authMode.name}, username: $username, '
+        'token: ${token == null ? 'null' : '***'})';
   }
 }
 
@@ -156,6 +185,20 @@ Uri wsUriFor(ConnectionConfig config) {
   }
 
   return Uri.parse(buffer.toString());
+}
+
+/// Build the WebSocket URL for gated mode with a single-use ticket
+/// (docs/reference/01-gateway-protocol.md §2.2 step 5):
+/// `ws(s)://host<prefix>/api/ws?ticket=<urlencoded>`.
+///
+/// The ticket is minted cookie-side at `POST /api/auth/ws-ticket` and
+/// **consumed** on the upgrade — a fresh one is required for every connect
+/// and reconnect attempt.
+Uri wsTicketUriFor(ConnectionConfig config, String ticket) {
+  final base = wsUriFor(
+    ConnectionConfig(baseUrl: config.baseUrl), // token-free base WS URL
+  );
+  return Uri.parse('$base?ticket=${Uri.encodeComponent(ticket)}');
 }
 
 /// Matches `<scheme>://user:pass@host…` style user-info segments in

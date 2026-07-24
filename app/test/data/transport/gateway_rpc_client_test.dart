@@ -57,7 +57,9 @@ void main() {
   }
 
   Future<void> connectAndReady(GatewayRpcClient c) async {
-    final future = c.connect(Uri.parse('ws://gateway.test/api/ws?token=x'));
+    final future = c.connect(
+      () async => Uri.parse('ws://gateway.test/api/ws?token=x'),
+    );
     await pumpEventQueue();
     fake.serverSends(_readyFrame);
     await future;
@@ -73,7 +75,7 @@ void main() {
     final sub = client.connection.listen(states.add);
 
     final future = client.connect(
-      Uri.parse('ws://gateway.test/api/ws?token=x'),
+      () async => Uri.parse('ws://gateway.test/api/ws?token=x'),
     );
     await pumpEventQueue();
 
@@ -227,6 +229,49 @@ void main() {
       await sub.cancel();
     },
   );
+
+  test('the URI factory is consulted again for a reconnect (single-use '
+      'tickets)', () async {
+    var factoryCalls = 0;
+    final fakes = <FakeGatewayChannel>[];
+    client = GatewayRpcClient(
+      handshakeTimeout: const Duration(seconds: 5),
+      channelFactory: (_) {
+        final f = FakeGatewayChannel();
+        fakes.add(f);
+        return f.channel;
+      },
+    );
+    final future = client.connect(() async {
+      factoryCalls++;
+      return Uri.parse('ws://gateway.test/api/ws?ticket=t$factoryCalls');
+    });
+    await pumpEventQueue();
+    fakes[0].serverSends(_readyFrame);
+    await future;
+    expect(factoryCalls, 1);
+
+    await fakes[0].serverCloses();
+    await pumpEventQueue();
+    expect(client.state, GatewayConnectionState.reconnecting);
+    // First backoff is 500ms — the factory must be re-invoked for a FRESH
+    // ticket on the reconnect attempt (protocol §2.2 step 5).
+    await Future<void>.delayed(const Duration(milliseconds: 700));
+    expect(factoryCalls, greaterThanOrEqualTo(2));
+  });
+
+  test('a URI factory that throws GatewayAuthException fails connect() '
+      'without retry', () async {
+    fake = FakeGatewayChannel();
+    client = GatewayRpcClient(channelFactory: (_) => fake.channel);
+    await expectLater(
+      client.connect(
+        () async => throw const GatewayAuthException('ticket mint rejected'),
+      ),
+      throwsA(isA<GatewayAuthException>()),
+    );
+    expect(client.state, GatewayConnectionState.closed);
+  });
 
   test('a stray response id is dropped without breaking the client', () async {
     client = buildClient();

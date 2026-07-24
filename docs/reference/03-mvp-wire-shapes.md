@@ -23,8 +23,31 @@ Trust these Python shapes over `ui-tui/src/gatewayTypes.ts` where they differ.
   "gateway_state": "ready",
   "active_sessions": 1,
   "auth_required": false,      // false → token mode; connect ?token=…
-  "auth_providers": []
+  "auth_providers": []         // gated mode: registered provider names, e.g. ["local"]
 }
+```
+
+## 0.1 Gated-mode auth (user/pass; protocol §2.2)
+
+```jsonc
+// GET https://gw.example.com/api/auth/providers   (public)
+{"providers":[{"name":"local","display_name":"Username & password","supports_password":true}]}
+```
+```jsonc
+// POST https://gw.example.com/auth/password-login
+// {"provider":"local","username":"iggy","password":"…","next":""}
+// → 200 {"ok":true,"next":"/"} + Set-Cookie: hermes_session_at=…; hermes_session_rt=…
+//   (names may carry __Host-/__Secure- prefixes — capture verbatim)
+// → 401 {"detail":"Invalid credentials"} | 429 | 404 | 503 (see protocol §2.2)
+```
+```jsonc
+// POST https://gw.example.com/api/auth/ws-ticket   (Cookie: hermes_session_at=…)
+// → 200 {"ticket":"…","ttl_seconds":30}   →  WS wss://gw.example.com/api/ws?ticket=…
+// single-use; mint a fresh one per (re)connect
+```
+```jsonc
+// GET https://gw.example.com/api/auth/me   (Cookie: …) — optional identity probe
+{"user_id":"…","email":"…","display_name":"…","org_id":"…","provider":"local","expires_at":1783200000}
 ```
 
 ## 1. `gateway.ready` (first frame after connect)

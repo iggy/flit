@@ -64,10 +64,11 @@ final class GatewayStatus {
   final int? gatewayPid;
   final String? gatewayHealthUrl;
 
-  /// Auth mode inferred from [authRequired]: true → [AuthMode.oauth],
-  /// false → [AuthMode.token] (mirrors `authModeFromStatus`).
+  /// Auth mode inferred from [authRequired]: false → [AuthMode.token]
+  /// (loopback), true → [AuthMode.password] (gated; the providers probe may
+  /// refine this to [AuthMode.oauth] when no password provider exists).
   AuthMode get inferredAuthMode =>
-      authRequired ? AuthMode.oauth : AuthMode.token;
+      authRequired ? AuthMode.password : AuthMode.token;
 
   @override
   bool operator ==(Object other) {

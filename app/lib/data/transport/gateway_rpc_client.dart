@@ -104,7 +104,7 @@ class GatewayRpcClient {
   Timer? _reconnectTimer;
   Completer<void>? _readyCompleter;
 
-  Uri? _wsUri;
+  Future<Uri> Function()? _wsUriFactory;
   int _nextRequestId = 0;
   int _reconnectAttempts = 0;
   bool _closedByUser = false;
@@ -132,11 +132,16 @@ class GatewayRpcClient {
 
   /// Open the socket and wait for `gateway.ready` (protocol §4).
   ///
+  /// [wsUriFactory] is invoked on the initial connect AND on every reconnect
+  /// attempt — gated-mode WS tickets are single-use, so each attempt mints a
+  /// fresh one (protocol §2.2 step 5). A factory that throws
+  /// [GatewayAuthException] is terminal (no retry): the session is dead.
+  ///
   /// Completes normally once ready; completes with:
-  /// - [GatewayAuthException] on a 4401/4403 close during the handshake,
+  /// - [GatewayAuthException] on a 4401/4403 close or a factory auth failure,
   /// - [GatewayNetworkException] if the socket fails before ready,
   /// - [GatewayTimeoutException] if `gateway.ready` never arrives.
-  Future<void> connect(Uri wsUri) {
+  Future<void> connect(Future<Uri> Function() wsUriFactory) {
     if (_state != GatewayConnectionState.closed) {
       return Future<void>.error(
         const GatewayClosedException(
@@ -144,12 +149,12 @@ class GatewayRpcClient {
         ),
       );
     }
-    _wsUri = wsUri;
+    _wsUriFactory = wsUriFactory;
     _closedByUser = false;
     _sawReady = false;
     _reconnectAttempts = 0;
     _readyCompleter = Completer<void>();
-    _openChannel();
+    unawaited(_openChannel());
     return _readyCompleter!.future;
   }
 
@@ -233,15 +238,33 @@ class GatewayRpcClient {
   bool get _readyCompleterFulfilled =>
       _readyCompleter == null || _readyCompleter!.isCompleted;
 
-  void _openChannel() {
-    final uri = _wsUri;
-    if (uri == null) {
+  Future<void> _openChannel() async {
+    final factory = _wsUriFactory;
+    if (factory == null) {
       return;
     }
     if (!_sawReady) {
       _setState(GatewayConnectionState.connecting);
     }
     _dropHandled = false;
+
+    // Mint the URI for THIS attempt (single-use tickets — protocol §2.2).
+    final Uri uri;
+    try {
+      uri = await factory();
+    } on GatewayAuthException {
+      _handleAuthFailure(null);
+      return;
+    } on Object catch (error) {
+      _handleTransportFailure(
+        GatewayNetworkException('could not prepare the WS URI', cause: error),
+      );
+      return;
+    }
+    // close() (or a failure above) may have run while the factory was async.
+    if (_closedByUser || _dropHandled) {
+      return;
+    }
 
     final StreamChannel<String> channel;
     try {
@@ -401,20 +424,21 @@ class GatewayRpcClient {
     );
   }
 
-  void _handleAuthFailure(int closeCode) {
+  void _handleAuthFailure(int? closeCode) {
     _dropHandled = true;
     _handshakeTimer?.cancel();
     _rejectAllPending(
       GatewayAuthException(
-        'gateway rejected the connection (close $closeCode)',
+        'gateway rejected the connection${closeCode != null ? ' (close $closeCode)' : ''}',
         closeCode: closeCode,
       ),
     );
     if (!_readyCompleterFulfilled) {
       _readyCompleter!.completeError(
         GatewayAuthException(
-          'gateway rejected the WebSocket upgrade (close $closeCode) — '
-          'check the token',
+          'gateway rejected the WebSocket credential'
+          '${closeCode != null ? ' (close $closeCode)' : ''} — '
+          'sign in again',
           closeCode: closeCode,
         ),
       );
@@ -457,7 +481,7 @@ class GatewayRpcClient {
     _reconnectTimer = Timer(delay, () {
       if (!_closedByUser) {
         unawaited(_channelSubscription?.cancel());
-        _openChannel();
+        unawaited(_openChannel());
       }
     });
   }

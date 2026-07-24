@@ -9,8 +9,10 @@ Agent, from an MVP demo to full desktop/TUI parity. Read
 - **Connect-only client.** The app attaches to a running gateway (URL + token).
   It never spawns or bundles the Python backend. (Phase 8+ may add QoL like
   adopting a served token, but not embedding a backend.)
-- **Token ("plaintext") auth first.** OAuth mode is designed-for but deferred to
-  Phase 8.
+- **Token ("plaintext") auth for loopback dev; username/password for gated
+  gateways.** OAuth mode is designed-for but deferred to Phase 8. (Auth model
+  updated post-MVP: the gateway replaced session-token-only auth with
+  OAuth-or-user/pass — see `reference/01-gateway-protocol.md` §2.)
 - **Vertical slices that demo.** Every phase ends with something runnable and
   showable, not just plumbing.
 - **Decomposable tickets.** Tickets are small, ordered, and independently

@@ -4,6 +4,11 @@ Cross-platform (mobile + desktop) client for the Hermes Agent gateway.
 Design and protocol contract: see [`../docs/`](../docs/) (start at
 `../docs/roadmap.md`).
 
+**Auth** (`docs/reference/01-gateway-protocol.md` §2): loopback token mode
+(URL + session token) and gated username/password (login → session cookies →
+single-use WS tickets; password never stored, cookies in secure storage).
+OAuth-only gateways are detected and honestly flagged as Phase 8.
+
 ## Toolchain (pinned, Phase 0 / P0-01)
 
 - **Flutter 3.44.8** (stable channel, installed at `~/flutter`)

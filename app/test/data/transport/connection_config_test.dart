@@ -88,6 +88,18 @@ void main() {
       );
     });
 
+    test('wsTicketUriFor builds a gated ticket URL (URL-encoded)', () {
+      final config = ConnectionConfig(
+        baseUrl: 'https://gw.example.com/hermes/',
+        authMode: AuthMode.password,
+        username: 'iggy',
+      );
+      expect(
+        wsTicketUriFor(config, 'tick et/1').toString(),
+        'wss://gw.example.com/hermes/api/ws?ticket=tick%20et%2F1',
+      );
+    });
+
     test('uses ws for http', () {
       final config = ConnectionConfig(
         baseUrl: 'http://127.0.0.1:9119',

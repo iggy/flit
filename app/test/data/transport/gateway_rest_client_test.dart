@@ -85,7 +85,9 @@ void main() {
 
       expect(status.authRequired, isTrue);
       expect(status.authProviders, <String>['nous']);
-      expect(status.inferredAuthMode, AuthMode.oauth);
+      // Gated now infers user/pass (protocol §2.2); the providers probe
+      // refines to OAuth-only when no password provider exists.
+      expect(status.inferredAuthMode, AuthMode.password);
       expect(status.hermesHome, isNull);
       expect(status.configPath, isNull);
       expect(status.envPath, isNull);

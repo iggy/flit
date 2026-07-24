@@ -43,7 +43,9 @@ transport; a repository never imports a widget.
 
 ## The transport core (data layer)
 
-Two clients, one shared connection config (`{baseUrl, token, authMode}`).
+Two clients, one shared connection config (`{baseUrl, token, authMode,
+username, authProvider}` — token for loopback, username+provider for gated
+user/pass; the password is never stored, sessions live in the cookie jar).
 
 ### `GatewayRpcClient` (WebSocket / JSON-RPC)
 
@@ -147,5 +149,7 @@ lib/
 - **WebSocket on web** has no custom-header support — which is exactly why auth
   is query-string. Our design already assumes this, so the same client works on
   web if we ever target it.
-- Store the token in `flutter_secure_storage`; never log the token or full WS
-  URL (redact the query string, mirroring `gatewayClient.ts` `redactUrl`).
+- Store credentials in `flutter_secure_storage` (the loopback token; the
+  gated session cookies); never store the password; never log tokens, cookie
+  values, or full WS URLs (redact the query string, mirroring
+  `gatewayClient.ts` `redactUrl`).

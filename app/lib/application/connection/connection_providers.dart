@@ -3,12 +3,17 @@
 /// Provider dependency direction: store → config → clients → state/events.
 library;
 
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hermes/data/storage/connection_store.dart';
 import 'package:hermes/data/transport/connection_config.dart';
 import 'package:hermes/data/transport/gateway_rest_client.dart';
 import 'package:hermes/data/transport/gateway_rpc_client.dart';
+import 'package:hermes/data/transport/session_cookie_jar.dart';
+import 'package:hermes/domain/models/auth_provider.dart';
 import 'package:hermes/domain/models/gateway_status.dart';
 
 /// Persistence for the connection config. Override in tests with an
@@ -49,13 +54,107 @@ class ConnectionConfigNotifier extends Notifier<ConnectionConfig?> {
   }
 }
 
+/// The gated-mode session cookie jar (protocol §2.2). Loads the persisted
+/// cookies on first build; every mutation is persisted to secure storage.
+/// The password is never stored anywhere — the session lives here.
+final sessionCookiesProvider =
+    NotifierProvider<SessionCookiesNotifier, SessionCookieJar>(
+      SessionCookiesNotifier.new,
+    );
+
+class SessionCookiesNotifier extends Notifier<SessionCookieJar> {
+  final Completer<void> _readyCompleter = Completer<void>();
+
+  /// Completes once the persisted cookies (if any) have been loaded —
+  /// await this before branching on the jar's contents at app start.
+  Future<void> get ready => _readyCompleter.future;
+
+  @override
+  SessionCookieJar build() {
+    final jar = SessionCookieJar();
+    Future<void>.microtask(() => _loadStored(jar));
+    return jar;
+  }
+
+  Future<void> _loadStored(SessionCookieJar jar) async {
+    try {
+      final json = await ref.read(connectionStoreProvider).loadSessionCookies();
+      if (json == null || json.isEmpty) {
+        return;
+      }
+      try {
+        final decoded = jsonDecode(json);
+        if (decoded is Map) {
+          jar.replaceFromJson(
+            decoded.map((k, v) => MapEntry(k.toString(), v.toString())),
+          );
+        }
+      } on FormatException {
+        await ref.read(connectionStoreProvider).clearSessionCookies();
+      }
+    } finally {
+      if (!_readyCompleter.isCompleted) {
+        _readyCompleter.complete();
+      }
+    }
+  }
+
+  /// Persist the jar's current contents (called on every capture).
+  Future<void> persist() async {
+    await ref
+        .read(connectionStoreProvider)
+        .saveSessionCookies(jsonEncode(state.toJson()));
+  }
+
+  /// Drop the session (logout / expired) locally and in storage.
+  Future<void> clear() async {
+    state.clear();
+    await ref.read(connectionStoreProvider).clearSessionCookies();
+  }
+}
+
+/// Set when a gated request that presented cookies was rejected (401/403):
+/// the session is dead and the user must sign in again. The chat screen
+/// watches this to route back to /connect.
+final sessionExpiredProvider = NotifierProvider<SessionExpiredNotifier, bool>(
+  SessionExpiredNotifier.new,
+);
+
+class SessionExpiredNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  /// Mark the gated session dead: clear the cookies and flag the UI.
+  Future<void> expire() async {
+    if (state) {
+      return;
+    }
+    await ref.read(sessionCookiesProvider.notifier).clear();
+    state = true;
+  }
+
+  /// Clear the flag (after the UI routed to /connect).
+  void acknowledge() {
+    state = false;
+  }
+}
+
 /// Authenticated REST client for the current config; null when disconnected.
 final restClientProvider = Provider<GatewayRestClient?>((ref) {
   final config = ref.watch(connectionConfigProvider);
   if (config == null) {
     return null;
   }
-  return GatewayRestClient(config);
+  if (config.authMode == AuthMode.token) {
+    return GatewayRestClient(config);
+  }
+  final jar = ref.watch(sessionCookiesProvider);
+  return GatewayRestClient(
+    config,
+    cookieJar: jar,
+    onCookiesChanged: () => ref.read(sessionCookiesProvider.notifier).persist(),
+    onAuthFailure: () => ref.read(sessionExpiredProvider.notifier).expire(),
+  );
 });
 
 /// The current RPC client instance, or null before the first connect.
@@ -116,6 +215,45 @@ typedef StatusProbe = Future<GatewayStatus> Function(ConnectionConfig config);
 /// The default probe: a real [GatewayRestClient] against the probe config.
 final statusProbeProvider = Provider<StatusProbe>((ref) {
   return (config) => GatewayRestClient(config).status();
+});
+
+/// The `GET /api/auth/providers` probe (protocol §2.2 step 1). Injectable
+/// for the same reason as [statusProbeProvider].
+typedef ProvidersProbe =
+    Future<List<AuthProviderInfo>> Function(ConnectionConfig config);
+
+/// The default providers probe.
+final providersProbeProvider = Provider<ProvidersProbe>((ref) {
+  return (config) => GatewayRestClient(config).authProviders();
+});
+
+/// The `POST /auth/password-login` call (protocol §2.2 step 2). Injectable
+/// so tests can drive the gated connect flow without a network.
+typedef PasswordLogin =
+    Future<void> Function({
+      required ConnectionConfig config,
+      required String provider,
+      required String username,
+      required String password,
+    });
+
+/// The default login: a real [GatewayRestClient] against the probe config,
+/// capturing cookies into the shared jar.
+final passwordLoginProvider = Provider<PasswordLogin>((ref) {
+  return ({
+    required config,
+    required provider,
+    required username,
+    required password,
+  }) {
+    final jar = ref.read(sessionCookiesProvider);
+    return GatewayRestClient(
+      config,
+      cookieJar: jar,
+      onCookiesChanged: () =>
+          ref.read(sessionCookiesProvider.notifier).persist(),
+    ).passwordLogin(provider: provider, username: username, password: password);
+  };
 });
 
 /// The probed status of the gateway we are connected to — set by the

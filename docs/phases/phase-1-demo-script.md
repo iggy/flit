@@ -6,11 +6,14 @@ against the named ticket.
 
 ## 0. Setup
 
-- A running Hermes gateway in token mode (`/api/status` reports
-  `auth_required: false`), reachable from this machine. Have its **URL** and
-  **session token** ready. The gateway must have the **kanban plugin
-  installed and enabled** for steps 8–9, and at least one provider
-  authenticated for step 6.
+- A running Hermes gateway, reachable from this machine. Two supported
+  shapes (protocol §2):
+  - **Gated (user/pass):** `auth_required: true` with a password provider —
+    have the URL and your **username + password** ready.
+  - **Loopback token:** `auth_required: false` — have the URL and
+    **session token** ready.
+- The gateway must have the **kanban plugin installed and enabled** for
+  steps 8–9, and at least one model provider authenticated for step 6.
 - Run the app:
   ```sh
   cd app
@@ -20,15 +23,20 @@ against the named ticket.
 
 ## 1. Connect (P0-07 / P1-16)
 
-1. The app opens on **Connect to Hermes**. Enter the gateway URL and token →
-   **Connect**.
-2. Expect: probe card shows the gateway version, `running: true`,
-   `auth: token`; the state chip goes Connecting → Connected; a toast says
-   **"Connected to Hermes vX.Y.Z"**; the app lands on the chat screen within
-   one transition.
-3. Negative checks (repeat with bad input): an unreachable URL → a clear
-   "could not reach" message; a wrong token → "The gateway rejected the
-   token (close 4401)"; both recoverable (no hang, no crash).
+1. The app opens on **Connect to Hermes**. Enter the gateway URL →
+   **Continue**. The probe detects the auth shape.
+2. **Gated:** pick the provider (when more than one), enter username +
+   password → **Sign in**. Expect: login mints session cookies, the WS
+   connects via a single-use ticket, a toast says **"Connected to Hermes
+   vX.Y.Z"**, and the app lands on chat.
+   **Loopback:** enter the session token → **Connect**; same landing.
+3. Negative checks: an unreachable URL → a clear "could not reach" message;
+   a wrong password → "Invalid username or password."; a wrong token → "The
+   gateway rejected the token (close 4401)"; all recoverable (no hang, no
+   crash).
+4. Restart the app: with a gated session it reconnects automatically from
+   the stored cookies (no password re-entry) as long as the refresh cookie
+   is valid; otherwise the login form is prefilled (URL + username).
 
 ## 2. Chat with streaming + tool cards (P1-07)
 

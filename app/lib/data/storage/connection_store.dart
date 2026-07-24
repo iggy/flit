@@ -42,9 +42,12 @@ final class ConnectionStore {
   static const String baseUrlKey = 'connection.base_url';
   static const String authModeKey = 'connection.auth_mode';
   static const String tokenKey = 'connection.token';
+  static const String usernameKey = 'connection.username';
+  static const String providerKey = 'connection.auth_provider';
+  static const String cookiesKey = 'connection.session_cookies';
 
   /// Save (or overwrite) the stored connection. A null token clears any
-  /// previously stored token.
+  /// previously stored token; a null username clears any stored username.
   Future<void> save(ConnectionConfig config) async {
     await _store.write(baseUrlKey, config.baseUrl);
     await _store.write(authModeKey, config.authMode.name);
@@ -54,13 +57,24 @@ final class ConnectionStore {
     } else {
       await _store.write(tokenKey, token);
     }
+    final username = config.username;
+    if (username == null) {
+      await _store.delete(usernameKey);
+    } else {
+      await _store.write(usernameKey, username);
+    }
+    final provider = config.authProvider;
+    if (provider == null) {
+      await _store.delete(providerKey);
+    } else {
+      await _store.write(providerKey, provider);
+    }
   }
 
   /// Load the stored connection, or null when none was saved.
   ///
-  /// Unknown auth-mode values coerce to [AuthMode.token] (mirrors
-  /// `normAuthMode`). A corrupt base URL is dropped rather than crashing the
-  /// app on boot.
+  /// Unknown auth-mode values coerce to [AuthMode.token]. A corrupt base
+  /// URL is dropped rather than crashing the app on boot.
   Future<ConnectionConfig?> load() async {
     final baseUrl = await _store.read(baseUrlKey);
     if (baseUrl == null || baseUrl.isEmpty) {
@@ -69,15 +83,17 @@ final class ConnectionStore {
 
     final authModeRaw = await _store.read(authModeKey);
     final token = await _store.read(tokenKey);
-    final authMode = authModeRaw == AuthMode.oauth.name
-        ? AuthMode.oauth
-        : AuthMode.token;
+    final username = await _store.read(usernameKey);
+    final provider = await _store.read(providerKey);
+    final authMode = AuthMode.values.asNameMap()[authModeRaw] ?? AuthMode.token;
 
     try {
       return ConnectionConfig(
         baseUrl: baseUrl,
         token: token,
         authMode: authMode,
+        username: username,
+        authProvider: provider,
       );
     } on ArgumentError {
       await forget();
@@ -85,10 +101,29 @@ final class ConnectionStore {
     }
   }
 
+  /// Persist the gated-mode session cookies (JSON-encoded name→value map).
+  ///
+  /// These are session tokens — they live in secure storage and are wiped
+  /// by [forget] / [clearSessionCookies]. The password is NEVER stored.
+  Future<void> saveSessionCookies(String cookiesJson) async {
+    await _store.write(cookiesKey, cookiesJson);
+  }
+
+  /// The previously stored cookies JSON, or null.
+  Future<String?> loadSessionCookies() => _store.read(cookiesKey);
+
+  /// Drop just the session cookies (session expired / logout).
+  Future<void> clearSessionCookies() async {
+    await _store.delete(cookiesKey);
+  }
+
   /// Forget the stored connection entirely.
   Future<void> forget() async {
     await _store.delete(baseUrlKey);
     await _store.delete(authModeKey);
     await _store.delete(tokenKey);
+    await _store.delete(usernameKey);
+    await _store.delete(providerKey);
+    await _store.delete(cookiesKey);
   }
 }

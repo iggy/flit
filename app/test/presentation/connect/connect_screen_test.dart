@@ -42,7 +42,7 @@ final class FakeRpcClient extends GatewayRpcClient {
   Exception? connectError;
 
   @override
-  Future<void> connect(Uri wsUri) async {
+  Future<void> connect(Future<Uri> Function() wsUriFactory) async {
     final error = connectError;
     if (error != null) {
       throw error;
@@ -95,16 +95,16 @@ void main() {
     );
   }
 
-  /// Fill the form and tap Connect, then let the flow settle.
-  Future<void> tapConnect(WidgetTester tester) async {
+  /// Step 1: enter the URL and probe. Step 2 (token mode): enter the token
+  /// and connect. Each stage lets async work settle.
+  Future<void> probe(WidgetTester tester) async {
     await tester.enterText(
       find.byType(TextFormField).first,
       'https://gateway.example.com',
     );
-    await tester.enterText(find.byType(TextFormField).last, 'secret-token');
-    await tester.tap(find.widgetWithText(FilledButton, 'Connect'));
-    await tester.pump(); // connect() runs
-    await tester.pump(); // probe/ws future completes, error state shown
+    await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
+    await tester.pump(); // probe runs
+    await tester.pump(); // state emitted, form updated
     await tester.pump();
   }
 
@@ -119,11 +119,11 @@ void main() {
       ),
     );
 
-    await tapConnect(tester);
+    await probe(tester);
 
     expect(find.textContaining('Could not reach the gateway'), findsOneWidget);
-    // The form is interactive again (not stuck busy).
-    expect(find.widgetWithText(FilledButton, 'Connect'), findsOneWidget);
+    // The probe button is back (not stuck busy) so the user can retry.
+    expect(find.widgetWithText(FilledButton, 'Continue'), findsOneWidget);
   });
 
   testWidgets('gateway_running: false shows the start-the-gateway message', (
@@ -144,7 +144,7 @@ void main() {
       ),
     );
 
-    await tapConnect(tester);
+    await probe(tester);
 
     expect(find.textContaining('gateway_running: false'), findsOneWidget);
     expect(find.textContaining('Start the gateway'), findsOneWidget);
@@ -162,7 +162,17 @@ void main() {
       harness(probe: (config) async => healthyStatus, rpcClient: rpcClient),
     );
 
-    await tapConnect(tester);
+    await probe(tester);
+
+    // Probe detected token mode → the token form renders.
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Session token'),
+      'secret-token',
+    );
+    await tester.tap(find.widgetWithText(FilledButton, 'Connect'));
+    await tester.pump(); // connect() runs
+    await tester.pump(); // error state shown
+    await tester.pump();
 
     expect(find.textContaining('rejected the token'), findsOneWidget);
     expect(find.textContaining('Check it and retry'), findsOneWidget);
