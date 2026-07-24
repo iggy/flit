@@ -20,6 +20,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hermes/application/chat/message_fold.dart';
 import 'package:hermes/application/chat/message_list_notifier.dart';
+import 'package:hermes/application/connection/connect_controller.dart';
 import 'package:hermes/application/connection/connection_providers.dart';
 import 'package:hermes/application/sessions/active_session.dart';
 import 'package:hermes/data/transport/gateway_rpc_client.dart';
@@ -127,6 +128,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             tooltip: 'Plugins',
             icon: const Icon(Icons.extension_outlined),
             onPressed: () => context.push('/plugins'),
+          ),
+          IconButton(
+            tooltip: 'Sign out',
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await ref.read(connectControllerProvider.notifier).signOut();
+              if (context.mounted) {
+                context.go('/connect');
+              }
+            },
           ),
           const SizedBox(width: 4),
         ],
