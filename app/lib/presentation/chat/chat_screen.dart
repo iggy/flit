@@ -18,11 +18,15 @@ import 'package:hermes/application/chat/message_list_notifier.dart';
 import 'package:hermes/application/connection/connection_providers.dart';
 import 'package:hermes/application/sessions/active_session.dart';
 import 'package:hermes/data/transport/gateway_rpc_client.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hermes/domain/models/interactive_prompt.dart';
 import 'package:hermes/presentation/chat/approval_prompt_card.dart';
 import 'package:hermes/presentation/chat/clarify_prompt_card.dart';
 import 'package:hermes/presentation/chat/composer.dart';
 import 'package:hermes/presentation/chat/message_bubble.dart';
+import 'package:hermes/presentation/models/model_picker_sheet.dart';
+import 'package:hermes/presentation/profiles/profile_menu.dart';
+import 'package:hermes/presentation/sessions/session_drawer.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
@@ -82,10 +86,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         // Title is the product name for now; a later wave (P1-12) adds
         // model/profile actions and can surface the session title.
         title: const Text('Hermes'),
+        actions: <Widget>[
+          // Feature slots — wired to stubs; P1-10/12/13/14 replace the
+          // stub implementations in place (same files, same class names).
+          const ModelPickerButton(),
+          const ProfileMenuButton(),
+          IconButton(
+            tooltip: 'Plugins',
+            icon: const Icon(Icons.extension_outlined),
+            onPressed: () => context.push('/plugins'),
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
-      // Ticket P1-10 replaces this placeholder with the real session
-      // list/switcher.
-      drawer: const _SessionsDrawerPlaceholder(),
+      drawer: const SessionDrawer(),
       body: SafeArea(
         child: Column(
           children: <Widget>[
@@ -229,40 +243,5 @@ class _PromptCard extends StatelessWidget {
         liveId: liveId,
       ),
     };
-  }
-}
-
-/// Placeholder drawer until P1-10 lands the real session list.
-class _SessionsDrawerPlaceholder extends StatelessWidget {
-  const _SessionsDrawerPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Drawer(
-      child: SafeArea(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: <Widget>[
-            DrawerHeader(
-              decoration: BoxDecoration(color: scheme.primaryContainer),
-              child: Align(
-                alignment: Alignment.bottomLeft,
-                child: Text(
-                  'Sessions',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: scheme.onPrimaryContainer,
-                  ),
-                ),
-              ),
-            ),
-            const ListTile(
-              leading: Icon(Icons.history),
-              title: Text('Session history is coming in a later wave.'),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

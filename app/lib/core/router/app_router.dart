@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hermes/presentation/chat/chat_screen.dart';
 import 'package:hermes/presentation/connect/connect_screen.dart';
+import 'package:hermes/presentation/plugins/kanban/kanban_board_screen.dart';
+import 'package:hermes/presentation/plugins/plugins_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -20,6 +22,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/chat',
         name: 'chat',
         builder: (context, state) => const ChatScreen(),
+      ),
+      GoRoute(
+        path: '/plugins',
+        name: 'plugins',
+        builder: (context, state) => const PluginsScreen(),
+      ),
+      GoRoute(
+        path: '/plugins/kanban',
+        name: 'kanban',
+        builder: (context, state) => const KanbanBoardScreen(),
       ),
     ],
   );

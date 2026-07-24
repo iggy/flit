@@ -74,6 +74,63 @@ final class GatewayRestClient {
     }
   }
 
+  /// Authenticated GET returning the decoded JSON body (Map or List).
+  ///
+  /// Generic verb for feature repositories (profiles, kanban — added after
+  /// P0-05 so all REST features share auth + error mapping instead of
+  /// editing this class per feature). [path] is app-relative, e.g.
+  /// `/api/profiles`.
+  Future<dynamic> getJson(
+    String path, {
+    Map<String, String>? queryParameters,
+  }) async {
+    try {
+      final response = await _dio.get<dynamic>(
+        path,
+        queryParameters: queryParameters,
+      );
+      return response.data;
+    } on DioException catch (error) {
+      throw _mapDioException(error);
+    }
+  }
+
+  /// Authenticated POST with a JSON body, returning the decoded JSON body.
+  Future<dynamic> postJson(String path, {Object? body}) async {
+    try {
+      final response = await _dio.post<dynamic>(path, data: body);
+      return response.data;
+    } on DioException catch (error) {
+      throw _mapDioException(error);
+    }
+  }
+
+  /// Authenticated PATCH with a JSON body, returning the decoded JSON body.
+  Future<dynamic> patchJson(String path, {Object? body}) async {
+    try {
+      final response = await _dio.patch<dynamic>(path, data: body);
+      return response.data;
+    } on DioException catch (error) {
+      throw _mapDioException(error);
+    }
+  }
+
+  /// Authenticated DELETE, returning the decoded JSON body (may be null).
+  Future<dynamic> deleteJson(
+    String path, {
+    Map<String, String>? queryParameters,
+  }) async {
+    try {
+      final response = await _dio.delete<dynamic>(
+        path,
+        queryParameters: queryParameters,
+      );
+      return response.data;
+    } on DioException catch (error) {
+      throw _mapDioException(error);
+    }
+  }
+
   /// Map dio's error surface onto the shared typed errors — never leak a
   /// [DioException] above the data layer. Messages carry only redacted URLs.
   GatewayException _mapDioException(DioException error) {
