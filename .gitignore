@@ -1,6 +1,9 @@
 # Miscellaneous
 *.class
 *.lock
+# pubspec.lock IS committed (pinned deps, Phase 0 / P0-03)
+!pubspec.lock
+!**/pubspec.lock
 *.log
 *.pyc
 *.swp

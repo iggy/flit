@@ -1,0 +1,33 @@
+# Analysis options for the Hermes Flutter client.
+# Strict per docs/reference/05-conventions.md: lints are treated as errors.
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  errors:
+    # Treat lints as errors in CI (docs/reference/05-conventions.md).
+    todo: warning
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+  exclude:
+    # Generated code is not held to lint standards.
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+
+linter:
+  rules:
+    - always_declare_return_types
+    - always_use_package_imports
+    - avoid_dynamic_calls
+    - avoid_slow_async_io
+    - avoid_void_async
+    - cancel_subscriptions
+    - directives_ordering
+    - no_literal_bool_comparisons
+    - only_throw_errors
+    - prefer_final_locals
+    - require_trailing_commas
+    - unawaited_futures
+    - unnecessary_lambdas
+    - use_string_in_part_of_directives
