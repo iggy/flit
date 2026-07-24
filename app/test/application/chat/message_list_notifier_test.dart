@@ -1,0 +1,151 @@
+// P1-06 acceptance: the thin Riverpod wrapper — events from the chat
+// repository fold into state; caller-side mutations (appendUserMessage,
+// dismissPrompt) behave. The fold itself is tested pure in
+// message_fold_test.dart.
+
+import 'dart:async';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:hermes/application/chat/message_fold.dart';
+import 'package:hermes/application/chat/message_list_notifier.dart';
+import 'package:hermes/application/providers.dart';
+import 'package:hermes/data/dto/events/gateway_event_parser.dart';
+import 'package:hermes/domain/models/chat_message.dart';
+import 'package:hermes/domain/models/interactive_prompt.dart';
+import 'package:hermes/domain/repositories/chat_repository.dart';
+
+/// A fake chat repository emitting a canned typed event stream.
+final class FakeChatRepository implements ChatRepository {
+  final StreamController<TypedGatewayEvent> _events =
+      StreamController<TypedGatewayEvent>.broadcast();
+
+  /// The live id turnEvents was subscribed with.
+  String? subscribedLiveId;
+
+  void emit(TypedGatewayEvent event) => _events.add(event);
+
+  @override
+  Stream<TypedGatewayEvent> turnEvents(String liveId) {
+    subscribedLiveId = liveId;
+    return _events.stream;
+  }
+
+  @override
+  Future<void> submitPrompt(String liveId, String text) async {}
+
+  @override
+  Future<void> respondApproval(String liveId, String choice) async {}
+
+  @override
+  Future<void> respondClarify(String requestId, String answer) async {}
+
+  Future<void> dispose() => _events.close();
+}
+
+void main() {
+  const liveId = 'a1b2c3d4';
+
+  late FakeChatRepository repository;
+  late ProviderContainer container;
+
+  setUp(() {
+    repository = FakeChatRepository();
+    container = ProviderContainer(
+      overrides: [chatRepositoryProvider.overrideWithValue(repository)],
+    );
+  });
+
+  tearDown(() async {
+    container.dispose();
+    await repository.dispose();
+  });
+
+  test(
+    'repository events fold into state for the family arg session',
+    () async {
+      // Reading the provider builds the notifier and opens the subscription.
+      expect(container.read(messageListProvider(liveId)), const FoldState());
+      expect(repository.subscribedLiveId, liveId);
+
+      repository.emit(const TypedGatewayEvent.messageStart(sessionId: liveId));
+      repository.emit(
+        const TypedGatewayEvent.messageDelta(sessionId: liveId, text: 'Hi'),
+      );
+      await pumpEventQueue();
+
+      final messages = container.read(messageListProvider(liveId)).messages;
+      expect(messages, hasLength(1));
+      expect(messages.single.role, MessageRole.assistant);
+      expect(messages.single.streaming, isTrue);
+      expect(messages.single.text, 'Hi');
+    },
+  );
+
+  test(
+    'appendUserMessage appends a user message without touching the fold',
+    () async {
+      container.read(messageListProvider(liveId));
+      repository.emit(const TypedGatewayEvent.messageStart(sessionId: liveId));
+      await pumpEventQueue();
+
+      container
+          .read(messageListProvider(liveId).notifier)
+          .appendUserMessage('do the thing');
+
+      final messages = container.read(messageListProvider(liveId)).messages;
+      expect(messages, hasLength(2));
+      expect(messages[0].role, MessageRole.assistant);
+      expect(messages[0].streaming, isTrue);
+      expect(messages[1].role, MessageRole.user);
+      expect(messages[1].text, 'do the thing');
+    },
+  );
+
+  test(
+    'dismissPrompt removes the answered prompt from pendingPrompts',
+    () async {
+      container.read(messageListProvider(liveId));
+      repository.emit(
+        const TypedGatewayEvent.clarifyRequest(
+          sessionId: liveId,
+          question: 'Which environment?',
+          choices: <String>['staging', 'prod'],
+          requestId: '9f3a1c2b',
+        ),
+      );
+      await pumpEventQueue();
+
+      final pending = container
+          .read(messageListProvider(liveId))
+          .pendingPrompts;
+      expect(pending, hasLength(1));
+      expect(pending.single, isA<ClarifyPrompt>());
+
+      container
+          .read(messageListProvider(liveId).notifier)
+          .dismissPrompt(pending.single);
+
+      expect(
+        container.read(messageListProvider(liveId)).pendingPrompts,
+        isEmpty,
+      );
+    },
+  );
+
+  test('family instances are isolated per live id', () async {
+    container.read(messageListProvider('sess-a'));
+    container.read(messageListProvider('sess-b'));
+    await pumpEventQueue();
+
+    container
+        .read(messageListProvider('sess-a').notifier)
+        .appendUserMessage('only in A');
+
+    expect(
+      container.read(messageListProvider('sess-a')).messages,
+      hasLength(1),
+    );
+    expect(container.read(messageListProvider('sess-b')).messages, isEmpty);
+  });
+}

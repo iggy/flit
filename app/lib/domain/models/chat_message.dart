@@ -1,5 +1,6 @@
 import 'package:hermes/domain/models/deep_equals.dart';
 import 'package:hermes/domain/models/tool_call.dart';
+import 'package:hermes/domain/models/usage.dart';
 
 /// Who authored a message.
 enum MessageRole { user, assistant, system }
@@ -31,6 +32,7 @@ final class ChatMessage {
     this.streaming = false,
     this.toolCalls = const <ToolCall>[],
     this.terminalStatus = MessageTerminalStatus.none,
+    this.usage,
     this.timestamp,
   });
 
@@ -56,6 +58,10 @@ final class ChatMessage {
   /// streaming or for non-turn messages.
   final MessageTerminalStatus terminalStatus;
 
+  /// Token usage for the turn, carried by `message.complete.payload.usage`
+  /// (wire §7); null until the terminal event (and for non-turn messages).
+  final Usage? usage;
+
   /// Client-side timestamp (display only; not a wire field).
   final DateTime? timestamp;
 
@@ -67,6 +73,7 @@ final class ChatMessage {
     bool? streaming,
     List<ToolCall>? toolCalls,
     MessageTerminalStatus? terminalStatus,
+    Usage? usage,
     DateTime? timestamp,
   }) {
     return ChatMessage(
@@ -76,6 +83,7 @@ final class ChatMessage {
       streaming: streaming ?? this.streaming,
       toolCalls: toolCalls ?? this.toolCalls,
       terminalStatus: terminalStatus ?? this.terminalStatus,
+      usage: usage ?? this.usage,
       timestamp: timestamp ?? this.timestamp,
     );
   }
@@ -89,6 +97,7 @@ final class ChatMessage {
         other.streaming == streaming &&
         deepListEquals(other.toolCalls, toolCalls) &&
         other.terminalStatus == terminalStatus &&
+        other.usage == usage &&
         other.timestamp == timestamp;
   }
 
@@ -100,6 +109,7 @@ final class ChatMessage {
     streaming,
     Object.hashAll(toolCalls),
     terminalStatus,
+    usage,
     timestamp,
   );
 
@@ -108,6 +118,6 @@ final class ChatMessage {
     return 'ChatMessage(role: ${role.name}, text: $text, '
         'rendered: $rendered, streaming: $streaming, '
         'toolCalls: $toolCalls, terminalStatus: ${terminalStatus.name}, '
-        'timestamp: $timestamp)';
+        'usage: $usage, timestamp: $timestamp)';
   }
 }
