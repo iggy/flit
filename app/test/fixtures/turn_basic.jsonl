@@ -1,0 +1,9 @@
+{"jsonrpc":"2.0","method":"event","params":{"type":"gateway.ready","payload":{"name":"hermes","colors":{},"branding":{},"tool_prefix":""}}}
+{"jsonrpc":"2.0","method":"event","params":{"type":"message.start","session_id":"a1b2c3d4"}}
+{"jsonrpc":"2.0","method":"event","params":{"type":"message.delta","session_id":"a1b2c3d4","payload":{"text":"I'll "}}}
+{"jsonrpc":"2.0","method":"event","params":{"type":"message.delta","session_id":"a1b2c3d4","payload":{"text":"list them."}}}
+{"jsonrpc":"2.0","method":"event","params":{"type":"tool.start","session_id":"a1b2c3d4","payload":{"tool_id":"t1","name":"shell","context":"ls -la"}}}
+{"jsonrpc":"2.0","method":"event","params":{"type":"tool.complete","session_id":"a1b2c3d4","payload":{"tool_id":"t1","name":"shell","result":{"stdout":"README.md\n","code":0},"duration_s":0.12,"summary":"1 file"}}}
+{"jsonrpc":"2.0","method":"event","params":{"type":"message.delta","session_id":"a1b2c3d4","payload":{"text":" There is 1 file."}}}
+{"jsonrpc":"2.0","method":"event","params":{"type":"message.complete","session_id":"a1b2c3d4","payload":{"text":"I'll list them. There is 1 file.","status":"complete","usage":{"input":1200,"output":42,"cost_usd":0.003}}}}
+{"jsonrpc":"2.0","method":"event","params":{"type":"session.info","session_id":"a1b2c3d4","payload":{"model":"...","usage":{},"running":false}}}
