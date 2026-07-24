@@ -1,10 +1,10 @@
-/// App routing (go_router). Phase 0 wires /connect + a /chat placeholder;
-/// Phase 1 fills in the real screens.
+/// App routing (go_router). Phase 0 wires /connect; Phase 1 lands the real
+/// chat screen (P1-07) which bootstraps a session on arrival (P1-09).
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hermes/presentation/common/placeholder_screen.dart';
+import 'package:hermes/presentation/chat/chat_screen.dart';
 import 'package:hermes/presentation/connect/connect_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -19,8 +19,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/chat',
         name: 'chat',
-        builder: (context, state) =>
-            const PlaceholderScreen(title: 'Chat', detail: 'Phase 1'),
+        builder: (context, state) => const ChatScreen(),
       ),
     ],
   );
