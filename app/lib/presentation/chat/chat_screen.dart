@@ -13,12 +13,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hermes/application/chat/message_fold.dart';
 import 'package:hermes/application/chat/message_list_notifier.dart';
 import 'package:hermes/application/connection/connection_providers.dart';
 import 'package:hermes/application/sessions/active_session.dart';
 import 'package:hermes/data/transport/gateway_rpc_client.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hermes/domain/models/interactive_prompt.dart';
 import 'package:hermes/presentation/chat/approval_prompt_card.dart';
 import 'package:hermes/presentation/chat/clarify_prompt_card.dart';
