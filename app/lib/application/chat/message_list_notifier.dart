@@ -60,6 +60,28 @@ class MessageListNotifier extends Notifier<FoldState> {
     );
   }
 
+  /// Replace the list with a RESUMED session's replayed history (wire §5;
+  /// ticket P1-10). This provider starts empty and only folds NEW events,
+  /// so the history returned by `session.resume` is seeded here on switch.
+  ///
+  /// The resume DTO already maps role/text; every replayed message is
+  /// terminal and non-streaming (assistant turns are marked
+  /// [MessageTerminalStatus.complete]), and no prompts are pending.
+  void seedHistory(List<ChatMessage> messages) {
+    state = FoldState(
+      messages: messages.map((message) {
+        return message.copyWith(
+          streaming: false,
+          terminalStatus:
+              message.role == MessageRole.assistant &&
+                  message.terminalStatus == MessageTerminalStatus.none
+              ? MessageTerminalStatus.complete
+              : message.terminalStatus,
+        );
+      }).toList(),
+    );
+  }
+
   /// Remove [prompt] from [FoldState.pendingPrompts] once it has been
   /// answered (via ChatRepository) or dismissed. The fold only ever ADDS
   /// prompts; removal is the notifier's job.
