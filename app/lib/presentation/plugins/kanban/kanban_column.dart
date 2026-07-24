@@ -52,14 +52,26 @@ class KanbanColumnView extends StatelessWidget {
           ),
           const Divider(height: 1),
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(8),
-              itemCount: column.tasks.length,
-              itemBuilder: (context, index) => KanbanCard(
-                task: column.tasks[index],
-                columnNames: columnNames,
-              ),
-            ),
+            child: column.tasks.isEmpty
+                // Empty-state hint (P1-16): a taskless column should not
+                // render as a mysterious blank box.
+                ? Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Text(
+                      'No tasks',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.outline,
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(8),
+                    itemCount: column.tasks.length,
+                    itemBuilder: (context, index) => KanbanCard(
+                      task: column.tasks[index],
+                      columnNames: columnNames,
+                    ),
+                  ),
           ),
         ],
       ),

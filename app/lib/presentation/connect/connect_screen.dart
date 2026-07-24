@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hermes/application/connection/connect_controller.dart';
 import 'package:hermes/application/connection/connection_providers.dart';
-import 'package:hermes/data/transport/gateway_rpc_client.dart';
+import 'package:hermes/presentation/common/connection_chip.dart';
 
 /// Connect screen (ticket P0-07): gateway URL + session token entry,
 /// `/api/status` probe, live connection-state chip, and a toast on
@@ -78,7 +78,7 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
         actions: <Widget>[
           Padding(
             padding: const EdgeInsets.only(right: 16),
-            child: Center(child: _ConnectionChip(state: connectionState)),
+            child: Center(child: ConnectionChip(state: connectionState.value)),
           ),
         ],
       ),
@@ -186,30 +186,6 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _ConnectionChip extends StatelessWidget {
-  const _ConnectionChip({required this.state});
-
-  final AsyncValue<GatewayConnectionState> state;
-
-  @override
-  Widget build(BuildContext context) {
-    final (label, icon) = switch (state.value) {
-      GatewayConnectionState.connecting => ('Connecting', Icons.sync),
-      GatewayConnectionState.ready => ('Connected', Icons.cloud_done),
-      GatewayConnectionState.reconnecting => (
-        'Reconnecting',
-        Icons.sync_problem,
-      ),
-      _ => ('Offline', Icons.cloud_off),
-    };
-    return Chip(
-      avatar: Icon(icon, size: 18),
-      label: Text(label),
-      visualDensity: VisualDensity.compact,
     );
   }
 }

@@ -7,11 +7,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hermes/application/chat/message_list_notifier.dart';
+import 'package:hermes/application/connection/connection_providers.dart';
 import 'package:hermes/application/providers.dart';
 import 'package:hermes/application/sessions/active_session.dart';
 import 'package:hermes/core/errors/gateway_error.dart';
 import 'package:hermes/domain/models/active_session.dart';
 import 'package:hermes/domain/models/chat_message.dart';
+import 'package:hermes/domain/models/gateway_status.dart';
 import 'package:hermes/domain/models/session_bootstrap.dart';
 import 'package:hermes/domain/models/session_summary.dart';
 import 'package:hermes/domain/repositories/session_repository.dart';
@@ -88,6 +90,16 @@ final class FakeSessionRepository implements SessionRepository {
   }
 }
 
+/// A gateway status pre-seeded into gatewayStatusProvider (P1-16 footer).
+final class FakeGatewayStatusNotifier extends GatewayStatusNotifier {
+  FakeGatewayStatusNotifier(this._status);
+
+  final GatewayStatus _status;
+
+  @override
+  GatewayStatus? build() => _status;
+}
+
 void main() {
   late FakeSessionRepository repository;
 
@@ -95,13 +107,17 @@ void main() {
     repository = FakeSessionRepository();
   });
 
-  Widget harness({bool connected = true}) {
+  Widget harness({bool connected = true, GatewayStatus? gatewayStatus}) {
     return ProviderScope(
       // Deterministic tests: Riverpod 3 retries failing providers by
       // default (backoff), which would leave error assertions pending.
       retry: (retryCount, error) => null,
       overrides: [
         if (connected) sessionRepositoryProvider.overrideWithValue(repository),
+        if (gatewayStatus != null)
+          gatewayStatusProvider.overrideWith(
+            () => FakeGatewayStatusNotifier(gatewayStatus),
+          ),
       ],
       child: MaterialApp(
         home: Scaffold(
@@ -323,5 +339,33 @@ void main() {
 
     expect(find.text('No live sessions'), findsOneWidget);
     expect(find.text('No past sessions'), findsOneWidget);
+  });
+
+  testWidgets('the footer shows the connected gateway version (P1-16)', (
+    tester,
+  ) async {
+    const status = GatewayStatus(
+      version: '0.17.0',
+      gatewayRunning: true,
+      gatewayState: 'ready',
+      gatewayBusy: false,
+      activeSessions: 1,
+      activeAgents: 1,
+      authRequired: false,
+      authProviders: <String>[],
+    );
+    await tester.pumpWidget(harness(gatewayStatus: status));
+    await tester.tap(find.byIcon(Icons.menu));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Gateway v0.17.0'), findsOneWidget);
+  });
+
+  testWidgets('the footer is hidden while no gateway status is recorded', (
+    tester,
+  ) async {
+    await pumpDrawer(tester);
+
+    expect(find.textContaining('Gateway v'), findsNothing);
   });
 }

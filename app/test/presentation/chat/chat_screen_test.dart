@@ -23,6 +23,7 @@ import 'package:hermes/core/errors/gateway_error.dart';
 import 'package:hermes/data/dto/events/gateway_event_parser.dart';
 import 'package:hermes/data/transport/gateway_rpc_client.dart';
 import 'package:hermes/domain/models/active_session.dart';
+import 'package:hermes/domain/models/chat_message.dart';
 import 'package:hermes/domain/models/session_bootstrap.dart';
 import 'package:hermes/domain/models/session_summary.dart';
 import 'package:hermes/domain/repositories/chat_repository.dart';
@@ -79,6 +80,20 @@ final class FakeSessionRepository implements SessionRepository {
   Exception? createError;
   final List<String> interrupted = <String>[];
 
+  final List<String> resumed = <String>[];
+  Exception? resumeError;
+  SessionResumeResult resumeResult = const SessionResumeResult(
+    liveId: 'e5f6a7b8',
+    durableId: '2026-uuid',
+    messages: <ChatMessage>[
+      ChatMessage(role: MessageRole.user, text: 'resumed history line'),
+      ChatMessage(role: MessageRole.assistant, text: 'resumed answer'),
+    ],
+    messageCount: 2,
+    running: false,
+    status: SessionStatus.idle,
+  );
+
   @override
   Future<SessionCreateResult> create({
     String? profile,
@@ -106,8 +121,14 @@ final class FakeSessionRepository implements SessionRepository {
       throw UnimplementedError();
 
   @override
-  Future<SessionResumeResult> resume(String durableId) =>
-      throw UnimplementedError();
+  Future<SessionResumeResult> resume(String durableId) async {
+    resumed.add(durableId);
+    final error = resumeError;
+    if (error != null) {
+      throw error;
+    }
+    return resumeResult;
+  }
 }
 
 /// Decode a full event frame the way the RPC client's router does
@@ -150,15 +171,17 @@ void main() {
 
   tearDown(() async => chatRepository.dispose());
 
-  Widget harness() {
+  Widget harness({Stream<GatewayConnectionState>? connectionStream}) {
     return ProviderScope(
       overrides: [
         chatRepositoryProvider.overrideWithValue(chatRepository),
         sessionRepositoryProvider.overrideWithValue(sessionRepository),
         connectionStateProvider.overrideWith(
-          (ref) => Stream<GatewayConnectionState>.value(
-            GatewayConnectionState.ready,
-          ),
+          (ref) =>
+              connectionStream ??
+              Stream<GatewayConnectionState>.value(
+                GatewayConnectionState.ready,
+              ),
         ),
       ],
       child: const MaterialApp(home: ChatScreen()),
@@ -328,5 +351,78 @@ void main() {
       isTrue,
     );
     expect(sessionRepository.createCalls, 2);
+  });
+
+  testWidgets('reconnect re-binds: the conversation survives the '
+      'reconnecting gap, then resume seeds the new live id', (tester) async {
+    // A controllable connection stream (single-subscription: events added
+    // before the provider subscribes are buffered, none are lost).
+    final connection = StreamController<GatewayConnectionState>();
+    addTearDown(connection.close);
+
+    await tester.pumpWidget(harness(connectionStream: connection.stream));
+
+    // Fresh connect: ready → bootstrap creates a session.
+    connection.add(GatewayConnectionState.ready);
+    await tester.pump(); // listener fires bootstrap()
+    await tester.pump(); // session.create completes
+    expect(sessionRepository.createCalls, 1);
+    expect(find.text('Connected'), findsOneWidget); // app-bar chip
+
+    // Have a visible conversation.
+    await tester.enterText(find.byKey(composerFieldKey), 'before the drop');
+    await tester.tap(find.byKey(composerSendKey));
+    await tester.pump();
+    expect(find.text('before the drop'), findsOneWidget);
+
+    // The socket drops → reconnecting: the message list must NOT be wiped
+    // (the fold for the old live id stays until the rebind lands), and the
+    // chip flips to the distinct reconnecting state.
+    connection.add(GatewayConnectionState.reconnecting);
+    await tester.pump();
+    expect(find.text('before the drop'), findsOneWidget);
+    expect(find.text('Reconnecting'), findsOneWidget);
+    expect(find.text('Connected'), findsNothing);
+
+    // Back to ready → rebind: session.resume with the DURABLE id, switch
+    // to the NEW live id, seed the replayed history (protocol §10).
+    connection.add(GatewayConnectionState.ready);
+    await tester.pump(); // resume RPC
+    await tester.pump(); // ids switched + history seeded, UI rebuilt
+
+    expect(sessionRepository.resumed, <String>['2026-uuid']);
+    expect(sessionRepository.createCalls, 1); // NO fresh session created
+    expect(chatRepository.subscribedLiveId, 'e5f6a7b8');
+    expect(find.text('resumed history line'), findsOneWidget);
+    // The old fold was replaced by the resumed session's seeded history.
+    expect(find.text('before the drop'), findsNothing);
+    expect(find.text('Connected'), findsOneWidget);
+  });
+
+  testWidgets('reconnect falls back to a fresh session when the resume '
+      'fails', (tester) async {
+    final connection = StreamController<GatewayConnectionState>();
+    addTearDown(connection.close);
+
+    await tester.pumpWidget(harness(connectionStream: connection.stream));
+    connection.add(GatewayConnectionState.ready);
+    await tester.pump();
+    await tester.pump();
+    expect(sessionRepository.createCalls, 1);
+
+    // The session is gone server-side by the time we reconnect.
+    sessionRepository.resumeError = const GatewayRpcException(
+      -32000,
+      'session gone',
+    );
+    connection.add(GatewayConnectionState.reconnecting);
+    await tester.pump();
+    connection.add(GatewayConnectionState.ready);
+    await tester.pump(); // resume fails → fallback create
+    await tester.pump(); // create completes
+
+    expect(sessionRepository.resumed, <String>['2026-uuid']);
+    expect(sessionRepository.createCalls, 2); // fresh session created
+    expect(find.text('No messages yet — say hello.'), findsOneWidget);
   });
 }

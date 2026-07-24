@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hermes/application/connection/connection_providers.dart';
 import 'package:hermes/core/errors/gateway_error.dart';
 import 'package:hermes/data/transport/connection_config.dart';
-import 'package:hermes/data/transport/gateway_rest_client.dart';
 import 'package:hermes/domain/models/gateway_status.dart';
 
 /// Where the connect flow currently stands.
@@ -61,7 +60,7 @@ class ConnectController extends Notifier<ConnectUiState> {
     // Step 1: probe /api/status (public; protocol §1).
     final GatewayStatus status;
     try {
-      status = await GatewayRestClient(probeConfig).status();
+      status = await ref.read(statusProbeProvider)(probeConfig);
     } on GatewayException catch (error) {
       state = ConnectUiState(
         phase: ConnectPhase.error,
@@ -120,6 +119,9 @@ class ConnectController extends Notifier<ConnectUiState> {
     }
 
     await ref.read(connectionConfigProvider.notifier).setConfig(config);
+    // Record the probed status for the rest of the app (ticket P1-16: the
+    // session drawer footer shows 'Gateway vX.Y.Z').
+    ref.read(gatewayStatusProvider.notifier).set(status);
     state = ConnectUiState(phase: ConnectPhase.connected, status: status);
   }
 

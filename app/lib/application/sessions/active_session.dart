@@ -3,13 +3,17 @@
 /// repository and records the two ids (protocol §9: the short live id for
 /// prompt/interrupt traffic, the durable id for list/resume).
 ///
-/// Phase 1 simplification: after a reconnect the previous session is
-/// assumed STALE — the chat screen clears it and bootstraps a fresh one.
-/// Reconnect-and-resume is Phase 2 (protocol §10); documented in
-/// docs/phases/phase-1-mvp.md P1-09.
+/// Reconnect continuity (ticket P1-16, protocol §10): after a reconnect the
+/// previous session is RE-BOUND via [rebind] — `session.resume` with the
+/// durable id re-attaches the detached live session before the orphan
+/// reaper finalizes it, and the replayed history is seeded into the new
+/// live id's message list. The old state is kept while the resume is in
+/// flight so the visible conversation is never wiped during the
+/// reconnecting gap.
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hermes/application/chat/message_list_notifier.dart';
 import 'package:hermes/application/providers.dart';
 import 'package:hermes/core/errors/gateway_error.dart';
 
@@ -94,6 +98,58 @@ class ActiveSessionNotifier extends Notifier<ActiveSessionState> {
     } on Object catch (error) {
       state = ActiveSessionState(error: error.toString());
     }
+  }
+
+  /// Re-bind the active session after a RECONNECT (protocol §10; ticket
+  /// P1-16). Unlike a clear+bootstrap, this keeps the current ids (under
+  /// the bootstrapping flag) while `session.resume` is in flight, so the
+  /// chat keeps rendering the old live id's message list during the
+  /// reconnecting gap.
+  ///
+  /// - No durable id yet (fresh connect) → plain [bootstrap].
+  /// - `session.resume` succeeds → switch to the NEW live id (protocol §9)
+  ///   and seed the replayed history into its message list (wire §5) — the
+  ///   list starts empty and only folds NEW events.
+  /// - `session.resume` fails (the reaper may have finalized the session
+  ///   server-side) → fall back to a fresh create via [bootstrap].
+  ///
+  /// Idempotent: a rebind/bootstrap already in flight is left alone, so a
+  /// ready-transition listener racing a post-frame hook resumes at most
+  /// once.
+  Future<void> rebind() async {
+    if (state.bootstrapping) {
+      return;
+    }
+    final durableId = state.durableId;
+    if (durableId == null) {
+      // Nothing to re-bind — this is a fresh connect.
+      await bootstrap();
+      return;
+    }
+    final repository = ref.read(sessionRepositoryProvider);
+    if (repository != null) {
+      // Keep the old live id visible while the resume is in flight.
+      state = ActiveSessionState(
+        liveId: state.liveId,
+        durableId: durableId,
+        bootstrapping: true,
+      );
+      try {
+        final result = await repository.resume(durableId);
+        switchTo(liveId: result.liveId, durableId: result.durableId);
+        ref
+            .read(messageListProvider(result.liveId).notifier)
+            .seedHistory(result.messages);
+        return;
+      } on GatewayException {
+        // The session is gone server-side — fall through to a fresh
+        // create (protocol §10: the orphan reaper won the race).
+      } on Object {
+        // Unexpected failure: same fallback; bootstrap records errors.
+      }
+    }
+    clear();
+    await bootstrap();
   }
 
   /// Make an EXISTING session active (drawer switch — ticket P1-10 wires

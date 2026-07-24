@@ -1,13 +1,22 @@
 // P1-09 acceptance: the active-session notifier — bootstrap creates a
 // session and records both ids (protocol §9); failures land in state.error
 // (never throw) and retry works; switchTo/clear behave.
+//
+// P1-16 acceptance: rebind (reconnect path, protocol §10) resumes the
+// durable session, switches to the NEW live id, and seeds the replayed
+// history; a resume failure falls back to a fresh create; the old session
+// stays visible while the resume is in flight.
+
+import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hermes/application/chat/message_list_notifier.dart';
 import 'package:hermes/application/providers.dart';
 import 'package:hermes/application/sessions/active_session.dart';
 import 'package:hermes/core/errors/gateway_error.dart';
 import 'package:hermes/domain/models/active_session.dart';
+import 'package:hermes/domain/models/chat_message.dart';
 import 'package:hermes/domain/models/session_bootstrap.dart';
 import 'package:hermes/domain/models/session_summary.dart';
 import 'package:hermes/domain/repositories/session_repository.dart';
@@ -20,6 +29,23 @@ final class FakeSessionRepository implements SessionRepository {
   SessionCreateResult createResult = const SessionCreateResult(
     liveId: 'a1b2c3d4',
     durableId: '2026-uuid',
+  );
+
+  final List<String> resumed = <String>[];
+  Exception? resumeError;
+
+  /// When set, resume blocks on this completer (in-flight assertions).
+  Completer<SessionResumeResult>? resumeGate;
+  SessionResumeResult resumeResult = const SessionResumeResult(
+    liveId: 'e5f6a7b8',
+    durableId: '2026-uuid',
+    messages: <ChatMessage>[
+      ChatMessage(role: MessageRole.user, text: 'before the drop'),
+      ChatMessage(role: MessageRole.assistant, text: 'still here'),
+    ],
+    messageCount: 2,
+    running: false,
+    status: SessionStatus.idle,
   );
 
   @override
@@ -44,8 +70,18 @@ final class FakeSessionRepository implements SessionRepository {
       throw UnimplementedError();
 
   @override
-  Future<SessionResumeResult> resume(String durableId) =>
-      throw UnimplementedError();
+  Future<SessionResumeResult> resume(String durableId) {
+    resumed.add(durableId);
+    final gate = resumeGate;
+    if (gate != null) {
+      return gate.future;
+    }
+    final error = resumeError;
+    if (error != null) {
+      return Future<SessionResumeResult>.error(error);
+    }
+    return Future<SessionResumeResult>.value(resumeResult);
+  }
 
   @override
   Future<void> interrupt(String liveId) => throw UnimplementedError();
@@ -139,9 +175,120 @@ void main() {
     readNotifier().clear();
     expect(readState(), const ActiveSessionState());
 
-    // After a clear, bootstrap creates a FRESH session (reconnect path).
+    // After a clear, bootstrap creates a FRESH session.
     await readNotifier().bootstrap();
     expect(readState().liveId, 'a1b2c3d4');
     expect(repository.createCalls, 2);
+  });
+
+  group('rebind (reconnect path, P1-16)', () {
+    test('resumes the durable id, switches to the NEW live id, and seeds '
+        'the replayed history', () async {
+      await readNotifier().bootstrap(); // a1b2c3d4 / 2026-uuid
+
+      await readNotifier().rebind();
+
+      // Resume with the DURABLE id (protocol §9); NO fresh create.
+      expect(repository.resumed, <String>['2026-uuid']);
+      expect(repository.createCalls, 1);
+      final state = readState();
+      expect(state.liveId, 'e5f6a7b8');
+      expect(state.durableId, '2026-uuid');
+      expect(state.bootstrapping, isFalse);
+      expect(state.error, isNull);
+
+      // The replayed history is seeded into the NEW live id's message
+      // list: terminal, non-streaming (wire §5).
+      final fold = container.read(messageListProvider('e5f6a7b8'));
+      expect(fold.messages, hasLength(2));
+      expect(fold.messages[0].role, MessageRole.user);
+      expect(fold.messages[0].text, 'before the drop');
+      expect(fold.messages[0].streaming, isFalse);
+      expect(fold.messages[1].role, MessageRole.assistant);
+      expect(fold.messages[1].text, 'still here');
+      expect(fold.messages[1].terminalStatus, MessageTerminalStatus.complete);
+    });
+
+    test('with no durable id is a plain bootstrap (fresh connect)', () async {
+      await readNotifier().rebind();
+
+      expect(repository.resumed, isEmpty);
+      expect(repository.createCalls, 1);
+      expect(readState().liveId, 'a1b2c3d4');
+    });
+
+    test('keeps the old session (and its message list) while the resume is '
+        'in flight', () async {
+      await readNotifier().bootstrap();
+      final gate = Completer<SessionResumeResult>();
+      repository.resumeGate = gate;
+
+      final rebindFuture = readNotifier().rebind();
+      await pumpEventQueue(); // let rebind reach the resume await
+
+      // The reconnecting gap: old ids still active, flagged bootstrapping —
+      // the chat keeps rendering the old live id's message list.
+      final during = readState();
+      expect(during.liveId, 'a1b2c3d4');
+      expect(during.durableId, '2026-uuid');
+      expect(during.bootstrapping, isTrue);
+
+      gate.complete(repository.resumeResult);
+      await rebindFuture;
+      expect(readState().liveId, 'e5f6a7b8');
+    });
+
+    test('is idempotent while a rebind is in flight', () async {
+      await readNotifier().bootstrap();
+      final gate = Completer<SessionResumeResult>();
+      repository.resumeGate = gate;
+
+      final rebindFuture = readNotifier().rebind();
+      await pumpEventQueue();
+      await readNotifier().rebind(); // in-flight → no-op
+
+      gate.complete(repository.resumeResult);
+      await rebindFuture;
+      expect(repository.resumed, <String>['2026-uuid']); // resumed once
+    });
+
+    test('falls back to a fresh create when the resume fails', () async {
+      await readNotifier().bootstrap(); // a1b2c3d4 / 2026-uuid
+      repository.resumeError = const GatewayRpcException(
+        -32000,
+        'session gone',
+      );
+      repository.createResult = const SessionCreateResult(
+        liveId: 'f00d1234',
+        durableId: 'new-uuid',
+      );
+
+      await readNotifier().rebind();
+
+      expect(repository.resumed, <String>['2026-uuid']);
+      expect(repository.createCalls, 2); // fresh create after the failure
+      final state = readState();
+      expect(state.liveId, 'f00d1234');
+      expect(state.durableId, 'new-uuid');
+      expect(state.error, isNull);
+    });
+
+    test('falls back to a fresh-create error when resume fails and create '
+        'fails too', () async {
+      await readNotifier().bootstrap();
+      repository.resumeError = const GatewayRpcException(
+        -32000,
+        'session gone',
+      );
+      repository.createError = const GatewayNetworkException(
+        'host unreachable',
+      );
+
+      await readNotifier().rebind();
+
+      final state = readState();
+      expect(state.liveId, isNull);
+      expect(state.error, 'host unreachable');
+    });
   });
 }

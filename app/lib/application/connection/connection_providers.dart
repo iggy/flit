@@ -9,6 +9,7 @@ import 'package:hermes/data/storage/connection_store.dart';
 import 'package:hermes/data/transport/connection_config.dart';
 import 'package:hermes/data/transport/gateway_rest_client.dart';
 import 'package:hermes/data/transport/gateway_rpc_client.dart';
+import 'package:hermes/domain/models/gateway_status.dart';
 
 /// Persistence for the connection config. Override in tests with an
 /// in-memory [KeyValueStore].
@@ -105,3 +106,37 @@ final gatewayEventsProvider = StreamProvider<GatewayEvent>((ref) {
   }
   return client.events;
 });
+
+/// The `/api/status` probe behind the connect flow (protocol §1), as a
+/// function of the probe config. Injectable so tests can drive the connect
+/// screen's failure modes (unreachable host, `gateway_running: false`)
+/// without a network (ticket P1-16).
+typedef StatusProbe = Future<GatewayStatus> Function(ConnectionConfig config);
+
+/// The default probe: a real [GatewayRestClient] against the probe config.
+final statusProbeProvider = Provider<StatusProbe>((ref) {
+  return (config) => GatewayRestClient(config).status();
+});
+
+/// The probed status of the gateway we are connected to — set by the
+/// connect controller on a SUCCESSFUL connect, null before that. Backs the
+/// 'Gateway vX.Y.Z' footer in the session drawer (ticket P1-16).
+final gatewayStatusProvider =
+    NotifierProvider<GatewayStatusNotifier, GatewayStatus?>(
+      GatewayStatusNotifier.new,
+    );
+
+class GatewayStatusNotifier extends Notifier<GatewayStatus?> {
+  @override
+  GatewayStatus? build() => null;
+
+  /// Record the status of a successful connect.
+  void set(GatewayStatus status) {
+    state = status;
+  }
+
+  /// Forget the recorded status (e.g. on disconnect).
+  void clear() {
+    state = null;
+  }
+}

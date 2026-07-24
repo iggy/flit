@@ -12,12 +12,15 @@
 /// Failures surface as a dismissible in-drawer message — nothing throws;
 /// the providers already yield empty lists while disconnected. After a
 /// successful new/switch the drawer closes.
+///
+/// Footer (ticket P1-16): the connected gateway's version, small and muted.
 library;
 
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hermes/application/connection/connection_providers.dart';
 import 'package:hermes/application/sessions/active_session.dart';
 import 'package:hermes/application/sessions/session_list.dart';
 import 'package:hermes/domain/models/active_session.dart';
@@ -121,6 +124,7 @@ class _SessionDrawerState extends ConsumerState<SessionDrawer> {
             ..._liveTiles(live, active),
             const _SectionHeader(title: 'History'),
             ..._historyTiles(history, active),
+            const _GatewayVersionFooter(),
           ],
         ),
       ),
@@ -314,6 +318,29 @@ class _SectionLoading extends StatelessWidget {
     return const Padding(
       padding: EdgeInsets.all(16),
       child: Center(child: CircularProgressIndicator()),
+    );
+  }
+}
+
+/// Muted 'Gateway vX.Y.Z' footer (ticket P1-16): the gateway status is
+/// recorded on a successful connect; nothing renders while it is unknown.
+class _GatewayVersionFooter extends ConsumerWidget {
+  const _GatewayVersionFooter();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final version = ref.watch(gatewayStatusProvider)?.version;
+    if (version == null) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+      child: Text(
+        'Gateway v$version',
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.outline,
+        ),
+      ),
     );
   }
 }

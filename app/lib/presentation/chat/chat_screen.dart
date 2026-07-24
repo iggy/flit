@@ -7,6 +7,10 @@
 /// - P1-09: on arrival (and on every transition of the connection state to
 ///   ready) a session is bootstrapped via [activeSessionProvider]; all
 ///   chat/prompt calls use its live id.
+/// - P1-16: a transition INTO ready with a previous durable id (i.e. a
+///   reconnect, not a fresh connect) RE-BINDS the session via
+///   [ActiveSessionNotifier.rebind] (protocol §10) instead of dropping it,
+///   and the app bar shows the live connection-state chip.
 library;
 
 import 'dart:async';
@@ -24,6 +28,7 @@ import 'package:hermes/presentation/chat/approval_prompt_card.dart';
 import 'package:hermes/presentation/chat/clarify_prompt_card.dart';
 import 'package:hermes/presentation/chat/composer.dart';
 import 'package:hermes/presentation/chat/message_bubble.dart';
+import 'package:hermes/presentation/common/connection_chip.dart';
 import 'package:hermes/presentation/models/model_picker_sheet.dart';
 import 'package:hermes/presentation/profiles/profile_menu.dart';
 import 'package:hermes/presentation/sessions/session_drawer.dart';
@@ -55,15 +60,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   /// The connection is (or just became) ready: ensure we have a session.
   ///
-  /// Phase 1 simplification (documented in active_session.dart): after a
-  /// RECONNECT the previous session is assumed stale — it is dropped and a
-  /// fresh one created. Reconnect+resume is Phase 2 (protocol §10).
-  /// [ActiveSessionNotifier.bootstrap] is idempotent, so a fresh-connect
-  /// path that races the post-frame hook still creates exactly one
-  /// session.
+  /// - Fresh connect (no durable id yet) → [ActiveSessionNotifier.bootstrap]
+  ///   creates one; it is idempotent, so a path that races the post-frame
+  ///   hook still creates exactly one session.
+  /// - RECONNECT (a previous durable id) → [ActiveSessionNotifier.rebind]
+  ///   resumes the session we were in (protocol §10, ticket P1-16) instead
+  ///   of dropping it; the visible message list survives the reconnecting
+  ///   gap because the old live id is kept until the rebind lands.
   void _onConnectionReady() {
+    final session = ref.read(activeSessionProvider);
     final notifier = ref.read(activeSessionProvider.notifier);
-    if (ref.read(activeSessionProvider).liveId != null) {
+    if (session.durableId != null) {
+      unawaited(notifier.rebind());
+      return;
+    }
+    if (session.liveId != null) {
+      // A live id WITHOUT a durable id cannot be resumed — start fresh.
       notifier.clear();
     }
     unawaited(notifier.bootstrap());
@@ -71,7 +83,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Reconnect path: every fresh transition INTO ready re-bootstraps.
+    // Reconnect path: every fresh transition INTO ready re-binds (or
+    // bootstraps, on a fresh connect).
     ref.listen(connectionStateProvider, (previous, next) {
       final wasReady = previous?.value == GatewayConnectionState.ready;
       if (next.value == GatewayConnectionState.ready && !wasReady) {
@@ -80,6 +93,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
 
     final session = ref.watch(activeSessionProvider);
+    final connectionState = ref.watch(connectionStateProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -87,6 +101,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         // model/profile actions and can surface the session title.
         title: const Text('Hermes'),
         actions: <Widget>[
+          // Connection state first (P1-16): a dropped socket shows
+          // 'Reconnecting' here while the client backs off and resumes.
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: Center(child: ConnectionChip(state: connectionState.value)),
+          ),
           // Feature slots — wired to stubs; P1-10/12/13/14 replace the
           // stub implementations in place (same files, same class names).
           const ModelPickerButton(),

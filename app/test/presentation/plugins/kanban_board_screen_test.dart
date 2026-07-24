@@ -59,6 +59,9 @@ void main() {
     expect(find.text('Started investigating'), findsOneWidget);
     expect(find.text('2'), findsOneWidget); // comment-count badge
     expect(find.text('1/3'), findsOneWidget); // progress badge
+
+    // Empty state (P1-16): the taskless 'done' column shows a hint.
+    expect(find.text('No tasks'), findsOneWidget);
   });
 
   testWidgets('move menu triggers moveTask with the target column', (
