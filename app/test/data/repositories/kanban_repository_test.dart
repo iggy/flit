@@ -198,6 +198,364 @@ void main() {
       );
     });
   });
+
+  group('createTask (POST /api/plugins/kanban/tasks)', () {
+    test('sends only non-null fields and parses task response', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, <String, Object?>{
+          'task': <String, Object?>{
+            'id': '42',
+            'title': 'New task',
+            'status': 'triage',
+          },
+        });
+      });
+
+      final task = await repository.createTask(
+        title: 'New task',
+        body: 'Task body',
+        priority: 2,
+        triage: true,
+      );
+
+      expect(requests.single.method, 'POST');
+      expect(requests.single.path, '/api/plugins/kanban/tasks');
+      expect(requests.single.data, <String, dynamic>{
+        'title': 'New task',
+        'body': 'Task body',
+        'priority': 2,
+        'triage': true,
+      });
+      expect(requests.single.data, isNot(contains('assignee')));
+      expect(requests.single.data, isNot(contains('tenant')));
+      expect(task?.id, '42');
+      expect(task?.title, 'New task');
+    });
+
+    test('forwards ?board= when a slug is given', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, <String, Object?>{'task': <String, Object?>{'id': '1', 'title': 'Test'}});
+      });
+
+      await repository.createTask(title: 'Test', board: 'ops');
+
+      expect(requests.single.uri.queryParameters['board'], 'ops');
+    });
+
+    test('returns null when task field is missing', () async {
+      final repository = _repositoryWith((options) async {
+        return _jsonResponse(200, <String, Object?>{'ok': true});
+      });
+
+      final task = await repository.createTask(title: 'Test');
+
+      expect(task, isNull);
+    });
+  });
+
+  group('editTask (PATCH /api/plugins/kanban/tasks/{id})', () {
+    test('sends only non-null fields', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, <String, Object?>{
+          'task': <String, Object?>{'id': '7', 'title': 'Updated'},
+        });
+      });
+
+      await repository.editTask('7', title: 'Updated', priority: 1);
+
+      expect(requests.single.method, 'PATCH');
+      expect(requests.single.path, '/api/plugins/kanban/tasks/7');
+      expect(requests.single.data, <String, dynamic>{
+        'title': 'Updated',
+        'priority': 1,
+      });
+      expect(requests.single.data, isNot(contains('status')));
+      expect(requests.single.data, isNot(contains('body')));
+    });
+
+    test('threads board query', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, <String, Object?>{'task': <String, Object?>{}});
+      });
+
+      await repository.editTask('7', title: 'Test', board: 'ops');
+
+      expect(requests.single.uri.queryParameters['board'], 'ops');
+    });
+  });
+
+  group('deleteTask (DELETE /api/plugins/kanban/tasks/{id})', () {
+    test('sends DELETE to the task path', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, <String, Object?>{'deleted': true});
+      });
+
+      await repository.deleteTask('7');
+
+      expect(requests.single.method, 'DELETE');
+      expect(requests.single.path, '/api/plugins/kanban/tasks/7');
+    });
+
+    test('threads board query', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, <String, Object?>{});
+      });
+
+      await repository.deleteTask('7', board: 'ops');
+
+      expect(requests.single.uri.queryParameters['board'], 'ops');
+    });
+  });
+
+  group('bulkUpdate (POST /api/plugins/kanban/tasks/bulk)', () {
+    test('sends ids and non-null fields, parses results', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, <String, Object?>{
+          'results': <Object?>[
+            <String, Object?>{'id': '1', 'ok': true},
+            <String, Object?>{'id': '2', 'ok': false, 'error': 'not found'},
+          ],
+        });
+      });
+
+      final result = await repository.bulkUpdate(
+        ids: <String>['1', '2'],
+        status: 'done',
+        priority: 3,
+      );
+
+      expect(requests.single.method, 'POST');
+      expect(requests.single.path, '/api/plugins/kanban/tasks/bulk');
+      expect(requests.single.data, <String, dynamic>{
+        'ids': <String>['1', '2'],
+        'status': 'done',
+        'priority': 3,
+      });
+      expect(requests.single.data, isNot(contains('assignee')));
+      expect(result.results, hasLength(2));
+      expect(result.results[0].id, '1');
+      expect(result.results[0].ok, isTrue);
+      expect(result.results[0].error, isNull);
+      expect(result.results[1].id, '2');
+      expect(result.results[1].ok, isFalse);
+      expect(result.results[1].error, 'not found');
+    });
+  });
+
+  group('addComment (POST /api/plugins/kanban/tasks/{id}/comments)', () {
+    test('sends body and optional author', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, <String, Object?>{'ok': true});
+      });
+
+      await repository.addComment('7', body: 'Nice work', author: 'iggy');
+
+      expect(requests.single.method, 'POST');
+      expect(requests.single.path, '/api/plugins/kanban/tasks/7/comments');
+      expect(requests.single.data, <String, dynamic>{
+        'body': 'Nice work',
+        'author': 'iggy',
+      });
+    });
+
+    test('omits author when null', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, <String, Object?>{'ok': true});
+      });
+
+      await repository.addComment('7', body: 'Test');
+
+      expect(requests.single.data, <String, dynamic>{'body': 'Test'});
+      expect(requests.single.data, isNot(contains('author')));
+    });
+  });
+
+  group('specify (POST /api/plugins/kanban/tasks/{id}/specify)', () {
+    test('parses specify result', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, <String, Object?>{
+          'ok': true,
+          'task_id': '7',
+          'reason': 'Task fleshed out',
+          'new_title': 'Expanded title',
+        });
+      });
+
+      final result = await repository.specify('7');
+
+      expect(requests.single.method, 'POST');
+      expect(requests.single.path, '/api/plugins/kanban/tasks/7/specify');
+      expect(result.ok, isTrue);
+      expect(result.taskId, '7');
+      expect(result.reason, 'Task fleshed out');
+      expect(result.newTitle, 'Expanded title');
+    });
+
+    test('sends author when provided', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, <String, Object?>{
+          'ok': true,
+          'task_id': '7',
+        });
+      });
+
+      await repository.specify('7', author: 'iggy');
+
+      expect(requests.single.data, <String, dynamic>{'author': 'iggy'});
+    });
+  });
+
+  group('decompose (POST /api/plugins/kanban/tasks/{id}/decompose)', () {
+    test('parses decompose result with child ids', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, <String, Object?>{
+          'ok': true,
+          'task_id': '7',
+          'fanout': true,
+          'child_ids': <String>['8', '9', '10'],
+          'new_title': 'Parent task',
+        });
+      });
+
+      final result = await repository.decompose('7');
+
+      expect(requests.single.method, 'POST');
+      expect(requests.single.path, '/api/plugins/kanban/tasks/7/decompose');
+      expect(result.ok, isTrue);
+      expect(result.taskId, '7');
+      expect(result.fanout, isTrue);
+      expect(result.childIds, <String>['8', '9', '10']);
+      expect(result.newTitle, 'Parent task');
+    });
+  });
+
+  group('reassign (POST /api/plugins/kanban/tasks/{id}/reassign)', () {
+    test('sends profile, reclaim_first, and reason', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, <String, Object?>{
+          'ok': true,
+          'task_id': '7',
+        });
+      });
+
+      await repository.reassign(
+        '7',
+        profile: 'research',
+        reclaimFirst: true,
+        reason: 'Better fit',
+      );
+
+      expect(requests.single.method, 'POST');
+      expect(requests.single.path, '/api/plugins/kanban/tasks/7/reassign');
+      expect(requests.single.data, <String, dynamic>{
+        'profile': 'research',
+        'reclaim_first': true,
+        'reason': 'Better fit',
+      });
+    });
+
+    test('reclaim_first defaults to false', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, <String, Object?>{'ok': true});
+      });
+
+      await repository.reassign('7');
+
+      expect((requests.single.data as Map)['reclaim_first'], isFalse);
+    });
+  });
+
+  group('reclaim (POST /api/plugins/kanban/tasks/{id}/reclaim)', () {
+    test('sends optional reason', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, <String, Object?>{'ok': true});
+      });
+
+      await repository.reclaim('7', reason: 'Stuck');
+
+      expect(requests.single.method, 'POST');
+      expect(requests.single.path, '/api/plugins/kanban/tasks/7/reclaim');
+      expect(requests.single.data, <String, dynamic>{'reason': 'Stuck'});
+    });
+  });
+
+  group('addLink (POST /api/plugins/kanban/links)', () {
+    test('sends parent_id and child_id', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, <String, Object?>{'ok': true});
+      });
+
+      await repository.addLink(parentId: '1', childId: '2');
+
+      expect(requests.single.method, 'POST');
+      expect(requests.single.path, '/api/plugins/kanban/links');
+      expect(requests.single.data, <String, dynamic>{
+        'parent_id': '1',
+        'child_id': '2',
+      });
+    });
+  });
+
+  group('removeLink (DELETE /api/plugins/kanban/links)', () {
+    test('sends parent_id and child_id as query params', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, <String, Object?>{'ok': true});
+      });
+
+      await repository.removeLink(parentId: '1', childId: '2');
+
+      expect(requests.single.method, 'DELETE');
+      expect(requests.single.path, '/api/plugins/kanban/links');
+      expect(requests.single.uri.queryParameters['parent_id'], '1');
+      expect(requests.single.uri.queryParameters['child_id'], '2');
+    });
+
+    test('threads board query', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, <String, Object?>{});
+      });
+
+      await repository.removeLink(parentId: '1', childId: '2', board: 'ops');
+
+      expect(requests.single.uri.queryParameters['board'], 'ops');
+    });
+  });
 }
 
 /// Canned `GET /board` body (envelope pinned by 06-kanban-rest.md; task

@@ -197,19 +197,34 @@ class KanbanTaskDetailSheet extends ConsumerWidget {
   }
 }
 
-class _DetailBody extends StatelessWidget {
+class _DetailBody extends ConsumerStatefulWidget {
   const _DetailBody({required this.detail, required this.theme});
 
   final KanbanTaskDetail detail;
   final ThemeData theme;
 
   @override
+  ConsumerState<_DetailBody> createState() => _DetailBodyState();
+}
+
+class _DetailBodyState extends ConsumerState<_DetailBody> {
+  final _commentController = TextEditingController();
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final task = detail.task;
+    final task = widget.detail.task;
     final linkCounts = task.linkCounts;
+    final actionState = ref.watch(kanbanTaskActionControllerProvider);
+
     return ListView(
       children: <Widget>[
-        Text(task.title, style: theme.textTheme.titleLarge),
+        Text(task.title, style: widget.theme.textTheme.titleLarge),
         const SizedBox(height: 8),
         Wrap(
           spacing: 12,
@@ -225,31 +240,102 @@ class _DetailBody extends StatelessWidget {
               ),
           ],
         ),
+        if (actionState.error != null) ...<Widget>[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: widget.theme.colorScheme.errorContainer,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Row(
+              children: <Widget>[
+                Icon(
+                  Icons.error_outline,
+                  size: 16,
+                  color: widget.theme.colorScheme.onErrorContainer,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    actionState.error!,
+                    style: widget.theme.textTheme.bodySmall?.copyWith(
+                      color: widget.theme.colorScheme.onErrorContainer,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, size: 16),
+                  onPressed: () => ref
+                      .read(kanbanTaskActionControllerProvider.notifier)
+                      .clearError(),
+                ),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: <Widget>[
+            FilledButton.tonalIcon(
+              onPressed: actionState.busy ? null : _showEditDialog,
+              icon: const Icon(Icons.edit, size: 16),
+              label: const Text('Edit'),
+            ),
+            FilledButton.tonalIcon(
+              onPressed: actionState.busy ? null : () => _specify(task.id),
+              icon: const Icon(Icons.auto_fix_high, size: 16),
+              label: const Text('Specify'),
+            ),
+            FilledButton.tonalIcon(
+              onPressed: actionState.busy ? null : () => _decompose(task.id),
+              icon: const Icon(Icons.call_split, size: 16),
+              label: const Text('Decompose'),
+            ),
+            FilledButton.tonalIcon(
+              onPressed: actionState.busy ? null : _showReassignDialog,
+              icon: const Icon(Icons.person_outline, size: 16),
+              label: const Text('Reassign'),
+            ),
+            FilledButton.tonalIcon(
+              onPressed: actionState.busy ? null : () => _reclaim(task.id),
+              icon: const Icon(Icons.lock_open, size: 16),
+              label: const Text('Reclaim'),
+            ),
+            FilledButton.tonalIcon(
+              onPressed: actionState.busy ? null : () => _confirmDelete(task.id),
+              icon: const Icon(Icons.delete_outline, size: 16),
+              label: const Text('Delete'),
+            ),
+          ],
+        ),
         if (task.latestSummary != null &&
             task.latestSummary!.isNotEmpty) ...<Widget>[
           const SizedBox(height: 12),
-          Text('Latest activity', style: theme.textTheme.titleSmall),
+          Text('Latest activity', style: widget.theme.textTheme.titleSmall),
           const SizedBox(height: 4),
-          Text(task.latestSummary!, style: theme.textTheme.bodySmall),
+          Text(task.latestSummary!, style: widget.theme.textTheme.bodySmall),
         ],
         if (task.body != null && task.body!.isNotEmpty) ...<Widget>[
           const SizedBox(height: 12),
-          Text('Body', style: theme.textTheme.titleSmall),
+          Text('Body', style: widget.theme.textTheme.titleSmall),
           const SizedBox(height: 4),
           SelectableText(task.body!),
         ],
         const SizedBox(height: 12),
         Text(
-          'Comments (${detail.comments.length})',
-          style: theme.textTheme.titleSmall,
+          'Comments (${widget.detail.comments.length})',
+          style: widget.theme.textTheme.titleSmall,
         ),
         const SizedBox(height: 4),
-        if (detail.comments.isEmpty)
-          Text('No comments yet.', style: theme.textTheme.bodySmall)
+        if (widget.detail.comments.isEmpty)
+          Text('No comments yet.', style: widget.theme.textTheme.bodySmall)
         else
           // Comment fields are NOT pinned by the docs (kept raw-ish in the
           // model) — render `author`/`body` tolerantly when present.
-          for (final comment in detail.comments)
+          for (final comment in widget.detail.comments)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Column(
@@ -258,16 +344,339 @@ class _DetailBody extends StatelessWidget {
                   if (comment['author'] != null)
                     Text(
                       '${comment['author']}',
-                      style: theme.textTheme.labelMedium,
+                      style: widget.theme.textTheme.labelMedium,
                     ),
                   Text(
                     comment['body']?.toString() ?? comment.toString(),
-                    style: theme.textTheme.bodyMedium,
+                    style: widget.theme.textTheme.bodyMedium,
                   ),
                 ],
               ),
             ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _commentController,
+          decoration: const InputDecoration(
+            labelText: 'Add comment',
+            hintText: 'Type your comment',
+            border: OutlineInputBorder(),
+          ),
+          maxLines: 3,
+        ),
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerRight,
+          child: FilledButton.icon(
+            onPressed: actionState.busy ? null : _addComment,
+            icon: const Icon(Icons.send, size: 16),
+            label: const Text('Send'),
+          ),
+        ),
       ],
     );
+  }
+
+  Future<void> _addComment() async {
+    final body = _commentController.text.trim();
+    if (body.isEmpty) {
+      return;
+    }
+
+    await ref
+        .read(kanbanTaskActionControllerProvider.notifier)
+        .addComment(widget.detail.task.id, body: body);
+
+    final state = ref.read(kanbanTaskActionControllerProvider);
+    if (state.error == null) {
+      _commentController.clear();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(state.lastMessage ?? 'Comment added')),
+        );
+      }
+    }
+  }
+
+  Future<void> _specify(String id) async {
+    await ref
+        .read(kanbanTaskActionControllerProvider.notifier)
+        .specify(id);
+
+    final state = ref.read(kanbanTaskActionControllerProvider);
+    if (mounted && state.lastMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(state.lastMessage!)),
+      );
+    }
+  }
+
+  Future<void> _decompose(String id) async {
+    await ref
+        .read(kanbanTaskActionControllerProvider.notifier)
+        .decompose(id);
+
+    final state = ref.read(kanbanTaskActionControllerProvider);
+    if (mounted && state.lastMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(state.lastMessage!)),
+      );
+    }
+  }
+
+  Future<void> _reclaim(String id) async {
+    await ref
+        .read(kanbanTaskActionControllerProvider.notifier)
+        .reclaim(id);
+
+    final state = ref.read(kanbanTaskActionControllerProvider);
+    if (mounted && state.lastMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(state.lastMessage!)),
+      );
+    }
+  }
+
+  Future<void> _confirmDelete(String id) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete task'),
+        content: const Text('Are you sure you want to delete this task?'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await ref
+          .read(kanbanTaskActionControllerProvider.notifier)
+          .deleteTask(id);
+
+      final state = ref.read(kanbanTaskActionControllerProvider);
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(state.lastMessage ?? 'Task deleted')),
+        );
+      }
+    }
+  }
+
+  void _showEditDialog() {
+    final task = widget.detail.task;
+    showDialog<void>(
+      context: context,
+      builder: (context) => _EditTaskDialog(task: task),
+    );
+  }
+
+  void _showReassignDialog() {
+    final task = widget.detail.task;
+    showDialog<void>(
+      context: context,
+      builder: (context) => _ReassignDialog(taskId: task.id),
+    );
+  }
+}
+
+/// Edit task dialog (P5-05).
+class _EditTaskDialog extends ConsumerStatefulWidget {
+  const _EditTaskDialog({required this.task});
+
+  final KanbanTask task;
+
+  @override
+  ConsumerState<_EditTaskDialog> createState() => _EditTaskDialogState();
+}
+
+class _EditTaskDialogState extends ConsumerState<_EditTaskDialog> {
+  late final TextEditingController _titleController;
+  late final TextEditingController _bodyController;
+  late final TextEditingController _assigneeController;
+  late int? _priority;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.task.title);
+    _bodyController = TextEditingController(text: widget.task.body);
+    _assigneeController = TextEditingController(text: widget.task.assignee);
+    _priority = widget.task.priority != null
+        ? int.tryParse(widget.task.priority!)
+        : null;
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _bodyController.dispose();
+    _assigneeController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(kanbanTaskActionControllerProvider);
+    return AlertDialog(
+      title: const Text('Edit task'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            TextField(
+              controller: _titleController,
+              decoration: const InputDecoration(labelText: 'Title'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _bodyController,
+              decoration: const InputDecoration(labelText: 'Body'),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _assigneeController,
+              decoration: const InputDecoration(labelText: 'Assignee'),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<int>(
+              initialValue: _priority,
+              decoration: const InputDecoration(labelText: 'Priority'),
+              items: <DropdownMenuItem<int>>[
+                const DropdownMenuItem<int>(value: null, child: Text('None')),
+                for (final p in <int>[0, 1, 2, 3])
+                  DropdownMenuItem<int>(value: p, child: Text('$p')),
+              ],
+              onChanged: (value) {
+                setState(() {
+                  _priority = value;
+                });
+              },
+            ),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: state.busy ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: state.busy ? null : _submit,
+          child: const Text('Save'),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _submit() async {
+    final title = _titleController.text.trim();
+    final body = _bodyController.text.trim();
+    final assignee = _assigneeController.text.trim();
+
+    await ref.read(kanbanTaskActionControllerProvider.notifier).editTask(
+          widget.task.id,
+          title: title.isEmpty ? null : title,
+          body: body.isEmpty ? null : body,
+          assignee: assignee.isEmpty ? null : assignee,
+          priority: _priority,
+        );
+
+    final state = ref.read(kanbanTaskActionControllerProvider);
+    if (mounted && state.error == null) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(state.lastMessage ?? 'Task updated')),
+      );
+    }
+  }
+}
+
+/// Reassign task dialog (P5-05).
+class _ReassignDialog extends ConsumerStatefulWidget {
+  const _ReassignDialog({required this.taskId});
+
+  final String taskId;
+
+  @override
+  ConsumerState<_ReassignDialog> createState() => _ReassignDialogState();
+}
+
+class _ReassignDialogState extends ConsumerState<_ReassignDialog> {
+  final _profileController = TextEditingController();
+  bool _reclaimFirst = false;
+
+  @override
+  void dispose() {
+    _profileController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(kanbanTaskActionControllerProvider);
+    return AlertDialog(
+      title: const Text('Reassign task'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          TextField(
+            controller: _profileController,
+            decoration: const InputDecoration(
+              labelText: 'Profile',
+              hintText: 'Profile name',
+            ),
+          ),
+          const SizedBox(height: 12),
+          SwitchListTile(
+            title: const Text('Reclaim first'),
+            subtitle: const Text('Release claim before reassigning'),
+            value: _reclaimFirst,
+            onChanged: (value) {
+              setState(() {
+                _reclaimFirst = value;
+              });
+            },
+            contentPadding: EdgeInsets.zero,
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: state.busy ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: state.busy ? null : _submit,
+          child: const Text('Reassign'),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _submit() async {
+    final profile = _profileController.text.trim();
+
+    await ref.read(kanbanTaskActionControllerProvider.notifier).reassign(
+          widget.taskId,
+          profile: profile.isEmpty ? null : profile,
+          reclaimFirst: _reclaimFirst,
+        );
+
+    final state = ref.read(kanbanTaskActionControllerProvider);
+    if (mounted && state.error == null) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(state.lastMessage ?? 'Task reassigned')),
+      );
+    }
   }
 }

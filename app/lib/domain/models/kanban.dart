@@ -362,3 +362,115 @@ final class KanbanTaskDetail {
       'KanbanTaskDetail(task: $task, comments: ${comments.length}, '
       'extras: ${extras.keys.join(', ')})';
 }
+
+/// Result from `POST /tasks/bulk` (P5-05).
+final class KanbanBulkResult {
+  const KanbanBulkResult({required this.results});
+
+  final List<KanbanBulkItem> results;
+
+  @override
+  bool operator ==(Object other) {
+    return other is KanbanBulkResult &&
+        deepListEquals(other.results, results);
+  }
+
+  @override
+  int get hashCode => Object.hashAll(results);
+
+  @override
+  String toString() => 'KanbanBulkResult(results: ${results.length})';
+}
+
+/// One bulk operation result (P5-05).
+final class KanbanBulkItem {
+  const KanbanBulkItem({required this.id, required this.ok, this.error});
+
+  final String id;
+  final bool ok;
+  final String? error;
+
+  @override
+  bool operator ==(Object other) {
+    return other is KanbanBulkItem &&
+        other.id == id &&
+        other.ok == ok &&
+        other.error == error;
+  }
+
+  @override
+  int get hashCode => Object.hash(id, ok, error);
+
+  @override
+  String toString() =>
+      'KanbanBulkItem(id: $id, ok: $ok${error != null ? ', error: $error' : ''})';
+}
+
+/// Result from `POST /tasks/{id}/specify` (P5-05).
+final class KanbanSpecifyResult {
+  const KanbanSpecifyResult({
+    required this.ok,
+    required this.taskId,
+    this.reason,
+    this.newTitle,
+  });
+
+  final bool ok;
+  final String taskId;
+  final String? reason;
+  final String? newTitle;
+
+  @override
+  bool operator ==(Object other) {
+    return other is KanbanSpecifyResult &&
+        other.ok == ok &&
+        other.taskId == taskId &&
+        other.reason == reason &&
+        other.newTitle == newTitle;
+  }
+
+  @override
+  int get hashCode => Object.hash(ok, taskId, reason, newTitle);
+
+  @override
+  String toString() =>
+      'KanbanSpecifyResult(ok: $ok, taskId: $taskId${reason != null ? ', reason: $reason' : ''}${newTitle != null ? ', newTitle: $newTitle' : ''})';
+}
+
+/// Result from `POST /tasks/{id}/decompose` (P5-05).
+final class KanbanDecomposeResult {
+  const KanbanDecomposeResult({
+    required this.ok,
+    required this.taskId,
+    this.reason,
+    required this.fanout,
+    this.childIds = const <String>[],
+    this.newTitle,
+  });
+
+  final bool ok;
+  final String taskId;
+  final String? reason;
+  final bool fanout;
+  final List<String> childIds;
+  final String? newTitle;
+
+  @override
+  bool operator ==(Object other) {
+    return other is KanbanDecomposeResult &&
+        other.ok == ok &&
+        other.taskId == taskId &&
+        other.reason == reason &&
+        other.fanout == fanout &&
+        deepListEquals(other.childIds, childIds) &&
+        other.newTitle == newTitle;
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(ok, taskId, reason, fanout, Object.hashAll(childIds), newTitle);
+
+  @override
+  String toString() =>
+      'KanbanDecomposeResult(ok: $ok, taskId: $taskId, fanout: $fanout, childIds: ${childIds.length}${reason != null ? ', reason: $reason' : ''}${newTitle != null ? ', newTitle: $newTitle' : ''})';
+}

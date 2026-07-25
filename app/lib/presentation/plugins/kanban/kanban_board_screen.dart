@@ -1,6 +1,7 @@
 import 'package:flit/application/plugins/plugin_providers.dart';
 import 'package:flit/domain/models/kanban.dart';
 import 'package:flit/presentation/plugins/kanban/kanban_column.dart';
+import 'package:flit/presentation/plugins/kanban/kanban_new_task_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -21,6 +22,11 @@ class KanbanBoardScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Kanban board'),
         actions: <Widget>[
+          IconButton(
+            tooltip: 'New task',
+            icon: const Icon(Icons.add),
+            onPressed: () => _showNewTaskDialog(context),
+          ),
           IconButton(
             tooltip: 'Refresh board',
             icon: const Icon(Icons.refresh),
@@ -44,6 +50,13 @@ class KanbanBoardScreen extends ConsumerWidget {
           return _BoardView(board: data);
         },
       ),
+    );
+  }
+
+  void _showNewTaskDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => const KanbanNewTaskDialog(),
     );
   }
 }

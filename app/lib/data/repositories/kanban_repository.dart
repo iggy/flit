@@ -52,6 +52,292 @@ final class KanbanRepositoryImpl implements KanbanRepository {
     );
   }
 
+  @override
+  Future<KanbanTask?> createTask({
+    required String title,
+    String? body,
+    String? assignee,
+    String? tenant,
+    int? priority,
+    String? workspaceKind,
+    List<String>? parents,
+    bool? triage,
+    List<String>? skills,
+    String? board,
+  }) async {
+    final requestBody = <String, dynamic>{'title': title};
+    if (body != null) {
+      requestBody['body'] = body;
+    }
+    if (assignee != null) {
+      requestBody['assignee'] = assignee;
+    }
+    if (tenant != null) {
+      requestBody['tenant'] = tenant;
+    }
+    if (priority != null) {
+      requestBody['priority'] = priority;
+    }
+    if (workspaceKind != null) {
+      requestBody['workspace_kind'] = workspaceKind;
+    }
+    if (parents != null) {
+      requestBody['parents'] = parents;
+    }
+    if (triage != null) {
+      requestBody['triage'] = triage;
+    }
+    if (skills != null) {
+      requestBody['skills'] = skills;
+    }
+
+    final data = await _client.postJson(
+      '$_base/tasks',
+      body: requestBody,
+      queryParameters: board == null ? null : <String, String>{'board': board},
+    );
+
+    final map = _expectMap(data, 'POST $_base/tasks');
+    final taskData = map['task'];
+    if (taskData is Map<String, dynamic>) {
+      return _parseTask(taskData);
+    }
+    return null;
+  }
+
+  @override
+  Future<KanbanTask?> editTask(
+    String id, {
+    String? status,
+    String? assignee,
+    int? priority,
+    String? title,
+    String? body,
+    String? result,
+    String? blockReason,
+    String? summary,
+    String? board,
+  }) async {
+    final requestBody = <String, dynamic>{};
+    if (status != null) {
+      requestBody['status'] = status;
+    }
+    if (assignee != null) {
+      requestBody['assignee'] = assignee;
+    }
+    if (priority != null) {
+      requestBody['priority'] = priority;
+    }
+    if (title != null) {
+      requestBody['title'] = title;
+    }
+    if (body != null) {
+      requestBody['body'] = body;
+    }
+    if (result != null) {
+      requestBody['result'] = result;
+    }
+    if (blockReason != null) {
+      requestBody['block_reason'] = blockReason;
+    }
+    if (summary != null) {
+      requestBody['summary'] = summary;
+    }
+
+    final data = await _client.patchJson(
+      '$_base/tasks/$id',
+      body: requestBody,
+      queryParameters: board == null ? null : <String, String>{'board': board},
+    );
+
+    final map = _expectMap(data, 'PATCH $_base/tasks/$id');
+    final taskData = map['task'];
+    if (taskData is Map<String, dynamic>) {
+      return _parseTask(taskData);
+    }
+    return null;
+  }
+
+  @override
+  Future<void> deleteTask(String id, {String? board}) async {
+    await _client.deleteJson(
+      '$_base/tasks/$id',
+      queryParameters: board == null ? null : <String, String>{'board': board},
+    );
+  }
+
+  @override
+  Future<KanbanBulkResult> bulkUpdate({
+    required List<String> ids,
+    String? status,
+    String? assignee,
+    int? priority,
+    bool? archive,
+    bool? reclaimFirst,
+    String? board,
+  }) async {
+    final requestBody = <String, dynamic>{'ids': ids};
+    if (status != null) {
+      requestBody['status'] = status;
+    }
+    if (assignee != null) {
+      requestBody['assignee'] = assignee;
+    }
+    if (priority != null) {
+      requestBody['priority'] = priority;
+    }
+    if (archive != null) {
+      requestBody['archive'] = archive;
+    }
+    if (reclaimFirst != null) {
+      requestBody['reclaim_first'] = reclaimFirst;
+    }
+
+    final data = await _client.postJson(
+      '$_base/tasks/bulk',
+      body: requestBody,
+      queryParameters: board == null ? null : <String, String>{'board': board},
+    );
+
+    final map = _expectMap(data, 'POST $_base/tasks/bulk');
+    return _parseBulkResult(map);
+  }
+
+  @override
+  Future<void> addComment(
+    String id, {
+    required String body,
+    String? author,
+    String? board,
+  }) async {
+    final requestBody = <String, dynamic>{'body': body};
+    if (author != null) {
+      requestBody['author'] = author;
+    }
+
+    await _client.postJson(
+      '$_base/tasks/$id/comments',
+      body: requestBody,
+      queryParameters: board == null ? null : <String, String>{'board': board},
+    );
+  }
+
+  @override
+  Future<KanbanSpecifyResult> specify(
+    String id, {
+    String? author,
+    String? board,
+  }) async {
+    final requestBody = <String, dynamic>{};
+    if (author != null) {
+      requestBody['author'] = author;
+    }
+
+    final data = await _client.postJson(
+      '$_base/tasks/$id/specify',
+      body: requestBody,
+      queryParameters: board == null ? null : <String, String>{'board': board},
+    );
+
+    final map = _expectMap(data, 'POST $_base/tasks/$id/specify');
+    return _parseSpecifyResult(map);
+  }
+
+  @override
+  Future<KanbanDecomposeResult> decompose(
+    String id, {
+    String? author,
+    String? board,
+  }) async {
+    final requestBody = <String, dynamic>{};
+    if (author != null) {
+      requestBody['author'] = author;
+    }
+
+    final data = await _client.postJson(
+      '$_base/tasks/$id/decompose',
+      body: requestBody,
+      queryParameters: board == null ? null : <String, String>{'board': board},
+    );
+
+    final map = _expectMap(data, 'POST $_base/tasks/$id/decompose');
+    return _parseDecomposeResult(map);
+  }
+
+  @override
+  Future<void> reassign(
+    String id, {
+    String? profile,
+    bool reclaimFirst = false,
+    String? reason,
+    String? board,
+  }) async {
+    final requestBody = <String, dynamic>{'reclaim_first': reclaimFirst};
+    if (profile != null) {
+      requestBody['profile'] = profile;
+    }
+    if (reason != null) {
+      requestBody['reason'] = reason;
+    }
+
+    await _client.postJson(
+      '$_base/tasks/$id/reassign',
+      body: requestBody,
+      queryParameters: board == null ? null : <String, String>{'board': board},
+    );
+  }
+
+  @override
+  Future<void> reclaim(String id, {String? reason, String? board}) async {
+    final requestBody = <String, dynamic>{};
+    if (reason != null) {
+      requestBody['reason'] = reason;
+    }
+
+    await _client.postJson(
+      '$_base/tasks/$id/reclaim',
+      body: requestBody,
+      queryParameters: board == null ? null : <String, String>{'board': board},
+    );
+  }
+
+  @override
+  Future<void> addLink({
+    required String parentId,
+    required String childId,
+    String? board,
+  }) async {
+    final requestBody = <String, dynamic>{
+      'parent_id': parentId,
+      'child_id': childId,
+    };
+
+    await _client.postJson(
+      '$_base/links',
+      body: requestBody,
+      queryParameters: board == null ? null : <String, String>{'board': board},
+    );
+  }
+
+  @override
+  Future<void> removeLink({
+    required String parentId,
+    required String childId,
+    String? board,
+  }) async {
+    final queryParams = <String, String>{
+      'parent_id': parentId,
+      'child_id': childId,
+    };
+    if (board != null) {
+      queryParams['board'] = board;
+    }
+    await _client.deleteJson(
+      '$_base/links',
+      queryParameters: queryParams,
+    );
+  }
+
   // ---- wire → domain translation (kept here so the domain stays clean) --
 
   static Map<String, dynamic> _expectMap(Object? data, String what) {
@@ -171,5 +457,40 @@ final class KanbanRepositoryImpl implements KanbanRepository {
       return const <String>[];
     }
     return value.whereType<String>().toList();
+  }
+
+  static KanbanBulkResult _parseBulkResult(Map<String, dynamic> json) {
+    final resultsList = _mapList(json['results']);
+    final items = <KanbanBulkItem>[];
+    for (final item in resultsList) {
+      items.add(KanbanBulkItem(
+        id: _stringOrNull(item['id']) ?? '',
+        ok: item['ok'] == true,
+        error: _stringOrNull(item['error']),
+      ));
+    }
+    return KanbanBulkResult(results: items);
+  }
+
+  static KanbanSpecifyResult _parseSpecifyResult(Map<String, dynamic> json) {
+    return KanbanSpecifyResult(
+      ok: json['ok'] == true,
+      taskId: _stringOrNull(json['task_id']) ?? '',
+      reason: _stringOrNull(json['reason']),
+      newTitle: _stringOrNull(json['new_title']),
+    );
+  }
+
+  static KanbanDecomposeResult _parseDecomposeResult(
+    Map<String, dynamic> json,
+  ) {
+    return KanbanDecomposeResult(
+      ok: json['ok'] == true,
+      taskId: _stringOrNull(json['task_id']) ?? '',
+      reason: _stringOrNull(json['reason']),
+      fanout: json['fanout'] == true,
+      childIds: _stringList(json['child_ids']),
+      newTitle: _stringOrNull(json['new_title']),
+    );
   }
 }

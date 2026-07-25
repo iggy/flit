@@ -4,60 +4,107 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// Plugins list (ticket P1-14): every plugin from `plugins.list` (wire §13)
-/// with name, version, and an enabled-state ICON (enable/disable toggling is
-/// Phase 5 — the icon only shows state). The kanban plugin gets an
+/// Plugins list (ticket P1-14, P5-08): every plugin from
+/// `plugins.manage {action:'list'}` with name, version, description,
+/// source, and an enabled-state Switch. The kanban plugin gets an
 /// "Open board" affordance when present AND enabled.
 class PluginsScreen extends ConsumerWidget {
   const PluginsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final plugins = ref.watch(pluginsProvider);
+    final plugins = ref.watch(pluginDetailsProvider);
+    final toggleState = ref.watch(pluginToggleControllerProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('Plugins')),
-      body: plugins.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => _PluginsError(
-          message: error.toString(),
-          onRetry: () => ref.invalidate(pluginsProvider),
-        ),
-        data: (list) => list.isEmpty
-            ? const _PluginsEmpty()
-            : ListView.builder(
-                itemCount: list.length,
-                itemBuilder: (context, index) => _PluginTile(list[index]),
+      body: Column(
+        children: <Widget>[
+          if (toggleState.error != null)
+            _PluginsErrorBanner(
+              message: toggleState.error!,
+              onDismiss: () => ref
+                  .read(pluginToggleControllerProvider.notifier)
+                  .clearError(),
+            ),
+          Expanded(
+            child: plugins.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, _) => _PluginsError(
+                message: error.toString(),
+                onRetry: () => ref.invalidate(pluginDetailsProvider),
               ),
+              data: (list) => list.isEmpty
+                  ? const _PluginsEmpty()
+                  : ListView.builder(
+                      itemCount: list.length,
+                      itemBuilder: (context, index) => _PluginTile(
+                        list[index],
+                        busy: toggleState.busy,
+                      ),
+                    ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _PluginTile extends StatelessWidget {
-  const _PluginTile(this.plugin);
+class _PluginTile extends ConsumerWidget {
+  const _PluginTile(this.plugin, {required this.busy});
 
-  final PluginInfo plugin;
+  final PluginDetail plugin;
+  final bool busy;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     // Kanban is the reference plugin surface (06-kanban-rest.md): only a
     // present AND enabled kanban gets the board affordance.
-    final openBoard = plugin.name == 'kanban' && plugin.enabled;
+    final openBoard = plugin.name == 'kanban' && plugin.isEnabled;
     return ListTile(
-      leading: Icon(
-        // State icon only — toggling is Phase 5.
-        plugin.enabled ? Icons.toggle_on : Icons.toggle_off_outlined,
-        color: plugin.enabled ? theme.colorScheme.primary : theme.disabledColor,
+      leading: Chip(
+        label: Text(
+          plugin.source,
+          style: theme.textTheme.labelSmall,
+        ),
       ),
       title: Text(plugin.name),
-      subtitle: Text('Version ${plugin.version}'),
-      trailing: openBoard
-          ? FilledButton.tonal(
-              onPressed: () => context.push('/plugins/kanban'),
-              child: const Text('Open board'),
-            )
-          : null,
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          if (plugin.description.isNotEmpty) Text(plugin.description),
+          const SizedBox(height: 2),
+          Text(
+            'Version ${plugin.version}',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          if (openBoard)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FilledButton.tonal(
+                onPressed: () => context.push('/plugins/kanban'),
+                child: const Text('Open board'),
+              ),
+            ),
+          Switch(
+            value: plugin.isEnabled,
+            onChanged: busy
+                ? null
+                : (value) => ref
+                    .read(pluginToggleControllerProvider.notifier)
+                    .toggle(plugin.name, value),
+          ),
+        ],
+      ),
+      isThreeLine: plugin.description.isNotEmpty,
     );
   }
 }
@@ -98,6 +145,29 @@ class _PluginsError extends StatelessWidget {
           FilledButton(onPressed: onRetry, child: const Text('Retry')),
         ],
       ),
+    );
+  }
+}
+
+class _PluginsErrorBanner extends StatelessWidget {
+  const _PluginsErrorBanner({
+    required this.message,
+    required this.onDismiss,
+  });
+
+  final String message;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialBanner(
+      content: Text(message),
+      actions: <Widget>[
+        TextButton(
+          onPressed: onDismiss,
+          child: const Text('Dismiss'),
+        ),
+      ],
     );
   }
 }

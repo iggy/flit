@@ -71,6 +71,19 @@ final class FakeModelRepository implements ModelRepository {
     confirmedCalls.add((model: model, providerSlug: providerSlug));
     return ModelSetApplied(value: model);
   }
+
+  @override
+  Future<ModelProvider> saveKey({
+    required String slug,
+    required String apiKey,
+  }) async {
+    throw UnimplementedError('saveKey not stubbed in this test');
+  }
+
+  @override
+  Future<void> disconnectProvider({required String slug}) async {
+    throw UnimplementedError('disconnectProvider not stubbed in this test');
+  }
 }
 
 /// Fake controller (records calls, drives needsConfirm on demand).

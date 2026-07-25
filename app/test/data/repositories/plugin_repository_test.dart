@@ -71,4 +71,103 @@ void main() {
       expect(await repository.list(), isEmpty);
     });
   });
+
+  group('PluginRepositoryImpl.manageList (P5-08)', () {
+    test('sends plugins.manage {action:list} and parses the result', () async {
+      final client = FakeGatewayRpcClient(
+        handler: (_, _) => const <String, dynamic>{
+          'plugins': <Map<String, dynamic>>[
+            <String, dynamic>{
+              'name': 'kanban',
+              'version': '1.0.0',
+              'description': 'Kanban board plugin',
+              'source': 'bundled',
+              'status': 'enabled',
+            },
+            <String, dynamic>{
+              'name': 'spotify',
+              'version': '0.5.0',
+              'description': 'Spotify integration',
+              'source': 'user',
+              'status': 'disabled',
+            },
+          ],
+          'user_count': 1,
+          'bundled_count': 1,
+        },
+      );
+      final repository = PluginRepositoryImpl(client);
+
+      final plugins = await repository.manageList();
+
+      expect(client.calls.single.method, 'plugins.manage');
+      expect(client.calls.single.params, <String, dynamic>{'action': 'list'});
+      expect(plugins.length, 2);
+      expect(plugins[0].name, 'kanban');
+      expect(plugins[0].version, '1.0.0');
+      expect(plugins[0].description, 'Kanban board plugin');
+      expect(plugins[0].source, 'bundled');
+      expect(plugins[0].status, 'enabled');
+      expect(plugins[0].isEnabled, true);
+      expect(plugins[1].name, 'spotify');
+      expect(plugins[1].status, 'disabled');
+      expect(plugins[1].isEnabled, false);
+    });
+
+    test('absent plugins key yields empty list', () async {
+      final repository = PluginRepositoryImpl(FakeGatewayRpcClient());
+
+      expect(await repository.manageList(), isEmpty);
+    });
+  });
+
+  group('PluginRepositoryImpl.toggle (P5-08)', () {
+    test('sends plugins.manage {action:toggle, name, enable} and parses result',
+        () async {
+      final client = FakeGatewayRpcClient(
+        handler: (_, _) => const <String, dynamic>{
+          'ok': true,
+          'unchanged': false,
+          'name': 'kanban',
+          'plugin': <String, dynamic>{
+            'name': 'kanban',
+            'version': '1.0.0',
+            'description': 'Kanban board',
+            'source': 'bundled',
+            'status': 'enabled',
+          },
+        },
+      );
+      final repository = PluginRepositoryImpl(client);
+
+      final plugin = await repository.toggle('kanban', true);
+
+      expect(client.calls.single.method, 'plugins.manage');
+      // Wire field is `enable`, NOT `enabled`.
+      expect(client.calls.single.params, <String, dynamic>{
+        'action': 'toggle',
+        'name': 'kanban',
+        'enable': true,
+      });
+      expect(plugin, isNotNull);
+      expect(plugin!.name, 'kanban');
+      expect(plugin.status, 'enabled');
+      expect(plugin.isEnabled, true);
+    });
+
+    test('returns null when plugin is absent', () async {
+      final client = FakeGatewayRpcClient(
+        handler: (_, _) => const <String, dynamic>{
+          'ok': true,
+          'unchanged': false,
+          'name': 'missing',
+        },
+      );
+      final repository = PluginRepositoryImpl(client);
+
+      final plugin = await repository.toggle('missing', true);
+
+      expect(plugin, isNull);
+    });
+  });
 }

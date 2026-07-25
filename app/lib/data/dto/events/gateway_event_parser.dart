@@ -175,6 +175,15 @@ sealed class TypedGatewayEvent with _$TypedGatewayEvent {
     String? text,
   }) = StatusUpdate;
 
+  /// `background.complete` (P5-02): a detached `prompt.background` run
+  /// finished. Emitted on the PARENT session_id. [text] is the final
+  /// response, or "error: ..." on failure.
+  const factory TypedGatewayEvent.backgroundComplete({
+    required String? sessionId,
+    required String taskId,
+    required String text,
+  }) = BackgroundCompleteEvent;
+
   /// Fallback for any event type the MVP doesn't consume — keeps the raw
   /// frame so nothing is ever lost or thrown.
   const factory TypedGatewayEvent.unknown({
@@ -320,6 +329,12 @@ TypedGatewayEvent parseGatewayEvent(GatewayEvent raw) {
           summary: _asString(payload['summary']),
           durationSeconds: _asDouble(payload['duration_seconds']),
           costUsd: _asDouble(payload['cost_usd']),
+        );
+      case 'background.complete':
+        return TypedGatewayEvent.backgroundComplete(
+          sessionId: sessionId,
+          taskId: _asString(payload['task_id']) ?? '',
+          text: _asString(payload['text']) ?? '',
         );
       case 'status.update':
         return TypedGatewayEvent.statusUpdate(

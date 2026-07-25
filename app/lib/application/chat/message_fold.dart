@@ -80,13 +80,15 @@ FoldState foldGatewayEvent(FoldState state, TypedGatewayEvent event) {
     SudoRequestEvent() => _onSudoRequest(state, event),
     SecretRequestEvent() => _onSecretRequest(state, event),
     TerminalReadRequestEvent() => _onTerminalReadRequest(state, event),
-    // session.info / status.update / gateway.ready / subagent.* / unknown: no
-    // message-list change (pass through). Subagent events fold into the
-    // SEPARATE spawn-tree, not the chat list (P3-04).
+    // session.info / status.update / gateway.ready / subagent.* /
+    // background.complete / unknown: no message-list change (pass through).
+    // Subagent events fold into the SEPARATE spawn-tree, not the chat list
+    // (P3-04). Background completions are NOT chat messages (P5-02).
     SessionInfo() ||
     StatusUpdate() ||
     GatewayReady() ||
     SubagentEvent() ||
+    BackgroundCompleteEvent() ||
     UnknownEvent() => state,
   };
 }

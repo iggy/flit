@@ -590,6 +590,7 @@ void main() {
         TerminalReadRequestEvent() => 'terminal.read',
         SubagentEvent() => 'subagent',
         StatusUpdate() => 'status',
+        BackgroundCompleteEvent() => 'background.complete',
         UnknownEvent() => 'unknown',
       };
 

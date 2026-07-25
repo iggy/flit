@@ -72,6 +72,19 @@ final class FakeModelRepository implements ModelRepository {
     }
     return confirmedOutcome;
   }
+
+  @override
+  Future<ModelProvider> saveKey({
+    required String slug,
+    required String apiKey,
+  }) async {
+    throw UnimplementedError('saveKey not stubbed in this test');
+  }
+
+  @override
+  Future<void> disconnectProvider({required String slug}) async {
+    throw UnimplementedError('disconnectProvider not stubbed in this test');
+  }
 }
 
 const option = ModelOption(providerSlug: 'nous', model: 'hermes-4-70b');

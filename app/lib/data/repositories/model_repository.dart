@@ -1,6 +1,7 @@
 import 'package:flit/data/dto/config_set_result_dto.dart';
 import 'package:flit/data/dto/model_options_dto.dart';
 import 'package:flit/data/transport/gateway_rpc_client.dart';
+import 'package:flit/domain/models/model_option.dart';
 import 'package:flit/domain/repositories/model_repository.dart';
 
 /// [ModelRepository] over [GatewayRpcClient.request] (ticket P1-11).
@@ -60,5 +61,26 @@ final class ModelRepositoryImpl implements ModelRepository {
         message: message,
       ),
     };
+  }
+
+  @override
+  Future<ModelProvider> saveKey({
+    required String slug,
+    required String apiKey,
+  }) async {
+    final result = await _client.request('model.save_key', <String, dynamic>{
+      'slug': slug,
+      'api_key': apiKey,
+    });
+    final providerMap = result['provider'] as Map<String, dynamic>;
+    final dto = ModelProviderDto.fromJson(providerMap);
+    return dto.toDomain();
+  }
+
+  @override
+  Future<void> disconnectProvider({required String slug}) async {
+    await _client.request('model.disconnect', <String, dynamic>{
+      'slug': slug,
+    });
   }
 }

@@ -185,4 +185,87 @@ void main() {
       expect(outcome, const ModelSetApplied(value: 'hermes-4-70b'));
     });
   });
+
+  group('saveKey (ticket P4-01)', () {
+    test('sends model.save_key with slug and api_key', () async {
+      client = FakeGatewayRpcClient(
+        handler: (_, _) => const <String, dynamic>{
+          'provider': <String, dynamic>{
+            'name': 'Nous Portal',
+            'slug': 'nous',
+            'authenticated': true,
+            'is_current': false,
+            'auth_type': 'api_key',
+            'models': <String>['hermes-4-405b'],
+            'total_models': 1,
+          },
+        },
+      );
+      repository = ModelRepositoryImpl(client);
+
+      final provider = await repository.saveKey(
+        slug: 'nous',
+        apiKey: 'test-key-123',
+      );
+
+      expect(client.calls.single.method, 'model.save_key');
+      expect(client.calls.single.params, <String, dynamic>{
+        'slug': 'nous',
+        'api_key': 'test-key-123',
+      });
+      expect(provider.name, 'Nous Portal');
+      expect(provider.slug, 'nous');
+      expect(provider.authenticated, isTrue);
+    });
+
+    test('maps the nested provider object via DTO', () async {
+      client = FakeGatewayRpcClient(
+        handler: (_, _) => const <String, dynamic>{
+          'provider': <String, dynamic>{
+            'name': 'OpenRouter',
+            'slug': 'openrouter',
+            'authenticated': true,
+            'is_current': false,
+            'auth_type': 'api_key',
+            'key_env': 'OPENROUTER_API_KEY',
+            'models': <String>['model-a', 'model-b'],
+            'total_models': 2,
+          },
+        },
+      );
+      repository = ModelRepositoryImpl(client);
+
+      final provider = await repository.saveKey(
+        slug: 'openrouter',
+        apiKey: 'sk-abc123',
+      );
+
+      expect(provider.name, 'OpenRouter');
+      expect(provider.slug, 'openrouter');
+      expect(provider.authenticated, isTrue);
+      expect(provider.keyEnv, 'OPENROUTER_API_KEY');
+      expect(provider.models, <String>['model-a', 'model-b']);
+      expect(provider.totalModels, 2);
+    });
+  });
+
+  group('disconnectProvider (ticket P4-01)', () {
+    test('sends model.disconnect with slug', () async {
+      client = FakeGatewayRpcClient(
+        handler: (_, _) => const <String, dynamic>{
+          'slug': 'nous',
+          'name': 'Nous Portal',
+          'disconnected': true,
+        },
+      );
+      repository = ModelRepositoryImpl(client);
+
+      await repository.disconnectProvider(slug: 'nous');
+
+      expect(client.calls.single.method, 'model.disconnect');
+      expect(client.calls.single.params, <String, dynamic>{
+        'slug': 'nous',
+      });
+    });
+  });
 }

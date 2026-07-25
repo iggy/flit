@@ -19,6 +19,7 @@ class ConfigSetResultDto {
     this.info,
     this.confirmRequired,
     this.confirmMessage,
+    this.warning,
   });
 
   factory ConfigSetResultDto.fromJson(Map<String, dynamic> json) =>
@@ -42,6 +43,10 @@ class ConfigSetResultDto {
   @JsonKey(name: 'confirm_message')
   final String? confirmMessage;
 
+  /// Warning string when present on success (ticket P4-06: credential-warning).
+  @JsonKey(name: 'warning')
+  final String? warning;
+
   Map<String, dynamic> toJson() => _$ConfigSetResultDtoToJson(this);
 
   /// Disambiguate the two wire variants (§9).
@@ -49,7 +54,7 @@ class ConfigSetResultDto {
     if (confirmRequired ?? false) {
       return ConfigSetConfirmRequired(message: confirmMessage ?? '');
     }
-    return ConfigSetApplied(value: value, info: info);
+    return ConfigSetApplied(value: value, info: info, warning: warning);
   }
 }
 
@@ -59,9 +64,9 @@ sealed class ConfigSetResult {
   const ConfigSetResult();
 }
 
-/// The value was applied (wire `{value, info?}`).
+/// The value was applied (wire `{value, info?, warning?}`).
 final class ConfigSetApplied extends ConfigSetResult {
-  const ConfigSetApplied({this.value, this.info});
+  const ConfigSetApplied({this.value, this.info, this.warning});
 
   /// The applied value (type depends on the config key).
   final dynamic value;
@@ -69,18 +74,23 @@ final class ConfigSetApplied extends ConfigSetResult {
   /// Opaque info dict, when the gateway returned one.
   final Map<String, dynamic>? info;
 
+  /// Warning string when present (ticket P4-06: credential-warning).
+  final String? warning;
+
   @override
   bool operator ==(Object other) {
     return other is ConfigSetApplied &&
         other.value == value &&
-        _infoEquals(other.info, info);
+        _infoEquals(other.info, info) &&
+        other.warning == warning;
   }
 
   @override
-  int get hashCode => Object.hash(value, info?.length);
+  int get hashCode => Object.hash(value, info?.length, warning);
 
   @override
-  String toString() => 'ConfigSetApplied(value: $value, info: $info)';
+  String toString() =>
+      'ConfigSetApplied(value: $value, info: $info, warning: $warning)';
 }
 
 /// The gateway demands confirmation (wire

@@ -266,9 +266,17 @@ final class GatewayRestClient {
   }
 
   /// Authenticated POST with a JSON body, returning the decoded JSON body.
-  Future<dynamic> postJson(String path, {Object? body}) async {
+  Future<dynamic> postJson(
+    String path, {
+    Object? body,
+    Map<String, String>? queryParameters,
+  }) async {
     try {
-      final response = await _dio.post<dynamic>(path, data: body);
+      final response = await _dio.post<dynamic>(
+        path,
+        data: body,
+        queryParameters: queryParameters,
+      );
       return response.data;
     } on DioException catch (error) {
       throw _mapDioException(error);
@@ -276,9 +284,35 @@ final class GatewayRestClient {
   }
 
   /// Authenticated PATCH with a JSON body, returning the decoded JSON body.
-  Future<dynamic> patchJson(String path, {Object? body}) async {
+  Future<dynamic> patchJson(
+    String path, {
+    Object? body,
+    Map<String, String>? queryParameters,
+  }) async {
     try {
-      final response = await _dio.patch<dynamic>(path, data: body);
+      final response = await _dio.patch<dynamic>(
+        path,
+        data: body,
+        queryParameters: queryParameters,
+      );
+      return response.data;
+    } on DioException catch (error) {
+      throw _mapDioException(error);
+    }
+  }
+
+  /// Authenticated PUT with a JSON body, returning the decoded JSON body.
+  Future<dynamic> putJson(
+    String path, {
+    Object? body,
+    Map<String, String>? queryParameters,
+  }) async {
+    try {
+      final response = await _dio.put<dynamic>(
+        path,
+        data: body,
+        queryParameters: queryParameters,
+      );
       return response.data;
     } on DioException catch (error) {
       throw _mapDioException(error);

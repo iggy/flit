@@ -1,5 +1,6 @@
-// P1-14 acceptance: the plugins screen renders real plugins and shows the
-// kanban "Open board" affordance ONLY when kanban is present AND enabled.
+// P1-14, P5-08 acceptance: the plugins screen renders rich plugins with
+// description, source, and a Switch for toggling. The kanban "Open board"
+// affordance shows ONLY when kanban is present AND enabled.
 
 import 'package:flit/application/plugins/plugin_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
@@ -20,32 +21,60 @@ Widget _wrap(FakePluginRepository repository) {
 }
 
 void main() {
-  testWidgets('renders plugins with version and enabled state', (tester) async {
+  testWidgets('renders plugins with version, description, and source',
+      (tester) async {
     final repository = FakePluginRepository(
-      plugins: const <PluginInfo>[
-        PluginInfo(name: 'kanban', version: '1.0.0', enabled: true),
-        PluginInfo(name: 'spotify', version: '?', enabled: false),
+      details: const <PluginDetail>[
+        PluginDetail(
+          name: 'kanban',
+          version: '1.0.0',
+          description: 'Kanban board plugin',
+          source: 'bundled',
+          status: 'enabled',
+        ),
+        PluginDetail(
+          name: 'spotify',
+          version: '0.5.0',
+          description: 'Spotify integration',
+          source: 'user',
+          status: 'disabled',
+        ),
       ],
     );
     await tester.pumpWidget(_wrap(repository));
     await tester.pumpAndSettle();
 
     expect(find.text('kanban'), findsOneWidget);
+    expect(find.text('Kanban board plugin'), findsOneWidget);
     expect(find.text('Version 1.0.0'), findsOneWidget);
+    expect(find.text('bundled'), findsOneWidget);
     expect(find.text('spotify'), findsOneWidget);
-    expect(find.text('Version ?'), findsOneWidget);
-    expect(find.byIcon(Icons.toggle_on), findsOneWidget);
-    expect(find.byIcon(Icons.toggle_off_outlined), findsOneWidget);
+    expect(find.text('Spotify integration'), findsOneWidget);
+    expect(find.text('Version 0.5.0'), findsOneWidget);
+    expect(find.text('user'), findsOneWidget);
+    // Two switches: one on, one off.
+    expect(find.byType(Switch), findsNWidgets(2));
   });
 
-  testWidgets("'Open board' shows only for a present AND enabled kanban", (
-    tester,
-  ) async {
+  testWidgets("'Open board' shows only for a present AND enabled kanban",
+      (tester) async {
     // Enabled kanban → affordance.
     var repository = FakePluginRepository(
-      plugins: const <PluginInfo>[
-        PluginInfo(name: 'kanban', version: '1.0.0', enabled: true),
-        PluginInfo(name: 'spotify', version: '?', enabled: false),
+      details: const <PluginDetail>[
+        PluginDetail(
+          name: 'kanban',
+          version: '1.0.0',
+          description: 'Kanban board',
+          source: 'bundled',
+          status: 'enabled',
+        ),
+        PluginDetail(
+          name: 'spotify',
+          version: '0.5.0',
+          description: 'Spotify',
+          source: 'user',
+          status: 'disabled',
+        ),
       ],
     );
     await tester.pumpWidget(_wrap(repository));
@@ -54,8 +83,14 @@ void main() {
 
     // Disabled kanban → no affordance.
     repository = FakePluginRepository(
-      plugins: const <PluginInfo>[
-        PluginInfo(name: 'kanban', version: '1.0.0', enabled: false),
+      details: const <PluginDetail>[
+        PluginDetail(
+          name: 'kanban',
+          version: '1.0.0',
+          description: 'Kanban board',
+          source: 'bundled',
+          status: 'disabled',
+        ),
       ],
     );
     await tester.pumpWidget(_wrap(repository));
@@ -64,8 +99,14 @@ void main() {
 
     // No kanban at all → no affordance.
     repository = FakePluginRepository(
-      plugins: const <PluginInfo>[
-        PluginInfo(name: 'spotify', version: '?', enabled: true),
+      details: const <PluginDetail>[
+        PluginDetail(
+          name: 'spotify',
+          version: '0.5.0',
+          description: 'Spotify',
+          source: 'user',
+          status: 'enabled',
+        ),
       ],
     );
     await tester.pumpWidget(_wrap(repository));

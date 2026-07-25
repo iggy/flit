@@ -252,3 +252,85 @@ class ModelPickerController extends Notifier<ModelPickerState> {
     }
   }
 }
+
+/// Interaction state for provider key management (ticket P4-01).
+final class ProviderKeyState {
+  const ProviderKeyState({
+    this.busy = false,
+    this.error,
+  });
+
+  final bool busy;
+  final String? error;
+
+  @override
+  bool operator ==(Object other) {
+    return other is ProviderKeyState &&
+        other.busy == busy &&
+        other.error == error;
+  }
+
+  @override
+  int get hashCode => Object.hash(busy, error);
+
+  @override
+  String toString() => 'ProviderKeyState(busy: $busy, error: $error)';
+}
+
+/// Controller for provider key entry: save/disconnect API keys. NEVER throws;
+/// failures land in [ProviderKeyState.error].
+final providerKeyControllerProvider =
+    NotifierProvider<ProviderKeyController, ProviderKeyState>(
+      ProviderKeyController.new,
+    );
+
+class ProviderKeyController extends Notifier<ProviderKeyState> {
+  @override
+  ProviderKeyState build() => const ProviderKeyState();
+
+  Future<void> saveKey(String slug, String apiKey) async {
+    if (state.busy) {
+      return;
+    }
+    final repository = ref.read(modelRepositoryProvider);
+    if (repository == null) {
+      state = const ProviderKeyState(error: 'Not connected to a gateway.');
+      return;
+    }
+    state = const ProviderKeyState(busy: true);
+    try {
+      await repository.saveKey(slug: slug, apiKey: apiKey);
+      state = const ProviderKeyState();
+      ref.invalidate(modelOptionsProvider);
+    } on GatewayException catch (error) {
+      state = ProviderKeyState(error: error.message);
+    } on Object catch (error) {
+      state = ProviderKeyState(error: error.toString());
+    }
+  }
+
+  Future<void> disconnect(String slug) async {
+    if (state.busy) {
+      return;
+    }
+    final repository = ref.read(modelRepositoryProvider);
+    if (repository == null) {
+      state = const ProviderKeyState(error: 'Not connected to a gateway.');
+      return;
+    }
+    state = const ProviderKeyState(busy: true);
+    try {
+      await repository.disconnectProvider(slug: slug);
+      state = const ProviderKeyState();
+      ref.invalidate(modelOptionsProvider);
+    } on GatewayException catch (error) {
+      state = ProviderKeyState(error: error.message);
+    } on Object catch (error) {
+      state = ProviderKeyState(error: error.toString());
+    }
+  }
+
+  void clearError() {
+    state = ProviderKeyState(busy: state.busy);
+  }
+}

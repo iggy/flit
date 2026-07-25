@@ -31,6 +31,18 @@ abstract interface class ModelRepository {
     required String model,
     required String providerSlug,
   });
+
+  /// `model.save_key` — save a provider API key (ticket P4-01).
+  ///
+  /// Returns the refreshed provider entry (same shape as one
+  /// `model.options` provider).
+  Future<ModelProvider> saveKey({
+    required String slug,
+    required String apiKey,
+  });
+
+  /// `model.disconnect` — clear provider credentials (ticket P4-01).
+  Future<void> disconnectProvider({required String slug});
 }
 
 /// Domain-facing outcome of a `config.set{key:"model"}` call (wire §9).
