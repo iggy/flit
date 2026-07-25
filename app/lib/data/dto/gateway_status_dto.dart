@@ -1,4 +1,4 @@
-import 'package:hermes/domain/models/gateway_status.dart';
+import 'package:flit/domain/models/gateway_status.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'gateway_status_dto.g.dart';

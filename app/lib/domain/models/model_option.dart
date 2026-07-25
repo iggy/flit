@@ -1,4 +1,4 @@
-import 'package:hermes/domain/models/deep_equals.dart';
+import 'package:flit/domain/models/deep_equals.dart';
 
 /// One provider entry of `model.options` (wire §8) — a model source with
 /// its auth state and the models it offers.

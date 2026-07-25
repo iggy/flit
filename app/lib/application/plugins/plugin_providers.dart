@@ -6,14 +6,14 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hermes/application/connection/connection_providers.dart';
-import 'package:hermes/core/errors/gateway_error.dart';
-import 'package:hermes/data/repositories/kanban_repository.dart';
-import 'package:hermes/data/repositories/plugin_repository.dart';
-import 'package:hermes/domain/models/kanban.dart';
-import 'package:hermes/domain/models/plugin_info.dart';
-import 'package:hermes/domain/repositories/kanban_repository.dart';
-import 'package:hermes/domain/repositories/plugin_repository.dart';
+import 'package:flit/application/connection/connection_providers.dart';
+import 'package:flit/core/errors/gateway_error.dart';
+import 'package:flit/data/repositories/kanban_repository.dart';
+import 'package:flit/data/repositories/plugin_repository.dart';
+import 'package:flit/domain/models/kanban.dart';
+import 'package:flit/domain/models/plugin_info.dart';
+import 'package:flit/domain/repositories/kanban_repository.dart';
+import 'package:flit/domain/repositories/plugin_repository.dart';
 
 /// The plugin repository for the current connection, or null when there is
 /// no RPC client (disconnected / pre-connect).

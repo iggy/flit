@@ -7,13 +7,15 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hermes/application/chat/message_fold.dart';
-import 'package:hermes/application/chat/message_list_notifier.dart';
-import 'package:hermes/application/providers.dart';
-import 'package:hermes/data/dto/events/gateway_event_parser.dart';
-import 'package:hermes/domain/models/chat_message.dart';
-import 'package:hermes/domain/models/interactive_prompt.dart';
-import 'package:hermes/domain/repositories/chat_repository.dart';
+
+import 'package:flit/application/chat/message_fold.dart';
+import 'package:flit/application/chat/message_list_notifier.dart';
+import 'package:flit/application/providers.dart';
+import 'package:flit/data/dto/events/gateway_event_parser.dart';
+import 'package:flit/domain/models/chat_message.dart';
+import 'package:flit/domain/models/interactive_prompt.dart';
+import 'package:flit/domain/models/session_detail.dart';
+import 'package:flit/domain/repositories/chat_repository.dart';
 
 /// A fake chat repository emitting a canned typed event stream.
 final class FakeChatRepository implements ChatRepository {
@@ -147,5 +149,154 @@ void main() {
       hasLength(1),
     );
     expect(container.read(messageListProvider('sess-b')).messages, isEmpty);
+  });
+
+  group('seedHistory inflight reconcile (P2-02)', () {
+    test('inflight: null seeds only finalized history', () {
+      container.read(messageListProvider(liveId));
+
+      final history = <ChatMessage>[
+        const ChatMessage(
+          role: MessageRole.user,
+          text: 'first question',
+        ),
+        const ChatMessage(
+          role: MessageRole.assistant,
+          text: 'first answer',
+        ),
+      ];
+
+      container
+          .read(messageListProvider(liveId).notifier)
+          .seedHistory(history, inflight: null);
+
+      final messages = container.read(messageListProvider(liveId)).messages;
+      expect(messages, hasLength(2));
+      expect(messages[0].role, MessageRole.user);
+      expect(messages[0].text, 'first question');
+      expect(messages[1].role, MessageRole.assistant);
+      expect(messages[1].text, 'first answer');
+      expect(messages[1].streaming, isFalse);
+      expect(messages[1].terminalStatus, MessageTerminalStatus.complete);
+    });
+
+    test(
+      'streaming inflight with user and assistant appends both messages',
+      () {
+        container.read(messageListProvider(liveId));
+
+        final history = <ChatMessage>[
+          const ChatMessage(
+            role: MessageRole.user,
+            text: 'first question',
+          ),
+          const ChatMessage(
+            role: MessageRole.assistant,
+            text: 'first answer',
+          ),
+        ];
+
+        final inflight = const InflightTurn(
+          user: 'q',
+          assistant: 'partial',
+          streaming: true,
+        );
+
+        container
+            .read(messageListProvider(liveId).notifier)
+            .seedHistory(history, inflight: inflight);
+
+        final messages = container.read(messageListProvider(liveId)).messages;
+        expect(messages, hasLength(4));
+        // History messages.
+        expect(messages[0].role, MessageRole.user);
+        expect(messages[0].text, 'first question');
+        expect(messages[1].role, MessageRole.assistant);
+        expect(messages[1].text, 'first answer');
+        // Inflight user message.
+        expect(messages[2].role, MessageRole.user);
+        expect(messages[2].text, 'q');
+        // Inflight streaming assistant message.
+        expect(messages[3].role, MessageRole.assistant);
+        expect(messages[3].text, 'partial');
+        expect(messages[3].streaming, isTrue);
+        expect(messages[3].terminalStatus, MessageTerminalStatus.none);
+      },
+    );
+
+    test(
+      'finished inflight marks assistant complete',
+      () {
+        container.read(messageListProvider(liveId));
+
+        final history = <ChatMessage>[
+          const ChatMessage(
+            role: MessageRole.user,
+            text: 'first question',
+          ),
+          const ChatMessage(
+            role: MessageRole.assistant,
+            text: 'first answer',
+          ),
+        ];
+
+        final inflight = const InflightTurn(
+          user: 'q',
+          assistant: 'done',
+          streaming: false,
+        );
+
+        container
+            .read(messageListProvider(liveId).notifier)
+            .seedHistory(history, inflight: inflight);
+
+        final messages = container.read(messageListProvider(liveId)).messages;
+        expect(messages, hasLength(4));
+        // Inflight assistant message.
+        expect(messages[3].role, MessageRole.assistant);
+        expect(messages[3].text, 'done');
+        expect(messages[3].streaming, isFalse);
+        expect(messages[3].terminalStatus, MessageTerminalStatus.complete);
+      },
+    );
+
+    test(
+      'streaming inflight with empty user appends only assistant bubble',
+      () {
+        container.read(messageListProvider(liveId));
+
+        final history = <ChatMessage>[
+          const ChatMessage(
+            role: MessageRole.user,
+            text: 'first question',
+          ),
+          const ChatMessage(
+            role: MessageRole.assistant,
+            text: 'first answer',
+          ),
+        ];
+
+        final inflight = const InflightTurn(
+          user: '',
+          assistant: '',
+          streaming: true,
+        );
+
+        container
+            .read(messageListProvider(liveId).notifier)
+            .seedHistory(history, inflight: inflight);
+
+        final messages = container.read(messageListProvider(liveId)).messages;
+        expect(messages, hasLength(3));
+        // History messages.
+        expect(messages[0].role, MessageRole.user);
+        expect(messages[1].role, MessageRole.assistant);
+        // Only the streaming assistant bubble is appended.
+        expect(messages[2].role, MessageRole.assistant);
+        expect(messages[2].text, isEmpty);
+        expect(messages[2].streaming, isTrue);
+        expect(messages[2].terminalStatus, MessageTerminalStatus.none);
+      },
+    );
   });
 }

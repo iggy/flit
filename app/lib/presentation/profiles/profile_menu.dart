@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hermes/application/profiles/profile_providers.dart';
-import 'package:hermes/domain/models/profile.dart';
+import 'package:flit/application/profiles/profile_providers.dart';
+import 'package:flit/domain/models/profile.dart';
 
 /// Profiles dropdown for the chat app bar (ticket P1-13).
 ///

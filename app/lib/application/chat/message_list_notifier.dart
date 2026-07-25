@@ -5,11 +5,13 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hermes/application/chat/message_fold.dart';
-import 'package:hermes/application/providers.dart';
-import 'package:hermes/data/dto/events/gateway_event_parser.dart';
-import 'package:hermes/domain/models/chat_message.dart';
-import 'package:hermes/domain/models/interactive_prompt.dart';
+
+import 'package:flit/application/chat/message_fold.dart';
+import 'package:flit/application/providers.dart';
+import 'package:flit/data/dto/events/gateway_event_parser.dart';
+import 'package:flit/domain/models/chat_message.dart';
+import 'package:flit/domain/models/interactive_prompt.dart';
+import 'package:flit/domain/models/session_detail.dart';
 
 /// Per-session chat state, keyed by the LIVE session id (protocol §9).
 ///
@@ -67,18 +69,53 @@ class MessageListNotifier extends Notifier<FoldState> {
   /// The resume DTO already maps role/text; every replayed message is
   /// terminal and non-streaming (assistant turns are marked
   /// [MessageTerminalStatus.complete]), and no prompts are pending.
-  void seedHistory(List<ChatMessage> messages) {
-    state = FoldState(
-      messages: messages.map((message) {
-        return message.copyWith(
-          streaming: false,
-          terminalStatus:
-              message.role == MessageRole.assistant &&
-                  message.terminalStatus == MessageTerminalStatus.none
-              ? MessageTerminalStatus.complete
-              : message.terminalStatus,
+  ///
+  /// When [inflight] is non-null (protocol P2-02), reconcile the inflight
+  /// turn snapshot — the turn was streaming when the socket dropped — by
+  /// appending it to the finalized history so the user sees the in-progress
+  /// turn.
+  void seedHistory(List<ChatMessage> messages, {InflightTurn? inflight}) {
+    final historyMessages = messages.map((message) {
+      return message.copyWith(
+        streaming: false,
+        terminalStatus:
+            message.role == MessageRole.assistant &&
+                message.terminalStatus == MessageTerminalStatus.none
+            ? MessageTerminalStatus.complete
+            : message.terminalStatus,
+      );
+    }).toList();
+
+    final inflightMessages = <ChatMessage>[];
+    if (inflight != null) {
+      // Append the user message if the prompt is non-empty.
+      if (inflight.user.isNotEmpty) {
+        inflightMessages.add(
+          ChatMessage(
+            role: MessageRole.user,
+            text: inflight.user,
+          ),
         );
-      }).toList(),
+      }
+      // Append the assistant message if the response is non-empty OR if
+      // streaming is true (an empty streaming bubble must exist for the fold
+      // to append NEW deltas to it).
+      if (inflight.assistant.isNotEmpty || inflight.streaming) {
+        inflightMessages.add(
+          ChatMessage(
+            role: MessageRole.assistant,
+            text: inflight.assistant,
+            streaming: inflight.streaming,
+            terminalStatus: inflight.streaming
+                ? MessageTerminalStatus.none
+                : MessageTerminalStatus.complete,
+          ),
+        );
+      }
+    }
+
+    state = FoldState(
+      messages: <ChatMessage>[...historyMessages, ...inflightMessages],
     );
   }
 

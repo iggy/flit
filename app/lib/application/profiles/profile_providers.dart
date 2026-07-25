@@ -13,11 +13,11 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hermes/application/connection/connection_providers.dart';
-import 'package:hermes/core/errors/gateway_error.dart';
-import 'package:hermes/data/repositories/profile_repository.dart';
-import 'package:hermes/domain/models/profile.dart';
-import 'package:hermes/domain/repositories/profile_repository.dart';
+import 'package:flit/application/connection/connection_providers.dart';
+import 'package:flit/core/errors/gateway_error.dart';
+import 'package:flit/data/repositories/profile_repository.dart';
+import 'package:flit/domain/models/profile.dart';
+import 'package:flit/domain/repositories/profile_repository.dart';
 
 /// The profile repository for the current connection, or null when
 /// disconnected (no REST client).

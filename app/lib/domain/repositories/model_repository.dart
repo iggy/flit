@@ -1,4 +1,4 @@
-import 'package:hermes/domain/models/model_option.dart';
+import 'package:flit/domain/models/model_option.dart';
 
 /// The picker's source data (wire §8): the currently active model plus the
 /// provider list with auth state.

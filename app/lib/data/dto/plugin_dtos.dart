@@ -1,4 +1,4 @@
-import 'package:hermes/domain/models/plugin_info.dart';
+import 'package:flit/domain/models/plugin_info.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'plugin_dtos.g.dart';

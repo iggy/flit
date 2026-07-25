@@ -1,4 +1,4 @@
-import 'package:hermes/data/transport/connection_config.dart';
+import 'package:flit/data/transport/connection_config.dart';
 
 /// Clean domain view of `GET /api/status`
 /// (docs/reference/01-gateway-protocol.md §1).

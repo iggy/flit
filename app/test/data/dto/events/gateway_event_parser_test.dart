@@ -7,9 +7,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hermes/data/dto/events/gateway_event_parser.dart';
-import 'package:hermes/data/transport/gateway_rpc_client.dart';
-import 'package:hermes/domain/models/chat_message.dart';
+import 'package:flit/data/dto/events/gateway_event_parser.dart';
+import 'package:flit/data/transport/gateway_rpc_client.dart';
+import 'package:flit/domain/models/chat_message.dart';
 
 /// Decode a full event frame the way the RPC client's router does
 /// (protocol §3c): params.type / params.session_id / params.payload

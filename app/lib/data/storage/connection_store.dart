@@ -1,6 +1,6 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-import 'package:hermes/data/transport/connection_config.dart';
+import 'package:flit/data/transport/connection_config.dart';
 
 /// Minimal key-value abstraction so persistence is testable without platform
 /// channels. The concrete implementation wraps [FlutterSecureStorage] —

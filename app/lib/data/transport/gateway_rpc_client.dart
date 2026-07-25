@@ -14,7 +14,7 @@ library;
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:hermes/core/errors/gateway_error.dart';
+import 'package:flit/core/errors/gateway_error.dart';
 import 'package:stream_channel/stream_channel.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 

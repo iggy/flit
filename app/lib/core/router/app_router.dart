@@ -4,10 +4,10 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hermes/presentation/chat/chat_screen.dart';
-import 'package:hermes/presentation/connect/connect_screen.dart';
-import 'package:hermes/presentation/plugins/kanban/kanban_board_screen.dart';
-import 'package:hermes/presentation/plugins/plugins_screen.dart';
+import 'package:flit/presentation/chat/chat_screen.dart';
+import 'package:flit/presentation/connect/connect_screen.dart';
+import 'package:flit/presentation/plugins/kanban/kanban_board_screen.dart';
+import 'package:flit/presentation/plugins/plugins_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(

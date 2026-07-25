@@ -6,9 +6,9 @@
 // the §8 example.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hermes/data/repositories/model_repository.dart';
-import 'package:hermes/data/transport/gateway_rpc_client.dart';
-import 'package:hermes/domain/repositories/model_repository.dart';
+import 'package:flit/data/repositories/model_repository.dart';
+import 'package:flit/data/transport/gateway_rpc_client.dart';
+import 'package:flit/domain/repositories/model_repository.dart';
 
 /// Hand-written fake (same pattern as session_repository_test.dart):
 /// subclasses [GatewayRpcClient] and overrides ONLY `request` — the single

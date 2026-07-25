@@ -8,12 +8,12 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hermes/application/connection/connection_providers.dart';
-import 'package:hermes/application/models/model_providers.dart';
-import 'package:hermes/core/errors/gateway_error.dart';
-import 'package:hermes/data/transport/gateway_rpc_client.dart';
-import 'package:hermes/domain/models/model_option.dart';
-import 'package:hermes/domain/repositories/model_repository.dart';
+import 'package:flit/application/connection/connection_providers.dart';
+import 'package:flit/application/models/model_providers.dart';
+import 'package:flit/core/errors/gateway_error.dart';
+import 'package:flit/data/transport/gateway_rpc_client.dart';
+import 'package:flit/domain/models/model_option.dart';
+import 'package:flit/domain/repositories/model_repository.dart';
 
 /// Fake model repository: records calls, answers from configurable stubs.
 final class FakeModelRepository implements ModelRepository {
@@ -224,6 +224,37 @@ void main() {
         const CurrentModel(model: 'hermes-4-405b', provider: 'nous'),
       );
     });
+
+    test(
+      'a stale model.options refetch after select() must not revert the '
+      'freshly-applied model (regression: gateway model.options is not '
+      'guaranteed immediately consistent after config.set)',
+      () async {
+        final sub = track(container);
+        addTearDown(sub.close);
+
+        // Seed with the initial (pre-switch) model.
+        await container.read(modelOptionsProvider.future);
+        await Future<void>.value();
+        expect(
+          container.read(currentModelProvider),
+          const CurrentModel(model: 'hermes-4-405b', provider: 'nous'),
+        );
+
+        // The repository's options() STILL reports the OLD model on the
+        // post-switch refetch (simulating a gateway that has not yet
+        // caught up) — select() invalidates modelOptionsProvider, which
+        // re-runs options() with this stale value still in place.
+        await readController().select(option);
+
+        // The explicit apply must win: NOT reverted to hermes-4-405b by
+        // the (stale) refetch that select() triggered.
+        expect(
+          container.read(currentModelProvider),
+          const CurrentModel(model: 'hermes-4-70b', provider: 'nous'),
+        );
+      },
+    );
 
     test(
       'session.info event updates the model, keeping the provider',

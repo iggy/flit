@@ -4,10 +4,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hermes/application/plugins/plugin_providers.dart';
-import 'package:hermes/core/errors/gateway_error.dart';
-import 'package:hermes/domain/models/plugin_info.dart';
-import 'package:hermes/presentation/plugins/plugins_screen.dart';
+import 'package:flit/application/plugins/plugin_providers.dart';
+import 'package:flit/core/errors/gateway_error.dart';
+import 'package:flit/domain/models/plugin_info.dart';
+import 'package:flit/presentation/plugins/plugins_screen.dart';
 
 import '../../application/plugins/plugin_providers_test.dart'
     show FakePluginRepository;

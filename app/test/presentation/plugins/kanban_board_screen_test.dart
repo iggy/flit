@@ -5,9 +5,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hermes/application/plugins/plugin_providers.dart';
-import 'package:hermes/domain/models/kanban.dart';
-import 'package:hermes/presentation/plugins/kanban/kanban_board_screen.dart';
+import 'package:flit/application/plugins/plugin_providers.dart';
+import 'package:flit/domain/models/kanban.dart';
+import 'package:flit/presentation/plugins/kanban/kanban_board_screen.dart';
 
 import '../../application/plugins/plugin_providers_test.dart'
     show FakeKanbanRepository;

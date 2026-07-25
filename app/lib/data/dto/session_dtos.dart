@@ -1,7 +1,8 @@
-import 'package:hermes/domain/models/active_session.dart';
-import 'package:hermes/domain/models/chat_message.dart';
-import 'package:hermes/domain/models/session_bootstrap.dart';
-import 'package:hermes/domain/models/session_summary.dart';
+import 'package:flit/domain/models/active_session.dart';
+import 'package:flit/domain/models/chat_message.dart';
+import 'package:flit/domain/models/session_bootstrap.dart';
+import 'package:flit/domain/models/session_detail.dart';
+import 'package:flit/domain/models/session_summary.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'session_dtos.g.dart';
@@ -221,6 +222,38 @@ class ResumeMessageDto {
   }
 }
 
+/// Inflight turn from `session.resume` (P2-02, §inflight).
+@JsonSerializable()
+class InflightTurnDto {
+  const InflightTurnDto({
+    this.user,
+    this.assistant,
+    this.streaming,
+  });
+
+  factory InflightTurnDto.fromJson(Map<String, dynamic> json) =>
+      _$InflightTurnDtoFromJson(json);
+
+  @JsonKey(name: 'user')
+  final String? user;
+
+  @JsonKey(name: 'assistant')
+  final String? assistant;
+
+  @JsonKey(name: 'streaming')
+  final bool? streaming;
+
+  Map<String, dynamic> toJson() => _$InflightTurnDtoToJson(this);
+
+  InflightTurn toDomain() {
+    return InflightTurn(
+      user: user ?? '',
+      assistant: assistant ?? '',
+      streaming: streaming ?? false,
+    );
+  }
+}
+
 /// `session.resume` result (§5).
 @JsonSerializable()
 class SessionResumeResultDto {
@@ -233,6 +266,7 @@ class SessionResumeResultDto {
     this.running,
     this.status,
     this.info,
+    this.inflight,
   });
 
   factory SessionResumeResultDto.fromJson(Map<String, dynamic> json) =>
@@ -265,6 +299,10 @@ class SessionResumeResultDto {
   /// Opaque info dict — shape not pinned by the docs.
   final Map<String, dynamic>? info;
 
+  /// Inflight turn (P2-02) — both null and missing treated as no inflight.
+  @JsonKey(name: 'inflight')
+  final InflightTurnDto? inflight;
+
   Map<String, dynamic> toJson() => _$SessionResumeResultDtoToJson(this);
 
   SessionResumeResult toDomain() {
@@ -276,6 +314,7 @@ class SessionResumeResultDto {
       running: running ?? false,
       status: SessionStatus.parse(status),
       info: info,
+      inflight: inflight?.toDomain(),
     );
   }
 }
@@ -296,4 +335,290 @@ MessageRole _parseRole(String? role) {
     'assistant' => MessageRole.assistant,
     _ => MessageRole.system,
   };
+}
+
+/// `session.usage` result (Phase 2, §session.usage).
+@JsonSerializable()
+class SessionUsageDto {
+  const SessionUsageDto({
+    this.model,
+    this.input,
+    this.output,
+    this.total,
+    this.calls,
+    this.reasoning,
+    this.contextUsed,
+    this.contextMax,
+    this.contextPercent,
+    this.compressions,
+  });
+
+  factory SessionUsageDto.fromJson(Map<String, dynamic> json) =>
+      _$SessionUsageDtoFromJson(json);
+
+  @JsonKey(name: 'model')
+  final String? model;
+
+  @JsonKey(name: 'input')
+  final int? input;
+
+  @JsonKey(name: 'output')
+  final int? output;
+
+  @JsonKey(name: 'total')
+  final int? total;
+
+  @JsonKey(name: 'calls')
+  final int? calls;
+
+  @JsonKey(name: 'reasoning')
+  final int? reasoning;
+
+  @JsonKey(name: 'context_used')
+  final int? contextUsed;
+
+  @JsonKey(name: 'context_max')
+  final int? contextMax;
+
+  @JsonKey(name: 'context_percent')
+  final int? contextPercent;
+
+  @JsonKey(name: 'compressions')
+  final int? compressions;
+
+  Map<String, dynamic> toJson() => _$SessionUsageDtoToJson(this);
+
+  SessionUsageStats toDomain() {
+    return SessionUsageStats(
+      model: model ?? '',
+      input: input ?? 0,
+      output: output ?? 0,
+      total: total ?? 0,
+      calls: calls ?? 0,
+      reasoning: reasoning,
+      contextUsed: contextUsed,
+      contextMax: contextMax,
+      contextPercent: contextPercent,
+      compressions: compressions,
+    );
+  }
+}
+
+/// One category entry from `session.context_breakdown` (Phase 2).
+@JsonSerializable()
+class ContextCategoryDto {
+  const ContextCategoryDto({
+    this.id,
+    this.label,
+    this.tokens,
+    this.color,
+  });
+
+  factory ContextCategoryDto.fromJson(Map<String, dynamic> json) =>
+      _$ContextCategoryDtoFromJson(json);
+
+  @JsonKey(name: 'id')
+  final String? id;
+
+  @JsonKey(name: 'label')
+  final String? label;
+
+  @JsonKey(name: 'tokens')
+  final int? tokens;
+
+  @JsonKey(name: 'color')
+  final String? color;
+
+  Map<String, dynamic> toJson() => _$ContextCategoryDtoToJson(this);
+
+  ContextCategory toDomain() {
+    return ContextCategory(
+      id: id ?? '',
+      label: label ?? '',
+      tokens: tokens ?? 0,
+      color: color ?? '',
+    );
+  }
+}
+
+/// `session.context_breakdown` result (Phase 2, §session.context_breakdown).
+@JsonSerializable()
+class ContextBreakdownDto {
+  const ContextBreakdownDto({
+    this.categories = const <ContextCategoryDto>[],
+    this.contextMax,
+    this.contextPercent,
+    this.contextUsed,
+    this.estimatedTotal,
+    this.model,
+  });
+
+  factory ContextBreakdownDto.fromJson(Map<String, dynamic> json) =>
+      _$ContextBreakdownDtoFromJson(json);
+
+  @JsonKey(name: 'categories')
+  final List<ContextCategoryDto> categories;
+
+  @JsonKey(name: 'context_max')
+  final int? contextMax;
+
+  @JsonKey(name: 'context_percent')
+  final int? contextPercent;
+
+  @JsonKey(name: 'context_used')
+  final int? contextUsed;
+
+  @JsonKey(name: 'estimated_total')
+  final int? estimatedTotal;
+
+  @JsonKey(name: 'model')
+  final String? model;
+
+  Map<String, dynamic> toJson() => _$ContextBreakdownDtoToJson(this);
+
+  ContextBreakdown toDomain() {
+    return ContextBreakdown(
+      categories: categories.map((dto) => dto.toDomain()).toList(),
+      contextMax: contextMax ?? 0,
+      contextPercent: contextPercent ?? 0,
+      contextUsed: contextUsed ?? 0,
+      estimatedTotal: estimatedTotal ?? 0,
+      model: model ?? '',
+    );
+  }
+}
+
+/// `session.compress` result (Phase 2, §session.compress LOCAL success path).
+@JsonSerializable()
+class CompressResultDto {
+  const CompressResultDto({
+    this.status,
+    this.removed,
+    this.beforeMessages,
+    this.afterMessages,
+    this.beforeTokens,
+    this.afterTokens,
+    this.compressed,
+    this.lockHeld,
+    this.message,
+  });
+
+  factory CompressResultDto.fromJson(Map<String, dynamic> json) =>
+      _$CompressResultDtoFromJson(json);
+
+  @JsonKey(name: 'status')
+  final String? status;
+
+  @JsonKey(name: 'removed')
+  final int? removed;
+
+  @JsonKey(name: 'before_messages')
+  final int? beforeMessages;
+
+  @JsonKey(name: 'after_messages')
+  final int? afterMessages;
+
+  @JsonKey(name: 'before_tokens')
+  final int? beforeTokens;
+
+  @JsonKey(name: 'after_tokens')
+  final int? afterTokens;
+
+  /// Lock-held detection (wire `compressed` bool).
+  @JsonKey(name: 'compressed')
+  final bool? compressed;
+
+  @JsonKey(name: 'lock_held')
+  final bool? lockHeld;
+
+  @JsonKey(name: 'message')
+  final String? message;
+
+  Map<String, dynamic> toJson() => _$CompressResultDtoToJson(this);
+
+  CompressResult toDomain() {
+    return CompressResult(
+      status: status ?? '',
+      removed: removed,
+      beforeMessages: beforeMessages,
+      afterMessages: afterMessages,
+      beforeTokens: beforeTokens,
+      afterTokens: afterTokens,
+      lockHeld: lockHeld ?? false,
+      message: message,
+    );
+  }
+}
+
+/// `session.branch` result (Phase 2, §session.branch).
+@JsonSerializable()
+class BranchResultDto {
+  const BranchResultDto({
+    this.sessionId,
+    this.title,
+    this.parent,
+  });
+
+  factory BranchResultDto.fromJson(Map<String, dynamic> json) =>
+      _$BranchResultDtoFromJson(json);
+
+  @JsonKey(name: 'session_id')
+  final String? sessionId;
+
+  @JsonKey(name: 'title')
+  final String? title;
+
+  @JsonKey(name: 'parent')
+  final String? parent;
+
+  Map<String, dynamic> toJson() => _$BranchResultDtoToJson(this);
+
+  BranchResult toDomain() {
+    return BranchResult(
+      liveId: sessionId ?? '',
+      title: title ?? '',
+      parentDurableId: parent ?? '',
+    );
+  }
+}
+
+/// `session.most_recent` result (Phase 2, §session.most_recent).
+@JsonSerializable()
+class MostRecentSessionDto {
+  const MostRecentSessionDto({
+    this.sessionId,
+    this.title,
+    this.startedAt,
+    this.source,
+  });
+
+  factory MostRecentSessionDto.fromJson(Map<String, dynamic> json) =>
+      _$MostRecentSessionDtoFromJson(json);
+
+  @JsonKey(name: 'session_id')
+  final String? sessionId;
+
+  @JsonKey(name: 'title')
+  final String? title;
+
+  @JsonKey(name: 'started_at')
+  final int? startedAt;
+
+  @JsonKey(name: 'source')
+  final String? source;
+
+  Map<String, dynamic> toJson() => _$MostRecentSessionDtoToJson(this);
+
+  /// Returns null when sessionId is null (the "not found" wire shape).
+  MostRecentSession? toDomainOrNull() {
+    if (sessionId == null) {
+      return null;
+    }
+    return MostRecentSession(
+      durableId: sessionId!,
+      title: title ?? '',
+      startedAt: _epochSecondsToDateTime(startedAt),
+      source: source ?? '',
+    );
+  }
 }

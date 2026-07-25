@@ -2,15 +2,15 @@
 // SessionStatus.parse tolerance, and copyWith sanity.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hermes/domain/models/active_session.dart';
-import 'package:hermes/domain/models/chat_message.dart';
-import 'package:hermes/domain/models/interactive_prompt.dart';
-import 'package:hermes/domain/models/model_option.dart';
-import 'package:hermes/domain/models/plugin_info.dart';
-import 'package:hermes/domain/models/session_bootstrap.dart';
-import 'package:hermes/domain/models/session_summary.dart';
-import 'package:hermes/domain/models/tool_call.dart';
-import 'package:hermes/domain/models/usage.dart';
+import 'package:flit/domain/models/active_session.dart';
+import 'package:flit/domain/models/chat_message.dart';
+import 'package:flit/domain/models/interactive_prompt.dart';
+import 'package:flit/domain/models/model_option.dart';
+import 'package:flit/domain/models/plugin_info.dart';
+import 'package:flit/domain/models/session_bootstrap.dart';
+import 'package:flit/domain/models/session_summary.dart';
+import 'package:flit/domain/models/tool_call.dart';
+import 'package:flit/domain/models/usage.dart';
 
 void main() {
   group('construction', () {

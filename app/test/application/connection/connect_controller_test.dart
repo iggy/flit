@@ -2,15 +2,15 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hermes/application/connection/connect_controller.dart';
-import 'package:hermes/application/connection/connection_providers.dart';
-import 'package:hermes/core/errors/gateway_error.dart';
-import 'package:hermes/data/storage/connection_store.dart';
-import 'package:hermes/data/transport/connection_config.dart';
-import 'package:hermes/data/transport/gateway_rpc_client.dart';
-import 'package:hermes/data/transport/session_cookie_jar.dart';
-import 'package:hermes/domain/models/auth_provider.dart';
-import 'package:hermes/domain/models/gateway_status.dart';
+import 'package:flit/application/connection/connect_controller.dart';
+import 'package:flit/application/connection/connection_providers.dart';
+import 'package:flit/core/errors/gateway_error.dart';
+import 'package:flit/data/storage/connection_store.dart';
+import 'package:flit/data/transport/connection_config.dart';
+import 'package:flit/data/transport/gateway_rpc_client.dart';
+import 'package:flit/data/transport/session_cookie_jar.dart';
+import 'package:flit/domain/models/auth_provider.dart';
+import 'package:flit/domain/models/gateway_status.dart';
 
 final class _MemoryStore implements KeyValueStore {
   final Map<String, String> data = <String, String>{};

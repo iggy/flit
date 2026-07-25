@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hermes/data/storage/connection_store.dart';
-import 'package:hermes/data/transport/connection_config.dart';
+import 'package:flit/data/storage/connection_store.dart';
+import 'package:flit/data/transport/connection_config.dart';
 
 /// Unit tests for ConnectionStore against an in-memory [KeyValueStore] fake —
 /// FlutterSecureStorage is never instantiated in tests (platform channel).

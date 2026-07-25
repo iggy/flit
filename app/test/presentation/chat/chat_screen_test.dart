@@ -17,21 +17,22 @@ import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hermes/application/connection/connection_providers.dart';
-import 'package:hermes/application/providers.dart';
-import 'package:hermes/core/errors/gateway_error.dart';
-import 'package:hermes/data/dto/events/gateway_event_parser.dart';
-import 'package:hermes/data/transport/gateway_rpc_client.dart';
-import 'package:hermes/domain/models/active_session.dart';
-import 'package:hermes/domain/models/chat_message.dart';
-import 'package:hermes/domain/models/session_bootstrap.dart';
-import 'package:hermes/domain/models/session_summary.dart';
-import 'package:hermes/domain/repositories/chat_repository.dart';
-import 'package:hermes/domain/repositories/session_repository.dart';
-import 'package:hermes/presentation/chat/chat_screen.dart';
-import 'package:hermes/presentation/chat/composer.dart';
-import 'package:hermes/presentation/chat/message_bubble.dart';
-import 'package:hermes/presentation/chat/tool_call_card.dart';
+import 'package:flit/application/connection/connection_providers.dart';
+import 'package:flit/application/providers.dart';
+import 'package:flit/core/errors/gateway_error.dart';
+import 'package:flit/data/dto/events/gateway_event_parser.dart';
+import 'package:flit/data/transport/gateway_rpc_client.dart';
+import 'package:flit/domain/models/active_session.dart';
+import 'package:flit/domain/models/chat_message.dart';
+import 'package:flit/domain/models/session_bootstrap.dart';
+import 'package:flit/domain/models/session_detail.dart';
+import 'package:flit/domain/models/session_summary.dart';
+import 'package:flit/domain/repositories/chat_repository.dart';
+import 'package:flit/domain/repositories/session_repository.dart';
+import 'package:flit/presentation/chat/chat_screen.dart';
+import 'package:flit/presentation/chat/composer.dart';
+import 'package:flit/presentation/chat/message_bubble.dart';
+import 'package:flit/presentation/chat/tool_call_card.dart';
 
 const liveId = 'a1b2c3d4';
 
@@ -129,6 +130,42 @@ final class FakeSessionRepository implements SessionRepository {
     }
     return resumeResult;
   }
+
+  @override
+  Future<MostRecentSession?> mostRecent({String? profile}) =>
+      throw UnimplementedError();
+
+  @override
+  Future<String> setTitle(String liveId, String title) =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> delete(String durableId, {String? profile}) =>
+      throw UnimplementedError();
+
+  @override
+  Future<SessionUsageStats> usage(String liveId) => throw UnimplementedError();
+
+  @override
+  Future<ContextBreakdown> contextBreakdown(String liveId) =>
+      throw UnimplementedError();
+
+  @override
+  Future<CompressResult> compress(String liveId, {String? focusTopic}) =>
+      throw UnimplementedError();
+
+  @override
+  Future<int> undo(String liveId) => throw UnimplementedError();
+
+  @override
+  Future<String> save(String liveId) => throw UnimplementedError();
+
+  @override
+  Future<BranchResult> branch(String liveId, {String? name}) =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> setCwd(String liveId, String cwd) => throw UnimplementedError();
 }
 
 /// Decode a full event frame the way the RPC client's router does
@@ -367,7 +404,7 @@ void main() {
     await tester.pump(); // listener fires bootstrap()
     await tester.pump(); // session.create completes
     expect(sessionRepository.createCalls, 1);
-    expect(find.text('Connected'), findsOneWidget); // app-bar chip
+    expect(find.byTooltip('Connected'), findsOneWidget); // app-bar chip
 
     // Have a visible conversation.
     await tester.enterText(find.byKey(composerFieldKey), 'before the drop');
@@ -381,8 +418,8 @@ void main() {
     connection.add(GatewayConnectionState.reconnecting);
     await tester.pump();
     expect(find.text('before the drop'), findsOneWidget);
-    expect(find.text('Reconnecting'), findsOneWidget);
-    expect(find.text('Connected'), findsNothing);
+    expect(find.byTooltip('Reconnecting'), findsOneWidget);
+    expect(find.byTooltip('Connected'), findsNothing);
 
     // Back to ready → rebind: session.resume with the DURABLE id, switch
     // to the NEW live id, seed the replayed history (protocol §10).
@@ -396,7 +433,7 @@ void main() {
     expect(find.text('resumed history line'), findsOneWidget);
     // The old fold was replaced by the resumed session's seeded history.
     expect(find.text('before the drop'), findsNothing);
-    expect(find.text('Connected'), findsOneWidget);
+    expect(find.byTooltip('Connected'), findsOneWidget);
   });
 
   testWidgets('reconnect falls back to a fresh session when the resume '

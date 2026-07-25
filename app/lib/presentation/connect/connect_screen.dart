@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hermes/application/connection/connect_controller.dart';
-import 'package:hermes/application/connection/connection_providers.dart';
-import 'package:hermes/data/transport/connection_config.dart';
-import 'package:hermes/domain/models/auth_provider.dart';
-import 'package:hermes/presentation/common/connection_chip.dart';
+import 'package:flit/application/connection/connect_controller.dart';
+import 'package:flit/application/connection/connection_providers.dart';
+import 'package:flit/data/transport/connection_config.dart';
+import 'package:flit/domain/models/auth_provider.dart';
+import 'package:flit/presentation/common/connection_chip.dart';
 
 /// Connect screen (ticket P0-07; gated user/pass added post-MVP).
 ///

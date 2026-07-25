@@ -20,11 +20,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hermes/application/connection/connection_providers.dart';
-import 'package:hermes/application/sessions/active_session.dart';
-import 'package:hermes/application/sessions/session_list.dart';
-import 'package:hermes/domain/models/active_session.dart';
-import 'package:hermes/domain/models/session_summary.dart';
+import 'package:flit/application/connection/connection_providers.dart';
+import 'package:flit/application/sessions/active_session.dart';
+import 'package:flit/application/sessions/session_list.dart';
+import 'package:flit/domain/models/active_session.dart';
+import 'package:flit/domain/models/session_summary.dart';
 
 /// Key of the 'New session' button.
 const Key sessionDrawerNewKey = Key('session_drawer_new');
@@ -40,6 +40,18 @@ Key sessionDrawerHistoryKey(String durableId) {
   return Key('session_drawer_history_$durableId');
 }
 
+/// Key of the popup menu for a session row.
+Key sessionDrawerMenuKey(String id) => Key('session_drawer_menu_$id');
+
+/// Key of the rename confirm button.
+const Key sessionDrawerRenameConfirmKey = Key('session_drawer_rename_confirm');
+
+/// Key of the delete confirm button.
+const Key sessionDrawerDeleteConfirmKey = Key('session_drawer_delete_confirm');
+
+/// Key of the branch confirm button.
+const Key sessionDrawerBranchConfirmKey = Key('session_drawer_branch_confirm');
+
 class SessionDrawer extends ConsumerStatefulWidget {
   const SessionDrawer({super.key});
 
@@ -48,16 +60,10 @@ class SessionDrawer extends ConsumerStatefulWidget {
 }
 
 class _SessionDrawerState extends ConsumerState<SessionDrawer> {
-  /// The last failed action's message, shown in a dismissible banner.
   String? _actionError;
-
-  /// Bumped with every new error so the banner reappears even for a
-  /// repeated message (it is keyed by this).
   int _errorSeq = 0;
+  String _searchQuery = '';
 
-  /// Run a drawer action: on success close the drawer (unless
-  /// [closeOnSuccess] is false — interrupt keeps it open); on failure show
-  /// the returned message in a dismissible banner.
   Future<void> _run(
     FutureOr<String?> Function() action, {
     bool closeOnSuccess = true,
@@ -78,41 +84,196 @@ class _SessionDrawerState extends ConsumerState<SessionDrawer> {
     }
   }
 
+  Widget _rowMenu({
+    String? liveId,
+    String? durableId,
+    required String currentTitle,
+  }) {
+    return PopupMenuButton<String>(
+      key: sessionDrawerMenuKey(durableId ?? liveId ?? 'unknown'),
+      icon: const Icon(Icons.more_vert),
+      itemBuilder: (context) => <PopupMenuEntry<String>>[
+        if (liveId != null)
+          const PopupMenuItem<String>(
+            value: 'rename',
+            child: Text('Rename'),
+          ),
+        if (liveId != null)
+          const PopupMenuItem<String>(
+            value: 'branch',
+            child: Text('Branch'),
+          ),
+        if (durableId != null)
+          const PopupMenuItem<String>(
+            value: 'delete',
+            child: Text('Delete'),
+          ),
+      ],
+      onSelected: (value) async {
+        switch (value) {
+          case 'rename':
+            if (liveId != null) {
+              await _promptRename(liveId, currentTitle);
+            }
+          case 'branch':
+            if (liveId != null) {
+              await _confirmBranch(liveId);
+            }
+          case 'delete':
+            if (durableId != null) {
+              await _confirmDelete(durableId);
+            }
+        }
+      },
+    );
+  }
+
+  Future<void> _promptRename(String liveId, String currentTitle) async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        final controller = TextEditingController(text: currentTitle);
+        return AlertDialog(
+          title: const Text('Rename session'),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(labelText: 'Title'),
+            autofocus: true,
+            onSubmitted: (value) => Navigator.of(context).pop(value),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              key: sessionDrawerRenameConfirmKey,
+              onPressed: () => Navigator.of(context).pop(controller.text),
+              child: const Text('Rename'),
+            ),
+          ],
+        );
+      },
+    );
+    if (!mounted || result == null || result.trim().isEmpty) {
+      return;
+    }
+    unawaited(
+      _run(
+        () => ref.read(sessionActionsProvider).rename(liveId, result.trim()),
+        closeOnSuccess: false,
+      ),
+    );
+  }
+
+  Future<void> _confirmBranch(String liveId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Branch session?'),
+          content: const Text('Create a new branch from this conversation.'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              key: sessionDrawerBranchConfirmKey,
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Branch'),
+            ),
+          ],
+        );
+      },
+    );
+    if (!mounted || confirmed != true) {
+      return;
+    }
+    unawaited(
+      _run(
+        () => ref.read(sessionActionsProvider).branchSession(liveId),
+      ),
+    );
+  }
+
+  Future<void> _confirmDelete(String durableId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Delete session?'),
+          content: const Text('This permanently deletes the stored conversation.'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              key: sessionDrawerDeleteConfirmKey,
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error,
+              ),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+    if (!mounted || confirmed != true) {
+      return;
+    }
+    unawaited(
+      _run(
+        () => ref.read(sessionActionsProvider).deleteSession(durableId),
+        closeOnSuccess: false,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final history = ref.watch(sessionListProvider);
     final live = ref.watch(activeSessionListProvider);
     final active = ref.watch(activeSessionProvider);
-    final scheme = Theme.of(context).colorScheme;
     final actionError = _actionError;
 
     return Drawer(
       child: SafeArea(
-        child: ListView(
-          padding: EdgeInsets.zero,
+        child: Column(
           children: <Widget>[
-            DrawerHeader(
-              decoration: BoxDecoration(color: scheme.primaryContainer),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Row(
                 children: <Widget>[
-                  Text(
-                    'Sessions',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: scheme.onPrimaryContainer,
+                  Expanded(
+                    child: Text(
+                      'Sessions',
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  FilledButton.icon(
+                  IconButton(
                     key: sessionDrawerNewKey,
+                    tooltip: 'New session',
+                    icon: const Icon(Icons.add),
                     onPressed: () => unawaited(
                       _run(() => ref.read(sessionActionsProvider).newSession()),
                     ),
-                    icon: const Icon(Icons.add),
-                    label: const Text('New session'),
                   ),
                 ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: TextField(
+                decoration: const InputDecoration(
+                  hintText: 'Search sessions...',
+                  prefixIcon: Icon(Icons.search, size: 20),
+                  isDense: true,
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (value) => setState(() => _searchQuery = value),
               ),
             ),
             if (actionError != null)
@@ -120,10 +281,34 @@ class _SessionDrawerState extends ConsumerState<SessionDrawer> {
                 key: ValueKey<String>('action_$_errorSeq'),
                 message: actionError,
               ),
-            const _SectionHeader(title: 'Live'),
-            ..._liveTiles(live, active),
-            const _SectionHeader(title: 'History'),
-            ..._historyTiles(history, active),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  ref.invalidate(sessionListProvider);
+                  ref.invalidate(activeSessionListProvider);
+                  // Await the refreshed futures so the spinner persists until both settle.
+                  // Swallow errors (providers already surface them via AsyncValue in the UI).
+                  try {
+                    await Future.wait<void>(<Future<void>>[
+                      ref.read(sessionListProvider.future),
+                      ref.read(activeSessionListProvider.future),
+                    ]);
+                  } on Object {
+                    // Ignore: the lists handle errors in their AsyncValue.
+                  }
+                },
+                child: ListView(
+                  // RefreshIndicator needs an always-scrollable child to trigger on short lists.
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: <Widget>[
+                    const _SectionHeader(title: 'Live'),
+                    ..._liveTiles(live, active),
+                    const _SectionHeader(title: 'History'),
+                    ..._historyTiles(history, active),
+                  ],
+                ),
+              ),
+            ),
             const _GatewayVersionFooter(),
           ],
         ),
@@ -139,9 +324,22 @@ class _SessionDrawerState extends ConsumerState<SessionDrawer> {
       AsyncData(:final value) when value.isEmpty => <Widget>[
         const _EmptyHint('No live sessions'),
       ],
-      AsyncData(:final value) => <Widget>[
-        for (final session in value) _liveTile(session, active),
-      ],
+      AsyncData(:final value) => () {
+        final query = _searchQuery.toLowerCase();
+        final filtered = query.isEmpty
+            ? value
+            : value.where((s) {
+                final title = s.title?.toLowerCase() ?? '';
+                final preview = s.preview?.toLowerCase() ?? '';
+                return title.contains(query) || preview.contains(query);
+              }).toList();
+        if (filtered.isEmpty) {
+          return <Widget>[const _EmptyHint('No matching sessions')];
+        }
+        return <Widget>[
+          for (final session in filtered) _liveTile(session, active),
+        ];
+      }(),
       AsyncError(:final error) => <Widget>[
         _ErrorBanner(message: 'Could not load live sessions: $error'),
       ],
@@ -185,7 +383,11 @@ class _SessionDrawerState extends ConsumerState<SessionDrawer> {
                 ),
               ),
             )
-          : null,
+          : _rowMenu(
+              liveId: session.liveId,
+              durableId: null,
+              currentTitle: title ?? '',
+            ),
       onTap: () => unawaited(
         _run(() {
           ref.read(sessionActionsProvider).switchToLive(session);
@@ -203,31 +405,51 @@ class _SessionDrawerState extends ConsumerState<SessionDrawer> {
       AsyncData(:final value) when value.isEmpty => <Widget>[
         const _EmptyHint('No past sessions'),
       ],
-      AsyncData(:final value) => <Widget>[
-        for (final summary in value)
-          ListTile(
-            key: sessionDrawerHistoryKey(summary.durableId),
-            selected:
-                summary.durableId == active.durableId &&
-                active.durableId != null,
-            leading: const Icon(Icons.history),
-            title: Text(
-              summary.title.isEmpty ? 'Untitled' : summary.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: Text(
-              _historySubtitle(summary),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            onTap: () => unawaited(
-              _run(
-                () => ref.read(sessionActionsProvider).switchToSummary(summary),
-              ),
-            ),
-          ),
-      ],
+      AsyncData(:final value) => () {
+        final query = _searchQuery.toLowerCase();
+        final filtered = query.isEmpty
+            ? value
+            : value.where((s) {
+                final title = s.title.toLowerCase();
+                final preview = s.preview.toLowerCase();
+                return title.contains(query) || preview.contains(query);
+              }).toList();
+        if (filtered.isEmpty) {
+          return <Widget>[const _EmptyHint('No matching sessions')];
+        }
+        return <Widget>[
+          for (final summary in filtered)
+            () {
+              final isActive = summary.durableId == active.durableId &&
+                  active.durableId != null;
+              return ListTile(
+                key: sessionDrawerHistoryKey(summary.durableId),
+                selected: isActive,
+                leading: const Icon(Icons.history),
+                title: Text(
+                  summary.title.isEmpty ? 'Untitled' : summary.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text(
+                  _historySubtitle(summary),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: _rowMenu(
+                  liveId: isActive ? active.liveId : null,
+                  durableId: summary.durableId,
+                  currentTitle: summary.title,
+                ),
+                onTap: () => unawaited(
+                  _run(
+                    () => ref.read(sessionActionsProvider).switchToSummary(summary),
+                  ),
+                ),
+              );
+            }(),
+        ];
+      }(),
       AsyncError(:final error) => <Widget>[
         _ErrorBanner(message: 'Could not load sessions: $error'),
       ],

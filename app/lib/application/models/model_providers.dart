@@ -4,12 +4,12 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hermes/application/connection/connection_providers.dart';
-import 'package:hermes/core/errors/gateway_error.dart';
-import 'package:hermes/data/dto/events/gateway_event_parser.dart';
-import 'package:hermes/data/repositories/model_repository.dart';
-import 'package:hermes/domain/models/model_option.dart';
-import 'package:hermes/domain/repositories/model_repository.dart';
+import 'package:flit/application/connection/connection_providers.dart';
+import 'package:flit/core/errors/gateway_error.dart';
+import 'package:flit/data/dto/events/gateway_event_parser.dart';
+import 'package:flit/data/repositories/model_repository.dart';
+import 'package:flit/domain/models/model_option.dart';
+import 'package:flit/domain/repositories/model_repository.dart';
 
 /// The model repository for the current connection, or null when there is
 /// no RPC client (disconnected / pre-connect) — mirroring the nullable
@@ -58,6 +58,18 @@ class CurrentModelNotifier extends Notifier<CurrentModel?> {
   @override
   CurrentModel? build() {
     ref.listen(modelOptionsProvider, (previous, next) {
+      // SEED ONLY: once any truth source has set the state (an explicit
+      // switch via [set], or a session.info push), a model.options
+      // refetch must never regress it. The gateway's model.options
+      // endpoint is not guaranteed to be immediately consistent right
+      // after config.set — docs/reference/03-mvp-wire-shapes.md §9 pins
+      // session.info (not a re-fetch) as the freshness signal for a
+      // switch. Without this guard, invalidating modelOptionsProvider
+      // after a switch can bounce the UI back to the stale model if the
+      // gateway's refetch still reports the old value.
+      if (state != null) {
+        return;
+      }
       final current = next.value?.current;
       if (current != null && current.model.isNotEmpty) {
         state = current;
@@ -77,6 +89,15 @@ class CurrentModelNotifier extends Notifier<CurrentModel?> {
       }
     });
     return null;
+  }
+
+  /// Set the current model directly (ticket P1-12 fix): called right after
+  /// a successful `config.set{key:"model"}` apply so the UI reflects the
+  /// switch immediately, without waiting on a `model.options` refetch
+  /// (which may not be immediately consistent) or a `session.info` push
+  /// (which requires an active session).
+  void set(CurrentModel model) {
+    state = model;
   }
 }
 
@@ -205,11 +226,22 @@ class ModelPickerController extends Notifier<ModelPickerState> {
 
   void _applyOutcome(ModelSetOutcome outcome, ModelOption option) {
     switch (outcome) {
-      case ModelSetApplied():
+      case ModelSetApplied(:final value):
         _pending = null;
         state = const ModelPickerState();
-        // Refresh the picker's badges/current markers. The subsequent
-        // session.info event keeps currentModelProvider fresh meanwhile.
+        // Update the UI's current-model tracker immediately: don't rely
+        // solely on a model.options refetch (may not be immediately
+        // consistent server-side) or a session.info push (requires an
+        // active session) — both still happen and will keep it fresh.
+        ref
+            .read(currentModelProvider.notifier)
+            .set(
+              CurrentModel(
+                model: value.isNotEmpty ? value : option.model,
+                provider: option.providerSlug,
+              ),
+            );
+        // Refresh the picker's badges/current markers.
         ref.invalidate(modelOptionsProvider);
       case ModelSetNeedsConfirm(:final message):
         // Defensive: a confirm AFTER confirm_expensive_model:true would

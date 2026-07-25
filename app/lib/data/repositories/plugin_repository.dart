@@ -1,7 +1,7 @@
-import 'package:hermes/data/dto/plugin_dtos.dart';
-import 'package:hermes/data/transport/gateway_rpc_client.dart';
-import 'package:hermes/domain/models/plugin_info.dart';
-import 'package:hermes/domain/repositories/plugin_repository.dart';
+import 'package:flit/data/dto/plugin_dtos.dart';
+import 'package:flit/data/transport/gateway_rpc_client.dart';
+import 'package:flit/domain/models/plugin_info.dart';
+import 'package:flit/domain/repositories/plugin_repository.dart';
 
 /// [PluginRepository] over [GatewayRpcClient.request] (ticket P1-14).
 ///

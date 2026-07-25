@@ -1,6 +1,6 @@
-import 'package:hermes/domain/models/deep_equals.dart';
-import 'package:hermes/domain/models/tool_call.dart';
-import 'package:hermes/domain/models/usage.dart';
+import 'package:flit/domain/models/deep_equals.dart';
+import 'package:flit/domain/models/tool_call.dart';
+import 'package:flit/domain/models/usage.dart';
 
 /// Who authored a message.
 enum MessageRole { user, assistant, system }

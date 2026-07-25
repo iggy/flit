@@ -4,7 +4,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hermes/data/dto/model_options_dto.dart';
+import 'package:flit/data/dto/model_options_dto.dart';
 
 void main() {
   // Verbatim §8 example.

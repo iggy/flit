@@ -7,11 +7,11 @@
 /// bug-prone code in the app.
 library;
 
-import 'package:hermes/data/dto/events/gateway_event_parser.dart';
-import 'package:hermes/domain/models/chat_message.dart';
-import 'package:hermes/domain/models/deep_equals.dart';
-import 'package:hermes/domain/models/interactive_prompt.dart';
-import 'package:hermes/domain/models/tool_call.dart';
+import 'package:flit/data/dto/events/gateway_event_parser.dart';
+import 'package:flit/domain/models/chat_message.dart';
+import 'package:flit/domain/models/deep_equals.dart';
+import 'package:flit/domain/models/interactive_prompt.dart';
+import 'package:flit/domain/models/tool_call.dart';
 
 /// Immutable state of one session's chat view: the ordered message list
 /// plus the interactive prompts still awaiting an answer.

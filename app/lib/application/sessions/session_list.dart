@@ -16,13 +16,16 @@
 ///   `messageListProvider` starts empty and only folds NEW events.
 library;
 
+import 'package:flit/application/chat/message_list_notifier.dart';
+import 'package:flit/application/connection/connection_providers.dart';
+import 'package:flit/application/providers.dart';
+import 'package:flit/application/sessions/active_session.dart';
+import 'package:flit/core/errors/gateway_error.dart';
+import 'package:flit/data/dto/events/gateway_event_parser.dart';
+import 'package:flit/domain/models/active_session.dart';
+import 'package:flit/domain/models/session_detail.dart';
+import 'package:flit/domain/models/session_summary.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hermes/application/chat/message_list_notifier.dart';
-import 'package:hermes/application/providers.dart';
-import 'package:hermes/application/sessions/active_session.dart';
-import 'package:hermes/core/errors/gateway_error.dart';
-import 'package:hermes/domain/models/active_session.dart';
-import 'package:hermes/domain/models/session_summary.dart';
 
 /// Stored conversations (`session.list`, wire §3) — durable ids. Empty when
 /// disconnected (the repository is null) so the drawer renders an empty
@@ -38,10 +41,23 @@ final sessionListProvider = FutureProvider<List<SessionSummary>>((ref) async {
 /// Live sessions (`session.active_list`, wire §4) — live ids + status
 /// badges. The CURRENT live id is passed in (protocol §9: the gateway
 /// doesn't own "current"), so the list re-fetches when the active session
-/// changes.
+/// changes. Also re-fetches on each `session.info` event (P2-10: keeps
+/// badges current after every turn).
 final activeSessionListProvider = FutureProvider<List<ActiveSession>>((
   ref,
 ) async {
+  // Re-fetch live statuses whenever the gateway reports a turn boundary
+  // (session.info fires after each turn — P2-10 keeps badges current).
+  ref.listen(gatewayEventsProvider, (previous, next) {
+    final raw = next.value;
+    if (raw == null) {
+      return;
+    }
+    final event = parseGatewayEvent(raw);
+    if (event is SessionInfo) {
+      ref.invalidateSelf();
+    }
+  });
   final repository = ref.watch(sessionRepositoryProvider);
   if (repository == null) {
     return const <ActiveSession>[];
@@ -148,7 +164,7 @@ class SessionActions {
       // conversation is visible.
       _ref
           .read(messageListProvider(result.liveId).notifier)
-          .seedHistory(result.messages);
+          .seedHistory(result.messages, inflight: result.inflight);
       return null;
     } on GatewayException catch (error) {
       return error.message;
@@ -219,5 +235,138 @@ class SessionActions {
       }
     }
     return null;
+  }
+
+  /// `session.title` SET mode (wire §session.title, protocol §9 LIVE id).
+  /// Rename the session by its LIVE id.
+  Future<String?> rename(String liveId, String title) async {
+    final repository = _ref.read(sessionRepositoryProvider);
+    if (repository == null) {
+      return _notConnected;
+    }
+    try {
+      await repository.setTitle(liveId, title);
+      _ref.invalidate(sessionListProvider);
+      _ref.invalidate(activeSessionListProvider);
+      return null;
+    } on GatewayException catch (error) {
+      return error.message;
+    } on Object catch (error) {
+      return error.toString();
+    }
+  }
+
+  /// `session.delete` (wire §session.delete, protocol §9 DURABLE id).
+  /// Delete a stored session by its DURABLE id.
+  Future<String?> deleteSession(String durableId) async {
+    final repository = _ref.read(sessionRepositoryProvider);
+    if (repository == null) {
+      return _notConnected;
+    }
+    try {
+      await repository.delete(durableId);
+      _ref.invalidate(sessionListProvider);
+      return null;
+    } on GatewayException catch (error) {
+      return error.message;
+    } on Object catch (error) {
+      return error.toString();
+    }
+  }
+
+  /// `session.save` (wire §session.save, protocol §9 LIVE id). Export the
+  /// conversation to a JSON file.
+  Future<String?> save(String liveId) async {
+    final repository = _ref.read(sessionRepositoryProvider);
+    if (repository == null) {
+      return _notConnected;
+    }
+    try {
+      await repository.save(liveId);
+      return null;
+    } on GatewayException catch (error) {
+      return error.message;
+    } on Object catch (error) {
+      return error.toString();
+    }
+  }
+
+  /// `session.branch` (wire §session.branch, protocol §9 LIVE id of parent).
+  /// Create a branch from a parent session and make it active.
+  Future<String?> branchSession(String liveId, {String? name}) async {
+    final repository = _ref.read(sessionRepositoryProvider);
+    if (repository == null) {
+      return _notConnected;
+    }
+    try {
+      final BranchResult result = await repository.branch(liveId, name: name);
+      _ref
+          .read(activeSessionProvider.notifier)
+          .switchTo(liveId: result.liveId);
+      _ref.invalidate(sessionListProvider);
+      _ref.invalidate(activeSessionListProvider);
+      return null;
+    } on GatewayException catch (error) {
+      return error.message;
+    } on Object catch (error) {
+      return error.toString();
+    }
+  }
+
+  /// `session.compress` (wire §session.compress, protocol §9 LIVE id).
+  /// Compress conversation context. LONG handler.
+  Future<String?> compress(String liveId, {String? focusTopic}) async {
+    final repository = _ref.read(sessionRepositoryProvider);
+    if (repository == null) {
+      return _notConnected;
+    }
+    try {
+      final CompressResult result = await repository.compress(liveId, focusTopic: focusTopic);
+      if (result.lockHeld) {
+        return result.message ?? 'Compression is already in progress.';
+      }
+      _ref.invalidate(activeSessionListProvider);
+      return null;
+    } on GatewayException catch (error) {
+      return error.message;
+    } on Object catch (error) {
+      return error.toString();
+    }
+  }
+
+  /// `session.undo` (wire §session.undo, protocol §9 LIVE id). Pop the last
+  /// user+assistant turn.
+  Future<String?> undo(String liveId) async {
+    final repository = _ref.read(sessionRepositoryProvider);
+    if (repository == null) {
+      return _notConnected;
+    }
+    try {
+      await repository.undo(liveId);
+      _ref.invalidate(activeSessionListProvider);
+      return null;
+    } on GatewayException catch (error) {
+      return error.message;
+    } on Object catch (error) {
+      return error.toString();
+    }
+  }
+
+  /// `session.cwd.set` (wire §session.cwd.set, protocol §9 LIVE id). Set the
+  /// working directory.
+  Future<String?> setCwd(String liveId, String cwd) async {
+    final repository = _ref.read(sessionRepositoryProvider);
+    if (repository == null) {
+      return _notConnected;
+    }
+    try {
+      await repository.setCwd(liveId, cwd);
+      _ref.invalidate(activeSessionListProvider);
+      return null;
+    } on GatewayException catch (error) {
+      return error.message;
+    } on Object catch (error) {
+      return error.toString();
+    }
   }
 }

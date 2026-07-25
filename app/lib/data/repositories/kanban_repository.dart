@@ -1,7 +1,7 @@
-import 'package:hermes/core/errors/gateway_error.dart';
-import 'package:hermes/data/transport/gateway_rest_client.dart';
-import 'package:hermes/domain/models/kanban.dart';
-import 'package:hermes/domain/repositories/kanban_repository.dart';
+import 'package:flit/core/errors/gateway_error.dart';
+import 'package:flit/data/transport/gateway_rest_client.dart';
+import 'package:flit/domain/models/kanban.dart';
+import 'package:flit/domain/repositories/kanban_repository.dart';
 
 /// [KanbanRepository] over [GatewayRestClient] (ticket P1-15).
 ///

@@ -14,18 +14,19 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hermes/application/connection/connection_providers.dart';
-import 'package:hermes/application/providers.dart';
-import 'package:hermes/data/dto/events/gateway_event_parser.dart';
-import 'package:hermes/data/transport/gateway_rpc_client.dart';
-import 'package:hermes/domain/models/active_session.dart';
-import 'package:hermes/domain/models/session_bootstrap.dart';
-import 'package:hermes/domain/models/session_summary.dart';
-import 'package:hermes/domain/repositories/chat_repository.dart';
-import 'package:hermes/domain/repositories/session_repository.dart';
-import 'package:hermes/presentation/chat/approval_prompt_card.dart';
-import 'package:hermes/presentation/chat/chat_screen.dart';
-import 'package:hermes/presentation/chat/clarify_prompt_card.dart';
+import 'package:flit/application/connection/connection_providers.dart';
+import 'package:flit/application/providers.dart';
+import 'package:flit/data/dto/events/gateway_event_parser.dart';
+import 'package:flit/data/transport/gateway_rpc_client.dart';
+import 'package:flit/domain/models/active_session.dart';
+import 'package:flit/domain/models/session_bootstrap.dart';
+import 'package:flit/domain/models/session_detail.dart';
+import 'package:flit/domain/models/session_summary.dart';
+import 'package:flit/domain/repositories/chat_repository.dart';
+import 'package:flit/domain/repositories/session_repository.dart';
+import 'package:flit/presentation/chat/approval_prompt_card.dart';
+import 'package:flit/presentation/chat/chat_screen.dart';
+import 'package:flit/presentation/chat/clarify_prompt_card.dart';
 
 const liveId = 'a1b2c3d4';
 
@@ -84,6 +85,42 @@ final class FakeSessionRepository implements SessionRepository {
   @override
   Future<SessionResumeResult> resume(String durableId) =>
       throw UnimplementedError();
+
+  @override
+  Future<MostRecentSession?> mostRecent({String? profile}) =>
+      throw UnimplementedError();
+
+  @override
+  Future<String> setTitle(String liveId, String title) =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> delete(String durableId, {String? profile}) =>
+      throw UnimplementedError();
+
+  @override
+  Future<SessionUsageStats> usage(String liveId) => throw UnimplementedError();
+
+  @override
+  Future<ContextBreakdown> contextBreakdown(String liveId) =>
+      throw UnimplementedError();
+
+  @override
+  Future<CompressResult> compress(String liveId, {String? focusTopic}) =>
+      throw UnimplementedError();
+
+  @override
+  Future<int> undo(String liveId) => throw UnimplementedError();
+
+  @override
+  Future<String> save(String liveId) => throw UnimplementedError();
+
+  @override
+  Future<BranchResult> branch(String liveId, {String? name}) =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> setCwd(String liveId, String cwd) => throw UnimplementedError();
 }
 
 void main() {

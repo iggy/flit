@@ -1,7 +1,7 @@
-import 'package:hermes/core/errors/gateway_error.dart';
-import 'package:hermes/data/transport/gateway_rest_client.dart';
-import 'package:hermes/domain/models/profile.dart';
-import 'package:hermes/domain/repositories/profile_repository.dart';
+import 'package:flit/core/errors/gateway_error.dart';
+import 'package:flit/data/transport/gateway_rest_client.dart';
+import 'package:flit/domain/models/profile.dart';
+import 'package:flit/domain/repositories/profile_repository.dart';
 
 /// [ProfileRepository] over [GatewayRestClient] (ticket P1-13).
 ///

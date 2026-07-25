@@ -12,12 +12,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hermes/application/connection/connection_providers.dart';
-import 'package:hermes/core/errors/gateway_error.dart';
-import 'package:hermes/data/storage/connection_store.dart';
-import 'package:hermes/data/transport/gateway_rpc_client.dart';
-import 'package:hermes/domain/models/gateway_status.dart';
-import 'package:hermes/presentation/connect/connect_screen.dart';
+import 'package:flit/application/connection/connection_providers.dart';
+import 'package:flit/core/errors/gateway_error.dart';
+import 'package:flit/data/storage/connection_store.dart';
+import 'package:flit/data/transport/gateway_rpc_client.dart';
+import 'package:flit/domain/models/gateway_status.dart';
+import 'package:flit/presentation/connect/connect_screen.dart';
 
 /// In-memory store — the real one needs a platform channel.
 final class InMemoryKeyValueStore implements KeyValueStore {

@@ -1,7 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:hermes/data/transport/gateway_rpc_client.dart';
-import 'package:hermes/domain/models/chat_message.dart';
-import 'package:hermes/domain/models/usage.dart';
+import 'package:flit/data/transport/gateway_rpc_client.dart';
+import 'package:flit/domain/models/chat_message.dart';
+import 'package:flit/domain/models/usage.dart';
 
 part 'gateway_event_parser.freezed.dart';
 

@@ -6,18 +6,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hermes/application/chat/message_list_notifier.dart';
-import 'package:hermes/application/connection/connection_providers.dart';
-import 'package:hermes/application/providers.dart';
-import 'package:hermes/application/sessions/active_session.dart';
-import 'package:hermes/core/errors/gateway_error.dart';
-import 'package:hermes/domain/models/active_session.dart';
-import 'package:hermes/domain/models/chat_message.dart';
-import 'package:hermes/domain/models/gateway_status.dart';
-import 'package:hermes/domain/models/session_bootstrap.dart';
-import 'package:hermes/domain/models/session_summary.dart';
-import 'package:hermes/domain/repositories/session_repository.dart';
-import 'package:hermes/presentation/sessions/session_drawer.dart';
+import 'package:flit/application/chat/message_list_notifier.dart';
+import 'package:flit/application/connection/connection_providers.dart';
+import 'package:flit/application/providers.dart';
+import 'package:flit/application/sessions/active_session.dart';
+import 'package:flit/core/errors/gateway_error.dart';
+import 'package:flit/domain/models/active_session.dart';
+import 'package:flit/domain/models/chat_message.dart';
+import 'package:flit/domain/models/gateway_status.dart';
+import 'package:flit/domain/models/session_bootstrap.dart';
+import 'package:flit/domain/models/session_detail.dart';
+import 'package:flit/domain/models/session_summary.dart';
+import 'package:flit/domain/repositories/session_repository.dart';
+import 'package:flit/presentation/sessions/session_drawer.dart';
 
 /// Hand-rolled fake (established pattern — see active_session_test.dart).
 final class FakeSessionRepository implements SessionRepository {
@@ -88,6 +89,55 @@ final class FakeSessionRepository implements SessionRepository {
   Future<void> interrupt(String liveId) async {
     interrupted.add(liveId);
   }
+
+  @override
+  Future<MostRecentSession?> mostRecent({String? profile}) =>
+      throw UnimplementedError();
+
+  final List<({String liveId, String title})> renamed = <({String liveId, String title})>[];
+  final List<String> deleted = <String>[];
+  final List<String> branched = <String>[];
+
+  @override
+  Future<String> setTitle(String liveId, String title) async {
+    renamed.add((liveId: liveId, title: title));
+    return title;
+  }
+
+  @override
+  Future<void> delete(String durableId, {String? profile}) async {
+    deleted.add(durableId);
+  }
+
+  @override
+  Future<SessionUsageStats> usage(String liveId) => throw UnimplementedError();
+
+  @override
+  Future<ContextBreakdown> contextBreakdown(String liveId) =>
+      throw UnimplementedError();
+
+  @override
+  Future<CompressResult> compress(String liveId, {String? focusTopic}) =>
+      throw UnimplementedError();
+
+  @override
+  Future<int> undo(String liveId) => throw UnimplementedError();
+
+  @override
+  Future<String> save(String liveId) => throw UnimplementedError();
+
+  @override
+  Future<BranchResult> branch(String liveId, {String? name}) async {
+    branched.add(liveId);
+    return const BranchResult(
+      liveId: 'branched-live-id',
+      title: 'Branched session',
+      parentDurableId: 'parent-durable-id',
+    );
+  }
+
+  @override
+  Future<void> setCwd(String liveId, String cwd) => throw UnimplementedError();
 }
 
 /// A gateway status pre-seeded into gatewayStatusProvider (P1-16 footer).
@@ -367,5 +417,227 @@ void main() {
     await pumpDrawer(tester);
 
     expect(find.textContaining('Gateway v'), findsNothing);
+  });
+
+  testWidgets('RefreshIndicator is present in the drawer (P2-10)', (
+    tester,
+  ) async {
+    await pumpDrawer(tester);
+
+    expect(find.byType(RefreshIndicator), findsOneWidget);
+  });
+
+  group('row actions (P2-03/04)', () {
+    testWidgets('history row delete flow calls deleteSession', (tester) async {
+      repository.listResult = const <SessionSummary>[
+        SessionSummary(
+          durableId: 'durable-1',
+          title: 'Old session',
+          preview: 'some preview',
+          messageCount: 5,
+        ),
+      ];
+
+      await pumpDrawer(tester);
+
+      // Open the popup menu on the history row.
+      final menuKey = sessionDrawerMenuKey('durable-1');
+      await tester.tap(find.byKey(menuKey));
+      await tester.pumpAndSettle();
+
+      // Tap Delete.
+      await tester.tap(find.text('Delete'));
+      await tester.pumpAndSettle();
+
+      // Confirm the delete dialog.
+      expect(find.text('Delete session?'), findsOneWidget);
+      await tester.tap(find.byKey(sessionDrawerDeleteConfirmKey));
+      await tester.pump(); // Start the close animation.
+      await tester.pump(const Duration(seconds: 1)); // Finish the animation.
+
+      // Verify deleteSession was called.
+      expect(repository.deleted, <String>['durable-1']);
+      // Drawer stays open after delete.
+      expect(find.byType(Drawer), findsOneWidget);
+    });
+
+    testWidgets('rename flow on active live row calls rename', (tester) async {
+      repository.activeListResult = const <ActiveSession>[
+        ActiveSession(
+          liveId: 'aaaa1111',
+          status: SessionStatus.idle,
+          title: 'Old title',
+        ),
+      ];
+
+      final container = await pumpDrawer(tester);
+      switchActiveTo(container, liveId: 'aaaa1111', durableId: 'durable-1');
+      await tester.pumpAndSettle();
+
+      // Open the popup menu on the live row.
+      final menuKey = sessionDrawerMenuKey('aaaa1111');
+      await tester.tap(find.byKey(menuKey));
+      await tester.pumpAndSettle();
+
+      // Tap Rename.
+      await tester.tap(find.text('Rename'));
+      await tester.pumpAndSettle();
+
+      // Enter new title.
+      expect(find.text('Rename session'), findsOneWidget);
+      final textField = find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(TextField),
+      );
+      await tester.enterText(textField, 'New title');
+
+      // Confirm rename.
+      await tester.tap(find.byKey(sessionDrawerRenameConfirmKey));
+      await tester.pump(); // Start the close animation.
+      await tester.pump(const Duration(seconds: 1)); // Finish the animation.
+
+      // Verify rename was called.
+      expect(repository.renamed, hasLength(1));
+      expect(repository.renamed[0].liveId, 'aaaa1111');
+      expect(repository.renamed[0].title, 'New title');
+      // Drawer stays open after rename.
+      expect(find.byType(Drawer), findsOneWidget);
+    });
+
+    testWidgets('branch flow on live row calls branchSession', (tester) async {
+      repository.activeListResult = const <ActiveSession>[
+        ActiveSession(
+          liveId: 'aaaa1111',
+          status: SessionStatus.idle,
+          title: 'Parent session',
+        ),
+      ];
+
+      final container = await pumpDrawer(tester);
+      switchActiveTo(container, liveId: 'aaaa1111', durableId: 'durable-1');
+      await tester.pumpAndSettle();
+
+      // Open the popup menu on the live row.
+      final menuKey = sessionDrawerMenuKey('aaaa1111');
+      await tester.tap(find.byKey(menuKey));
+      await tester.pumpAndSettle();
+
+      // Tap Branch.
+      await tester.tap(find.text('Branch'));
+      await tester.pumpAndSettle();
+
+      // Confirm branch dialog.
+      expect(find.text('Branch session?'), findsOneWidget);
+      await tester.tap(find.byKey(sessionDrawerBranchConfirmKey));
+      await tester.pump(); // Start the close animation.
+      await tester.pump(const Duration(seconds: 1)); // Finish the animation.
+
+      // Verify branchSession was called.
+      expect(repository.branched, <String>['aaaa1111']);
+      // Drawer closes after successful branch (switches to new session).
+      expect(find.byType(Drawer), findsNothing);
+    });
+
+    testWidgets('history row of active session shows rename and branch', (
+      tester,
+    ) async {
+      repository.listResult = const <SessionSummary>[
+        SessionSummary(
+          durableId: 'durable-1',
+          title: 'Active history',
+          preview: 'preview',
+          messageCount: 3,
+        ),
+      ];
+
+      final container = await pumpDrawer(tester);
+      switchActiveTo(container, liveId: 'aaaa1111', durableId: 'durable-1');
+      await tester.pumpAndSettle();
+
+      // Open the popup menu on the history row.
+      final menuKey = sessionDrawerMenuKey('durable-1');
+      await tester.tap(find.byKey(menuKey));
+      await tester.pumpAndSettle();
+
+      // Active history row should have Rename, Branch, and Delete.
+      expect(find.text('Rename'), findsOneWidget);
+      expect(find.text('Branch'), findsOneWidget);
+      expect(find.text('Delete'), findsOneWidget);
+    });
+
+    testWidgets('history row of inactive session shows only delete', (
+      tester,
+    ) async {
+      repository.listResult = const <SessionSummary>[
+        SessionSummary(
+          durableId: 'durable-old',
+          title: 'Inactive history',
+          preview: 'preview',
+          messageCount: 3,
+        ),
+      ];
+
+      final container = await pumpDrawer(tester);
+      switchActiveTo(container, liveId: 'aaaa1111', durableId: 'durable-1');
+      await tester.pumpAndSettle();
+
+      // Open the popup menu on the inactive history row.
+      final menuKey = sessionDrawerMenuKey('durable-old');
+      await tester.tap(find.byKey(menuKey));
+      await tester.pumpAndSettle();
+
+      // Inactive history row should have only Delete.
+      expect(find.text('Rename'), findsNothing);
+      expect(find.text('Branch'), findsNothing);
+      expect(find.text('Delete'), findsOneWidget);
+    });
+
+    testWidgets('live row shows rename and branch when not working', (
+      tester,
+    ) async {
+      repository.activeListResult = const <ActiveSession>[
+        ActiveSession(
+          liveId: 'aaaa1111',
+          status: SessionStatus.idle,
+          title: 'Idle session',
+        ),
+      ];
+
+      final container = await pumpDrawer(tester);
+      switchActiveTo(container, liveId: 'bbbb2222', durableId: 'durable-2');
+      await tester.pumpAndSettle();
+
+      // Open the popup menu on the non-current live row.
+      final menuKey = sessionDrawerMenuKey('aaaa1111');
+      await tester.tap(find.byKey(menuKey));
+      await tester.pumpAndSettle();
+
+      // Non-working live row should have Rename and Branch.
+      expect(find.text('Rename'), findsOneWidget);
+      expect(find.text('Branch'), findsOneWidget);
+      // No Delete for live rows (durableId is null).
+      expect(find.text('Delete'), findsNothing);
+    });
+
+    testWidgets('working current row shows interrupt, not menu', (
+      tester,
+    ) async {
+      repository.activeListResult = const <ActiveSession>[
+        ActiveSession(
+          liveId: 'aaaa1111',
+          status: SessionStatus.working,
+          title: 'Working session',
+        ),
+      ];
+
+      final container = await pumpDrawer(tester);
+      switchActiveTo(container, liveId: 'aaaa1111', durableId: 'durable-1');
+      await tester.pumpAndSettle();
+
+      // Current+working row shows interrupt button, not menu.
+      expect(find.byKey(sessionDrawerInterruptKey), findsOneWidget);
+      final menuKey = sessionDrawerMenuKey('aaaa1111');
+      expect(find.byKey(menuKey), findsNothing);
+    });
   });
 }

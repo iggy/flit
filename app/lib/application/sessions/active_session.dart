@@ -13,9 +13,10 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hermes/application/chat/message_list_notifier.dart';
-import 'package:hermes/application/providers.dart';
-import 'package:hermes/core/errors/gateway_error.dart';
+
+import 'package:flit/application/chat/message_list_notifier.dart';
+import 'package:flit/application/providers.dart';
+import 'package:flit/core/errors/gateway_error.dart';
 
 /// State of the client's current (active) session. "Current" is tracked
 /// entirely client-side — the gateway doesn't own it (protocol §9).
@@ -139,7 +140,7 @@ class ActiveSessionNotifier extends Notifier<ActiveSessionState> {
         switchTo(liveId: result.liveId, durableId: result.durableId);
         ref
             .read(messageListProvider(result.liveId).notifier)
-            .seedHistory(result.messages);
+            .seedHistory(result.messages, inflight: result.inflight);
         return;
       } on GatewayException {
         // The session is gone server-side — fall through to a fresh

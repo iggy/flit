@@ -18,21 +18,22 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hermes/application/chat/message_fold.dart';
-import 'package:hermes/application/chat/message_list_notifier.dart';
-import 'package:hermes/application/connection/connect_controller.dart';
-import 'package:hermes/application/connection/connection_providers.dart';
-import 'package:hermes/application/sessions/active_session.dart';
-import 'package:hermes/data/transport/gateway_rpc_client.dart';
-import 'package:hermes/domain/models/interactive_prompt.dart';
-import 'package:hermes/presentation/chat/approval_prompt_card.dart';
-import 'package:hermes/presentation/chat/clarify_prompt_card.dart';
-import 'package:hermes/presentation/chat/composer.dart';
-import 'package:hermes/presentation/chat/message_bubble.dart';
-import 'package:hermes/presentation/common/connection_chip.dart';
-import 'package:hermes/presentation/models/model_picker_sheet.dart';
-import 'package:hermes/presentation/profiles/profile_menu.dart';
-import 'package:hermes/presentation/sessions/session_drawer.dart';
+import 'package:flit/application/chat/message_fold.dart';
+import 'package:flit/application/chat/message_list_notifier.dart';
+import 'package:flit/application/connection/connect_controller.dart';
+import 'package:flit/application/connection/connection_providers.dart';
+import 'package:flit/application/sessions/active_session.dart';
+import 'package:flit/data/transport/gateway_rpc_client.dart';
+import 'package:flit/domain/models/interactive_prompt.dart';
+import 'package:flit/presentation/chat/approval_prompt_card.dart';
+import 'package:flit/presentation/chat/clarify_prompt_card.dart';
+import 'package:flit/presentation/chat/composer.dart';
+import 'package:flit/presentation/chat/message_bubble.dart';
+import 'package:flit/presentation/common/connection_chip.dart';
+import 'package:flit/presentation/models/model_picker_sheet.dart';
+import 'package:flit/presentation/profiles/profile_menu.dart';
+import 'package:flit/presentation/sessions/session_drawer.dart';
+import 'package:flit/presentation/sessions/session_info_sheet.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
@@ -124,6 +125,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           // stub implementations in place (same files, same class names).
           const ModelPickerButton(),
           const ProfileMenuButton(),
+          const SessionInfoButton(),
           IconButton(
             tooltip: 'Plugins',
             icon: const Icon(Icons.extension_outlined),

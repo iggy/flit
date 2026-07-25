@@ -1,0 +1,202 @@
+# Taskfile for the flit Flutter client
+# Cross-platform (mobile + desktop) Flutter client for the Hermes Agent gateway.
+#
+# Supported build targets:
+#   task build                 # build all platforms
+#   task build-android         # APK + app-bundle (split by default)
+#   task build-ios             # iOS (requires macOS + Xcode)
+#   task build-ios-simulator   # iOS Simulator (requires macOS)
+#   task build-web             # web (Chrome by default)
+#   task build-macos           # macOS (requires macOS)
+#   task build-windows         # Windows
+#   task build-linux           # Linux
+#   task build-linux-rpm       # Linux via RPM (Fedora/RHEL)
+#   task watch                 # flutter run on default target
+#   task test                  # run flutter tests
+#   task analyze               # flutter analyze
+#   task pub-get               # flutter pub get
+#   task clean                 # clean build outputs + pub cache
+#
+# Overridable variables (set via env or `task var=value build`):
+#   BUILD_MODE    debug|profile|release  (default: release)
+#   FLAVOR        flavor name, if flavors are defined
+#   ANDROID_ABI   e.g. arm64-v8a, armeabi-v7a, x86_64 (default: all)
+#   WEB_RENDERER  auto|html|canvaskit   (default: auto)
+#   DEVICE        device id for watch/run (e.g. chrome, ios, macos)
+#   LINUX_PACKAGE_FORMAT  deb|rpm (default: deb)
+#
+# See https://taskfile.dev for Taskfile syntax reference.
+
+version: '3'
+
+# ---------------------------------------------------------------------------
+# Variables
+# ---------------------------------------------------------------------------
+vars:
+  # Build mode shared across platforms. RELEASE for distribution, PROFILE for
+  # tracing, DEBUG for development.  Override with `BUILD_MODE=debug task ...`.
+  BUILD_MODE: '{{ or .BUILD_MODE "release" }}'
+  # Optional flavor suffix applied to mobile/desktop builds, e.g. "dev", "prod".
+  FLAVOR: '{{ or .FLAVOR "" }}'
+  # Comma-separated list of ABIs to split the Android build by. Empty = all.
+  # Example: ANDROID_ABI=arm64-v8a task build-android
+  ANDROID_ABI: '{{ or .ANDROID_ABI "" }}'
+
+# ---------------------------------------------------------------------------
+# Default task
+# ---------------------------------------------------------------------------
+tasks:
+  default:
+    desc: 'Show available tasks'
+    cmds:
+      - task --list
+
+  # ---------------------------------------------------------------------------
+  # Setup
+  # ---------------------------------------------------------------------------
+  pub-get:
+    desc: 'Install / refresh Dart package dependencies'
+    cmds:
+      - flutter pub get
+    sources:
+      - pubspec.yaml
+      - pubspec.lock
+
+  analyze:
+    desc: 'Run static analysis (flutter analyze)'
+    cmds:
+      - flutter analyze
+    deps:
+      - pub-get
+
+  # ---------------------------------------------------------------------------
+  # Tests
+  # ---------------------------------------------------------------------------
+  test:
+    desc: 'Run the Flutter test suite'
+    cmds:
+      - flutter test {{.ARGS}}
+    deps:
+      - pub-get
+    # ARGS lets you pass through extra flags, e.g. `task test -- --name foo`
+
+  # ---------------------------------------------------------------------------
+  # Development / watch
+  # ---------------------------------------------------------------------------
+  # `flutter run` targets: -d chrome, -d ios, -d android, -d macos, etc.
+  # Pass a device with `task watch -- -d chrome` or override DEVICE.
+  watch:
+    desc: 'Run the app in watch mode (flutter run)'
+    cmds:
+      - flutter run -{{ .BUILD_MODE }} {{ if .DEVICE }} -d {{.DEVICE}} {{ end }} {{ .ARGS }}
+    deps:
+      - pub-get
+    # Example: DEVICE=chrome task watch
+
+  # ---------------------------------------------------------------------------
+  # Build: all platforms
+  # ---------------------------------------------------------------------------
+  build:
+    desc: 'Build the app for every supported platform'
+    cmds:
+      - task build-android
+      - task build-ios
+      - task build-web
+      - task build-macos
+      - task build-windows
+      - task build-linux
+
+  # ---------------------------------------------------------------------------
+  # Android — APK + App Bundle
+  # ---------------------------------------------------------------------------
+  build-android:
+    desc: 'Build Android APK(s) and App Bundle (AAB)'
+    cmds:
+      # Split per-ABI APK for local testing / sideloading.
+      - flutter build apk --{{ .BUILD_MODE }}{{ if .FLAVOR }} --flavor {{.FLAVOR}}{{ end }}{{ if .ANDROID_ABI }} --target-platform android-{{.ANDROID_ABI}}{{ end }}
+      # Universal (fat) APK fallback — uncomment if preferred.
+      # - flutter build apk --{{ .BUILD_MODE }} --target-platform android-arm64
+      # App Bundle for Play Store distribution.
+      - flutter build appbundle --{{ .BUILD_MODE }}{{ if .FLAVOR }} --flavor {{.FLAVOR}}{{ end }}
+    deps:
+      - pub-get
+
+  # ---------------------------------------------------------------------------
+  # iOS — release build for device (macOS + Xcode required)
+  # ---------------------------------------------------------------------------
+  build-ios:
+    desc: 'Build iOS for device (requires macOS + Xcode)'
+    cmds:
+      - flutter build ios --{{ .BUILD_MODE }}{{ if .FLAVOR }} --flavor {{.FLAVOR}}{{ end }}
+    deps:
+      - pub-get
+
+  # ---------------------------------------------------------------------------
+  # iOS Simulator (macOS only, handy for CI on mac workers)
+  # ---------------------------------------------------------------------------
+  build-ios-simulator:
+    desc: 'Build iOS for the simulator (requires macOS)'
+    cmds:
+      - flutter build ios --{{ .BUILD_MODE }} --simulator{{ if .FLAVOR }} --flavor {{.FLAVOR}}{{ end }}
+    deps:
+      - pub-get
+
+  # ---------------------------------------------------------------------------
+  # Web — Chrome-targeted build
+  # ---------------------------------------------------------------------------
+  build-web:
+    desc: 'Build the Progressive Web App'
+    cmds:
+      - flutter build web --{{ .BUILD_MODE }}{{ if .FLAVOR }} --flavor {{.FLAVOR}}{{ end }}{{ if .WEB_RENDERER }} --web-renderer {{.WEB_RENDERER}}{{ end }}
+    deps:
+      - pub-get
+
+  # ---------------------------------------------------------------------------
+  # macOS — native app bundle (.app / .zip for distribution)
+  # ---------------------------------------------------------------------------
+  build-macos:
+    desc: 'Build macOS app (requires macOS)'
+    cmds:
+      - flutter build macos --{{ .BUILD_MODE }}{{ if .FLAVOR }} --flavor {{.FLAVOR}}{{ end }}
+    deps:
+      - pub-get
+
+  # ---------------------------------------------------------------------------
+  # Windows — native .exe + installer
+  # ---------------------------------------------------------------------------
+  build-windows:
+    desc: 'Build Windows app'
+    cmds:
+      - flutter build windows --{{ .BUILD_MODE }}{{ if .FLAVOR }} --flavor {{.FLAVOR}}{{ end }}
+    deps:
+      - pub-get
+
+  # ---------------------------------------------------------------------------
+  # Linux — native binary (default DEB packaging on Debian/Ubuntu)
+  # ---------------------------------------------------------------------------
+  build-linux:
+    desc: 'Build Linux app'
+    cmds:
+      - flutter build linux --{{ .BUILD_MODE }}{{ if .FLAVOR }} --flavor {{.FLAVOR}}{{ end }}{{ if .LINUX_PACKAGE_FORMAT }} --{{.LINUX_PACKAGE_FORMAT}}{{ end }}
+    deps:
+      - pub-get
+
+  # ---------------------------------------------------------------------------
+  # Linux — RPM packaging (Fedora / RHEL / openSUSE)
+  # ---------------------------------------------------------------------------
+  build-linux-rpm:
+    desc: 'Build Linux app packaged as RPM'
+    cmds:
+      - flutter build linux --{{ .BUILD_MODE }} --rpm
+    deps:
+      - pub-get
+
+  # ---------------------------------------------------------------------------
+  # Clean
+  # ---------------------------------------------------------------------------
+  clean:
+    desc: 'Remove build outputs, caches, and generated files'
+    cmds:
+      - flutter clean
+    deps:
+      - pub-get

@@ -3,9 +3,9 @@
 // §13 and the DTO→domain mapping (missing `version` → '?').
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hermes/data/repositories/plugin_repository.dart';
-import 'package:hermes/data/transport/gateway_rpc_client.dart';
-import 'package:hermes/domain/models/plugin_info.dart';
+import 'package:flit/data/repositories/plugin_repository.dart';
+import 'package:flit/data/transport/gateway_rpc_client.dart';
+import 'package:flit/domain/models/plugin_info.dart';
 
 /// Hand-written fake: subclasses [GatewayRpcClient] and overrides ONLY
 /// `request` — the single surface the repository uses. Records every call

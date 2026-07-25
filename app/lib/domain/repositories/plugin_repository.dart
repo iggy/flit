@@ -1,4 +1,4 @@
-import 'package:hermes/domain/models/plugin_info.dart';
+import 'package:flit/domain/models/plugin_info.dart';
 
 /// Intent-level plugin operations (ticket P1-14).
 abstract interface class PluginRepository {

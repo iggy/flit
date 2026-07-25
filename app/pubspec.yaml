@@ -1,4 +1,4 @@
-name: hermes
+name: flit
 description: "Cross-platform (mobile + desktop) Flutter client for the Hermes Agent gateway."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.

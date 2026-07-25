@@ -4,7 +4,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hermes/data/dto/config_set_result_dto.dart';
+import 'package:flit/data/dto/config_set_result_dto.dart';
 
 Map<String, dynamic> _resultOf(String frame) {
   final decoded = jsonDecode(frame) as Map<String, dynamic>;

@@ -1,4 +1,4 @@
-import 'package:hermes/domain/models/profile.dart';
+import 'package:flit/domain/models/profile.dart';
 
 /// Intent-level profile operations (ticket P1-13) — REST, NOT RPC (there is
 /// no `profile.*` method; docs/roadmap.md "profiles caveat").

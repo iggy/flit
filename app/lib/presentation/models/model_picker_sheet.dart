@@ -8,8 +8,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hermes/application/models/model_providers.dart';
-import 'package:hermes/domain/models/model_option.dart';
+import 'package:flit/application/config/config_providers.dart';
+import 'package:flit/application/models/model_providers.dart';
+import 'package:flit/domain/models/model_option.dart';
 
 /// App-bar action for model selection: the smart-toy icon plus the current
 /// model name as a compact label (when known), opening [ModelPickerSheet].
@@ -52,19 +53,31 @@ class ModelPickerButton extends ConsumerWidget {
 /// calls [ModelPickerController.select]; the sheet closes on a clean apply,
 /// shows the expensive-model confirm dialog when the gateway demands it,
 /// and shows failures inline.
-class ModelPickerSheet extends ConsumerWidget {
+class ModelPickerSheet extends ConsumerStatefulWidget {
   const ModelPickerSheet({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ModelPickerSheet> createState() => _ModelPickerSheetState();
+}
+
+class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.microtask(() {
+      ref.read(currentReasoningProvider.notifier).fetchInitial();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final optionsAsync = ref.watch(modelOptionsProvider);
     final pickerState = ref.watch(modelPickerControllerProvider);
     final current = ref.watch(currentModelProvider);
 
     ref.listen(modelPickerControllerProvider, (previous, next) {
-      // Clean apply (was switching, now idle with no confirm/error):
-      // close the sheet. The session.info event then refreshes the
-      // current model (wire §9).
       final wasSwitching = previous?.switching ?? false;
       if (wasSwitching &&
           !next.switching &&
@@ -76,7 +89,6 @@ class ModelPickerSheet extends ConsumerWidget {
         }
         return;
       }
-      // Expensive model: the gateway demands confirmation (wire §9).
       if (next.needsConfirm != null && previous?.needsConfirm == null) {
         unawaited(_showConfirmDialog(context, ref, next.needsConfirm!));
       }
@@ -94,6 +106,18 @@ class ModelPickerSheet extends ConsumerWidget {
               style: Theme.of(context).textTheme.titleMedium,
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: TextField(
+              decoration: const InputDecoration(
+                hintText: 'Search models...',
+                prefixIcon: Icon(Icons.search, size: 20),
+                isDense: true,
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) => setState(() => _searchQuery = value),
+            ),
+          ),
           if (pickerState.switching) const LinearProgressIndicator(),
           if (pickerState.error != null)
             _ErrorBanner(message: pickerState.error!),
@@ -101,10 +125,7 @@ class ModelPickerSheet extends ConsumerWidget {
             child: switch (optionsAsync) {
               AsyncData(:final value) => _buildProviderList(
                 context,
-                ref,
                 providers: value.providers,
-                // Prefer the merged tracker (fresh via session.info); fall
-                // back to the options fetch itself before the seed lands.
                 current:
                     current ??
                     (value.current.model.isEmpty ? null : value.current),
@@ -117,28 +138,48 @@ class ModelPickerSheet extends ConsumerWidget {
               _ => const _PaneMessage(icon: null, text: 'Loading models…'),
             },
           ),
+          _buildEffortSection(context),
         ],
       ),
     );
   }
 
   Widget _buildProviderList(
-    BuildContext context,
-    WidgetRef ref, {
+    BuildContext context, {
     required List<ModelProvider> providers,
     required CurrentModel? current,
     required bool switching,
   }) {
-    if (providers.isEmpty) {
+    final query = _searchQuery.toLowerCase();
+    final filteredProviders = providers.map((provider) {
+      if (query.isEmpty) return provider;
+      final filteredModels = provider.models
+          .where((model) => model.toLowerCase().contains(query))
+          .toList();
+      return ModelProvider(
+        name: provider.name,
+        slug: provider.slug,
+        authenticated: provider.authenticated,
+        isCurrent: provider.isCurrent,
+        authType: provider.authType,
+        keyEnv: provider.keyEnv,
+        models: filteredModels,
+        totalModels: provider.totalModels,
+        warning: provider.warning,
+      );
+    }).where((provider) => query.isEmpty || provider.models.isNotEmpty).toList();
+
+    if (filteredProviders.isEmpty) {
       return const _PaneMessage(
-        icon: Icons.smart_toy_outlined,
-        text: 'No providers available.',
+        icon: Icons.search_off,
+        text: 'No models match your search.',
       );
     }
+
     return ListView(
       shrinkWrap: true,
       children: <Widget>[
-        for (final provider in providers) ...<Widget>[
+        for (final provider in filteredProviders) ...<Widget>[
           _buildProviderHeader(context, provider),
           if (provider.models.isEmpty)
             const ListTile(
@@ -149,10 +190,9 @@ class ModelPickerSheet extends ConsumerWidget {
           for (final model in provider.models)
             _buildModelTile(
               context,
-              ref,
               provider: provider,
               model: model,
-              isCurrent: current?.model == model,
+              isCurrent: current?.model == model && current?.provider == provider.slug,
               switching: switching,
             ),
         ],
@@ -196,16 +236,13 @@ class ModelPickerSheet extends ConsumerWidget {
   }
 
   Widget _buildModelTile(
-    BuildContext context,
-    WidgetRef ref, {
+    BuildContext context, {
     required ModelProvider provider,
     required String model,
     required bool isCurrent,
     required bool switching,
   }) {
     final theme = Theme.of(context);
-    // Key entry is Phase 4 — for now providers without credentials are
-    // signalled and their rows disabled (ticket P1-12 notes).
     final pickable = provider.authenticated;
     return ListTile(
       dense: true,
@@ -260,6 +297,63 @@ class ModelPickerSheet extends ConsumerWidget {
               );
             },
             child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEffortSection(BuildContext context) {
+    final theme = Theme.of(context);
+    final reasoningPickerState = ref.watch(reasoningPickerControllerProvider);
+    final currentReasoning = ref.watch(currentReasoningProvider);
+    final reasonings = ref.watch(reasoningOptionsProvider);
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: theme.dividerColor, width: 1),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              'Effort',
+              style: theme.textTheme.titleSmall,
+            ),
+          ),
+          if (reasoningPickerState.switching)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 8),
+              child: LinearProgressIndicator(),
+            ),
+          if (reasoningPickerState.error != null)
+            _ErrorBannerReasoning(message: reasoningPickerState.error!),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: reasonings.map((reasoning) {
+              final isSelected = currentReasoning == reasoning.value;
+              return ChoiceChip(
+                label: Text(reasoning.label ?? reasoning.value),
+                selected: isSelected,
+                onSelected: reasoningPickerState.switching
+                    ? null
+                    : (selected) {
+                        if (selected) {
+                          unawaited(
+                            ref
+                                .read(reasoningPickerControllerProvider.notifier)
+                                .select(reasoning.value),
+                          );
+                        }
+                      },
+              );
+            }).toList(),
           ),
         ],
       ),
@@ -372,6 +466,47 @@ class _PaneMessage extends StatelessWidget {
             Text(text, textAlign: TextAlign.center),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Inline, dismissible error line for reasoning picker.
+class _ErrorBannerReasoning extends ConsumerWidget {
+  const _ErrorBannerReasoning({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      color: scheme.errorContainer,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: <Widget>[
+          Icon(Icons.error_outline, size: 16, color: scheme.onErrorContainer),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                color: scheme.onErrorContainer,
+                fontSize: 12,
+              ),
+            ),
+          ),
+          IconButton(
+            tooltip: 'Dismiss',
+            icon: const Icon(Icons.close, size: 16),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+            visualDensity: VisualDensity.compact,
+            onPressed: () =>
+                ref.read(reasoningPickerControllerProvider.notifier).clearError(),
+          ),
+        ],
       ),
     );
   }

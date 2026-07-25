@@ -1,4 +1,4 @@
-import 'package:hermes/domain/models/deep_equals.dart';
+import 'package:flit/domain/models/deep_equals.dart';
 
 /// Domain models for the kanban plugin board (ticket P1-15).
 ///

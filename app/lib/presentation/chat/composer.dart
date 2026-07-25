@@ -12,10 +12,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hermes/application/chat/message_list_notifier.dart';
-import 'package:hermes/application/providers.dart';
-import 'package:hermes/application/sessions/active_session.dart';
-import 'package:hermes/core/errors/gateway_error.dart';
+import 'package:flit/application/chat/message_list_notifier.dart';
+import 'package:flit/application/providers.dart';
+import 'package:flit/application/sessions/active_session.dart';
+import 'package:flit/core/errors/gateway_error.dart';
 
 /// Key of the composer's text field (widget tests target it directly).
 const Key composerFieldKey = Key('composer_field');

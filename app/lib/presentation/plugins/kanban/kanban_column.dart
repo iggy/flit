@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:hermes/domain/models/kanban.dart';
-import 'package:hermes/presentation/plugins/kanban/kanban_card.dart';
+import 'package:flit/domain/models/kanban.dart';
+import 'package:flit/presentation/plugins/kanban/kanban_card.dart';
 
 /// One board column: name header + task count + the scrollable list of
 /// [KanbanCard]s. Columns arrive in fixed server order; this widget renders

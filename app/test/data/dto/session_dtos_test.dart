@@ -6,9 +6,9 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hermes/data/dto/session_dtos.dart';
-import 'package:hermes/domain/models/active_session.dart';
-import 'package:hermes/domain/models/chat_message.dart';
+import 'package:flit/data/dto/session_dtos.dart';
+import 'package:flit/domain/models/active_session.dart';
+import 'package:flit/domain/models/chat_message.dart';
 
 Map<String, dynamic> _resultOf(String frame) {
   final decoded = jsonDecode(frame) as Map<String, dynamic>;
@@ -199,6 +199,42 @@ void main() {
       }).toDomain();
 
       expect(result.messageCount, 1);
+    });
+
+    test('maps inflight when present (P2-02)', () {
+      final result = SessionResumeResultDto.fromJson(const {
+        'session_id': 'e5f6a7b8',
+        'session_key': '2026..-uuid',
+        'inflight': {
+          'user': 'hi',
+          'assistant': 'partial response...',
+          'streaming': true,
+        },
+      }).toDomain();
+
+      expect(result.inflight, isNotNull);
+      expect(result.inflight!.user, 'hi');
+      expect(result.inflight!.assistant, 'partial response...');
+      expect(result.inflight!.streaming, isTrue);
+    });
+
+    test('treats null inflight as no inflight turn (P2-02)', () {
+      final result = SessionResumeResultDto.fromJson(const {
+        'session_id': 'e5f6a7b8',
+        'session_key': '2026..-uuid',
+        'inflight': null,
+      }).toDomain();
+
+      expect(result.inflight, isNull);
+    });
+
+    test('treats missing inflight as no inflight turn (P2-02)', () {
+      final result = SessionResumeResultDto.fromJson(const {
+        'session_id': 'e5f6a7b8',
+        'session_key': '2026..-uuid',
+      }).toDomain();
+
+      expect(result.inflight, isNull);
     });
   });
 }

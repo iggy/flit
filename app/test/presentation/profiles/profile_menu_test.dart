@@ -12,11 +12,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hermes/application/profiles/profile_providers.dart';
-import 'package:hermes/core/errors/gateway_error.dart';
-import 'package:hermes/domain/models/profile.dart';
-import 'package:hermes/domain/repositories/profile_repository.dart';
-import 'package:hermes/presentation/profiles/profile_menu.dart';
+import 'package:flit/application/profiles/profile_providers.dart';
+import 'package:flit/core/errors/gateway_error.dart';
+import 'package:flit/domain/models/profile.dart';
+import 'package:flit/domain/repositories/profile_repository.dart';
+import 'package:flit/presentation/profiles/profile_menu.dart';
 
 /// Hand-rolled fake (same shape as the provider test's).
 final class FakeProfileRepository implements ProfileRepository {

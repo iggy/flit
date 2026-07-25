@@ -6,9 +6,9 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hermes/data/dto/events/gateway_event_parser.dart';
-import 'package:hermes/data/repositories/chat_repository_impl.dart';
-import 'package:hermes/data/transport/gateway_rpc_client.dart';
+import 'package:flit/data/dto/events/gateway_event_parser.dart';
+import 'package:flit/data/repositories/chat_repository_impl.dart';
+import 'package:flit/data/transport/gateway_rpc_client.dart';
 
 /// Hand-written fake: subclasses [GatewayRpcClient] and overrides ONLY the
 /// two surfaces the repository uses — `request` (recorded, answered from

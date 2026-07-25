@@ -1,7 +1,7 @@
-import 'package:hermes/data/dto/events/gateway_event_parser.dart';
-import 'package:hermes/data/dto/status_result_dto.dart';
-import 'package:hermes/data/transport/gateway_rpc_client.dart';
-import 'package:hermes/domain/repositories/chat_repository.dart';
+import 'package:flit/data/dto/events/gateway_event_parser.dart';
+import 'package:flit/data/dto/status_result_dto.dart';
+import 'package:flit/data/transport/gateway_rpc_client.dart';
+import 'package:flit/domain/repositories/chat_repository.dart';
 
 /// [ChatRepository] over [GatewayRpcClient] (ticket P1-05).
 ///

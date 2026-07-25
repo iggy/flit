@@ -4,12 +4,12 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hermes/application/plugins/plugin_providers.dart';
-import 'package:hermes/core/errors/gateway_error.dart';
-import 'package:hermes/domain/models/kanban.dart';
-import 'package:hermes/domain/models/plugin_info.dart';
-import 'package:hermes/domain/repositories/kanban_repository.dart';
-import 'package:hermes/domain/repositories/plugin_repository.dart';
+import 'package:flit/application/plugins/plugin_providers.dart';
+import 'package:flit/core/errors/gateway_error.dart';
+import 'package:flit/domain/models/kanban.dart';
+import 'package:flit/domain/models/plugin_info.dart';
+import 'package:flit/domain/repositories/kanban_repository.dart';
+import 'package:flit/domain/repositories/plugin_repository.dart';
 
 /// Fake plugin repository answering from [plugins].
 final class FakePluginRepository implements PluginRepository {

@@ -1,4 +1,4 @@
-import 'package:hermes/data/dto/events/gateway_event_parser.dart';
+import 'package:flit/data/dto/events/gateway_event_parser.dart';
 
 /// Intent-level chat operations (ticket P1-05).
 ///

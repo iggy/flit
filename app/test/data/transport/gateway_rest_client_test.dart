@@ -3,9 +3,9 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hermes/core/errors/gateway_error.dart';
-import 'package:hermes/data/transport/connection_config.dart';
-import 'package:hermes/data/transport/gateway_rest_client.dart';
+import 'package:flit/core/errors/gateway_error.dart';
+import 'package:flit/data/transport/connection_config.dart';
+import 'package:flit/data/transport/gateway_rest_client.dart';
 
 /// Unit tests for GatewayRestClient (ticket P0-05), run against a
 /// hand-written fake [HttpClientAdapter] — no new deps, no mockito.

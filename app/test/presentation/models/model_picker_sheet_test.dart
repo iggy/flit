@@ -6,10 +6,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hermes/application/models/model_providers.dart';
-import 'package:hermes/domain/models/model_option.dart';
-import 'package:hermes/domain/repositories/model_repository.dart';
-import 'package:hermes/presentation/models/model_picker_sheet.dart';
+import 'package:flit/application/models/model_providers.dart';
+import 'package:flit/domain/models/model_option.dart';
+import 'package:flit/domain/repositories/model_repository.dart';
+import 'package:flit/presentation/models/model_picker_sheet.dart';
 
 /// The §8 example (docs/reference/03-mvp-wire-shapes.md) as domain models:
 /// Nous Portal (authenticated, current, two models) + OpenRouter

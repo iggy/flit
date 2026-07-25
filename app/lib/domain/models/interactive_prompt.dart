@@ -1,4 +1,4 @@
-import 'package:hermes/domain/models/deep_equals.dart';
+import 'package:flit/domain/models/deep_equals.dart';
 
 /// A mid-turn blocking prompt the agent waits on (protocol §8).
 ///

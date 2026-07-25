@@ -1,4 +1,4 @@
-import 'package:hermes/domain/models/kanban.dart';
+import 'package:flit/domain/models/kanban.dart';
 
 /// Intent-level kanban plugin operations (ticket P1-15) — the kanban plugin
 /// exposes NO JSON-RPC; its whole surface is REST under

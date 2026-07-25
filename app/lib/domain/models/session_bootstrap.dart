@@ -1,6 +1,7 @@
-import 'package:hermes/domain/models/active_session.dart';
-import 'package:hermes/domain/models/chat_message.dart';
-import 'package:hermes/domain/models/deep_equals.dart';
+import 'package:flit/domain/models/active_session.dart';
+import 'package:flit/domain/models/chat_message.dart';
+import 'package:flit/domain/models/deep_equals.dart';
+import 'package:flit/domain/models/session_detail.dart';
 
 /// Result of `session.create` (wire §2). Absorbs the two-session-ids quirk
 /// (protocol §9): [liveId] is the short id for `prompt.submit` /
@@ -56,6 +57,7 @@ final class SessionResumeResult {
     required this.running,
     required this.status,
     this.info,
+    this.inflight,
   });
 
   /// NEW short live id (wire `session_id`) — route live traffic by this.
@@ -79,6 +81,11 @@ final class SessionResumeResult {
   /// Opaque extra info dict, kept raw — shape not pinned by the docs.
   final Map<String, dynamic>? info;
 
+  /// Inflight turn snapshot (P2-02) — present ONLY when a turn was streaming
+  /// at the time of socket drop. Both `null` and missing are treated as "no
+  /// inflight turn."
+  final InflightTurn? inflight;
+
   @override
   bool operator ==(Object other) {
     return other is SessionResumeResult &&
@@ -88,7 +95,8 @@ final class SessionResumeResult {
         other.messageCount == messageCount &&
         other.running == running &&
         other.status == status &&
-        _nullableInfoEquals(other.info, info);
+        _nullableInfoEquals(other.info, info) &&
+        other.inflight == inflight;
   }
 
   @override
@@ -100,13 +108,15 @@ final class SessionResumeResult {
     running,
     status,
     info == null ? null : Object.hashAll(info!.keys),
+    inflight,
   );
 
   @override
   String toString() {
     return 'SessionResumeResult(liveId: $liveId, durableId: $durableId, '
         'messages: $messages, messageCount: $messageCount, '
-        'running: $running, status: ${status.name}, info: $info)';
+        'running: $running, status: ${status.name}, info: $info, '
+        'inflight: $inflight)';
   }
 }
 

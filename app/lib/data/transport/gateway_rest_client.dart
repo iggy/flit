@@ -1,11 +1,11 @@
 import 'package:dio/dio.dart';
 
-import 'package:hermes/core/errors/gateway_error.dart';
-import 'package:hermes/data/dto/gateway_status_dto.dart';
-import 'package:hermes/data/transport/connection_config.dart';
-import 'package:hermes/data/transport/session_cookie_jar.dart';
-import 'package:hermes/domain/models/auth_provider.dart';
-import 'package:hermes/domain/models/gateway_status.dart';
+import 'package:flit/core/errors/gateway_error.dart';
+import 'package:flit/data/dto/gateway_status_dto.dart';
+import 'package:flit/data/transport/connection_config.dart';
+import 'package:flit/data/transport/session_cookie_jar.dart';
+import 'package:flit/domain/models/auth_provider.dart';
+import 'package:flit/domain/models/gateway_status.dart';
 
 /// Authenticated HTTP client for the Hermes gateway REST API (ticket P0-05,
 /// gated auth added post-MVP).

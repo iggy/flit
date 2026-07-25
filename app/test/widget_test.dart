@@ -4,10 +4,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hermes/application/connection/connection_providers.dart';
-import 'package:hermes/data/storage/connection_store.dart';
-import 'package:hermes/domain/models/gateway_status.dart';
-import 'package:hermes/presentation/connect/connect_screen.dart';
+import 'package:flit/application/connection/connection_providers.dart';
+import 'package:flit/data/storage/connection_store.dart';
+import 'package:flit/domain/models/gateway_status.dart';
+import 'package:flit/presentation/connect/connect_screen.dart';
 
 class _MemoryStore implements KeyValueStore {
   final Map<String, String> data = <String, String>{};
@@ -67,7 +67,7 @@ void main() {
 
     expect(find.text('Gateway URL'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Continue'), findsOneWidget);
-    expect(find.text('Offline'), findsOneWidget); // connection chip
+    expect(find.byTooltip('Offline'), findsOneWidget); // connection chip
   });
 
   testWidgets('validates an empty URL on Continue', (tester) async {
