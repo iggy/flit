@@ -5,11 +5,11 @@ library;
 
 import 'dart:async';
 
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flit/application/sessions/active_session.dart';
 import 'package:flit/application/sessions/session_info.dart';
 import 'package:flit/application/sessions/session_list.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // Keys for tests.
 const Key sessionInfoButtonKey = Key('session_info_button');

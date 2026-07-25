@@ -9,15 +9,15 @@
 // (statusProbeProvider) and the RPC client (rpcClientProvider) with fakes;
 // the REAL ConnectController maps them to the friendly messages.
 
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flit/application/connection/connection_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/data/storage/connection_store.dart';
 import 'package:flit/data/transport/gateway_rpc_client.dart';
 import 'package:flit/domain/models/gateway_status.dart';
 import 'package:flit/presentation/connect/connect_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 /// In-memory store — the real one needs a platform channel.
 final class InMemoryKeyValueStore implements KeyValueStore {

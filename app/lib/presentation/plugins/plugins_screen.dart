@@ -1,8 +1,8 @@
+import 'package:flit/application/plugins/plugin_providers.dart';
+import 'package:flit/domain/models/plugin_info.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flit/application/plugins/plugin_providers.dart';
-import 'package:flit/domain/models/plugin_info.dart';
 
 /// Plugins list (ticket P1-14): every plugin from `plugins.list` (wire §13)
 /// with name, version, and an enabled-state ICON (enable/disable toggling is

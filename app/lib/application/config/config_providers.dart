@@ -1,12 +1,12 @@
 library;
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flit/application/connection/connection_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/data/dto/events/gateway_event_parser.dart';
 import 'package:flit/data/repositories/config_repository.dart';
 import 'package:flit/domain/models/reasoning_option.dart';
 import 'package:flit/domain/repositories/config_repository.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final configRepositoryProvider = Provider<ConfigRepository?>((ref) {
   final client = ref.watch(rpcClientProvider);

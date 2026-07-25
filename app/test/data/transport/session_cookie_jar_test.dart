@@ -1,7 +1,7 @@
 // Unit tests for the gated-mode session cookie jar (protocol §2.2).
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flit/data/transport/session_cookie_jar.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('SessionCookieJar.captureFromHeaders', () {

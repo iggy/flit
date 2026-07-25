@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flit/data/transport/gateway_rpc_client.dart';
+import 'package:flutter/material.dart';
 
 class ConnectionChip extends StatelessWidget {
   const ConnectionChip({super.key, required this.state});

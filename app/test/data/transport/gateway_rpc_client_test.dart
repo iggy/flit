@@ -4,9 +4,9 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/data/transport/gateway_rpc_client.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:stream_channel/stream_channel.dart';
 
 /// A fake server end of the WS transport. The client reads from

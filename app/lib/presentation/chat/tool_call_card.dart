@@ -6,8 +6,8 @@ library;
 
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
 import 'package:flit/domain/models/tool_call.dart';
+import 'package:flutter/material.dart';
 
 /// Renders one [ToolCall] attached to an assistant message (protocol §7:
 /// display only — no client reply required).

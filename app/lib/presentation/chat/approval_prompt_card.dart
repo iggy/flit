@@ -4,12 +4,12 @@
 /// `allow_permanent` is set.
 library;
 
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flit/application/chat/message_list_notifier.dart';
 import 'package:flit/application/providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/domain/models/interactive_prompt.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Choice strings for `approval.respond` (wire §10).
 ///

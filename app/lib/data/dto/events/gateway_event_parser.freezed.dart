@@ -55,7 +55,7 @@ extension TypedGatewayEventPatterns on TypedGatewayEvent {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( GatewayReady value)?  gatewayReady,TResult Function( SessionInfo value)?  sessionInfo,TResult Function( MessageStart value)?  messageStart,TResult Function( MessageDelta value)?  messageDelta,TResult Function( MessageComplete value)?  messageComplete,TResult Function( TurnError value)?  turnError,TResult Function( ToolStart value)?  toolStart,TResult Function( ToolProgress value)?  toolProgress,TResult Function( ToolComplete value)?  toolComplete,TResult Function( ApprovalRequestEvent value)?  approvalRequest,TResult Function( ClarifyRequestEvent value)?  clarifyRequest,TResult Function( StatusUpdate value)?  statusUpdate,TResult Function( UnknownEvent value)?  unknown,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( GatewayReady value)?  gatewayReady,TResult Function( SessionInfo value)?  sessionInfo,TResult Function( MessageStart value)?  messageStart,TResult Function( MessageDelta value)?  messageDelta,TResult Function( MessageComplete value)?  messageComplete,TResult Function( TurnError value)?  turnError,TResult Function( ToolStart value)?  toolStart,TResult Function( ToolProgress value)?  toolProgress,TResult Function( ToolComplete value)?  toolComplete,TResult Function( ApprovalRequestEvent value)?  approvalRequest,TResult Function( ClarifyRequestEvent value)?  clarifyRequest,TResult Function( SudoRequestEvent value)?  sudoRequest,TResult Function( SecretRequestEvent value)?  secretRequest,TResult Function( TerminalReadRequestEvent value)?  terminalReadRequest,TResult Function( SubagentEvent value)?  subagentEvent,TResult Function( StatusUpdate value)?  statusUpdate,TResult Function( UnknownEvent value)?  unknown,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case GatewayReady() when gatewayReady != null:
@@ -69,7 +69,11 @@ return toolStart(_that);case ToolProgress() when toolProgress != null:
 return toolProgress(_that);case ToolComplete() when toolComplete != null:
 return toolComplete(_that);case ApprovalRequestEvent() when approvalRequest != null:
 return approvalRequest(_that);case ClarifyRequestEvent() when clarifyRequest != null:
-return clarifyRequest(_that);case StatusUpdate() when statusUpdate != null:
+return clarifyRequest(_that);case SudoRequestEvent() when sudoRequest != null:
+return sudoRequest(_that);case SecretRequestEvent() when secretRequest != null:
+return secretRequest(_that);case TerminalReadRequestEvent() when terminalReadRequest != null:
+return terminalReadRequest(_that);case SubagentEvent() when subagentEvent != null:
+return subagentEvent(_that);case StatusUpdate() when statusUpdate != null:
 return statusUpdate(_that);case UnknownEvent() when unknown != null:
 return unknown(_that);case _:
   return orElse();
@@ -89,7 +93,7 @@ return unknown(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( GatewayReady value)  gatewayReady,required TResult Function( SessionInfo value)  sessionInfo,required TResult Function( MessageStart value)  messageStart,required TResult Function( MessageDelta value)  messageDelta,required TResult Function( MessageComplete value)  messageComplete,required TResult Function( TurnError value)  turnError,required TResult Function( ToolStart value)  toolStart,required TResult Function( ToolProgress value)  toolProgress,required TResult Function( ToolComplete value)  toolComplete,required TResult Function( ApprovalRequestEvent value)  approvalRequest,required TResult Function( ClarifyRequestEvent value)  clarifyRequest,required TResult Function( StatusUpdate value)  statusUpdate,required TResult Function( UnknownEvent value)  unknown,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( GatewayReady value)  gatewayReady,required TResult Function( SessionInfo value)  sessionInfo,required TResult Function( MessageStart value)  messageStart,required TResult Function( MessageDelta value)  messageDelta,required TResult Function( MessageComplete value)  messageComplete,required TResult Function( TurnError value)  turnError,required TResult Function( ToolStart value)  toolStart,required TResult Function( ToolProgress value)  toolProgress,required TResult Function( ToolComplete value)  toolComplete,required TResult Function( ApprovalRequestEvent value)  approvalRequest,required TResult Function( ClarifyRequestEvent value)  clarifyRequest,required TResult Function( SudoRequestEvent value)  sudoRequest,required TResult Function( SecretRequestEvent value)  secretRequest,required TResult Function( TerminalReadRequestEvent value)  terminalReadRequest,required TResult Function( SubagentEvent value)  subagentEvent,required TResult Function( StatusUpdate value)  statusUpdate,required TResult Function( UnknownEvent value)  unknown,}){
 final _that = this;
 switch (_that) {
 case GatewayReady():
@@ -103,7 +107,11 @@ return toolStart(_that);case ToolProgress():
 return toolProgress(_that);case ToolComplete():
 return toolComplete(_that);case ApprovalRequestEvent():
 return approvalRequest(_that);case ClarifyRequestEvent():
-return clarifyRequest(_that);case StatusUpdate():
+return clarifyRequest(_that);case SudoRequestEvent():
+return sudoRequest(_that);case SecretRequestEvent():
+return secretRequest(_that);case TerminalReadRequestEvent():
+return terminalReadRequest(_that);case SubagentEvent():
+return subagentEvent(_that);case StatusUpdate():
 return statusUpdate(_that);case UnknownEvent():
 return unknown(_that);}
 }
@@ -119,7 +127,7 @@ return unknown(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( GatewayReady value)?  gatewayReady,TResult? Function( SessionInfo value)?  sessionInfo,TResult? Function( MessageStart value)?  messageStart,TResult? Function( MessageDelta value)?  messageDelta,TResult? Function( MessageComplete value)?  messageComplete,TResult? Function( TurnError value)?  turnError,TResult? Function( ToolStart value)?  toolStart,TResult? Function( ToolProgress value)?  toolProgress,TResult? Function( ToolComplete value)?  toolComplete,TResult? Function( ApprovalRequestEvent value)?  approvalRequest,TResult? Function( ClarifyRequestEvent value)?  clarifyRequest,TResult? Function( StatusUpdate value)?  statusUpdate,TResult? Function( UnknownEvent value)?  unknown,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( GatewayReady value)?  gatewayReady,TResult? Function( SessionInfo value)?  sessionInfo,TResult? Function( MessageStart value)?  messageStart,TResult? Function( MessageDelta value)?  messageDelta,TResult? Function( MessageComplete value)?  messageComplete,TResult? Function( TurnError value)?  turnError,TResult? Function( ToolStart value)?  toolStart,TResult? Function( ToolProgress value)?  toolProgress,TResult? Function( ToolComplete value)?  toolComplete,TResult? Function( ApprovalRequestEvent value)?  approvalRequest,TResult? Function( ClarifyRequestEvent value)?  clarifyRequest,TResult? Function( SudoRequestEvent value)?  sudoRequest,TResult? Function( SecretRequestEvent value)?  secretRequest,TResult? Function( TerminalReadRequestEvent value)?  terminalReadRequest,TResult? Function( SubagentEvent value)?  subagentEvent,TResult? Function( StatusUpdate value)?  statusUpdate,TResult? Function( UnknownEvent value)?  unknown,}){
 final _that = this;
 switch (_that) {
 case GatewayReady() when gatewayReady != null:
@@ -133,7 +141,11 @@ return toolStart(_that);case ToolProgress() when toolProgress != null:
 return toolProgress(_that);case ToolComplete() when toolComplete != null:
 return toolComplete(_that);case ApprovalRequestEvent() when approvalRequest != null:
 return approvalRequest(_that);case ClarifyRequestEvent() when clarifyRequest != null:
-return clarifyRequest(_that);case StatusUpdate() when statusUpdate != null:
+return clarifyRequest(_that);case SudoRequestEvent() when sudoRequest != null:
+return sudoRequest(_that);case SecretRequestEvent() when secretRequest != null:
+return secretRequest(_that);case TerminalReadRequestEvent() when terminalReadRequest != null:
+return terminalReadRequest(_that);case SubagentEvent() when subagentEvent != null:
+return subagentEvent(_that);case StatusUpdate() when statusUpdate != null:
 return statusUpdate(_that);case UnknownEvent() when unknown != null:
 return unknown(_that);case _:
   return null;
@@ -152,7 +164,7 @@ return unknown(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( Map<String, dynamic> skin)?  gatewayReady,TResult Function( String? sessionId,  Map<String, dynamic> info)?  sessionInfo,TResult Function( String? sessionId)?  messageStart,TResult Function( String? sessionId,  String text,  String? rendered)?  messageDelta,TResult Function( String? sessionId,  String text,  String? rendered,  String? reasoning,  Usage? usage,  MessageTerminalStatus status)?  messageComplete,TResult Function( String? sessionId,  String? message)?  turnError,TResult Function( String? sessionId,  String toolId,  String name,  String? context,  String? argsText,  List<dynamic>? todos)?  toolStart,TResult Function( String? sessionId,  String name,  String preview)?  toolProgress,TResult Function( String? sessionId,  String toolId,  String name,  dynamic args,  dynamic result,  double? durationS,  String? summary,  String? resultText,  String? inlineDiff,  List<dynamic>? todos,  String? error)?  toolComplete,TResult Function( String? sessionId,  String command,  String description,  String? patternKey,  List<String> patternKeys,  bool allowPermanent)?  approvalRequest,TResult Function( String? sessionId,  String question,  List<String>? choices,  String requestId)?  clarifyRequest,TResult Function( String? sessionId,  String? kind,  String? text)?  statusUpdate,TResult Function( String type,  String? sessionId,  Map<String, dynamic> payload)?  unknown,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( Map<String, dynamic> skin)?  gatewayReady,TResult Function( String? sessionId,  Map<String, dynamic> info)?  sessionInfo,TResult Function( String? sessionId)?  messageStart,TResult Function( String? sessionId,  String text,  String? rendered)?  messageDelta,TResult Function( String? sessionId,  String text,  String? rendered,  String? reasoning,  Usage? usage,  MessageTerminalStatus status)?  messageComplete,TResult Function( String? sessionId,  String? message)?  turnError,TResult Function( String? sessionId,  String toolId,  String name,  String? context,  String? argsText,  List<dynamic>? todos)?  toolStart,TResult Function( String? sessionId,  String name,  String preview)?  toolProgress,TResult Function( String? sessionId,  String toolId,  String name,  dynamic args,  dynamic result,  double? durationS,  String? summary,  String? resultText,  String? inlineDiff,  List<dynamic>? todos,  String? error)?  toolComplete,TResult Function( String? sessionId,  String command,  String description,  String? patternKey,  List<String> patternKeys,  bool allowPermanent)?  approvalRequest,TResult Function( String? sessionId,  String question,  List<String>? choices,  String requestId)?  clarifyRequest,TResult Function( String? sessionId,  String requestId)?  sudoRequest,TResult Function( String? sessionId,  String envVar,  String prompt,  String requestId)?  secretRequest,TResult Function( String? sessionId,  String requestId,  int? start,  int? count)?  terminalReadRequest,TResult Function( String? sessionId,  String type,  String goal,  int taskCount,  int taskIndex,  String? subagentId,  String? parentId,  String? childSessionId,  int? depth,  String? model,  int? toolCount,  List<String>? toolsets,  int? inputTokens,  int? outputTokens,  int? reasoningTokens,  int? apiCalls,  List<String>? filesRead,  List<String>? filesWritten,  String? toolName,  String? toolPreview,  String? text,  String? status,  String? summary,  double? durationSeconds,  double? costUsd)?  subagentEvent,TResult Function( String? sessionId,  String? kind,  String? text)?  statusUpdate,TResult Function( String type,  String? sessionId,  Map<String, dynamic> payload)?  unknown,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case GatewayReady() when gatewayReady != null:
 return gatewayReady(_that.skin);case SessionInfo() when sessionInfo != null:
@@ -165,7 +177,11 @@ return toolStart(_that.sessionId,_that.toolId,_that.name,_that.context,_that.arg
 return toolProgress(_that.sessionId,_that.name,_that.preview);case ToolComplete() when toolComplete != null:
 return toolComplete(_that.sessionId,_that.toolId,_that.name,_that.args,_that.result,_that.durationS,_that.summary,_that.resultText,_that.inlineDiff,_that.todos,_that.error);case ApprovalRequestEvent() when approvalRequest != null:
 return approvalRequest(_that.sessionId,_that.command,_that.description,_that.patternKey,_that.patternKeys,_that.allowPermanent);case ClarifyRequestEvent() when clarifyRequest != null:
-return clarifyRequest(_that.sessionId,_that.question,_that.choices,_that.requestId);case StatusUpdate() when statusUpdate != null:
+return clarifyRequest(_that.sessionId,_that.question,_that.choices,_that.requestId);case SudoRequestEvent() when sudoRequest != null:
+return sudoRequest(_that.sessionId,_that.requestId);case SecretRequestEvent() when secretRequest != null:
+return secretRequest(_that.sessionId,_that.envVar,_that.prompt,_that.requestId);case TerminalReadRequestEvent() when terminalReadRequest != null:
+return terminalReadRequest(_that.sessionId,_that.requestId,_that.start,_that.count);case SubagentEvent() when subagentEvent != null:
+return subagentEvent(_that.sessionId,_that.type,_that.goal,_that.taskCount,_that.taskIndex,_that.subagentId,_that.parentId,_that.childSessionId,_that.depth,_that.model,_that.toolCount,_that.toolsets,_that.inputTokens,_that.outputTokens,_that.reasoningTokens,_that.apiCalls,_that.filesRead,_that.filesWritten,_that.toolName,_that.toolPreview,_that.text,_that.status,_that.summary,_that.durationSeconds,_that.costUsd);case StatusUpdate() when statusUpdate != null:
 return statusUpdate(_that.sessionId,_that.kind,_that.text);case UnknownEvent() when unknown != null:
 return unknown(_that.type,_that.sessionId,_that.payload);case _:
   return orElse();
@@ -185,7 +201,7 @@ return unknown(_that.type,_that.sessionId,_that.payload);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( Map<String, dynamic> skin)  gatewayReady,required TResult Function( String? sessionId,  Map<String, dynamic> info)  sessionInfo,required TResult Function( String? sessionId)  messageStart,required TResult Function( String? sessionId,  String text,  String? rendered)  messageDelta,required TResult Function( String? sessionId,  String text,  String? rendered,  String? reasoning,  Usage? usage,  MessageTerminalStatus status)  messageComplete,required TResult Function( String? sessionId,  String? message)  turnError,required TResult Function( String? sessionId,  String toolId,  String name,  String? context,  String? argsText,  List<dynamic>? todos)  toolStart,required TResult Function( String? sessionId,  String name,  String preview)  toolProgress,required TResult Function( String? sessionId,  String toolId,  String name,  dynamic args,  dynamic result,  double? durationS,  String? summary,  String? resultText,  String? inlineDiff,  List<dynamic>? todos,  String? error)  toolComplete,required TResult Function( String? sessionId,  String command,  String description,  String? patternKey,  List<String> patternKeys,  bool allowPermanent)  approvalRequest,required TResult Function( String? sessionId,  String question,  List<String>? choices,  String requestId)  clarifyRequest,required TResult Function( String? sessionId,  String? kind,  String? text)  statusUpdate,required TResult Function( String type,  String? sessionId,  Map<String, dynamic> payload)  unknown,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( Map<String, dynamic> skin)  gatewayReady,required TResult Function( String? sessionId,  Map<String, dynamic> info)  sessionInfo,required TResult Function( String? sessionId)  messageStart,required TResult Function( String? sessionId,  String text,  String? rendered)  messageDelta,required TResult Function( String? sessionId,  String text,  String? rendered,  String? reasoning,  Usage? usage,  MessageTerminalStatus status)  messageComplete,required TResult Function( String? sessionId,  String? message)  turnError,required TResult Function( String? sessionId,  String toolId,  String name,  String? context,  String? argsText,  List<dynamic>? todos)  toolStart,required TResult Function( String? sessionId,  String name,  String preview)  toolProgress,required TResult Function( String? sessionId,  String toolId,  String name,  dynamic args,  dynamic result,  double? durationS,  String? summary,  String? resultText,  String? inlineDiff,  List<dynamic>? todos,  String? error)  toolComplete,required TResult Function( String? sessionId,  String command,  String description,  String? patternKey,  List<String> patternKeys,  bool allowPermanent)  approvalRequest,required TResult Function( String? sessionId,  String question,  List<String>? choices,  String requestId)  clarifyRequest,required TResult Function( String? sessionId,  String requestId)  sudoRequest,required TResult Function( String? sessionId,  String envVar,  String prompt,  String requestId)  secretRequest,required TResult Function( String? sessionId,  String requestId,  int? start,  int? count)  terminalReadRequest,required TResult Function( String? sessionId,  String type,  String goal,  int taskCount,  int taskIndex,  String? subagentId,  String? parentId,  String? childSessionId,  int? depth,  String? model,  int? toolCount,  List<String>? toolsets,  int? inputTokens,  int? outputTokens,  int? reasoningTokens,  int? apiCalls,  List<String>? filesRead,  List<String>? filesWritten,  String? toolName,  String? toolPreview,  String? text,  String? status,  String? summary,  double? durationSeconds,  double? costUsd)  subagentEvent,required TResult Function( String? sessionId,  String? kind,  String? text)  statusUpdate,required TResult Function( String type,  String? sessionId,  Map<String, dynamic> payload)  unknown,}) {final _that = this;
 switch (_that) {
 case GatewayReady():
 return gatewayReady(_that.skin);case SessionInfo():
@@ -198,7 +214,11 @@ return toolStart(_that.sessionId,_that.toolId,_that.name,_that.context,_that.arg
 return toolProgress(_that.sessionId,_that.name,_that.preview);case ToolComplete():
 return toolComplete(_that.sessionId,_that.toolId,_that.name,_that.args,_that.result,_that.durationS,_that.summary,_that.resultText,_that.inlineDiff,_that.todos,_that.error);case ApprovalRequestEvent():
 return approvalRequest(_that.sessionId,_that.command,_that.description,_that.patternKey,_that.patternKeys,_that.allowPermanent);case ClarifyRequestEvent():
-return clarifyRequest(_that.sessionId,_that.question,_that.choices,_that.requestId);case StatusUpdate():
+return clarifyRequest(_that.sessionId,_that.question,_that.choices,_that.requestId);case SudoRequestEvent():
+return sudoRequest(_that.sessionId,_that.requestId);case SecretRequestEvent():
+return secretRequest(_that.sessionId,_that.envVar,_that.prompt,_that.requestId);case TerminalReadRequestEvent():
+return terminalReadRequest(_that.sessionId,_that.requestId,_that.start,_that.count);case SubagentEvent():
+return subagentEvent(_that.sessionId,_that.type,_that.goal,_that.taskCount,_that.taskIndex,_that.subagentId,_that.parentId,_that.childSessionId,_that.depth,_that.model,_that.toolCount,_that.toolsets,_that.inputTokens,_that.outputTokens,_that.reasoningTokens,_that.apiCalls,_that.filesRead,_that.filesWritten,_that.toolName,_that.toolPreview,_that.text,_that.status,_that.summary,_that.durationSeconds,_that.costUsd);case StatusUpdate():
 return statusUpdate(_that.sessionId,_that.kind,_that.text);case UnknownEvent():
 return unknown(_that.type,_that.sessionId,_that.payload);}
 }
@@ -214,7 +234,7 @@ return unknown(_that.type,_that.sessionId,_that.payload);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( Map<String, dynamic> skin)?  gatewayReady,TResult? Function( String? sessionId,  Map<String, dynamic> info)?  sessionInfo,TResult? Function( String? sessionId)?  messageStart,TResult? Function( String? sessionId,  String text,  String? rendered)?  messageDelta,TResult? Function( String? sessionId,  String text,  String? rendered,  String? reasoning,  Usage? usage,  MessageTerminalStatus status)?  messageComplete,TResult? Function( String? sessionId,  String? message)?  turnError,TResult? Function( String? sessionId,  String toolId,  String name,  String? context,  String? argsText,  List<dynamic>? todos)?  toolStart,TResult? Function( String? sessionId,  String name,  String preview)?  toolProgress,TResult? Function( String? sessionId,  String toolId,  String name,  dynamic args,  dynamic result,  double? durationS,  String? summary,  String? resultText,  String? inlineDiff,  List<dynamic>? todos,  String? error)?  toolComplete,TResult? Function( String? sessionId,  String command,  String description,  String? patternKey,  List<String> patternKeys,  bool allowPermanent)?  approvalRequest,TResult? Function( String? sessionId,  String question,  List<String>? choices,  String requestId)?  clarifyRequest,TResult? Function( String? sessionId,  String? kind,  String? text)?  statusUpdate,TResult? Function( String type,  String? sessionId,  Map<String, dynamic> payload)?  unknown,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( Map<String, dynamic> skin)?  gatewayReady,TResult? Function( String? sessionId,  Map<String, dynamic> info)?  sessionInfo,TResult? Function( String? sessionId)?  messageStart,TResult? Function( String? sessionId,  String text,  String? rendered)?  messageDelta,TResult? Function( String? sessionId,  String text,  String? rendered,  String? reasoning,  Usage? usage,  MessageTerminalStatus status)?  messageComplete,TResult? Function( String? sessionId,  String? message)?  turnError,TResult? Function( String? sessionId,  String toolId,  String name,  String? context,  String? argsText,  List<dynamic>? todos)?  toolStart,TResult? Function( String? sessionId,  String name,  String preview)?  toolProgress,TResult? Function( String? sessionId,  String toolId,  String name,  dynamic args,  dynamic result,  double? durationS,  String? summary,  String? resultText,  String? inlineDiff,  List<dynamic>? todos,  String? error)?  toolComplete,TResult? Function( String? sessionId,  String command,  String description,  String? patternKey,  List<String> patternKeys,  bool allowPermanent)?  approvalRequest,TResult? Function( String? sessionId,  String question,  List<String>? choices,  String requestId)?  clarifyRequest,TResult? Function( String? sessionId,  String requestId)?  sudoRequest,TResult? Function( String? sessionId,  String envVar,  String prompt,  String requestId)?  secretRequest,TResult? Function( String? sessionId,  String requestId,  int? start,  int? count)?  terminalReadRequest,TResult? Function( String? sessionId,  String type,  String goal,  int taskCount,  int taskIndex,  String? subagentId,  String? parentId,  String? childSessionId,  int? depth,  String? model,  int? toolCount,  List<String>? toolsets,  int? inputTokens,  int? outputTokens,  int? reasoningTokens,  int? apiCalls,  List<String>? filesRead,  List<String>? filesWritten,  String? toolName,  String? toolPreview,  String? text,  String? status,  String? summary,  double? durationSeconds,  double? costUsd)?  subagentEvent,TResult? Function( String? sessionId,  String? kind,  String? text)?  statusUpdate,TResult? Function( String type,  String? sessionId,  Map<String, dynamic> payload)?  unknown,}) {final _that = this;
 switch (_that) {
 case GatewayReady() when gatewayReady != null:
 return gatewayReady(_that.skin);case SessionInfo() when sessionInfo != null:
@@ -227,7 +247,11 @@ return toolStart(_that.sessionId,_that.toolId,_that.name,_that.context,_that.arg
 return toolProgress(_that.sessionId,_that.name,_that.preview);case ToolComplete() when toolComplete != null:
 return toolComplete(_that.sessionId,_that.toolId,_that.name,_that.args,_that.result,_that.durationS,_that.summary,_that.resultText,_that.inlineDiff,_that.todos,_that.error);case ApprovalRequestEvent() when approvalRequest != null:
 return approvalRequest(_that.sessionId,_that.command,_that.description,_that.patternKey,_that.patternKeys,_that.allowPermanent);case ClarifyRequestEvent() when clarifyRequest != null:
-return clarifyRequest(_that.sessionId,_that.question,_that.choices,_that.requestId);case StatusUpdate() when statusUpdate != null:
+return clarifyRequest(_that.sessionId,_that.question,_that.choices,_that.requestId);case SudoRequestEvent() when sudoRequest != null:
+return sudoRequest(_that.sessionId,_that.requestId);case SecretRequestEvent() when secretRequest != null:
+return secretRequest(_that.sessionId,_that.envVar,_that.prompt,_that.requestId);case TerminalReadRequestEvent() when terminalReadRequest != null:
+return terminalReadRequest(_that.sessionId,_that.requestId,_that.start,_that.count);case SubagentEvent() when subagentEvent != null:
+return subagentEvent(_that.sessionId,_that.type,_that.goal,_that.taskCount,_that.taskIndex,_that.subagentId,_that.parentId,_that.childSessionId,_that.depth,_that.model,_that.toolCount,_that.toolsets,_that.inputTokens,_that.outputTokens,_that.reasoningTokens,_that.apiCalls,_that.filesRead,_that.filesWritten,_that.toolName,_that.toolPreview,_that.text,_that.status,_that.summary,_that.durationSeconds,_that.costUsd);case StatusUpdate() when statusUpdate != null:
 return statusUpdate(_that.sessionId,_that.kind,_that.text);case UnknownEvent() when unknown != null:
 return unknown(_that.type,_that.sessionId,_that.payload);case _:
   return null;
@@ -1067,6 +1091,356 @@ as String?,question: null == question ? _self.question : question // ignore: cas
 as String,choices: freezed == choices ? _self._choices : choices // ignore: cast_nullable_to_non_nullable
 as List<String>?,requestId: null == requestId ? _self.requestId : requestId // ignore: cast_nullable_to_non_nullable
 as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class SudoRequestEvent implements TypedGatewayEvent {
+  const SudoRequestEvent({required this.sessionId, required this.requestId});
+  
+
+ final  String? sessionId;
+ final  String requestId;
+
+/// Create a copy of TypedGatewayEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SudoRequestEventCopyWith<SudoRequestEvent> get copyWith => _$SudoRequestEventCopyWithImpl<SudoRequestEvent>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SudoRequestEvent&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.requestId, requestId) || other.requestId == requestId));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,requestId);
+
+@override
+String toString() {
+  return 'TypedGatewayEvent.sudoRequest(sessionId: $sessionId, requestId: $requestId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SudoRequestEventCopyWith<$Res> implements $TypedGatewayEventCopyWith<$Res> {
+  factory $SudoRequestEventCopyWith(SudoRequestEvent value, $Res Function(SudoRequestEvent) _then) = _$SudoRequestEventCopyWithImpl;
+@useResult
+$Res call({
+ String? sessionId, String requestId
+});
+
+
+
+
+}
+/// @nodoc
+class _$SudoRequestEventCopyWithImpl<$Res>
+    implements $SudoRequestEventCopyWith<$Res> {
+  _$SudoRequestEventCopyWithImpl(this._self, this._then);
+
+  final SudoRequestEvent _self;
+  final $Res Function(SudoRequestEvent) _then;
+
+/// Create a copy of TypedGatewayEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? sessionId = freezed,Object? requestId = null,}) {
+  return _then(SudoRequestEvent(
+sessionId: freezed == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String?,requestId: null == requestId ? _self.requestId : requestId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class SecretRequestEvent implements TypedGatewayEvent {
+  const SecretRequestEvent({required this.sessionId, required this.envVar, required this.prompt, required this.requestId});
+  
+
+ final  String? sessionId;
+ final  String envVar;
+ final  String prompt;
+ final  String requestId;
+
+/// Create a copy of TypedGatewayEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SecretRequestEventCopyWith<SecretRequestEvent> get copyWith => _$SecretRequestEventCopyWithImpl<SecretRequestEvent>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SecretRequestEvent&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.envVar, envVar) || other.envVar == envVar)&&(identical(other.prompt, prompt) || other.prompt == prompt)&&(identical(other.requestId, requestId) || other.requestId == requestId));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,envVar,prompt,requestId);
+
+@override
+String toString() {
+  return 'TypedGatewayEvent.secretRequest(sessionId: $sessionId, envVar: $envVar, prompt: $prompt, requestId: $requestId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SecretRequestEventCopyWith<$Res> implements $TypedGatewayEventCopyWith<$Res> {
+  factory $SecretRequestEventCopyWith(SecretRequestEvent value, $Res Function(SecretRequestEvent) _then) = _$SecretRequestEventCopyWithImpl;
+@useResult
+$Res call({
+ String? sessionId, String envVar, String prompt, String requestId
+});
+
+
+
+
+}
+/// @nodoc
+class _$SecretRequestEventCopyWithImpl<$Res>
+    implements $SecretRequestEventCopyWith<$Res> {
+  _$SecretRequestEventCopyWithImpl(this._self, this._then);
+
+  final SecretRequestEvent _self;
+  final $Res Function(SecretRequestEvent) _then;
+
+/// Create a copy of TypedGatewayEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? sessionId = freezed,Object? envVar = null,Object? prompt = null,Object? requestId = null,}) {
+  return _then(SecretRequestEvent(
+sessionId: freezed == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String?,envVar: null == envVar ? _self.envVar : envVar // ignore: cast_nullable_to_non_nullable
+as String,prompt: null == prompt ? _self.prompt : prompt // ignore: cast_nullable_to_non_nullable
+as String,requestId: null == requestId ? _self.requestId : requestId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class TerminalReadRequestEvent implements TypedGatewayEvent {
+  const TerminalReadRequestEvent({required this.sessionId, required this.requestId, this.start, this.count});
+  
+
+ final  String? sessionId;
+ final  String requestId;
+ final  int? start;
+ final  int? count;
+
+/// Create a copy of TypedGatewayEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TerminalReadRequestEventCopyWith<TerminalReadRequestEvent> get copyWith => _$TerminalReadRequestEventCopyWithImpl<TerminalReadRequestEvent>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TerminalReadRequestEvent&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.requestId, requestId) || other.requestId == requestId)&&(identical(other.start, start) || other.start == start)&&(identical(other.count, count) || other.count == count));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,requestId,start,count);
+
+@override
+String toString() {
+  return 'TypedGatewayEvent.terminalReadRequest(sessionId: $sessionId, requestId: $requestId, start: $start, count: $count)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TerminalReadRequestEventCopyWith<$Res> implements $TypedGatewayEventCopyWith<$Res> {
+  factory $TerminalReadRequestEventCopyWith(TerminalReadRequestEvent value, $Res Function(TerminalReadRequestEvent) _then) = _$TerminalReadRequestEventCopyWithImpl;
+@useResult
+$Res call({
+ String? sessionId, String requestId, int? start, int? count
+});
+
+
+
+
+}
+/// @nodoc
+class _$TerminalReadRequestEventCopyWithImpl<$Res>
+    implements $TerminalReadRequestEventCopyWith<$Res> {
+  _$TerminalReadRequestEventCopyWithImpl(this._self, this._then);
+
+  final TerminalReadRequestEvent _self;
+  final $Res Function(TerminalReadRequestEvent) _then;
+
+/// Create a copy of TypedGatewayEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? sessionId = freezed,Object? requestId = null,Object? start = freezed,Object? count = freezed,}) {
+  return _then(TerminalReadRequestEvent(
+sessionId: freezed == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String?,requestId: null == requestId ? _self.requestId : requestId // ignore: cast_nullable_to_non_nullable
+as String,start: freezed == start ? _self.start : start // ignore: cast_nullable_to_non_nullable
+as int?,count: freezed == count ? _self.count : count // ignore: cast_nullable_to_non_nullable
+as int?,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class SubagentEvent implements TypedGatewayEvent {
+  const SubagentEvent({required this.sessionId, required this.type, required this.goal, required this.taskCount, required this.taskIndex, this.subagentId, this.parentId, this.childSessionId, this.depth, this.model, this.toolCount, final  List<String>? toolsets, this.inputTokens, this.outputTokens, this.reasoningTokens, this.apiCalls, final  List<String>? filesRead, final  List<String>? filesWritten, this.toolName, this.toolPreview, this.text, this.status, this.summary, this.durationSeconds, this.costUsd}): _toolsets = toolsets,_filesRead = filesRead,_filesWritten = filesWritten;
+  
+
+ final  String? sessionId;
+ final  String type;
+ final  String goal;
+ final  int taskCount;
+ final  int taskIndex;
+ final  String? subagentId;
+ final  String? parentId;
+ final  String? childSessionId;
+ final  int? depth;
+ final  String? model;
+ final  int? toolCount;
+ final  List<String>? _toolsets;
+ List<String>? get toolsets {
+  final value = _toolsets;
+  if (value == null) return null;
+  if (_toolsets is EqualUnmodifiableListView) return _toolsets;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
+
+ final  int? inputTokens;
+ final  int? outputTokens;
+ final  int? reasoningTokens;
+ final  int? apiCalls;
+ final  List<String>? _filesRead;
+ List<String>? get filesRead {
+  final value = _filesRead;
+  if (value == null) return null;
+  if (_filesRead is EqualUnmodifiableListView) return _filesRead;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
+
+ final  List<String>? _filesWritten;
+ List<String>? get filesWritten {
+  final value = _filesWritten;
+  if (value == null) return null;
+  if (_filesWritten is EqualUnmodifiableListView) return _filesWritten;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
+
+ final  String? toolName;
+ final  String? toolPreview;
+ final  String? text;
+ final  String? status;
+ final  String? summary;
+ final  double? durationSeconds;
+ final  double? costUsd;
+
+/// Create a copy of TypedGatewayEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SubagentEventCopyWith<SubagentEvent> get copyWith => _$SubagentEventCopyWithImpl<SubagentEvent>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SubagentEvent&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.type, type) || other.type == type)&&(identical(other.goal, goal) || other.goal == goal)&&(identical(other.taskCount, taskCount) || other.taskCount == taskCount)&&(identical(other.taskIndex, taskIndex) || other.taskIndex == taskIndex)&&(identical(other.subagentId, subagentId) || other.subagentId == subagentId)&&(identical(other.parentId, parentId) || other.parentId == parentId)&&(identical(other.childSessionId, childSessionId) || other.childSessionId == childSessionId)&&(identical(other.depth, depth) || other.depth == depth)&&(identical(other.model, model) || other.model == model)&&(identical(other.toolCount, toolCount) || other.toolCount == toolCount)&&const DeepCollectionEquality().equals(other._toolsets, _toolsets)&&(identical(other.inputTokens, inputTokens) || other.inputTokens == inputTokens)&&(identical(other.outputTokens, outputTokens) || other.outputTokens == outputTokens)&&(identical(other.reasoningTokens, reasoningTokens) || other.reasoningTokens == reasoningTokens)&&(identical(other.apiCalls, apiCalls) || other.apiCalls == apiCalls)&&const DeepCollectionEquality().equals(other._filesRead, _filesRead)&&const DeepCollectionEquality().equals(other._filesWritten, _filesWritten)&&(identical(other.toolName, toolName) || other.toolName == toolName)&&(identical(other.toolPreview, toolPreview) || other.toolPreview == toolPreview)&&(identical(other.text, text) || other.text == text)&&(identical(other.status, status) || other.status == status)&&(identical(other.summary, summary) || other.summary == summary)&&(identical(other.durationSeconds, durationSeconds) || other.durationSeconds == durationSeconds)&&(identical(other.costUsd, costUsd) || other.costUsd == costUsd));
+}
+
+
+@override
+int get hashCode => Object.hashAll([runtimeType,sessionId,type,goal,taskCount,taskIndex,subagentId,parentId,childSessionId,depth,model,toolCount,const DeepCollectionEquality().hash(_toolsets),inputTokens,outputTokens,reasoningTokens,apiCalls,const DeepCollectionEquality().hash(_filesRead),const DeepCollectionEquality().hash(_filesWritten),toolName,toolPreview,text,status,summary,durationSeconds,costUsd]);
+
+@override
+String toString() {
+  return 'TypedGatewayEvent.subagentEvent(sessionId: $sessionId, type: $type, goal: $goal, taskCount: $taskCount, taskIndex: $taskIndex, subagentId: $subagentId, parentId: $parentId, childSessionId: $childSessionId, depth: $depth, model: $model, toolCount: $toolCount, toolsets: $toolsets, inputTokens: $inputTokens, outputTokens: $outputTokens, reasoningTokens: $reasoningTokens, apiCalls: $apiCalls, filesRead: $filesRead, filesWritten: $filesWritten, toolName: $toolName, toolPreview: $toolPreview, text: $text, status: $status, summary: $summary, durationSeconds: $durationSeconds, costUsd: $costUsd)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SubagentEventCopyWith<$Res> implements $TypedGatewayEventCopyWith<$Res> {
+  factory $SubagentEventCopyWith(SubagentEvent value, $Res Function(SubagentEvent) _then) = _$SubagentEventCopyWithImpl;
+@useResult
+$Res call({
+ String? sessionId, String type, String goal, int taskCount, int taskIndex, String? subagentId, String? parentId, String? childSessionId, int? depth, String? model, int? toolCount, List<String>? toolsets, int? inputTokens, int? outputTokens, int? reasoningTokens, int? apiCalls, List<String>? filesRead, List<String>? filesWritten, String? toolName, String? toolPreview, String? text, String? status, String? summary, double? durationSeconds, double? costUsd
+});
+
+
+
+
+}
+/// @nodoc
+class _$SubagentEventCopyWithImpl<$Res>
+    implements $SubagentEventCopyWith<$Res> {
+  _$SubagentEventCopyWithImpl(this._self, this._then);
+
+  final SubagentEvent _self;
+  final $Res Function(SubagentEvent) _then;
+
+/// Create a copy of TypedGatewayEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? sessionId = freezed,Object? type = null,Object? goal = null,Object? taskCount = null,Object? taskIndex = null,Object? subagentId = freezed,Object? parentId = freezed,Object? childSessionId = freezed,Object? depth = freezed,Object? model = freezed,Object? toolCount = freezed,Object? toolsets = freezed,Object? inputTokens = freezed,Object? outputTokens = freezed,Object? reasoningTokens = freezed,Object? apiCalls = freezed,Object? filesRead = freezed,Object? filesWritten = freezed,Object? toolName = freezed,Object? toolPreview = freezed,Object? text = freezed,Object? status = freezed,Object? summary = freezed,Object? durationSeconds = freezed,Object? costUsd = freezed,}) {
+  return _then(SubagentEvent(
+sessionId: freezed == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String?,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
+as String,goal: null == goal ? _self.goal : goal // ignore: cast_nullable_to_non_nullable
+as String,taskCount: null == taskCount ? _self.taskCount : taskCount // ignore: cast_nullable_to_non_nullable
+as int,taskIndex: null == taskIndex ? _self.taskIndex : taskIndex // ignore: cast_nullable_to_non_nullable
+as int,subagentId: freezed == subagentId ? _self.subagentId : subagentId // ignore: cast_nullable_to_non_nullable
+as String?,parentId: freezed == parentId ? _self.parentId : parentId // ignore: cast_nullable_to_non_nullable
+as String?,childSessionId: freezed == childSessionId ? _self.childSessionId : childSessionId // ignore: cast_nullable_to_non_nullable
+as String?,depth: freezed == depth ? _self.depth : depth // ignore: cast_nullable_to_non_nullable
+as int?,model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
+as String?,toolCount: freezed == toolCount ? _self.toolCount : toolCount // ignore: cast_nullable_to_non_nullable
+as int?,toolsets: freezed == toolsets ? _self._toolsets : toolsets // ignore: cast_nullable_to_non_nullable
+as List<String>?,inputTokens: freezed == inputTokens ? _self.inputTokens : inputTokens // ignore: cast_nullable_to_non_nullable
+as int?,outputTokens: freezed == outputTokens ? _self.outputTokens : outputTokens // ignore: cast_nullable_to_non_nullable
+as int?,reasoningTokens: freezed == reasoningTokens ? _self.reasoningTokens : reasoningTokens // ignore: cast_nullable_to_non_nullable
+as int?,apiCalls: freezed == apiCalls ? _self.apiCalls : apiCalls // ignore: cast_nullable_to_non_nullable
+as int?,filesRead: freezed == filesRead ? _self._filesRead : filesRead // ignore: cast_nullable_to_non_nullable
+as List<String>?,filesWritten: freezed == filesWritten ? _self._filesWritten : filesWritten // ignore: cast_nullable_to_non_nullable
+as List<String>?,toolName: freezed == toolName ? _self.toolName : toolName // ignore: cast_nullable_to_non_nullable
+as String?,toolPreview: freezed == toolPreview ? _self.toolPreview : toolPreview // ignore: cast_nullable_to_non_nullable
+as String?,text: freezed == text ? _self.text : text // ignore: cast_nullable_to_non_nullable
+as String?,status: freezed == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String?,summary: freezed == summary ? _self.summary : summary // ignore: cast_nullable_to_non_nullable
+as String?,durationSeconds: freezed == durationSeconds ? _self.durationSeconds : durationSeconds // ignore: cast_nullable_to_non_nullable
+as double?,costUsd: freezed == costUsd ? _self.costUsd : costUsd // ignore: cast_nullable_to_non_nullable
+as double?,
   ));
 }
 

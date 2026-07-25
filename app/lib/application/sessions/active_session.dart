@@ -12,11 +12,10 @@
 /// reconnecting gap.
 library;
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:flit/application/chat/message_list_notifier.dart';
 import 'package:flit/application/providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// State of the client's current (active) session. "Current" is tracked
 /// entirely client-side — the gateway doesn't own it (protocol §9).

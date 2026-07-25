@@ -77,11 +77,16 @@ FoldState foldGatewayEvent(FoldState state, TypedGatewayEvent event) {
     TurnError() => _onTurnError(state, event),
     ApprovalRequestEvent() => _onApprovalRequest(state, event),
     ClarifyRequestEvent() => _onClarifyRequest(state, event),
-    // session.info / status.update / gateway.ready / unknown: no
-    // message-list change (pass through).
+    SudoRequestEvent() => _onSudoRequest(state, event),
+    SecretRequestEvent() => _onSecretRequest(state, event),
+    TerminalReadRequestEvent() => _onTerminalReadRequest(state, event),
+    // session.info / status.update / gateway.ready / subagent.* / unknown: no
+    // message-list change (pass through). Subagent events fold into the
+    // SEPARATE spawn-tree, not the chat list (P3-04).
     SessionInfo() ||
     StatusUpdate() ||
     GatewayReady() ||
+    SubagentEvent() ||
     UnknownEvent() => state,
   };
 }
@@ -317,6 +322,55 @@ FoldState _onClarifyRequest(FoldState state, ClarifyRequestEvent event) {
         question: event.question,
         choices: event.choices,
         requestId: event.requestId,
+      ),
+    ],
+  );
+}
+
+/// `sudo.request` → surface out-of-band (P3-08: correlated by request_id).
+/// The message list is untouched.
+FoldState _onSudoRequest(FoldState state, SudoRequestEvent event) {
+  return state.copyWith(
+    pendingPrompts: <InteractivePrompt>[
+      ...state.pendingPrompts,
+      SudoPrompt(
+        sessionId: event.sessionId ?? '',
+        requestId: event.requestId,
+      ),
+    ],
+  );
+}
+
+/// `secret.request` → surface out-of-band (P3-08: correlated by request_id).
+/// The message list is untouched.
+FoldState _onSecretRequest(FoldState state, SecretRequestEvent event) {
+  return state.copyWith(
+    pendingPrompts: <InteractivePrompt>[
+      ...state.pendingPrompts,
+      SecretPrompt(
+        sessionId: event.sessionId ?? '',
+        envVar: event.envVar,
+        prompt: event.prompt,
+        requestId: event.requestId,
+      ),
+    ],
+  );
+}
+
+/// `terminal.read.request` → surface out-of-band (P3-08: correlated by
+/// request_id). The message list is untouched.
+FoldState _onTerminalReadRequest(
+  FoldState state,
+  TerminalReadRequestEvent event,
+) {
+  return state.copyWith(
+    pendingPrompts: <InteractivePrompt>[
+      ...state.pendingPrompts,
+      TerminalReadPrompt(
+        sessionId: event.sessionId ?? '',
+        requestId: event.requestId,
+        start: event.start,
+        count: event.count,
       ),
     ],
   );

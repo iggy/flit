@@ -6,14 +6,14 @@
 
 import 'dart:async';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flit/application/connection/connection_providers.dart';
 import 'package:flit/application/models/model_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/data/transport/gateway_rpc_client.dart';
 import 'package:flit/domain/models/model_option.dart';
 import 'package:flit/domain/repositories/model_repository.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 /// Fake model repository: records calls, answers from configurable stubs.
 final class FakeModelRepository implements ModelRepository {

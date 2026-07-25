@@ -1,7 +1,7 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:flit/data/transport/gateway_rpc_client.dart';
 import 'package:flit/domain/models/chat_message.dart';
 import 'package:flit/domain/models/usage.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'gateway_event_parser.freezed.dart';
 
@@ -110,6 +110,64 @@ sealed class TypedGatewayEvent with _$TypedGatewayEvent {
     required String requestId,
   }) = ClarifyRequestEvent;
 
+  /// `sudo.request` (protocol §8.1 / P3-08): correlated by [requestId].
+  /// The agent needs a sudo password. Payload carries only the request id.
+  const factory TypedGatewayEvent.sudoRequest({
+    required String? sessionId,
+    required String requestId,
+  }) = SudoRequestEvent;
+
+  /// `secret.request` (protocol §8.1 / P3-08): correlated by [requestId].
+  /// The agent needs a secret value (e.g. an API key) for [envVar].
+  const factory TypedGatewayEvent.secretRequest({
+    required String? sessionId,
+    required String envVar,
+    required String prompt,
+    required String requestId,
+  }) = SecretRequestEvent;
+
+  /// `terminal.read.request` (P3-08): correlated by [requestId]. The agent
+  /// asks the client to return terminal buffer contents. [start]/[count] are
+  /// optional line-range hints.
+  const factory TypedGatewayEvent.terminalReadRequest({
+    required String? sessionId,
+    required String requestId,
+    int? start,
+    int? count,
+  }) = TerminalReadRequestEvent;
+
+  /// `subagent.*` (P3-04): the subagent/delegation event stream folded into a
+  /// spawn tree keyed by [subagentId]/[parentId]. [type] is the wire type
+  /// (e.g. `subagent.start`). Fields not present on a given event type are
+  /// null/default (see docs/reference/08-agent-transparency-wire-shapes.md).
+  const factory TypedGatewayEvent.subagentEvent({
+    required String? sessionId,
+    required String type,
+    required String goal,
+    required int taskCount,
+    required int taskIndex,
+    String? subagentId,
+    String? parentId,
+    String? childSessionId,
+    int? depth,
+    String? model,
+    int? toolCount,
+    List<String>? toolsets,
+    int? inputTokens,
+    int? outputTokens,
+    int? reasoningTokens,
+    int? apiCalls,
+    List<String>? filesRead,
+    List<String>? filesWritten,
+    String? toolName,
+    String? toolPreview,
+    String? text,
+    String? status,
+    String? summary,
+    double? durationSeconds,
+    double? costUsd,
+  }) = SubagentEvent;
+
   /// `status.update` (§6): transient status line `{kind, text}`.
   const factory TypedGatewayEvent.statusUpdate({
     required String? sessionId,
@@ -211,6 +269,58 @@ TypedGatewayEvent parseGatewayEvent(GatewayEvent raw) {
           choices: _asStringList(payload['choices']),
           requestId: _asString(payload['request_id']) ?? '',
         );
+      case 'sudo.request':
+        return TypedGatewayEvent.sudoRequest(
+          sessionId: sessionId,
+          requestId: _asString(payload['request_id']) ?? '',
+        );
+      case 'secret.request':
+        return TypedGatewayEvent.secretRequest(
+          sessionId: sessionId,
+          envVar: _asString(payload['env_var']) ?? '',
+          prompt: _asString(payload['prompt']) ?? '',
+          requestId: _asString(payload['request_id']) ?? '',
+        );
+      case 'terminal.read.request':
+        return TypedGatewayEvent.terminalReadRequest(
+          sessionId: sessionId,
+          requestId: _asString(payload['request_id']) ?? '',
+          start: _asInt(payload['start']),
+          count: _asInt(payload['count']),
+        );
+      case 'subagent.spawn_requested':
+      case 'subagent.start':
+      case 'subagent.thinking':
+      case 'subagent.tool':
+      case 'subagent.progress':
+      case 'subagent.complete':
+        return TypedGatewayEvent.subagentEvent(
+          sessionId: sessionId,
+          type: raw.type,
+          goal: _asString(payload['goal']) ?? '',
+          taskCount: _asInt(payload['task_count']) ?? 1,
+          taskIndex: _asInt(payload['task_index']) ?? 0,
+          subagentId: _asString(payload['subagent_id']),
+          parentId: _asString(payload['parent_id']),
+          childSessionId: _asString(payload['child_session_id']),
+          depth: _asInt(payload['depth']),
+          model: _asString(payload['model']),
+          toolCount: _asInt(payload['tool_count']),
+          toolsets: _asStringList(payload['toolsets']),
+          inputTokens: _asInt(payload['input_tokens']),
+          outputTokens: _asInt(payload['output_tokens']),
+          reasoningTokens: _asInt(payload['reasoning_tokens']),
+          apiCalls: _asInt(payload['api_calls']),
+          filesRead: _asStringList(payload['files_read']),
+          filesWritten: _asStringList(payload['files_written']),
+          toolName: _asString(payload['tool_name']),
+          toolPreview: _asString(payload['tool_preview']),
+          text: _asString(payload['text']),
+          status: _asString(payload['status']),
+          summary: _asString(payload['summary']),
+          durationSeconds: _asDouble(payload['duration_seconds']),
+          costUsd: _asDouble(payload['cost_usd']),
+        );
       case 'status.update':
         return TypedGatewayEvent.statusUpdate(
           sessionId: sessionId,
@@ -238,6 +348,8 @@ String? _asString(Object? value) => value is String ? value : null;
 bool? _asBool(Object? value) => value is bool ? value : null;
 
 double? _asDouble(Object? value) => value is num ? value.toDouble() : null;
+
+int? _asInt(Object? value) => value is num ? value.toInt() : null;
 
 List<dynamic>? _asList(Object? value) {
   return value is List ? List<dynamic>.of(value) : null;

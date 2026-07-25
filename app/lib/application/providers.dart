@@ -2,12 +2,12 @@
 /// repository impls from the current [rpcClientProvider] client.
 library;
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flit/application/connection/connection_providers.dart';
 import 'package:flit/data/repositories/chat_repository_impl.dart';
 import 'package:flit/data/repositories/session_repository_impl.dart';
 import 'package:flit/domain/repositories/chat_repository.dart';
 import 'package:flit/domain/repositories/session_repository.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The session repository for the current connection, or null when there is
 /// no RPC client (disconnected / pre-connect) — mirroring the nullable

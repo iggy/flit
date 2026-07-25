@@ -5,10 +5,10 @@
 
 import 'dart:convert';
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flit/data/dto/session_dtos.dart';
 import 'package:flit/domain/models/active_session.dart';
 import 'package:flit/domain/models/chat_message.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 Map<String, dynamic> _resultOf(String frame) {
   final decoded = jsonDecode(frame) as Map<String, dynamic>;

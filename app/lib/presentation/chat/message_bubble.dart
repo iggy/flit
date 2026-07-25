@@ -7,10 +7,10 @@ library;
 
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flit/domain/models/chat_message.dart';
 import 'package:flit/presentation/chat/tool_call_card.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 /// Key of the streaming ("typing") indicator under an assistant bubble —
 /// widget tests find it by key while a turn is in flight.

@@ -2,14 +2,14 @@
 // repositories — null-when-disconnected behavior, board load/refresh, and
 // the OPTIMISTIC moveTask (apply locally, PATCH, rollback on failure).
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flit/application/plugins/plugin_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/domain/models/kanban.dart';
 import 'package:flit/domain/models/plugin_info.dart';
 import 'package:flit/domain/repositories/kanban_repository.dart';
 import 'package:flit/domain/repositories/plugin_repository.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 /// Fake plugin repository answering from [plugins].
 final class FakePluginRepository implements PluginRepository {

@@ -9,12 +9,12 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/data/repositories/profile_repository.dart';
 import 'package:flit/data/transport/connection_config.dart';
 import 'package:flit/data/transport/gateway_rest_client.dart';
 import 'package:flit/domain/models/profile.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('ProfileRepositoryImpl.list (GET /api/profiles, wire §14)', () {

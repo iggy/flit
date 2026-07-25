@@ -5,10 +5,10 @@
 // `confirm_expensive_model:true` re-send), plus the DTO→domain mapping of
 // the §8 example.
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flit/data/repositories/model_repository.dart';
 import 'package:flit/data/transport/gateway_rpc_client.dart';
 import 'package:flit/domain/repositories/model_repository.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 /// Hand-written fake (same pattern as session_repository_test.dart):
 /// subclasses [GatewayRpcClient] and overrides ONLY `request` — the single

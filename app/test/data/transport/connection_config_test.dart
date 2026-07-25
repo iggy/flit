@@ -1,5 +1,5 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flit/data/transport/connection_config.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 /// Unit tests for ConnectionConfig URL normalization, WS-URL construction,
 /// and log redaction — ported from

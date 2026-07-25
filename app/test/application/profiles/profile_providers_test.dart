@@ -8,12 +8,12 @@
 // - ProfileActions.setActive posts via the repository, refreshes
 //   activeProfileProvider, and never throws (false on failure).
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flit/application/profiles/profile_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/domain/models/profile.dart';
 import 'package:flit/domain/repositories/profile_repository.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 /// Hand-rolled fake (established pattern — see
 /// test/application/sessions/active_session_test.dart).

@@ -1,7 +1,6 @@
 // P1-01 acceptance: trivial construction of every domain model,
 // SessionStatus.parse tolerance, and copyWith sanity.
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flit/domain/models/active_session.dart';
 import 'package:flit/domain/models/chat_message.dart';
 import 'package:flit/domain/models/interactive_prompt.dart';
@@ -11,6 +10,7 @@ import 'package:flit/domain/models/session_bootstrap.dart';
 import 'package:flit/domain/models/session_summary.dart';
 import 'package:flit/domain/models/tool_call.dart';
 import 'package:flit/domain/models/usage.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('construction', () {

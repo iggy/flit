@@ -1,13 +1,13 @@
 // Smoke tests for the connect screen's two-step flow
 // (probe → token or user/pass form).
 
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flit/application/connection/connection_providers.dart';
 import 'package:flit/data/storage/connection_store.dart';
 import 'package:flit/domain/models/gateway_status.dart';
 import 'package:flit/presentation/connect/connect_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 class _MemoryStore implements KeyValueStore {
   final Map<String, String> data = <String, String>{};

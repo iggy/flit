@@ -5,6 +5,7 @@ import 'package:flit/domain/models/active_session.dart';
 import 'package:flit/domain/models/session_bootstrap.dart';
 import 'package:flit/domain/models/session_detail.dart';
 import 'package:flit/domain/models/session_summary.dart';
+import 'package:flit/domain/models/steer_result.dart';
 import 'package:flit/domain/repositories/session_repository.dart';
 
 /// [SessionRepository] over [GatewayRpcClient.request] (ticket P1-04).
@@ -165,6 +166,18 @@ final class SessionRepositoryImpl implements SessionRepository {
       'session_id': liveId,
       'cwd': cwd,
     });
+  }
+
+  @override
+  Future<SteerOutcome> steer(String liveId, String text) async {
+    // P3-07: LIVE id (protocol §9). Result status ∈ queued|rejected.
+    final result = await _client.request('session.steer', <String, dynamic>{
+      'session_id': liveId,
+      'text': text,
+    });
+    return result['status'] == 'rejected'
+        ? SteerOutcome.rejected
+        : SteerOutcome.queued;
   }
 
   /// Asserts the normal-path acknowledgement without enforcing it (see the

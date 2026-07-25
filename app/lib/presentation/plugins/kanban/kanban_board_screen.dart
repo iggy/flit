@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flit/application/plugins/plugin_providers.dart';
 import 'package:flit/domain/models/kanban.dart';
 import 'package:flit/presentation/plugins/kanban/kanban_column.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Kanban board (ticket P1-15): horizontally scrollable columns in the FIXED
 /// order the server sends them (triage/todo/scheduled/ready/running/blocked/

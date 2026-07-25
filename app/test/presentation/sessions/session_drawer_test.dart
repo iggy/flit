@@ -3,9 +3,6 @@
 // and the interrupt affordance is visible while the current live session
 // is working. Errors land in a dismissible in-drawer message — never throw.
 
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flit/application/chat/message_list_notifier.dart';
 import 'package:flit/application/connection/connection_providers.dart';
 import 'package:flit/application/providers.dart';
@@ -17,8 +14,12 @@ import 'package:flit/domain/models/gateway_status.dart';
 import 'package:flit/domain/models/session_bootstrap.dart';
 import 'package:flit/domain/models/session_detail.dart';
 import 'package:flit/domain/models/session_summary.dart';
+import 'package:flit/domain/models/steer_result.dart';
 import 'package:flit/domain/repositories/session_repository.dart';
 import 'package:flit/presentation/sessions/session_drawer.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 /// Hand-rolled fake (established pattern — see active_session_test.dart).
 final class FakeSessionRepository implements SessionRepository {
@@ -138,6 +139,11 @@ final class FakeSessionRepository implements SessionRepository {
 
   @override
   Future<void> setCwd(String liveId, String cwd) => throw UnimplementedError();
+
+  @override
+  Future<SteerOutcome> steer(String liveId, String text) async {
+    return SteerOutcome.queued;
+  }
 }
 
 /// A gateway status pre-seeded into gatewayStatusProvider (P1-16 footer).

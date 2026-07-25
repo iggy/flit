@@ -2,12 +2,12 @@
 // the move menu PATCHes the target column (optimistically moving the card);
 // tapping a card opens the detail sheet.
 
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flit/application/plugins/plugin_providers.dart';
 import 'package:flit/domain/models/kanban.dart';
 import 'package:flit/presentation/plugins/kanban/kanban_board_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import '../../application/plugins/plugin_providers_test.dart'
     show FakeKanbanRepository;

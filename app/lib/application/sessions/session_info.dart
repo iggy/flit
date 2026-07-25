@@ -1,13 +1,12 @@
 library;
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:flit/application/connection/connection_providers.dart';
 import 'package:flit/application/providers.dart';
 import 'package:flit/application/sessions/active_session.dart';
 import 'package:flit/data/dto/events/gateway_event_parser.dart';
 import 'package:flit/data/dto/session_dtos.dart';
 import 'package:flit/domain/models/session_detail.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// `session.usage` query for the active session (Phase 2, §session.usage).
 /// Returns null when disconnected or no active session; surfaces RPC errors as

@@ -3,12 +3,12 @@
 /// form (gated) → login (cookies) → mint a WS ticket → open the socket.
 library;
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flit/application/connection/connection_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/data/transport/connection_config.dart';
 import 'package:flit/domain/models/auth_provider.dart';
 import 'package:flit/domain/models/gateway_status.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Where the connect flow currently stands.
 enum ConnectPhase { idle, probing, probed, connecting, connected, error }

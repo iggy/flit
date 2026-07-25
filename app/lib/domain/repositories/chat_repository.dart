@@ -23,4 +23,14 @@ abstract interface class ChatRepository {
   /// `clarify.respond` (wire §11) — correlated BY REQUEST_ID
   /// (protocol §8.1). Expects `{status:"ok"}`.
   Future<void> respondClarify(String requestId, String answer);
+
+  /// `sudo.respond` (P3-08) — correlated BY REQUEST_ID. Expects `{status:"ok"}`.
+  Future<void> respondSudo(String requestId, String password);
+
+  /// `secret.respond` (P3-08) — correlated BY REQUEST_ID. Expects `{status:"ok"}`.
+  Future<void> respondSecret(String requestId, String value);
+
+  /// `terminal.read.respond` (P3-08) — correlated BY REQUEST_ID.
+  /// Expects `{status:"ok"}`.
+  Future<void> respondTerminalRead(String requestId, String text);
 }

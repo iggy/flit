@@ -27,6 +27,7 @@ import 'package:flit/domain/models/chat_message.dart';
 import 'package:flit/domain/models/session_bootstrap.dart';
 import 'package:flit/domain/models/session_detail.dart';
 import 'package:flit/domain/models/session_summary.dart';
+import 'package:flit/domain/models/steer_result.dart';
 import 'package:flit/domain/repositories/chat_repository.dart';
 import 'package:flit/domain/repositories/session_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -99,6 +100,11 @@ final class FakeSessionRepository implements SessionRepository {
 
   final List<({String liveId, String cwd})> cwdSet = <({String liveId, String cwd})>[];
   Exception? setCwdError;
+
+  @override
+  Future<SteerOutcome> steer(String liveId, String text) async {
+    return SteerOutcome.queued;
+  }
 
   @override
   Future<SessionCreateResult> create({
@@ -245,6 +251,15 @@ final class FakeChatRepository implements ChatRepository {
 
   @override
   Future<void> respondClarify(String requestId, String answer) async {}
+
+  @override
+  Future<void> respondSudo(String requestId, String password) async {}
+
+  @override
+  Future<void> respondSecret(String requestId, String value) async {}
+
+  @override
+  Future<void> respondTerminalRead(String requestId, String text) async {}
 
   Future<void> dispose() => _events.close();
 }

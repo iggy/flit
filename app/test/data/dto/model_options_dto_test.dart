@@ -3,8 +3,8 @@
 
 import 'dart:convert';
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flit/data/dto/model_options_dto.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   // Verbatim §8 example.

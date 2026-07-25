@@ -12,12 +12,12 @@
 /// widget tree), and [profilesUnavailableProvider] exposes it as a flag.
 library;
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flit/application/connection/connection_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/data/repositories/profile_repository.dart';
 import 'package:flit/domain/models/profile.dart';
 import 'package:flit/domain/repositories/profile_repository.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The profile repository for the current connection, or null when
 /// disconnected (no REST client).

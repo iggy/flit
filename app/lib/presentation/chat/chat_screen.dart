@@ -15,9 +15,7 @@ library;
 
 import 'dart:async';
 
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flit/application/chat/composer_prefill.dart';
 import 'package:flit/application/chat/message_fold.dart';
 import 'package:flit/application/chat/message_list_notifier.dart';
 import 'package:flit/application/connection/connect_controller.dart';
@@ -29,11 +27,18 @@ import 'package:flit/presentation/chat/approval_prompt_card.dart';
 import 'package:flit/presentation/chat/clarify_prompt_card.dart';
 import 'package:flit/presentation/chat/composer.dart';
 import 'package:flit/presentation/chat/message_bubble.dart';
+import 'package:flit/presentation/chat/secret_prompt_card.dart';
+import 'package:flit/presentation/chat/slash_launcher.dart';
+import 'package:flit/presentation/chat/sudo_prompt_card.dart';
+import 'package:flit/presentation/chat/terminal_read_prompt_card.dart';
 import 'package:flit/presentation/common/connection_chip.dart';
 import 'package:flit/presentation/models/model_picker_sheet.dart';
 import 'package:flit/presentation/profiles/profile_menu.dart';
 import 'package:flit/presentation/sessions/session_drawer.dart';
 import 'package:flit/presentation/sessions/session_info_sheet.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
@@ -127,9 +132,26 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           const ProfileMenuButton(),
           const SessionInfoButton(),
           IconButton(
+            tooltip: 'Commands',
+            icon: const Icon(Icons.terminal),
+            onPressed: () async {
+              final command = await showSlashLauncher(context);
+              if (command != null) {
+                ref
+                    .read(composerPrefillProvider.notifier)
+                    .prefill('${command.command} ');
+              }
+            },
+          ),
+          IconButton(
             tooltip: 'Plugins',
             icon: const Icon(Icons.extension_outlined),
             onPressed: () => context.push('/plugins'),
+          ),
+          IconButton(
+            tooltip: 'Agents',
+            icon: const Icon(Icons.account_tree_outlined),
+            onPressed: () => context.push('/agents'),
           ),
           IconButton(
             tooltip: 'Sign out',
@@ -285,6 +307,18 @@ class _PromptCard extends StatelessWidget {
       ),
       ClarifyPrompt() => ClarifyPromptCard(
         prompt: prompt as ClarifyPrompt,
+        liveId: liveId,
+      ),
+      SudoPrompt() => SudoPromptCard(
+        prompt: prompt as SudoPrompt,
+        liveId: liveId,
+      ),
+      SecretPrompt() => SecretPromptCard(
+        prompt: prompt as SecretPrompt,
+        liveId: liveId,
+      ),
+      TerminalReadPrompt() => TerminalReadPromptCard(
+        prompt: prompt as TerminalReadPrompt,
         liveId: liveId,
       ),
     };

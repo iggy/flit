@@ -2,6 +2,7 @@ import 'package:flit/domain/models/active_session.dart';
 import 'package:flit/domain/models/session_bootstrap.dart';
 import 'package:flit/domain/models/session_detail.dart';
 import 'package:flit/domain/models/session_summary.dart';
+import 'package:flit/domain/models/steer_result.dart';
 
 /// Intent-level session operations (ticket P1-04).
 ///
@@ -73,4 +74,8 @@ abstract interface class SessionRepository {
   /// `session.cwd.set` (Phase 2, §session.cwd.set) — set working directory.
   /// Takes LIVE id (protocol §9).
   Future<void> setCwd(String liveId, String cwd);
+
+  /// `session.steer` (P3-07) — inject guidance into a running turn. Takes
+  /// LIVE id (protocol §9). Returns whether it was queued or rejected.
+  Future<SteerOutcome> steer(String liveId, String text);
 }

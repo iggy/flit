@@ -4,14 +4,13 @@
 /// caller-initiated mutations (composer messages, prompt dismissal).
 library;
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:flit/application/chat/message_fold.dart';
 import 'package:flit/application/providers.dart';
 import 'package:flit/data/dto/events/gateway_event_parser.dart';
 import 'package:flit/domain/models/chat_message.dart';
 import 'package:flit/domain/models/interactive_prompt.dart';
 import 'package:flit/domain/models/session_detail.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Per-session chat state, keyed by the LIVE session id (protocol §9).
 ///

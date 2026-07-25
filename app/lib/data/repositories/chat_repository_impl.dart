@@ -58,6 +58,43 @@ final class ChatRepositoryImpl implements ChatRepository {
     _expectStatus(result, 'ok');
   }
 
+  @override
+  Future<void> respondSudo(String requestId, String password) async {
+    // P3-08: correlated BY REQUEST_ID — no session_id.
+    // Success shape is `{"status":"ok"}`; an already-resolved request comes
+    // back as a JSON-RPC error (code 4009) → GatewayRpcException.
+    final result = await _client.request('sudo.respond', <String, dynamic>{
+      'request_id': requestId,
+      'password': password,
+    });
+    _expectStatus(result, 'ok');
+  }
+
+  @override
+  Future<void> respondSecret(String requestId, String value) async {
+    // P3-08: correlated BY REQUEST_ID — no session_id.
+    // Success shape is `{"status":"ok"}`; an already-resolved request comes
+    // back as a JSON-RPC error (code 4009) → GatewayRpcException.
+    final result = await _client.request('secret.respond', <String, dynamic>{
+      'request_id': requestId,
+      'value': value,
+    });
+    _expectStatus(result, 'ok');
+  }
+
+  @override
+  Future<void> respondTerminalRead(String requestId, String text) async {
+    // P3-08: correlated BY REQUEST_ID — no session_id.
+    // Success shape is `{"status":"ok"}`; an already-resolved request comes
+    // back as a JSON-RPC error (code 4009) → GatewayRpcException.
+    final result =
+        await _client.request('terminal.read.respond', <String, dynamic>{
+      'request_id': requestId,
+      'text': text,
+    });
+    _expectStatus(result, 'ok');
+  }
+
   /// Asserts the normal-path acknowledgement without enforcing it (see the
   /// defensive note at [submitPrompt]).
   static void _expectStatus(Map<String, dynamic> result, String expected) {

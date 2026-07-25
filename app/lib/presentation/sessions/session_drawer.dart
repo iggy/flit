@@ -18,13 +18,13 @@ library;
 
 import 'dart:async';
 
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flit/application/connection/connection_providers.dart';
 import 'package:flit/application/sessions/active_session.dart';
 import 'package:flit/application/sessions/session_list.dart';
 import 'package:flit/domain/models/active_session.dart';
 import 'package:flit/domain/models/session_summary.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Key of the 'New session' button.
 const Key sessionDrawerNewKey = Key('session_drawer_new');

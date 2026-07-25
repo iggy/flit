@@ -6,11 +6,11 @@ library;
 
 import 'dart:async';
 
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flit/application/config/config_providers.dart';
 import 'package:flit/application/models/model_providers.dart';
 import 'package:flit/domain/models/model_option.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// App-bar action for model selection: the smart-toy icon plus the current
 /// model name as a compact label (when known), opening [ModelPickerSheet].

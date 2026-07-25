@@ -4,12 +4,12 @@
 /// means free text (a field + submit).
 library;
 
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flit/application/chat/message_list_notifier.dart';
 import 'package:flit/application/providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/domain/models/interactive_prompt.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Key of the free-text answer field (choices == null).
 const Key clarifyFieldKey = Key('clarify_field');

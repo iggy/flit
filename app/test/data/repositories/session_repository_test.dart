@@ -3,11 +3,12 @@
 // docs/reference/03-mvp-wire-shapes.md §2–§5, §12 and the DTO→domain result
 // mapping (esp. the two session ids, protocol §9).
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flit/data/repositories/session_repository_impl.dart';
 import 'package:flit/data/transport/gateway_rpc_client.dart';
 import 'package:flit/domain/models/active_session.dart';
 import 'package:flit/domain/models/chat_message.dart';
+import 'package:flit/domain/models/steer_result.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 /// Hand-written fake: subclasses [GatewayRpcClient] and overrides ONLY
 /// `request` — the single surface the repository uses. Records every call
@@ -594,6 +595,41 @@ void main() {
         'session_id': 'a1b2c3d4',
         'cwd': '/home/iggy/project',
       });
+    });
+  });
+
+  group('steer (P3-07, §session.steer)', () {
+    test('sends LIVE id + text; maps status "queued" to SteerOutcome.queued', () async {
+      client = FakeGatewayRpcClient(
+        handler: (_, _) => const <String, dynamic>{
+          'status': 'queued',
+          'text': 'Focus on error handling',
+        },
+      );
+      repository = SessionRepositoryImpl(client);
+
+      final result = await repository.steer('a1b2c3d4', 'Focus on error handling');
+
+      expect(client.calls.single.method, 'session.steer');
+      expect(client.calls.single.params, <String, dynamic>{
+        'session_id': 'a1b2c3d4',
+        'text': 'Focus on error handling',
+      });
+      expect(result, SteerOutcome.queued);
+    });
+
+    test('maps status "rejected" to SteerOutcome.rejected', () async {
+      client = FakeGatewayRpcClient(
+        handler: (_, _) => const <String, dynamic>{
+          'status': 'rejected',
+          'text': 'Cannot steer now',
+        },
+      );
+      repository = SessionRepositoryImpl(client);
+
+      final result = await repository.steer('a1b2c3d4', 'Try this approach');
+
+      expect(result, SteerOutcome.rejected);
     });
   });
 }

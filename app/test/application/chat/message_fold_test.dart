@@ -9,7 +9,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flit/application/chat/message_fold.dart';
 import 'package:flit/data/dto/events/gateway_event_parser.dart';
 import 'package:flit/data/transport/gateway_rpc_client.dart';
@@ -17,6 +16,7 @@ import 'package:flit/domain/models/chat_message.dart';
 import 'package:flit/domain/models/interactive_prompt.dart';
 import 'package:flit/domain/models/tool_call.dart';
 import 'package:flit/domain/models/usage.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 /// Decode a full event frame the way the RPC client's router does
 /// (protocol §3c): params.type / params.session_id / params.payload.
@@ -171,6 +171,71 @@ void main() {
     expect(clarify.choices, <String>['staging', 'prod']);
     expect(clarify.requestId, '9f3a1c2b');
   });
+
+  test('sudo.request surfaces a SudoPrompt out-of-band (P3-08)', () {
+    final state = _foldAll(empty, const <TypedGatewayEvent>[
+      TypedGatewayEvent.messageStart(sessionId: sid),
+      TypedGatewayEvent.sudoRequest(
+        sessionId: sid,
+        requestId: '9f3a1c2b',
+      ),
+    ]);
+
+    expect(state.messages, hasLength(1));
+    expect(state.pendingPrompts, hasLength(1));
+    final prompt = state.pendingPrompts.single;
+    expect(prompt, isA<SudoPrompt>());
+    final sudo = prompt as SudoPrompt;
+    expect(sudo.sessionId, sid);
+    expect(sudo.requestId, '9f3a1c2b');
+  });
+
+  test('secret.request surfaces a SecretPrompt out-of-band (P3-08)', () {
+    final state = _foldAll(empty, const <TypedGatewayEvent>[
+      TypedGatewayEvent.messageStart(sessionId: sid),
+      TypedGatewayEvent.secretRequest(
+        sessionId: sid,
+        envVar: 'OPENAI_API_KEY',
+        prompt: 'Enter your API key',
+        requestId: '9f3a1c2b',
+      ),
+    ]);
+
+    expect(state.messages, hasLength(1));
+    expect(state.pendingPrompts, hasLength(1));
+    final prompt = state.pendingPrompts.single;
+    expect(prompt, isA<SecretPrompt>());
+    final secret = prompt as SecretPrompt;
+    expect(secret.sessionId, sid);
+    expect(secret.envVar, 'OPENAI_API_KEY');
+    expect(secret.prompt, 'Enter your API key');
+    expect(secret.requestId, '9f3a1c2b');
+  });
+
+  test(
+    'terminal.read.request surfaces a TerminalReadPrompt out-of-band (P3-08)',
+    () {
+      final state = _foldAll(empty, const <TypedGatewayEvent>[
+        TypedGatewayEvent.messageStart(sessionId: sid),
+        TypedGatewayEvent.terminalReadRequest(
+          sessionId: sid,
+          requestId: '9f3a1c2b',
+          start: 10,
+          count: 20,
+        ),
+      ]);
+
+      expect(state.messages, hasLength(1));
+      expect(state.pendingPrompts, hasLength(1));
+      final prompt = state.pendingPrompts.single;
+      expect(prompt, isA<TerminalReadPrompt>());
+      final termRead = prompt as TerminalReadPrompt;
+      expect(termRead.sessionId, sid);
+      expect(termRead.requestId, '9f3a1c2b');
+      expect(termRead.start, 10);
+      expect(termRead.count, 20);
+    },
+  );
 
   test('tool.complete for an unknown toolId is a no-op, never crashes', () {
     const before = FoldState(

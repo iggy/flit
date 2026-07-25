@@ -2,10 +2,10 @@
 // Asserts the EXACT method name from docs/reference/03-mvp-wire-shapes.md
 // §13 and the DTO→domain mapping (missing `version` → '?').
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flit/data/repositories/plugin_repository.dart';
 import 'package:flit/data/transport/gateway_rpc_client.dart';
 import 'package:flit/domain/models/plugin_info.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 /// Hand-written fake: subclasses [GatewayRpcClient] and overrides ONLY
 /// `request` — the single surface the repository uses. Records every call

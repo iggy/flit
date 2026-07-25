@@ -5,7 +5,8 @@ import 'package:flit/domain/models/deep_equals.dart';
 /// Two correlation models — do not cross them:
 /// - [ApprovalPrompt] is correlated by **session** (`approval.respond` takes
 ///   `session_id`); the event carries NO request id.
-/// - [ClarifyPrompt] is correlated by **request_id** (`clarify.respond`).
+/// - [ClarifyPrompt], [SudoPrompt], [SecretPrompt], and [TerminalReadPrompt]
+///   are correlated by **request_id** (the corresponding `.respond` methods).
 sealed class InteractivePrompt {
   const InteractivePrompt();
 }
@@ -123,4 +124,116 @@ bool _nullableListEquals(List<String>? a, List<String>? b) {
     return a == null && b == null;
   }
   return deepListEquals(a, b);
+}
+
+/// `sudo.request` (protocol §8.1 / P3-08): the agent needs a sudo password.
+/// Correlated by [requestId].
+final class SudoPrompt extends InteractivePrompt {
+  const SudoPrompt({
+    required this.sessionId,
+    required this.requestId,
+  });
+
+  /// Short live session id the prompt belongs to.
+  final String sessionId;
+
+  /// The correlation key for `sudo.respond`.
+  final String requestId;
+
+  @override
+  bool operator ==(Object other) {
+    return other is SudoPrompt &&
+        other.sessionId == sessionId &&
+        other.requestId == requestId;
+  }
+
+  @override
+  int get hashCode => Object.hash(sessionId, requestId);
+
+  @override
+  String toString() {
+    return 'SudoPrompt(sessionId: $sessionId, requestId: $requestId)';
+  }
+}
+
+/// `secret.request` (protocol §8.1 / P3-08): the agent needs a secret value
+/// (e.g. an API key) for [envVar]. Correlated by [requestId].
+final class SecretPrompt extends InteractivePrompt {
+  const SecretPrompt({
+    required this.sessionId,
+    required this.envVar,
+    required this.prompt,
+    required this.requestId,
+  });
+
+  /// Short live session id the prompt belongs to.
+  final String sessionId;
+
+  /// The environment variable name for which a secret is needed.
+  final String envVar;
+
+  /// The human-readable prompt text explaining what is needed.
+  final String prompt;
+
+  /// The correlation key for `secret.respond`.
+  final String requestId;
+
+  @override
+  bool operator ==(Object other) {
+    return other is SecretPrompt &&
+        other.sessionId == sessionId &&
+        other.envVar == envVar &&
+        other.prompt == prompt &&
+        other.requestId == requestId;
+  }
+
+  @override
+  int get hashCode => Object.hash(sessionId, envVar, prompt, requestId);
+
+  @override
+  String toString() {
+    return 'SecretPrompt(sessionId: $sessionId, envVar: $envVar, '
+        'prompt: $prompt, requestId: $requestId)';
+  }
+}
+
+/// `terminal.read.request` (P3-08): the agent asks the client to return
+/// terminal buffer contents. Correlated by [requestId].
+final class TerminalReadPrompt extends InteractivePrompt {
+  const TerminalReadPrompt({
+    required this.sessionId,
+    required this.requestId,
+    this.start,
+    this.count,
+  });
+
+  /// Short live session id the prompt belongs to.
+  final String sessionId;
+
+  /// The correlation key for `terminal.read.respond`.
+  final String requestId;
+
+  /// Optional starting line number for the terminal read.
+  final int? start;
+
+  /// Optional count of lines to read.
+  final int? count;
+
+  @override
+  bool operator ==(Object other) {
+    return other is TerminalReadPrompt &&
+        other.sessionId == sessionId &&
+        other.requestId == requestId &&
+        other.start == start &&
+        other.count == count;
+  }
+
+  @override
+  int get hashCode => Object.hash(sessionId, requestId, start, count);
+
+  @override
+  String toString() {
+    return 'TerminalReadPrompt(sessionId: $sessionId, requestId: $requestId, '
+        'start: $start, count: $count)';
+  }
 }

@@ -11,9 +11,6 @@
 
 import 'dart:async';
 
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flit/application/connection/connection_providers.dart';
 import 'package:flit/application/providers.dart';
 import 'package:flit/data/dto/events/gateway_event_parser.dart';
@@ -22,11 +19,15 @@ import 'package:flit/domain/models/active_session.dart';
 import 'package:flit/domain/models/session_bootstrap.dart';
 import 'package:flit/domain/models/session_detail.dart';
 import 'package:flit/domain/models/session_summary.dart';
+import 'package:flit/domain/models/steer_result.dart';
 import 'package:flit/domain/repositories/chat_repository.dart';
 import 'package:flit/domain/repositories/session_repository.dart';
 import 'package:flit/presentation/chat/approval_prompt_card.dart';
 import 'package:flit/presentation/chat/chat_screen.dart';
 import 'package:flit/presentation/chat/clarify_prompt_card.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 const liveId = 'a1b2c3d4';
 
@@ -40,6 +41,12 @@ final class FakeChatRepository implements ChatRepository {
       <({String liveId, String choice})>[];
   final List<({String requestId, String answer})> clarifies =
       <({String requestId, String answer})>[];
+  final List<({String requestId, String password})> sudos =
+      <({String requestId, String password})>[];
+  final List<({String requestId, String value})> secrets =
+      <({String requestId, String value})>[];
+  final List<({String requestId, String text})> terminalReads =
+      <({String requestId, String text})>[];
 
   void emit(TypedGatewayEvent event) => _events.add(event);
 
@@ -57,6 +64,21 @@ final class FakeChatRepository implements ChatRepository {
   @override
   Future<void> respondClarify(String requestId, String answer) async {
     clarifies.add((requestId: requestId, answer: answer));
+  }
+
+  @override
+  Future<void> respondSudo(String requestId, String password) async {
+    sudos.add((requestId: requestId, password: password));
+  }
+
+  @override
+  Future<void> respondSecret(String requestId, String value) async {
+    secrets.add((requestId: requestId, value: value));
+  }
+
+  @override
+  Future<void> respondTerminalRead(String requestId, String text) async {
+    terminalReads.add((requestId: requestId, text: text));
   }
 
   Future<void> dispose() => _events.close();
@@ -121,6 +143,11 @@ final class FakeSessionRepository implements SessionRepository {
 
   @override
   Future<void> setCwd(String liveId, String cwd) => throw UnimplementedError();
+
+  @override
+  Future<SteerOutcome> steer(String liveId, String text) async {
+    return SteerOutcome.queued;
+  }
 }
 
 void main() {

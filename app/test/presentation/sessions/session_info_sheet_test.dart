@@ -2,14 +2,14 @@
 // context breakdown, and the four action buttons (compress / undo / save /
 // set-cwd).
 
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flit/application/sessions/active_session.dart';
 import 'package:flit/application/sessions/session_info.dart';
 import 'package:flit/application/sessions/session_list.dart';
 import 'package:flit/domain/models/session_detail.dart';
 import 'package:flit/presentation/sessions/session_info_sheet.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 /// Fake session actions that records calls.
 final class FakeSessionActions implements SessionActions {

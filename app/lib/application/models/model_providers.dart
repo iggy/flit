@@ -3,13 +3,13 @@
 /// interaction controller, and the merged current-model tracker.
 library;
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flit/application/connection/connection_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/data/dto/events/gateway_event_parser.dart';
 import 'package:flit/data/repositories/model_repository.dart';
 import 'package:flit/domain/models/model_option.dart';
 import 'package:flit/domain/repositories/model_repository.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The model repository for the current connection, or null when there is
 /// no RPC client (disconnected / pre-connect) — mirroring the nullable

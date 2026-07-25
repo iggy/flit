@@ -6,8 +6,6 @@ library;
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flit/data/storage/connection_store.dart';
 import 'package:flit/data/transport/connection_config.dart';
 import 'package:flit/data/transport/gateway_rest_client.dart';
@@ -15,6 +13,8 @@ import 'package:flit/data/transport/gateway_rpc_client.dart';
 import 'package:flit/data/transport/session_cookie_jar.dart';
 import 'package:flit/domain/models/auth_provider.dart';
 import 'package:flit/domain/models/gateway_status.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Persistence for the connection config. Override in tests with an
 /// in-memory [KeyValueStore].

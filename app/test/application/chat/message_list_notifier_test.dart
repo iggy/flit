@@ -5,9 +5,6 @@
 
 import 'dart:async';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test/flutter_test.dart';
-
 import 'package:flit/application/chat/message_fold.dart';
 import 'package:flit/application/chat/message_list_notifier.dart';
 import 'package:flit/application/providers.dart';
@@ -16,6 +13,8 @@ import 'package:flit/domain/models/chat_message.dart';
 import 'package:flit/domain/models/interactive_prompt.dart';
 import 'package:flit/domain/models/session_detail.dart';
 import 'package:flit/domain/repositories/chat_repository.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 /// A fake chat repository emitting a canned typed event stream.
 final class FakeChatRepository implements ChatRepository {
@@ -41,6 +40,15 @@ final class FakeChatRepository implements ChatRepository {
 
   @override
   Future<void> respondClarify(String requestId, String answer) async {}
+
+  @override
+  Future<void> respondSudo(String requestId, String password) async {}
+
+  @override
+  Future<void> respondSecret(String requestId, String value) async {}
+
+  @override
+  Future<void> respondTerminalRead(String requestId, String text) async {}
 
   Future<void> dispose() => _events.close();
 }

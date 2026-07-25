@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flit/application/plugins/plugin_providers.dart';
 import 'package:flit/domain/models/kanban.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// One task card (ticket P1-15): title, assignee, a 1–2 line
 /// `latest_summary` preview, comment-count / progress badges when present,

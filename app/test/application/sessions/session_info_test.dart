@@ -9,9 +9,6 @@
 
 import 'dart:async';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test/flutter_test.dart';
-
 import 'package:flit/application/connection/connection_providers.dart';
 import 'package:flit/application/providers.dart';
 import 'package:flit/application/sessions/active_session.dart';
@@ -21,7 +18,10 @@ import 'package:flit/domain/models/active_session.dart';
 import 'package:flit/domain/models/session_bootstrap.dart';
 import 'package:flit/domain/models/session_detail.dart';
 import 'package:flit/domain/models/session_summary.dart';
+import 'package:flit/domain/models/steer_result.dart';
 import 'package:flit/domain/repositories/session_repository.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 /// Hand-rolled fake session repository.
 final class FakeSessionRepository implements SessionRepository {
@@ -116,6 +116,11 @@ final class FakeSessionRepository implements SessionRepository {
 
   @override
   Future<void> setCwd(String liveId, String cwd) => throw UnimplementedError();
+
+  @override
+  Future<SteerOutcome> steer(String liveId, String text) async {
+    return SteerOutcome.queued;
+  }
 }
 
 void main() {

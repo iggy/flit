@@ -1,7 +1,5 @@
 // Tests for the gated (user/pass) connect flow: probe → login → ticket WS.
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flit/application/connection/connect_controller.dart';
 import 'package:flit/application/connection/connection_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
@@ -11,6 +9,8 @@ import 'package:flit/data/transport/gateway_rpc_client.dart';
 import 'package:flit/data/transport/session_cookie_jar.dart';
 import 'package:flit/domain/models/auth_provider.dart';
 import 'package:flit/domain/models/gateway_status.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 final class _MemoryStore implements KeyValueStore {
   final Map<String, String> data = <String, String>{};

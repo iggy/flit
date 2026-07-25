@@ -6,10 +6,10 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flit/data/dto/events/gateway_event_parser.dart';
 import 'package:flit/data/transport/gateway_rpc_client.dart';
 import 'package:flit/domain/models/chat_message.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 /// Decode a full event frame the way the RPC client's router does
 /// (protocol §3c): params.type / params.session_id / params.payload
@@ -276,6 +276,188 @@ void main() {
     });
   });
 
+  group('P3-08 sudo.request', () {
+    const frame =
+        '{"jsonrpc":"2.0","method":"event","params":{"type":"sudo.request",'
+        '"session_id":"a1b2c3d4","payload":{"request_id":"9f3a1c2b"}}}';
+
+    test('parses to SudoRequestEvent with request_id', () {
+      final event = parseGatewayEvent(_eventFromFrame(frame));
+
+      expect(event, isA<SudoRequestEvent>());
+      final sudo = event as SudoRequestEvent;
+      expect(sudo.sessionId, 'a1b2c3d4');
+      expect(sudo.requestId, '9f3a1c2b');
+    });
+  });
+
+  group('P3-08 secret.request', () {
+    const frame =
+        '{"jsonrpc":"2.0","method":"event","params":{"type":"secret.request",'
+        '"session_id":"a1b2c3d4","payload":{"prompt":"Enter your API key",'
+        '"env_var":"OPENAI_API_KEY","request_id":"9f3a1c2b"}}}';
+
+    test('parses to SecretRequestEvent with all fields', () {
+      final event = parseGatewayEvent(_eventFromFrame(frame));
+
+      expect(event, isA<SecretRequestEvent>());
+      final secret = event as SecretRequestEvent;
+      expect(secret.sessionId, 'a1b2c3d4');
+      expect(secret.envVar, 'OPENAI_API_KEY');
+      expect(secret.prompt, 'Enter your API key');
+      expect(secret.requestId, '9f3a1c2b');
+    });
+  });
+
+  group('P3-08 terminal.read.request', () {
+    const frame =
+        '{"jsonrpc":"2.0","method":"event","params":{"type":"terminal.read.request",'
+        '"session_id":"a1b2c3d4","payload":{"request_id":"9f3a1c2b",'
+        '"start":10,"count":20}}}';
+
+    test('parses to TerminalReadRequestEvent with start/count', () {
+      final event = parseGatewayEvent(_eventFromFrame(frame));
+
+      expect(event, isA<TerminalReadRequestEvent>());
+      final termRead = event as TerminalReadRequestEvent;
+      expect(termRead.sessionId, 'a1b2c3d4');
+      expect(termRead.requestId, '9f3a1c2b');
+      expect(termRead.start, 10);
+      expect(termRead.count, 20);
+    });
+
+    test('start/count are nullable', () {
+      final event = parseGatewayEvent(
+        const GatewayEvent(
+          type: 'terminal.read.request',
+          sessionId: 'a1b2c3d4',
+          payload: {'request_id': 'xyz'},
+        ),
+      );
+
+      expect(event, isA<TerminalReadRequestEvent>());
+      final termRead = event as TerminalReadRequestEvent;
+      expect(termRead.start, isNull);
+      expect(termRead.count, isNull);
+    });
+  });
+
+  group('P3-04 subagent.* events', () {
+    const sid = 'a1b2c3d4';
+
+    test('subagent.start → SubagentEvent with identity + goal', () {
+      const frame =
+          '{"jsonrpc":"2.0","method":"event","params":{"type":"subagent.start",'
+          '"session_id":"a1b2c3d4","payload":{"subagent_id":"agent-123",'
+          '"parent_id":"root","goal":"Analyze logs","task_count":5,'
+          '"task_index":1,"depth":1,"model":"sonnet"}}}';
+
+      final event = parseGatewayEvent(_eventFromFrame(frame));
+
+      expect(event, isA<SubagentEvent>());
+      final sub = event as SubagentEvent;
+      expect(sub.sessionId, sid);
+      expect(sub.type, 'subagent.start');
+      expect(sub.subagentId, 'agent-123');
+      expect(sub.parentId, 'root');
+      expect(sub.goal, 'Analyze logs');
+      expect(sub.taskCount, 5);
+      expect(sub.taskIndex, 1);
+      expect(sub.depth, 1);
+      expect(sub.model, 'sonnet');
+    });
+
+    test('subagent.tool → SubagentEvent with tool_name + tool_preview', () {
+      const frame =
+          '{"jsonrpc":"2.0","method":"event","params":{"type":"subagent.tool",'
+          '"session_id":"a1b2c3d4","payload":{"subagent_id":"agent-123",'
+          '"goal":"Analyze","task_count":1,"task_index":0,'
+          '"tool_name":"shell","tool_preview":"ls -la","text":"List files",'
+          '"tool_count":3}}}';
+
+      final event = parseGatewayEvent(_eventFromFrame(frame));
+
+      expect(event, isA<SubagentEvent>());
+      final sub = event as SubagentEvent;
+      expect(sub.type, 'subagent.tool');
+      expect(sub.toolName, 'shell');
+      expect(sub.toolPreview, 'ls -la');
+      expect(sub.text, 'List files');
+      expect(sub.toolCount, 3);
+    });
+
+    test('subagent.complete → SubagentEvent with status + tokens', () {
+      const frame =
+          '{"jsonrpc":"2.0","method":"event","params":{"type":"subagent.complete",'
+          '"session_id":"a1b2c3d4","payload":{"subagent_id":"agent-123",'
+          '"goal":"Analyze","task_count":1,"task_index":0,'
+          '"status":"completed","summary":"Done","duration_seconds":12.5,'
+          '"cost_usd":0.05,"input_tokens":1000,"output_tokens":500,'
+          '"reasoning_tokens":200,"api_calls":3,'
+          '"files_read":["a.txt"],"files_written":["b.txt"]}}}';
+
+      final event = parseGatewayEvent(_eventFromFrame(frame));
+
+      expect(event, isA<SubagentEvent>());
+      final sub = event as SubagentEvent;
+      expect(sub.type, 'subagent.complete');
+      expect(sub.status, 'completed');
+      expect(sub.summary, 'Done');
+      expect(sub.durationSeconds, 12.5);
+      expect(sub.costUsd, 0.05);
+      expect(sub.inputTokens, 1000);
+      expect(sub.outputTokens, 500);
+      expect(sub.reasoningTokens, 200);
+      expect(sub.apiCalls, 3);
+      expect(sub.filesRead, ['a.txt']);
+      expect(sub.filesWritten, ['b.txt']);
+    });
+
+    test('subagent.spawn_requested (thin) → SubagentEvent with no id', () {
+      const frame =
+          '{"jsonrpc":"2.0","method":"event","params":'
+          '{"type":"subagent.spawn_requested","session_id":"a1b2c3d4",'
+          '"payload":{"goal":"Scout","task_count":1,"task_index":0,'
+          '"text":"Spawning"}}}';
+
+      final event = parseGatewayEvent(_eventFromFrame(frame));
+
+      expect(event, isA<SubagentEvent>());
+      final sub = event as SubagentEvent;
+      expect(sub.type, 'subagent.spawn_requested');
+      expect(sub.goal, 'Scout');
+      expect(sub.subagentId, isNull); // No identity on thin event.
+      expect(sub.text, 'Spawning');
+    });
+
+    test('all six subagent types map to SubagentEvent', () {
+      final types = [
+        'subagent.spawn_requested',
+        'subagent.start',
+        'subagent.thinking',
+        'subagent.tool',
+        'subagent.progress',
+        'subagent.complete',
+      ];
+
+      for (final type in types) {
+        final event = parseGatewayEvent(
+          GatewayEvent(
+            type: type,
+            sessionId: sid,
+            payload: {
+              'goal': 'Test',
+              'task_count': 1,
+              'task_index': 0,
+            },
+          ),
+        );
+        expect(event, isA<SubagentEvent>(), reason: '$type should parse');
+        expect((event as SubagentEvent).type, type);
+      }
+    });
+  });
+
   group('other documented event types (§6)', () {
     test('error → TurnError (turn-terminal alternative)', () {
       final event = parseGatewayEvent(
@@ -326,14 +508,14 @@ void main() {
     test('invented event type → UnknownEvent keeping the raw frame', () {
       const frame =
           '{"jsonrpc":"2.0","method":"event","params":'
-          '{"type":"subagent.spawn_requested","session_id":"a1b2c3d4",'
+          '{"type":"future.event.type","session_id":"a1b2c3d4",'
           '"payload":{"agent":"scout"}}}';
 
       final event = parseGatewayEvent(_eventFromFrame(frame));
 
       expect(event, isA<UnknownEvent>());
       final unknown = event as UnknownEvent;
-      expect(unknown.type, 'subagent.spawn_requested');
+      expect(unknown.type, 'future.event.type');
       expect(unknown.sessionId, 'a1b2c3d4');
       expect(unknown.payload['agent'], 'scout');
     });
@@ -403,6 +585,10 @@ void main() {
         ToolComplete() => 'tool.complete',
         ApprovalRequestEvent() => 'approval',
         ClarifyRequestEvent() => 'clarify',
+        SudoRequestEvent() => 'sudo',
+        SecretRequestEvent() => 'secret',
+        TerminalReadRequestEvent() => 'terminal.read',
+        SubagentEvent() => 'subagent',
         StatusUpdate() => 'status',
         UnknownEvent() => 'unknown',
       };
