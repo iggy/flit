@@ -8,14 +8,18 @@ import 'package:flit/presentation/plugins/kanban/kanban_board_screen.dart';
 import 'package:flit/presentation/plugins/plugins_screen.dart';
 import 'package:flit/presentation/settings/agent_settings_screen.dart';
 import 'package:flit/presentation/settings/background_screen.dart';
+import 'package:flit/presentation/settings/checkpoints_screen.dart';
 import 'package:flit/presentation/settings/config_editor_screen.dart';
 import 'package:flit/presentation/settings/cron_screen.dart';
 import 'package:flit/presentation/settings/health_screen.dart';
+import 'package:flit/presentation/settings/insights_screen.dart';
+import 'package:flit/presentation/settings/journey_screen.dart';
 import 'package:flit/presentation/settings/kanban_boards_screen.dart';
 import 'package:flit/presentation/settings/kanban_fleet_screen.dart';
 import 'package:flit/presentation/settings/kanban_orchestration_screen.dart';
 import 'package:flit/presentation/settings/mcp_screen.dart';
 import 'package:flit/presentation/settings/processes_screen.dart';
+import 'package:flit/presentation/settings/project_facts_screen.dart';
 import 'package:flit/presentation/settings/projects_screen.dart';
 import 'package:flit/presentation/settings/provider_keys_screen.dart';
 import 'package:flit/presentation/settings/settings_screen.dart';
@@ -134,6 +138,26 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/settings/orchestration',
         name: 'settings-orchestration',
         builder: (context, state) => const KanbanOrchestrationScreen(),
+      ),
+      GoRoute(
+        path: '/settings/journey',
+        name: 'settings-journey',
+        builder: (context, state) => const JourneyScreen(),
+      ),
+      GoRoute(
+        path: '/settings/insights',
+        name: 'settings-insights',
+        builder: (context, state) => const InsightsScreen(),
+      ),
+      GoRoute(
+        path: '/settings/facts',
+        name: 'settings-facts',
+        builder: (context, state) => const ProjectFactsScreen(),
+      ),
+      GoRoute(
+        path: '/settings/checkpoints',
+        name: 'settings-checkpoints',
+        builder: (context, state) => const CheckpointsScreen(),
       ),
     ],
   );
