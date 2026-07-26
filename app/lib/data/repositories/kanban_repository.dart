@@ -332,10 +332,7 @@ final class KanbanRepositoryImpl implements KanbanRepository {
     if (board != null) {
       queryParams['board'] = board;
     }
-    await _client.deleteJson(
-      '$_base/links',
-      queryParameters: queryParams,
-    );
+    await _client.deleteJson('$_base/links', queryParameters: queryParams);
   }
 
   // ---- wire → domain translation (kept here so the domain stays clean) --
@@ -463,11 +460,13 @@ final class KanbanRepositoryImpl implements KanbanRepository {
     final resultsList = _mapList(json['results']);
     final items = <KanbanBulkItem>[];
     for (final item in resultsList) {
-      items.add(KanbanBulkItem(
-        id: _stringOrNull(item['id']) ?? '',
-        ok: item['ok'] == true,
-        error: _stringOrNull(item['error']),
-      ));
+      items.add(
+        KanbanBulkItem(
+          id: _stringOrNull(item['id']) ?? '',
+          ok: item['ok'] == true,
+          error: _stringOrNull(item['error']),
+        ),
+      );
     }
     return KanbanBulkResult(results: items);
   }

@@ -34,9 +34,7 @@ class HealthScreen extends ConsumerWidget {
                 color: health.providerConfigured ? Colors.green : Colors.red,
               ),
               title: const Text('Provider Configured'),
-              subtitle: Text(
-                health.providerConfigured ? 'Yes' : 'No',
-              ),
+              subtitle: Text(health.providerConfigured ? 'Yes' : 'No'),
             ),
             const Divider(),
             // Runtime check

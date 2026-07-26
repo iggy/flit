@@ -71,8 +71,8 @@ final class BackgroundTasksState {
 /// Provider for the background tasks controller.
 final backgroundTasksProvider =
     NotifierProvider<BackgroundTasksNotifier, BackgroundTasksState>(
-  BackgroundTasksNotifier.new,
-);
+      BackgroundTasksNotifier.new,
+    );
 
 class BackgroundTasksNotifier extends Notifier<BackgroundTasksState> {
   @override
@@ -95,10 +95,7 @@ class BackgroundTasksNotifier extends Notifier<BackgroundTasksState> {
     final tasks = <BackgroundTaskItem>[...state.tasks];
     final index = tasks.indexWhere((item) => item.taskId == completion.taskId);
     if (index >= 0) {
-      tasks[index] = tasks[index].copyWith(
-        done: true,
-        result: completion.text,
-      );
+      tasks[index] = tasks[index].copyWith(done: true, result: completion.text);
     } else {
       // Task not found (shouldn't happen), add it as completed.
       tasks.add(
@@ -136,11 +133,7 @@ class BackgroundTasksNotifier extends Notifier<BackgroundTasksState> {
         ...state.tasks,
         BackgroundTaskItem(taskId: taskId, prompt: text),
       ];
-      state = state.copyWith(
-        tasks: tasks,
-        busy: false,
-        clearError: true,
-      );
+      state = state.copyWith(tasks: tasks, busy: false, clearError: true);
     } on GatewayException catch (error) {
       state = state.copyWith(busy: false, error: error.message);
     } on Object catch (error) {

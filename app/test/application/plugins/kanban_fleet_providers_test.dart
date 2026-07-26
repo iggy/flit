@@ -9,33 +9,42 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('KanbanFleetActionController', () {
-    test('createBoard success sets lastMessage and invalidates provider', () async {
-      final container = ProviderContainer(
-        overrides: [
-          kanbanFleetRepositoryProvider.overrideWithValue(_FakeRepository()),
-        ],
-      );
+    test(
+      'createBoard success sets lastMessage and invalidates provider',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            kanbanFleetRepositoryProvider.overrideWithValue(_FakeRepository()),
+          ],
+        );
 
-      final controller = container.read(kanbanFleetActionControllerProvider.notifier);
+        final controller = container.read(
+          kanbanFleetActionControllerProvider.notifier,
+        );
 
-      await controller.createBoard(slug: 'test');
+        await controller.createBoard(slug: 'test');
 
-      final state = container.read(kanbanFleetActionControllerProvider);
-      expect(state.error, isNull);
-      expect(state.lastMessage, 'Board created');
-      expect(state.busy, isFalse);
-    });
+        final state = container.read(kanbanFleetActionControllerProvider);
+        expect(state.error, isNull);
+        expect(state.lastMessage, 'Board created');
+        expect(state.busy, isFalse);
+      },
+    );
 
     test('createBoard failure sets error and never throws', () async {
       final container = ProviderContainer(
         overrides: [
           kanbanFleetRepositoryProvider.overrideWithValue(
-            _FakeRepository(throwOnCreate: GatewayNetworkException('Network error')),
+            _FakeRepository(
+              throwOnCreate: GatewayNetworkException('Network error'),
+            ),
           ),
         ],
       );
 
-      final controller = container.read(kanbanFleetActionControllerProvider.notifier);
+      final controller = container.read(
+        kanbanFleetActionControllerProvider.notifier,
+      );
 
       await controller.createBoard(slug: 'test');
 
@@ -52,7 +61,9 @@ void main() {
         ],
       );
 
-      final controller = container.read(kanbanFleetActionControllerProvider.notifier);
+      final controller = container.read(
+        kanbanFleetActionControllerProvider.notifier,
+      );
 
       await controller.dispatch();
 
@@ -69,7 +80,9 @@ void main() {
         ],
       );
 
-      final controller = container.read(kanbanFleetActionControllerProvider.notifier);
+      final controller = container.read(
+        kanbanFleetActionControllerProvider.notifier,
+      );
 
       await controller.dispatch(dryRun: true);
 
@@ -84,7 +97,9 @@ void main() {
         ],
       );
 
-      final controller = container.read(kanbanFleetActionControllerProvider.notifier);
+      final controller = container.read(
+        kanbanFleetActionControllerProvider.notifier,
+      );
 
       await controller.terminateRun(101);
 
@@ -100,7 +115,9 @@ void main() {
         ],
       );
 
-      final controller = container.read(kanbanFleetActionControllerProvider.notifier);
+      final controller = container.read(
+        kanbanFleetActionControllerProvider.notifier,
+      );
 
       await controller.setOrchestration(autoDecompose: true);
 
@@ -118,10 +135,15 @@ void main() {
         ],
       );
 
-      final controller = container.read(kanbanFleetActionControllerProvider.notifier);
+      final controller = container.read(
+        kanbanFleetActionControllerProvider.notifier,
+      );
 
       await controller.createBoard(slug: 'test');
-      expect(container.read(kanbanFleetActionControllerProvider).error, isNotNull);
+      expect(
+        container.read(kanbanFleetActionControllerProvider).error,
+        isNotNull,
+      );
 
       controller.clearError();
 
@@ -131,12 +153,12 @@ void main() {
 
     test('handles null repository gracefully', () async {
       final container = ProviderContainer(
-        overrides: [
-          kanbanFleetRepositoryProvider.overrideWithValue(null),
-        ],
+        overrides: [kanbanFleetRepositoryProvider.overrideWithValue(null)],
       );
 
-      final controller = container.read(kanbanFleetActionControllerProvider.notifier);
+      final controller = container.read(
+        kanbanFleetActionControllerProvider.notifier,
+      );
 
       await controller.createBoard(slug: 'test');
 
@@ -153,7 +175,9 @@ void main() {
         ],
       );
 
-      final controller = container.read(kanbanFleetActionControllerProvider.notifier);
+      final controller = container.read(
+        kanbanFleetActionControllerProvider.notifier,
+      );
 
       await controller.createBoard(slug: 'test');
 
@@ -165,9 +189,7 @@ void main() {
   group('FutureProviders', () {
     test('return empty/null when repository is null', () async {
       final container = ProviderContainer(
-        overrides: [
-          kanbanFleetRepositoryProvider.overrideWithValue(null),
-        ],
+        overrides: [kanbanFleetRepositoryProvider.overrideWithValue(null)],
       );
 
       final boards = await container.read(kanbanBoardsProvider.future);
@@ -192,9 +214,7 @@ void main() {
 }
 
 final class _FakeRepository implements KanbanFleetRepository {
-  _FakeRepository({
-    this.throwOnCreate,
-  });
+  _FakeRepository({this.throwOnCreate});
 
   final Exception? throwOnCreate;
 
@@ -315,11 +335,7 @@ final class _FakeRepository implements KanbanFleetRepository {
   }
 
   @override
-  Future<void> terminateRun(
-    int runId, {
-    String? reason,
-    String? board,
-  }) async {}
+  Future<void> terminateRun(int runId, {String? reason, String? board}) async {}
 
   @override
   Future<List<KanbanAssignee>> listAssignees({String? board}) async {

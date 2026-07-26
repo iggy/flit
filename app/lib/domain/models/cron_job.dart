@@ -106,24 +106,24 @@ final class CronJob {
 
   @override
   int get hashCode => Object.hash(
-        id,
-        name,
-        Object.hashAll(skills),
-        promptPreview,
-        model,
-        provider,
-        schedule,
-        repeat,
-        deliver,
-        nextRunAt,
-        lastRunAt,
-        lastStatus,
-        lastDeliveryError,
-        enabled,
-        state,
-        pausedAt,
-        pausedReason,
-      );
+    id,
+    name,
+    Object.hashAll(skills),
+    promptPreview,
+    model,
+    provider,
+    schedule,
+    repeat,
+    deliver,
+    nextRunAt,
+    lastRunAt,
+    lastStatus,
+    lastDeliveryError,
+    enabled,
+    state,
+    pausedAt,
+    pausedReason,
+  );
 
   @override
   String toString() {

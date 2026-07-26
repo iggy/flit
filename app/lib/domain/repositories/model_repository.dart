@@ -36,10 +36,7 @@ abstract interface class ModelRepository {
   ///
   /// Returns the refreshed provider entry (same shape as one
   /// `model.options` provider).
-  Future<ModelProvider> saveKey({
-    required String slug,
-    required String apiKey,
-  });
+  Future<ModelProvider> saveKey({required String slug, required String apiKey});
 
   /// `model.disconnect` — clear provider credentials (ticket P4-01).
   Future<void> disconnectProvider({required String slug});

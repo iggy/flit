@@ -67,44 +67,46 @@ void main() {
   });
 
   group('SkillsRepositoryImpl.browse (P5-09)', () {
-    test('sends skills.manage {action:browse, page, page_size} and parses items',
-        () async {
-      final client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'items': <Map<String, dynamic>>[
-            <String, dynamic>{
-              'name': 'loop',
-              'description': 'Run recurring tasks',
-              'source': 'built-in',
-              'trust': 'high',
-              'identifier': 'loop-1',
-            },
-          ],
+    test(
+      'sends skills.manage {action:browse, page, page_size} and parses items',
+      () async {
+        final client = FakeGatewayRpcClient(
+          handler: (_, _) => const <String, dynamic>{
+            'items': <Map<String, dynamic>>[
+              <String, dynamic>{
+                'name': 'loop',
+                'description': 'Run recurring tasks',
+                'source': 'built-in',
+                'trust': 'high',
+                'identifier': 'loop-1',
+              },
+            ],
+            'page': 1,
+            'total_pages': 3,
+            'total': 42,
+          },
+        );
+        final repository = SkillsRepositoryImpl(client);
+
+        final result = await repository.browse(page: 1, pageSize: 20);
+
+        expect(client.calls.single.method, 'skills.manage');
+        expect(client.calls.single.params, <String, dynamic>{
+          'action': 'browse',
           'page': 1,
-          'total_pages': 3,
-          'total': 42,
-        },
-      );
-      final repository = SkillsRepositoryImpl(client);
-
-      final result = await repository.browse(page: 1, pageSize: 20);
-
-      expect(client.calls.single.method, 'skills.manage');
-      expect(client.calls.single.params, <String, dynamic>{
-        'action': 'browse',
-        'page': 1,
-        'page_size': 20,
-      });
-      expect(result.items.length, 1);
-      expect(result.items[0].name, 'loop');
-      expect(result.items[0].description, 'Run recurring tasks');
-      expect(result.items[0].source, 'built-in');
-      expect(result.items[0].trust, 'high');
-      expect(result.items[0].identifier, 'loop-1');
-      expect(result.page, 1);
-      expect(result.totalPages, 3);
-      expect(result.total, 42);
-    });
+          'page_size': 20,
+        });
+        expect(result.items.length, 1);
+        expect(result.items[0].name, 'loop');
+        expect(result.items[0].description, 'Run recurring tasks');
+        expect(result.items[0].source, 'built-in');
+        expect(result.items[0].trust, 'high');
+        expect(result.items[0].identifier, 'loop-1');
+        expect(result.page, 1);
+        expect(result.totalPages, 3);
+        expect(result.total, 42);
+      },
+    );
 
     test('absent fields fall back to safe defaults', () async {
       final repository = SkillsRepositoryImpl(FakeGatewayRpcClient());

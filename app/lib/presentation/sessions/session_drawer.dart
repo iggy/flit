@@ -94,20 +94,11 @@ class _SessionDrawerState extends ConsumerState<SessionDrawer> {
       icon: const Icon(Icons.more_vert),
       itemBuilder: (context) => <PopupMenuEntry<String>>[
         if (liveId != null)
-          const PopupMenuItem<String>(
-            value: 'rename',
-            child: Text('Rename'),
-          ),
+          const PopupMenuItem<String>(value: 'rename', child: Text('Rename')),
         if (liveId != null)
-          const PopupMenuItem<String>(
-            value: 'branch',
-            child: Text('Branch'),
-          ),
+          const PopupMenuItem<String>(value: 'branch', child: Text('Branch')),
         if (durableId != null)
-          const PopupMenuItem<String>(
-            value: 'delete',
-            child: Text('Delete'),
-          ),
+          const PopupMenuItem<String>(value: 'delete', child: Text('Delete')),
       ],
       onSelected: (value) async {
         switch (value) {
@@ -191,9 +182,7 @@ class _SessionDrawerState extends ConsumerState<SessionDrawer> {
       return;
     }
     unawaited(
-      _run(
-        () => ref.read(sessionActionsProvider).branchSession(liveId),
-      ),
+      _run(() => ref.read(sessionActionsProvider).branchSession(liveId)),
     );
   }
 
@@ -203,7 +192,9 @@ class _SessionDrawerState extends ConsumerState<SessionDrawer> {
       builder: (context) {
         return AlertDialog(
           title: const Text('Delete session?'),
-          content: const Text('This permanently deletes the stored conversation.'),
+          content: const Text(
+            'This permanently deletes the stored conversation.',
+          ),
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -420,7 +411,8 @@ class _SessionDrawerState extends ConsumerState<SessionDrawer> {
         return <Widget>[
           for (final summary in filtered)
             () {
-              final isActive = summary.durableId == active.durableId &&
+              final isActive =
+                  summary.durableId == active.durableId &&
                   active.durableId != null;
               return ListTile(
                 key: sessionDrawerHistoryKey(summary.durableId),
@@ -443,7 +435,9 @@ class _SessionDrawerState extends ConsumerState<SessionDrawer> {
                 ),
                 onTap: () => unawaited(
                   _run(
-                    () => ref.read(sessionActionsProvider).switchToSummary(summary),
+                    () => ref
+                        .read(sessionActionsProvider)
+                        .switchToSummary(summary),
                   ),
                 ),
               );

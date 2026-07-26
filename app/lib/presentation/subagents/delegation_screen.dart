@@ -97,9 +97,7 @@ class _DelegationStatusCard extends ConsumerWidget {
                     Row(
                       children: <Widget>[
                         Expanded(
-                          child: Text(
-                            'Paused: ${data.paused ? "Yes" : "No"}',
-                          ),
+                          child: Text('Paused: ${data.paused ? "Yes" : "No"}'),
                         ),
                         FilledButton.tonal(
                           key: const Key('delegation_pause_toggle'),
@@ -163,7 +161,9 @@ class _SpawnTreeCard extends ConsumerWidget {
                 const SizedBox(width: 8),
                 FilledButton(
                   key: const Key('spawn_tree_save'),
-                  onPressed: isEmpty ? null : () => _saveSpawnTree(context, ref, liveId, spawnTree),
+                  onPressed: isEmpty
+                      ? null
+                      : () => _saveSpawnTree(context, ref, liveId, spawnTree),
                   child: const Text('Save'),
                 ),
               ],
@@ -194,9 +194,9 @@ class _SpawnTreeCard extends ConsumerWidget {
     final repository = ref.read(delegationRepositoryProvider);
     if (repository == null) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Not connected')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Not connected')));
       }
       return;
     }
@@ -240,15 +240,15 @@ class _SpawnTreeCard extends ConsumerWidget {
         label: label,
       );
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Saved: $path')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Saved: $path')));
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving snapshot: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error saving snapshot: $e')));
       }
     }
   }
@@ -272,13 +272,10 @@ class _SubagentNodeTile extends ConsumerWidget {
         child: ListTile(
           dense: true,
           leading: _StatusChip(status: node.status),
-          title: Text(
-            node.goal,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
+          title: Text(node.goal, maxLines: 2, overflow: TextOverflow.ellipsis),
           subtitle: _buildSubtitle(node),
-          trailing: node.status == SubagentStatus.running ||
+          trailing:
+              node.status == SubagentStatus.running ||
                   node.status == SubagentStatus.thinking
               ? IconButton(
                   key: ValueKey('subagent_interrupt_${node.id}'),
@@ -329,12 +326,16 @@ class _StatusChip extends StatelessWidget {
       SubagentStatus.queued => (Icons.schedule, theme.colorScheme.secondary),
       SubagentStatus.running => (Icons.play_arrow, theme.colorScheme.primary),
       SubagentStatus.thinking => (Icons.psychology, theme.colorScheme.primary),
-      SubagentStatus.completed =>
-        (Icons.check_circle, theme.colorScheme.tertiary),
+      SubagentStatus.completed => (
+        Icons.check_circle,
+        theme.colorScheme.tertiary,
+      ),
       SubagentStatus.error => (Icons.error, theme.colorScheme.error),
       SubagentStatus.failed => (Icons.cancel, theme.colorScheme.error),
-      SubagentStatus.interrupted =>
-        (Icons.stop_circle, theme.colorScheme.secondary),
+      SubagentStatus.interrupted => (
+        Icons.stop_circle,
+        theme.colorScheme.secondary,
+      ),
       SubagentStatus.timeout => (Icons.timer_off, theme.colorScheme.error),
     };
 

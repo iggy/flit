@@ -7,10 +7,7 @@ import 'package:flit/domain/models/deep_equals.dart';
 
 /// One section in the config view (from `config.show`).
 final class ConfigSection {
-  const ConfigSection({
-    required this.title,
-    required this.rows,
-  });
+  const ConfigSection({required this.title, required this.rows});
 
   /// Section title (e.g. "Agent Settings").
   final String title;
@@ -34,10 +31,7 @@ final class ConfigSection {
 
 /// One config row: label and value pair.
 final class ConfigRow {
-  const ConfigRow({
-    required this.label,
-    required this.value,
-  });
+  const ConfigRow({required this.label, required this.value});
 
   /// The setting label (e.g. "Model").
   final String label;
@@ -47,9 +41,7 @@ final class ConfigRow {
 
   @override
   bool operator ==(Object other) {
-    return other is ConfigRow &&
-        other.label == label &&
-        other.value == value;
+    return other is ConfigRow && other.label == label && other.value == value;
   }
 
   @override

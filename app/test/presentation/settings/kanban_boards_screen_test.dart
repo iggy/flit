@@ -8,7 +8,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('renders boards list with current board indicator', (tester) async {
+  testWidgets('renders boards list with current board indicator', (
+    tester,
+  ) async {
     final boards = KanbanBoardList(
       boards: <KanbanBoardMeta>[
         KanbanBoardMeta(
@@ -45,7 +47,9 @@ void main() {
       ProviderScope(
         overrides: [
           kanbanBoardsProvider.overrideWith((ref) => Future.value(boards)),
-          kanbanFleetActionControllerProvider.overrideWith(_FakeActionController.new),
+          kanbanFleetActionControllerProvider.overrideWith(
+            _FakeActionController.new,
+          ),
         ],
         child: const MaterialApp(home: KanbanBoardsScreen()),
       ),
@@ -68,7 +72,9 @@ void main() {
               const KanbanBoardList(boards: <KanbanBoardMeta>[], current: ''),
             ),
           ),
-          kanbanFleetActionControllerProvider.overrideWith(_FakeActionController.new),
+          kanbanFleetActionControllerProvider.overrideWith(
+            _FakeActionController.new,
+          ),
         ],
         child: const MaterialApp(home: KanbanBoardsScreen()),
       ),
@@ -103,9 +109,9 @@ void main() {
       ProviderScope(
         overrides: [
           kanbanBoardsProvider.overrideWith((ref) => Future.value(boards)),
-          kanbanFleetActionControllerProvider.overrideWith(() => _FakeActionController(
-              error: 'Network error',
-            )),
+          kanbanFleetActionControllerProvider.overrideWith(
+            () => _FakeActionController(error: 'Network error'),
+          ),
         ],
         child: const MaterialApp(home: KanbanBoardsScreen()),
       ),
@@ -176,10 +182,7 @@ void main() {
 }
 
 final class _FakeActionController extends KanbanFleetActionController {
-  _FakeActionController({
-    this.error,
-    this.lastMessage,
-  });
+  _FakeActionController({this.error, this.lastMessage});
 
   final String? error;
   final String? lastMessage;
@@ -188,10 +191,7 @@ final class _FakeActionController extends KanbanFleetActionController {
 
   @override
   KanbanFleetActionState build() {
-    return KanbanFleetActionState(
-      error: error,
-      lastMessage: lastMessage,
-    );
+    return KanbanFleetActionState(error: error, lastMessage: lastMessage);
   }
 
   @override

@@ -139,7 +139,9 @@ class OAuthSessionNotifier extends Notifier<OAuthSession?> {
 
   Future<void> _loadStored() async {
     try {
-      final session = await ref.read(connectionStoreProvider).loadOAuthSession();
+      final session = await ref
+          .read(connectionStoreProvider)
+          .loadOAuthSession();
       if (session != null && state == null) {
         state = session;
       }
@@ -319,10 +321,11 @@ final passwordLoginProvider = Provider<PasswordLogin>((ref) {
 
 /// The OAuth login flow (protocol §2.3). Injectable so tests can drive the
 /// OAuth connect flow without a real browser/network.
-typedef OAuthLogin = Future<OAuthSession> Function({
-  required ConnectionConfig config,
-  required String provider,
-});
+typedef OAuthLogin =
+    Future<OAuthSession> Function({
+      required ConnectionConfig config,
+      required String provider,
+    });
 
 /// The default OAuth login: a real [OAuthClient] with the system browser.
 final oauthLoginProvider = Provider<OAuthLogin>((ref) {
@@ -339,10 +342,11 @@ final oauthLoginProvider = Provider<OAuthLogin>((ref) {
 });
 
 /// The OAuth refresh call (protocol §2.3). Injectable for tests.
-typedef OAuthRefresh = Future<OAuthSession> Function({
-  required ConnectionConfig config,
-  required OAuthSession session,
-});
+typedef OAuthRefresh =
+    Future<OAuthSession> Function({
+      required ConnectionConfig config,
+      required OAuthSession session,
+    });
 
 /// The default OAuth refresh: a real [OAuthClient].
 final oauthRefreshProvider = Provider<OAuthRefresh>((ref) {

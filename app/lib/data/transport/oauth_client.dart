@@ -81,13 +81,15 @@ final class OAuthClient {
     final redirectUri = 'http://127.0.0.1:${server.port}/';
 
     final authorizeUrl = Uri.parse('${_config.baseUrl}/auth/native/authorize')
-        .replace(queryParameters: <String, String>{
-      'provider': provider,
-      'code_challenge': codeChallenge,
-      'code_challenge_method': 'S256',
-      'redirect_uri': redirectUri,
-      'state': state,
-    });
+        .replace(
+          queryParameters: <String, String>{
+            'provider': provider,
+            'code_challenge': codeChallenge,
+            'code_challenge_method': 'S256',
+            'redirect_uri': redirectUri,
+            'state': state,
+          },
+        );
 
     try {
       await launchUrl(authorizeUrl);
@@ -99,13 +101,15 @@ final class OAuthClient {
       );
     }
 
-    final redirectParams = await _waitForRedirect(server, state)
-        .timeout(const Duration(minutes: 5), onTimeout: () {
-      throw const GatewayTimeoutException(
-        'OAuth login timed out (5 minutes). '
-        'Complete the sign-in in the browser.',
-      );
-    });
+    final redirectParams = await _waitForRedirect(server, state).timeout(
+      const Duration(minutes: 5),
+      onTimeout: () {
+        throw const GatewayTimeoutException(
+          'OAuth login timed out (5 minutes). '
+          'Complete the sign-in in the browser.',
+        );
+      },
+    );
 
     final code = redirectParams['code'];
     if (code == null || code.isEmpty) {
@@ -155,9 +159,9 @@ final class OAuthClient {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
         '/api/auth/ws-ticket',
-        options: Options(headers: <String, String>{
-          'Authorization': 'Bearer $accessToken',
-        }),
+        options: Options(
+          headers: <String, String>{'Authorization': 'Bearer $accessToken'},
+        ),
       );
       final data = response.data;
       if (data == null || data['ticket'] is! String) {
@@ -220,10 +224,7 @@ final class OAuthClient {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
         '/auth/native/token',
-        data: <String, String>{
-          'code': code,
-          'code_verifier': codeVerifier,
-        },
+        data: <String, String>{'code': code, 'code_verifier': codeVerifier},
       );
       final data = response.data;
       if (data == null) {

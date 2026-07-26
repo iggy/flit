@@ -17,9 +17,7 @@ class KanbanOrchestrationScreen extends ConsumerWidget {
     final actionState = ref.watch(kanbanFleetActionControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Kanban Orchestration'),
-      ),
+      appBar: AppBar(title: const Text('Kanban Orchestration')),
       body: ListView(
         children: <Widget>[
           if (actionState.error != null)
@@ -41,7 +39,9 @@ class KanbanOrchestrationScreen extends ConsumerWidget {
                     Icons.close,
                     color: Theme.of(context).colorScheme.onErrorContainer,
                   ),
-                  onPressed: ref.read(kanbanFleetActionControllerProvider.notifier).clearError,
+                  onPressed: ref
+                      .read(kanbanFleetActionControllerProvider.notifier)
+                      .clearError,
                 ),
               ),
             ),
@@ -98,7 +98,10 @@ class KanbanOrchestrationScreen extends ConsumerWidget {
                     subtitle: assignee.counts.isNotEmpty
                         ? Text(
                             assignee.counts.entries
-                                .map((MapEntry<String, int> e) => '${e.key}: ${e.value}')
+                                .map(
+                                  (MapEntry<String, int> e) =>
+                                      '${e.key}: ${e.value}',
+                                )
                                 .join(', '),
                           )
                         : null,
@@ -160,11 +163,11 @@ class KanbanOrchestrationScreen extends ConsumerWidget {
                       onPressed: actionState.busy
                           ? null
                           : () => _showEditDescriptionDialog(
-                                context,
-                                ref,
-                                profile.name,
-                                profile.description,
-                              ),
+                              context,
+                              ref,
+                              profile.name,
+                              profile.description,
+                            ),
                     ),
                   );
                 }).toList(),
@@ -242,7 +245,9 @@ class KanbanOrchestrationScreen extends ConsumerWidget {
                         ? null
                         : (value) {
                             ref
-                                .read(kanbanFleetActionControllerProvider.notifier)
+                                .read(
+                                  kanbanFleetActionControllerProvider.notifier,
+                                )
                                 .setOrchestration(autoDecompose: value);
                           },
                   ),
@@ -253,7 +258,9 @@ class KanbanOrchestrationScreen extends ConsumerWidget {
                         ? null
                         : (value) {
                             ref
-                                .read(kanbanFleetActionControllerProvider.notifier)
+                                .read(
+                                  kanbanFleetActionControllerProvider.notifier,
+                                )
                                 .setOrchestration(autoPromoteChildren: value);
                           },
                   ),
@@ -268,9 +275,7 @@ class KanbanOrchestrationScreen extends ConsumerWidget {
                   Text(
                     'Default assignee: ${orchestration.resolvedDefaultAssignee}',
                   ),
-                  Text(
-                    'Active profile: ${orchestration.activeProfile}',
-                  ),
+                  Text('Active profile: ${orchestration.activeProfile}'),
                 ],
               ),
             ),
@@ -307,16 +312,20 @@ class KanbanOrchestrationScreen extends ConsumerWidget {
           initialValue: currentValue.isEmpty ? null : currentValue,
           decoration: InputDecoration(labelText: label),
           items: profiles
-              .map((profile) => DropdownMenuItem<String>(
-                    value: profile.name,
-                    child: Text(profile.name),
-                  ))
+              .map(
+                (profile) => DropdownMenuItem<String>(
+                  value: profile.name,
+                  child: Text(profile.name),
+                ),
+              )
               .toList(),
-          onChanged: actionState.busy ? null : (value) {
-            if (value != null) {
-              onChanged(value);
-            }
-          },
+          onChanged: actionState.busy
+              ? null
+              : (value) {
+                  if (value != null) {
+                    onChanged(value);
+                  }
+                },
         );
       },
       loading: () => DropdownButtonFormField<String>(
@@ -350,16 +359,20 @@ class KanbanOrchestrationScreen extends ConsumerWidget {
           initialValue: currentValue.isEmpty ? null : currentValue,
           decoration: InputDecoration(labelText: label),
           items: assignees
-              .map((assignee) => DropdownMenuItem<String>(
-                    value: assignee.name,
-                    child: Text(assignee.name),
-                  ))
+              .map(
+                (assignee) => DropdownMenuItem<String>(
+                  value: assignee.name,
+                  child: Text(assignee.name),
+                ),
+              )
               .toList(),
-          onChanged: actionState.busy ? null : (value) {
-            if (value != null) {
-              onChanged(value);
-            }
-          },
+          onChanged: actionState.busy
+              ? null
+              : (value) {
+                  if (value != null) {
+                    onChanged(value);
+                  }
+                },
         );
       },
       loading: () => DropdownButtonFormField<String>(

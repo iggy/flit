@@ -20,11 +20,7 @@ const Key sudoSubmitKey = Key('sudo_submit');
 /// repository keyed by [SudoPrompt.requestId]; the prompt is then dismissed
 /// from the fold state.
 class SudoPromptCard extends ConsumerStatefulWidget {
-  const SudoPromptCard({
-    required this.prompt,
-    required this.liveId,
-    super.key,
-  });
+  const SudoPromptCard({required this.prompt, required this.liveId, super.key});
 
   final SudoPrompt prompt;
 

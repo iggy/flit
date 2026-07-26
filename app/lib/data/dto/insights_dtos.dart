@@ -6,11 +6,7 @@ part 'insights_dtos.g.dart';
 /// Wire DTO for `insights.get` result (ticket P6-03).
 @JsonSerializable()
 class InsightsResultDto {
-  const InsightsResultDto({
-    this.days,
-    this.sessions,
-    this.messages,
-  });
+  const InsightsResultDto({this.days, this.sessions, this.messages});
 
   factory InsightsResultDto.fromJson(Map<String, dynamic> json) =>
       _$InsightsResultDtoFromJson(json);

@@ -71,15 +71,11 @@ const stateResultOk = <String, dynamic>{
     'threshold_display': r'$10',
     'reload_to_usd': '20',
     'reload_to_display': r'$20',
-    'card': <String, dynamic>{
-      'kind': 'canonical',
-    },
+    'card': <String, dynamic>{'kind': 'canonical'},
   },
   'portal_url': 'https://portal.example.com',
   'error': null,
-  'usage': <String, dynamic>{
-    'has_topup': true,
-  },
+  'usage': <String, dynamic>{'has_topup': true},
 };
 
 void main() {
@@ -165,28 +161,27 @@ void main() {
   });
 
   group('charge', () {
-    test('sends billing.charge with amount_usd and optional idempotency_key',
-        () async {
-      client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'ok': true,
-          'charge_id': 'ch_123',
+    test(
+      'sends billing.charge with amount_usd and optional idempotency_key',
+      () async {
+        client = FakeGatewayRpcClient(
+          handler: (_, _) => const <String, dynamic>{
+            'ok': true,
+            'charge_id': 'ch_123',
+            'idempotency_key': 'idem_456',
+          },
+        );
+        repository = BillingRepositoryImpl(client);
+
+        await repository.charge(amountUsd: '10.00', idempotencyKey: 'idem_456');
+
+        expect(client.calls.single.method, 'billing.charge');
+        expect(client.calls.single.params, <String, dynamic>{
+          'amount_usd': '10.00',
           'idempotency_key': 'idem_456',
-        },
-      );
-      repository = BillingRepositoryImpl(client);
-
-      await repository.charge(
-        amountUsd: '10.00',
-        idempotencyKey: 'idem_456',
-      );
-
-      expect(client.calls.single.method, 'billing.charge');
-      expect(client.calls.single.params, <String, dynamic>{
-        'amount_usd': '10.00',
-        'idempotency_key': 'idem_456',
-      });
-    });
+        });
+      },
+    );
 
     test('maps ok result with charge_id', () async {
       client = FakeGatewayRpcClient(
@@ -292,26 +287,28 @@ void main() {
   });
 
   group('autoReload', () {
-    test('sends billing.auto_reload with enabled, threshold, top_up_amount',
-        () async {
-      client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{'ok': true},
-      );
-      repository = BillingRepositoryImpl(client);
+    test(
+      'sends billing.auto_reload with enabled, threshold, top_up_amount',
+      () async {
+        client = FakeGatewayRpcClient(
+          handler: (_, _) => const <String, dynamic>{'ok': true},
+        );
+        repository = BillingRepositoryImpl(client);
 
-      await repository.autoReload(
-        enabled: true,
-        threshold: 10,
-        topUpAmount: 20,
-      );
+        await repository.autoReload(
+          enabled: true,
+          threshold: 10,
+          topUpAmount: 20,
+        );
 
-      expect(client.calls.single.method, 'billing.auto_reload');
-      expect(client.calls.single.params, <String, dynamic>{
-        'enabled': true,
-        'threshold': 10,
-        'top_up_amount': 20,
-      });
-    });
+        expect(client.calls.single.method, 'billing.auto_reload');
+        expect(client.calls.single.params, <String, dynamic>{
+          'enabled': true,
+          'threshold': 10,
+          'top_up_amount': 20,
+        });
+      },
+    );
 
     test('maps ok result', () async {
       client = FakeGatewayRpcClient(
@@ -354,10 +351,7 @@ void main() {
   group('stepUp', () {
     test('sends billing.step_up with session_id', () async {
       client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'ok': true,
-          'granted': true,
-        },
+        handler: (_, _) => const <String, dynamic>{'ok': true, 'granted': true},
       );
       repository = BillingRepositoryImpl(client);
 
@@ -371,10 +365,7 @@ void main() {
 
     test('maps ok result with granted', () async {
       client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'ok': true,
-          'granted': true,
-        },
+        handler: (_, _) => const <String, dynamic>{'ok': true, 'granted': true},
       );
       repository = BillingRepositoryImpl(client);
 

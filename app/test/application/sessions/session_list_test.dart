@@ -66,7 +66,8 @@ final class FakeSessionRepository implements SessionRepository {
   final List<String> interrupted = <String>[];
 
   // Phase 2 mutation action support
-  final List<({String liveId, String title})> renamed = <({String liveId, String title})>[];
+  final List<({String liveId, String title})> renamed =
+      <({String liveId, String title})>[];
   String setTitleResult = 'Updated Title';
   Exception? setTitleError;
 
@@ -77,7 +78,8 @@ final class FakeSessionRepository implements SessionRepository {
   String saveResult = '/tmp/session-export.json';
   Exception? saveError;
 
-  final List<({String liveId, String? name})> branched = <({String liveId, String? name})>[];
+  final List<({String liveId, String? name})> branched =
+      <({String liveId, String? name})>[];
   BranchResult branchResult = const BranchResult(
     liveId: 'c9d0e1f2',
     title: 'branch',
@@ -85,7 +87,8 @@ final class FakeSessionRepository implements SessionRepository {
   );
   Exception? branchError;
 
-  final List<({String liveId, String? focusTopic})> compressed = <({String liveId, String? focusTopic})>[];
+  final List<({String liveId, String? focusTopic})> compressed =
+      <({String liveId, String? focusTopic})>[];
   CompressResult compressResult = const CompressResult(
     status: 'compressed',
     removed: 5,
@@ -98,7 +101,8 @@ final class FakeSessionRepository implements SessionRepository {
   int undoResult = 2;
   Exception? undoError;
 
-  final List<({String liveId, String cwd})> cwdSet = <({String liveId, String cwd})>[];
+  final List<({String liveId, String cwd})> cwdSet =
+      <({String liveId, String cwd})>[];
   Exception? setCwdError;
 
   @override
@@ -281,9 +285,7 @@ void main() {
       overrides: [
         sessionRepositoryProvider.overrideWithValue(repository),
         chatRepositoryProvider.overrideWithValue(chatRepository),
-        gatewayEventsProvider.overrideWith(
-          (ref) => gatewayEvents.stream,
-        ),
+        gatewayEventsProvider.overrideWith((ref) => gatewayEvents.stream),
       ],
     );
   });
@@ -569,38 +571,42 @@ void main() {
     expect(await actions.interruptActive(), isNull); // nothing to interrupt
   });
 
-  test('activeSessionListProvider re-fetches on session.info event (P2-10)',
-      () async {
-    repository.activeListResult = const <ActiveSession>[
-      ActiveSession(liveId: 'live-1', status: SessionStatus.idle),
-    ];
-    container
-        .read(activeSessionProvider.notifier)
-        .switchTo(liveId: 'live-1', durableId: 'durable-1');
+  test(
+    'activeSessionListProvider re-fetches on session.info event (P2-10)',
+    () async {
+      repository.activeListResult = const <ActiveSession>[
+        ActiveSession(liveId: 'live-1', status: SessionStatus.idle),
+      ];
+      container
+          .read(activeSessionProvider.notifier)
+          .switchTo(liveId: 'live-1', durableId: 'durable-1');
 
-    // Initial fetch.
-    await container.read(activeSessionListProvider.future);
-    expect(repository.activeListArgs, hasLength(1));
+      // Initial fetch.
+      await container.read(activeSessionListProvider.future);
+      expect(repository.activeListArgs, hasLength(1));
 
-    // Keep the provider subscribed (listening) so invalidation triggers a rebuild.
-    final listener = container.listen(
-      activeSessionListProvider,
-      (previous, next) {},
-    );
+      // Keep the provider subscribed (listening) so invalidation triggers a rebuild.
+      final listener = container.listen(
+        activeSessionListProvider,
+        (previous, next) {},
+      );
 
-    // Emit a session.info event.
-    gatewayEvents.add(const GatewayEvent(
-      type: 'session.info',
-      sessionId: 'live-1',
-      payload: <String, Object?>{'info': <String, Object?>{}},
-    ));
-    await pumpEventQueue();
+      // Emit a session.info event.
+      gatewayEvents.add(
+        const GatewayEvent(
+          type: 'session.info',
+          sessionId: 'live-1',
+          payload: <String, Object?>{'info': <String, Object?>{}},
+        ),
+      );
+      await pumpEventQueue();
 
-    // The provider should have invalidated and re-fetched (call count increased).
-    expect(repository.activeListArgs.length, 2);
+      // The provider should have invalidated and re-fetched (call count increased).
+      expect(repository.activeListArgs.length, 2);
 
-    listener.close();
-  });
+      listener.close();
+    },
+  );
 
   group('mutation actions (P2-03/04/06/07/08)', () {
     test('rename calls setTitle with liveId+title and returns null', () async {
@@ -620,16 +626,21 @@ void main() {
       expect(error, 'bad title');
     });
 
-    test('deleteSession calls delete with DURABLE id and returns null',
-        () async {
-      final error = await readActions().deleteSession('durable-1');
+    test(
+      'deleteSession calls delete with DURABLE id and returns null',
+      () async {
+        final error = await readActions().deleteSession('durable-1');
 
-      expect(error, isNull);
-      expect(repository.deleted, <String>['durable-1']);
-    });
+        expect(error, isNull);
+        expect(repository.deleted, <String>['durable-1']);
+      },
+    );
 
     test('deleteSession returns error message on GatewayException', () async {
-      repository.deleteError = const GatewayRpcException(-32000, 'still active');
+      repository.deleteError = const GatewayRpcException(
+        -32000,
+        'still active',
+      );
 
       final error = await readActions().deleteSession('durable-1');
 
@@ -671,31 +682,30 @@ void main() {
       expect(readActive().liveId, isNull); // not switched
     });
 
-    test(
-      'compress with lockHeld=true returns the lock message',
-      () async {
-        repository.compressResult = const CompressResult(
-          lockHeld: true,
-          message: 'busy',
-        );
-
-        final error = await readActions().compress('live-1');
-
-        expect(error, 'busy');
-        expect(repository.compressed, <({String liveId, String? focusTopic})>[
-          (liveId: 'live-1', focusTopic: null),
-        ]);
-      },
-    );
-
-    test('compress with lockHeld=true and no message returns default',
-        () async {
-      repository.compressResult = const CompressResult(lockHeld: true);
+    test('compress with lockHeld=true returns the lock message', () async {
+      repository.compressResult = const CompressResult(
+        lockHeld: true,
+        message: 'busy',
+      );
 
       final error = await readActions().compress('live-1');
 
-      expect(error, 'Compression is already in progress.');
+      expect(error, 'busy');
+      expect(repository.compressed, <({String liveId, String? focusTopic})>[
+        (liveId: 'live-1', focusTopic: null),
+      ]);
     });
+
+    test(
+      'compress with lockHeld=true and no message returns default',
+      () async {
+        repository.compressResult = const CompressResult(lockHeld: true);
+
+        final error = await readActions().compress('live-1');
+
+        expect(error, 'Compression is already in progress.');
+      },
+    );
 
     test('compress with normal result returns null', () async {
       repository.compressResult = const CompressResult(
@@ -712,7 +722,10 @@ void main() {
     });
 
     test('compress returns error message on GatewayException', () async {
-      repository.compressError = const GatewayRpcException(-32000, 'no context');
+      repository.compressError = const GatewayRpcException(
+        -32000,
+        'no context',
+      );
 
       final error = await readActions().compress('live-1');
 
@@ -744,26 +757,43 @@ void main() {
     });
 
     test('setCwd returns error message on GatewayException', () async {
-      repository.setCwdError = const GatewayRpcException(-32000, 'invalid path');
+      repository.setCwdError = const GatewayRpcException(
+        -32000,
+        'invalid path',
+      );
 
       final error = await readActions().setCwd('live-1', '/bad/path');
 
       expect(error, 'invalid path');
     });
 
-    test('mutation actions when disconnected return not-connected message',
-        () async {
-      final disconnected = ProviderContainer();
-      addTearDown(disconnected.dispose);
-      final actions = disconnected.read(sessionActionsProvider);
+    test(
+      'mutation actions when disconnected return not-connected message',
+      () async {
+        final disconnected = ProviderContainer();
+        addTearDown(disconnected.dispose);
+        final actions = disconnected.read(sessionActionsProvider);
 
-      expect(await actions.rename('live-1', 'Title'), contains('Not connected'));
-      expect(await actions.deleteSession('durable-1'), contains('Not connected'));
-      expect(await actions.save('live-1'), contains('Not connected'));
-      expect(await actions.branchSession('live-1'), contains('Not connected'));
-      expect(await actions.compress('live-1'), contains('Not connected'));
-      expect(await actions.undo('live-1'), contains('Not connected'));
-      expect(await actions.setCwd('live-1', '/tmp'), contains('Not connected'));
-    });
+        expect(
+          await actions.rename('live-1', 'Title'),
+          contains('Not connected'),
+        );
+        expect(
+          await actions.deleteSession('durable-1'),
+          contains('Not connected'),
+        );
+        expect(await actions.save('live-1'), contains('Not connected'));
+        expect(
+          await actions.branchSession('live-1'),
+          contains('Not connected'),
+        );
+        expect(await actions.compress('live-1'), contains('Not connected'));
+        expect(await actions.undo('live-1'), contains('Not connected'));
+        expect(
+          await actions.setCwd('live-1', '/tmp'),
+          contains('Not connected'),
+        );
+      },
+    );
   });
 }

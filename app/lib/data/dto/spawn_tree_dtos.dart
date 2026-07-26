@@ -102,12 +102,12 @@ class SpawnTreeLoadResultDto {
   final List<dynamic> subagents;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'session_id': sessionId,
-        'started_at': startedAt,
-        'finished_at': finishedAt,
-        'label': label,
-        'subagents': subagents,
-      };
+    'session_id': sessionId,
+    'started_at': startedAt,
+    'finished_at': finishedAt,
+    'label': label,
+    'subagents': subagents,
+  };
 
   SpawnTreeSnapshot toDomain() {
     return SpawnTreeSnapshot(
@@ -123,10 +123,7 @@ class SpawnTreeLoadResultDto {
 /// Wire DTO for `spawn_tree.save` result.
 @JsonSerializable()
 class SpawnTreeSaveResultDto {
-  const SpawnTreeSaveResultDto({
-    this.path,
-    this.sessionId,
-  });
+  const SpawnTreeSaveResultDto({this.path, this.sessionId});
 
   factory SpawnTreeSaveResultDto.fromJson(Map<String, dynamic> json) =>
       _$SpawnTreeSaveResultDtoFromJson(json);

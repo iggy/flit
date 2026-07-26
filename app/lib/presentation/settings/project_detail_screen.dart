@@ -7,10 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class ProjectDetailScreen extends ConsumerWidget {
-  const ProjectDetailScreen({
-    required this.projectId,
-    super.key,
-  });
+  const ProjectDetailScreen({required this.projectId, super.key});
 
   final String projectId;
 
@@ -20,9 +17,7 @@ class ProjectDetailScreen extends ConsumerWidget {
     final controllerState = ref.watch(projectsControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Manage Folders'),
-      ),
+      appBar: AppBar(title: const Text('Manage Folders')),
       body: Column(
         children: <Widget>[
           if (controllerState.error != null)
@@ -44,9 +39,7 @@ class ProjectDetailScreen extends ConsumerWidget {
                     .firstOrNull;
 
                 if (project == null) {
-                  return const Center(
-                    child: Text('Project not found'),
-                  );
+                  return const Center(child: Text('Project not found'));
                 }
 
                 return _ProjectFoldersList(project: project);
@@ -127,7 +120,9 @@ class ProjectDetailScreen extends ConsumerWidget {
                       return;
                     }
                     final label = labelController.text.trim();
-                    ref.read(projectsControllerProvider.notifier).addFolder(
+                    ref
+                        .read(projectsControllerProvider.notifier)
+                        .addFolder(
                           projectId,
                           path,
                           label: label.isEmpty ? null : label,
@@ -237,10 +232,7 @@ class _ProjectFoldersList extends ConsumerWidget {
 }
 
 class _ErrorBanner extends StatelessWidget {
-  const _ErrorBanner({
-    required this.message,
-    required this.onDismiss,
-  });
+  const _ErrorBanner({required this.message, required this.onDismiss});
 
   final String message;
   final VoidCallback onDismiss;

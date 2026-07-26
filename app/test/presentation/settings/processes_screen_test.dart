@@ -58,12 +58,8 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            processRepositoryProvider.overrideWithValue(repository),
-          ],
-          child: const MaterialApp(
-            home: ProcessesScreen(),
-          ),
+          overrides: [processRepositoryProvider.overrideWithValue(repository)],
+          child: const MaterialApp(home: ProcessesScreen()),
         ),
       );
       await tester.pumpAndSettle();
@@ -85,12 +81,8 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            processRepositoryProvider.overrideWithValue(repository),
-          ],
-          child: const MaterialApp(
-            home: ProcessesScreen(),
-          ),
+          overrides: [processRepositoryProvider.overrideWithValue(repository)],
+          child: const MaterialApp(home: ProcessesScreen()),
         ),
       );
       await tester.pumpAndSettle();
@@ -114,12 +106,8 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            processRepositoryProvider.overrideWithValue(repository),
-          ],
-          child: const MaterialApp(
-            home: ProcessesScreen(),
-          ),
+          overrides: [processRepositoryProvider.overrideWithValue(repository)],
+          child: const MaterialApp(home: ProcessesScreen()),
         ),
       );
       await tester.pumpAndSettle();
@@ -140,12 +128,8 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            processRepositoryProvider.overrideWithValue(repository),
-          ],
-          child: const MaterialApp(
-            home: ProcessesScreen(),
-          ),
+          overrides: [processRepositoryProvider.overrideWithValue(repository)],
+          child: const MaterialApp(home: ProcessesScreen()),
         ),
       );
       await tester.pumpAndSettle();
@@ -169,12 +153,8 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            processRepositoryProvider.overrideWithValue(repository),
-          ],
-          child: const MaterialApp(
-            home: ProcessesScreen(),
-          ),
+          overrides: [processRepositoryProvider.overrideWithValue(repository)],
+          child: const MaterialApp(home: ProcessesScreen()),
         ),
       );
       await tester.pumpAndSettle();
@@ -186,18 +166,15 @@ void main() {
       expect(repository.stopAllCallCount, 1);
     });
 
-    testWidgets('exec console run button calls controller.exec',
-        (tester) async {
+    testWidgets('exec console run button calls controller.exec', (
+      tester,
+    ) async {
       final repository = FakeProcessRepository();
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            processRepositoryProvider.overrideWithValue(repository),
-          ],
-          child: const MaterialApp(
-            home: ProcessesScreen(),
-          ),
+          overrides: [processRepositoryProvider.overrideWithValue(repository)],
+          child: const MaterialApp(home: ProcessesScreen()),
         ),
       );
       await tester.pumpAndSettle();
@@ -224,12 +201,8 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            processRepositoryProvider.overrideWithValue(repository),
-          ],
-          child: const MaterialApp(
-            home: ProcessesScreen(),
-          ),
+          overrides: [processRepositoryProvider.overrideWithValue(repository)],
+          child: const MaterialApp(home: ProcessesScreen()),
         ),
       );
       await tester.pumpAndSettle();
@@ -246,8 +219,9 @@ void main() {
       expect(find.text('Hello World'), findsOneWidget);
     });
 
-    testWidgets('expandable output tail displays when expanded',
-        (tester) async {
+    testWidgets('expandable output tail displays when expanded', (
+      tester,
+    ) async {
       final processes = <BackgroundProcess>[
         const BackgroundProcess(
           processId: 'proc_123',
@@ -260,12 +234,8 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            processRepositoryProvider.overrideWithValue(repository),
-          ],
-          child: const MaterialApp(
-            home: ProcessesScreen(),
-          ),
+          overrides: [processRepositoryProvider.overrideWithValue(repository)],
+          child: const MaterialApp(home: ProcessesScreen()),
         ),
       );
       await tester.pumpAndSettle();
@@ -305,12 +275,8 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            processRepositoryProvider.overrideWithValue(repository),
-          ],
-          child: const MaterialApp(
-            home: ProcessesScreen(),
-          ),
+          overrides: [processRepositoryProvider.overrideWithValue(repository)],
+          child: const MaterialApp(home: ProcessesScreen()),
         ),
       );
       await tester.pumpAndSettle();
@@ -322,12 +288,8 @@ void main() {
     testWidgets('disconnected state shows empty', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            processRepositoryProvider.overrideWithValue(null),
-          ],
-          child: const MaterialApp(
-            home: ProcessesScreen(),
-          ),
+          overrides: [processRepositoryProvider.overrideWithValue(null)],
+          child: const MaterialApp(home: ProcessesScreen()),
         ),
       );
       await tester.pumpAndSettle();

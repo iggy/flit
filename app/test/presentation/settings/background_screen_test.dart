@@ -18,7 +18,7 @@ final class FakeBackgroundRepository implements BackgroundRepository {
     this.submitResult = 'bg_default',
     StreamController<BackgroundCompletion>? completionsController,
   }) : _completionsController =
-      completionsController ?? StreamController<BackgroundCompletion>();
+           completionsController ?? StreamController<BackgroundCompletion>();
 
   final String submitResult;
   final StreamController<BackgroundCompletion> _completionsController;
@@ -57,14 +57,12 @@ void main() {
           overrides: [
             backgroundRepositoryProvider.overrideWithValue(repository),
             activeSessionProvider.overrideWith(
-                  () => _FakeActiveSessionNotifier(
+              () => _FakeActiveSessionNotifier(
                 const ActiveSessionState(liveId: 'sess_1'),
               ),
             ),
           ],
-          child: const MaterialApp(
-            home: BackgroundScreen(),
-          ),
+          child: const MaterialApp(home: BackgroundScreen()),
         ),
       );
       await tester.pumpAndSettle();
@@ -80,7 +78,7 @@ void main() {
         overrides: [
           backgroundRepositoryProvider.overrideWithValue(repository),
           activeSessionProvider.overrideWith(
-                () => _FakeActiveSessionNotifier(
+            () => _FakeActiveSessionNotifier(
               const ActiveSessionState(liveId: 'sess_1'),
             ),
           ),
@@ -88,14 +86,14 @@ void main() {
       );
 
       // Add a pending task.
-      await container.read(backgroundTasksProvider.notifier).submit('write a poem');
+      await container
+          .read(backgroundTasksProvider.notifier)
+          .submit('write a poem');
 
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(
-            home: BackgroundScreen(),
-          ),
+          child: const MaterialApp(home: BackgroundScreen()),
         ),
       );
       await tester.pump();
@@ -115,7 +113,7 @@ void main() {
         overrides: [
           backgroundRepositoryProvider.overrideWithValue(repository),
           activeSessionProvider.overrideWith(
-                () => _FakeActiveSessionNotifier(
+            () => _FakeActiveSessionNotifier(
               const ActiveSessionState(liveId: 'sess_1'),
             ),
           ),
@@ -123,7 +121,9 @@ void main() {
       );
 
       // Add a pending task.
-      await container.read(backgroundTasksProvider.notifier).submit('write a poem');
+      await container
+          .read(backgroundTasksProvider.notifier)
+          .submit('write a poem');
 
       // Complete the task.
       completionsController.add(
@@ -136,9 +136,7 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(
-            home: BackgroundScreen(),
-          ),
+          child: const MaterialApp(home: BackgroundScreen()),
         ),
       );
       await tester.pumpAndSettle();
@@ -156,7 +154,7 @@ void main() {
         overrides: [
           backgroundRepositoryProvider.overrideWithValue(repository),
           activeSessionProvider.overrideWith(
-                () => _FakeActiveSessionNotifier(
+            () => _FakeActiveSessionNotifier(
               const ActiveSessionState(liveId: 'sess_1'),
             ),
           ),
@@ -166,9 +164,7 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(
-            home: BackgroundScreen(),
-          ),
+          child: const MaterialApp(home: BackgroundScreen()),
         ),
       );
       await tester.pumpAndSettle();
@@ -190,7 +186,7 @@ void main() {
         overrides: [
           backgroundRepositoryProvider.overrideWithValue(null),
           activeSessionProvider.overrideWith(
-                () => _FakeActiveSessionNotifier(
+            () => _FakeActiveSessionNotifier(
               const ActiveSessionState(liveId: 'sess_1'),
             ),
           ),
@@ -203,9 +199,7 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(
-            home: BackgroundScreen(),
-          ),
+          child: const MaterialApp(home: BackgroundScreen()),
         ),
       );
       await tester.pumpAndSettle();
@@ -227,7 +221,7 @@ void main() {
         overrides: [
           backgroundRepositoryProvider.overrideWithValue(repository),
           activeSessionProvider.overrideWith(
-                () => _FakeActiveSessionNotifier(
+            () => _FakeActiveSessionNotifier(
               const ActiveSessionState(liveId: 'sess_1'),
             ),
           ),
@@ -237,9 +231,7 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(
-            home: BackgroundScreen(),
-          ),
+          child: const MaterialApp(home: BackgroundScreen()),
         ),
       );
       await tester.pumpAndSettle();

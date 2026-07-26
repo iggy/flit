@@ -56,9 +56,7 @@ void main() {
 
   group('facts (wire project.facts)', () {
     test('sends project.facts with cwd param', () async {
-      client = FakeGatewayRpcClient(
-        handler: (_, _) => projectFactsWire,
-      );
+      client = FakeGatewayRpcClient(handler: (_, _) => projectFactsWire);
       repository = ProjectFactsRepositoryImpl(client);
 
       await repository.facts(cwd: '/x');
@@ -68,9 +66,7 @@ void main() {
     });
 
     test('sends EMPTY params when cwd is null', () async {
-      client = FakeGatewayRpcClient(
-        handler: (_, _) => projectFactsWire,
-      );
+      client = FakeGatewayRpcClient(handler: (_, _) => projectFactsWire);
       repository = ProjectFactsRepositoryImpl(client);
 
       await repository.facts();
@@ -80,9 +76,7 @@ void main() {
     });
 
     test('maps result correctly', () async {
-      client = FakeGatewayRpcClient(
-        handler: (_, _) => projectFactsWire,
-      );
+      client = FakeGatewayRpcClient(handler: (_, _) => projectFactsWire);
       repository = ProjectFactsRepositoryImpl(client);
 
       final result = await repository.facts(cwd: '/home/test/repo');
@@ -91,18 +85,16 @@ void main() {
       expect(result!.root, '/home/test/repo');
       expect(result.manifests, <String>['pubspec.yaml', 'package.json']);
       expect(result.packageManagers, <String>['dart', 'npm']);
-      expect(
-        result.verifyCommands,
-        <String>['flutter analyze', 'flutter test'],
-      );
+      expect(result.verifyCommands, <String>[
+        'flutter analyze',
+        'flutter test',
+      ]);
       expect(result.contextFiles, <String>['CLAUDE.md', 'AGENTS.md']);
     });
 
     test('returns null when facts is null (not a code workspace)', () async {
       client = FakeGatewayRpcClient(
-        handler: (_, _) => <String, dynamic>{
-          'facts': null,
-        },
+        handler: (_, _) => <String, dynamic>{'facts': null},
       );
       repository = ProjectFactsRepositoryImpl(client);
 
@@ -114,9 +106,7 @@ void main() {
     test('defaults missing lists to empty', () async {
       client = FakeGatewayRpcClient(
         handler: (_, _) => <String, dynamic>{
-          'facts': <String, dynamic>{
-            'root': '/home/minimal',
-          },
+          'facts': <String, dynamic>{'root': '/home/minimal'},
         },
       );
       repository = ProjectFactsRepositoryImpl(client);

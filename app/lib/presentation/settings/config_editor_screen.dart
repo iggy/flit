@@ -13,9 +13,7 @@ class ConfigEditorScreen extends ConsumerWidget {
     final editorState = ref.watch(configEditorControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Config Editor'),
-      ),
+      appBar: AppBar(title: const Text('Config Editor')),
       body: Column(
         children: [
           // Warning banner
@@ -101,9 +99,8 @@ class ConfigEditorScreen extends ConsumerWidget {
                 ],
               ),
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, _) => Center(
-                child: Text('Error loading config: $error'),
-              ),
+              error: (error, _) =>
+                  Center(child: Text('Error loading config: $error')),
             ),
           ),
         ],
@@ -150,10 +147,7 @@ class _EditKeyFormState extends ConsumerState<_EditKeyForm> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Edit a key',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            Text('Edit a key', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 16),
             TextField(
               controller: _keyController,

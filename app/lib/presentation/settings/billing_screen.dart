@@ -38,9 +38,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
   Widget build(BuildContext context) {
     final billingState = ref.watch(billingStateProvider);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Billing & credits'),
-      ),
+      appBar: AppBar(title: const Text('Billing & credits')),
       body: billingState.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => _BillingError(
@@ -109,8 +107,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
     try {
       final result = await repository.charge(
         amountUsd: amountUsd,
-        idempotencyKey:
-            'charge_${DateTime.now().millisecondsSinceEpoch}',
+        idempotencyKey: 'charge_${DateTime.now().millisecondsSinceEpoch}',
       );
 
       if (!result.ok) {
@@ -163,8 +160,10 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
         if (!status.ok) {
           if (mounted) {
             setState(() {
-              _chargeError =
-                  _formatBillingError(status.errorCode, status.message);
+              _chargeError = _formatBillingError(
+                status.errorCode,
+                status.message,
+              );
               _chargingAmount = null;
               _isPolling = false;
             });
@@ -243,8 +242,10 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
 
       if (!result.ok) {
         setState(() {
-          _autoReloadError =
-              _formatBillingError(result.errorCode, result.message);
+          _autoReloadError = _formatBillingError(
+            result.errorCode,
+            result.message,
+          );
           _isUpdatingAutoReload = false;
         });
         return;
@@ -286,8 +287,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
 
       if (!result.ok) {
         setState(() {
-          _stepUpError =
-              _formatBillingError(result.errorCode, result.message);
+          _stepUpError = _formatBillingError(result.errorCode, result.message);
           _isSteppingUp = false;
         });
         return;
@@ -456,16 +456,13 @@ class _BalanceCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(
-              'Balance',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            Text('Balance', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             Text(
               balance,
-              style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -516,10 +513,7 @@ class _MonthlyCapCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(
-              'Monthly cap',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            Text('Monthly cap', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             Text(
               'Limit: ${monthlyCap.limitDisplay}',
@@ -535,8 +529,8 @@ class _MonthlyCapCard extends StatelessWidget {
               Text(
                 '(default ceiling)',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ],
@@ -590,8 +584,8 @@ class _StepUpSection extends StatelessWidget {
               Text(
                 stepUpError!,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
+                  color: Theme.of(context).colorScheme.error,
+                ),
               ),
             ],
           ],
@@ -628,16 +622,17 @@ class _ChargeSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(
-              'Add credits',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            Text('Add credits', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: <Widget>[
-                for (var i = 0; i < presets.length && i < presetsDisplay.length; i++)
+                for (
+                  var i = 0;
+                  i < presets.length && i < presetsDisplay.length;
+                  i++
+                )
                   FilledButton(
                     onPressed: chargingAmount != null
                         ? null
@@ -668,8 +663,8 @@ class _ChargeSection extends StatelessWidget {
               Text(
                 chargeError!,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
+                  color: Theme.of(context).colorScheme.error,
+                ),
               ),
             ],
             if (chargeSuccess) ...<Widget>[
@@ -677,8 +672,8 @@ class _ChargeSection extends StatelessWidget {
               Text(
                 'Charge successful!',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
+                  color: Theme.of(context).colorScheme.primary,
+                ),
               ),
             ],
           ],
@@ -723,30 +718,27 @@ class _AutoReloadSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(
-              'Auto-reload',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            Text('Auto-reload', style: Theme.of(context).textTheme.titleMedium),
             if (currentAutoReload != null) ...<Widget>[
               const SizedBox(height: 8),
               Text(
                 'Current: ${currentAutoReload!.enabled ? 'Enabled' : 'Disabled'}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
               if (currentAutoReload!.enabled) ...<Widget>[
                 Text(
                   'Threshold: ${currentAutoReload!.thresholdDisplay}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 Text(
                   'Top-up: ${currentAutoReload!.reloadToDisplay}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ],
@@ -799,8 +791,8 @@ class _AutoReloadSection extends StatelessWidget {
               Text(
                 error!,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
+                  color: Theme.of(context).colorScheme.error,
+                ),
               ),
             ],
             if (success) ...<Widget>[
@@ -808,8 +800,8 @@ class _AutoReloadSection extends StatelessWidget {
               Text(
                 'Auto-reload updated successfully!',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
+                  color: Theme.of(context).colorScheme.primary,
+                ),
               ),
             ],
           ],
@@ -824,15 +816,15 @@ class _StepUpVerificationListener extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.listen<StepUpVerification?>(
-      stepUpVerificationProvider,
-      (previous, next) {
-        if (next != null) {
-          _showVerificationDialog(context, next);
-          ref.read(stepUpVerificationProvider.notifier).clear();
-        }
-      },
-    );
+    ref.listen<StepUpVerification?>(stepUpVerificationProvider, (
+      previous,
+      next,
+    ) {
+      if (next != null) {
+        _showVerificationDialog(context, next);
+        ref.read(stepUpVerificationProvider.notifier).clear();
+      }
+    });
     return const SizedBox.shrink();
   }
 
@@ -853,9 +845,9 @@ class _StepUpVerificationListener extends ConsumerWidget {
             const SizedBox(height: 8),
             SelectableText(
               verification.verificationUrl,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontFamily: 'monospace',
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
             ),
             const SizedBox(height: 12),
             const Text('Enter this code:'),
@@ -865,9 +857,9 @@ class _StepUpVerificationListener extends ConsumerWidget {
                 Text(
                   verification.userCode,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'monospace',
-                      ),
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'monospace',
+                  ),
                 ),
                 const SizedBox(width: 8),
                 IconButton(
@@ -910,9 +902,7 @@ class _BillingDisconnected extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Not connected to a gateway.'),
-    );
+    return const Center(child: Text('Not connected to a gateway.'));
   }
 }
 

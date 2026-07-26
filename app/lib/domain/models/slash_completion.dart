@@ -38,10 +38,7 @@ final class CompletionItem {
 
 /// Result of `complete.slash` (P3-02).
 final class SlashCompletionResult {
-  const SlashCompletionResult({
-    required this.items,
-    required this.replaceFrom,
-  });
+  const SlashCompletionResult({required this.items, required this.replaceFrom});
 
   /// Completion items.
   final List<CompletionItem> items;

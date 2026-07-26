@@ -48,10 +48,7 @@ void main() {
       final result = await repository.toggle('on');
 
       expect(client.calls.single.method, 'voice.toggle');
-      expect(
-        client.calls.single.params,
-        <String, dynamic>{'action': 'on'},
-      );
+      expect(client.calls.single.params, <String, dynamic>{'action': 'on'});
       expect(result.enabled, true);
       expect(result.recordKey, 'Ctrl+B');
       expect(result.tts, false);
@@ -116,45 +113,40 @@ void main() {
   });
 
   group('VoiceRepositoryImpl.record (wire voice.record)', () {
-    test('sends voice.record with action and session_id when provided', () async {
-      final client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'status': 'recording',
-        },
-      );
-      final repository = VoiceRepositoryImpl(client);
+    test(
+      'sends voice.record with action and session_id when provided',
+      () async {
+        final client = FakeGatewayRpcClient(
+          handler: (_, _) => const <String, dynamic>{'status': 'recording'},
+        );
+        final repository = VoiceRepositoryImpl(client);
 
-      final result = await repository.record('start', sessionId: 'sess_abc');
+        final result = await repository.record('start', sessionId: 'sess_abc');
 
-      expect(client.calls.single.method, 'voice.record');
-      expect(client.calls.single.params, <String, dynamic>{
-        'action': 'start',
-        'session_id': 'sess_abc',
-      });
-      expect(result.status, 'recording');
-    });
+        expect(client.calls.single.method, 'voice.record');
+        expect(client.calls.single.params, <String, dynamic>{
+          'action': 'start',
+          'session_id': 'sess_abc',
+        });
+        expect(result.status, 'recording');
+      },
+    );
 
     test('omits session_id when null', () async {
       final client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'status': 'stopped',
-        },
+        handler: (_, _) => const <String, dynamic>{'status': 'stopped'},
       );
       final repository = VoiceRepositoryImpl(client);
 
       await repository.record('stop');
 
-      expect(client.calls.single.params, <String, dynamic>{
-        'action': 'stop',
-      });
+      expect(client.calls.single.params, <String, dynamic>{'action': 'stop'});
     });
 
     test('parses status: recording|stopped|busy', () async {
       Future<void> expectStatus(String wireStatus) async {
         final client = FakeGatewayRpcClient(
-          handler: (_, _) => <String, dynamic>{
-            'status': wireStatus,
-          },
+          handler: (_, _) => <String, dynamic>{'status': wireStatus},
         );
         final repository = VoiceRepositoryImpl(client);
 
@@ -180,19 +172,16 @@ void main() {
   group('VoiceRepositoryImpl.tts (wire voice.tts)', () {
     test('sends voice.tts with text param', () async {
       final client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'status': 'speaking',
-        },
+        handler: (_, _) => const <String, dynamic>{'status': 'speaking'},
       );
       final repository = VoiceRepositoryImpl(client);
 
       final result = await repository.tts('Hello world');
 
       expect(client.calls.single.method, 'voice.tts');
-      expect(
-        client.calls.single.params,
-        <String, dynamic>{'text': 'Hello world'},
-      );
+      expect(client.calls.single.params, <String, dynamic>{
+        'text': 'Hello world',
+      });
       expect(result.status, 'speaking');
     });
 

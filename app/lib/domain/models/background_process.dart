@@ -67,17 +67,17 @@ final class BackgroundProcess {
 
   @override
   int get hashCode => Object.hash(
-        processId,
-        command,
-        cwd,
-        pid,
-        startedAt,
-        uptimeSeconds,
-        status,
-        outputTail,
-        outputPreview,
-        exitCode,
-      );
+    processId,
+    command,
+    cwd,
+    pid,
+    startedAt,
+    uptimeSeconds,
+    status,
+    outputTail,
+    outputPreview,
+    exitCode,
+  );
 
   @override
   String toString() {
@@ -91,11 +91,7 @@ final class BackgroundProcess {
 
 /// Result of `process.kill` — polymorphic keyed by status.
 final class ProcessKillResult {
-  const ProcessKillResult({
-    required this.status,
-    this.output,
-    this.error,
-  });
+  const ProcessKillResult({required this.status, this.output, this.error});
 
   /// Wire `status` — "killed", "already_exited", "not_found", or "error".
   final String status;

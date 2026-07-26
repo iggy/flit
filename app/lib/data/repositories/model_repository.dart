@@ -79,8 +79,6 @@ final class ModelRepositoryImpl implements ModelRepository {
 
   @override
   Future<void> disconnectProvider({required String slug}) async {
-    await _client.request('model.disconnect', <String, dynamic>{
-      'slug': slug,
-    });
+    await _client.request('model.disconnect', <String, dynamic>{'slug': slug});
   }
 }

@@ -58,16 +58,8 @@ final class ImageAttachment {
   }
 
   @override
-  int get hashCode => Object.hash(
-        path,
-        name,
-        count,
-        tokenEstimate,
-        width,
-        height,
-        bytes,
-        text,
-      );
+  int get hashCode =>
+      Object.hash(path, name, count, tokenEstimate, width, height, bytes, text);
 
   @override
   String toString() {
@@ -113,13 +105,8 @@ final class PdfAttachment {
   }
 
   @override
-  int get hashCode => Object.hash(
-        filename,
-        pagesAttached,
-        Object.hashAll(pages),
-        count,
-        text,
-      );
+  int get hashCode =>
+      Object.hash(filename, pagesAttached, Object.hashAll(pages), count, text);
 
   @override
   String toString() {
@@ -175,10 +162,7 @@ final class FileAttachment {
 
 /// Result of `image.detach`.
 final class DetachResult {
-  const DetachResult({
-    required this.detached,
-    required this.count,
-  });
+  const DetachResult({required this.detached, required this.count});
 
   /// Wire `detached` — whether the image was detached.
   final bool detached;

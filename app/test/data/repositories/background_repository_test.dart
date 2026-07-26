@@ -47,9 +47,7 @@ void main() {
   group('BackgroundRepositoryImpl.submit (wire prompt.background)', () {
     test('sends prompt.background with session_id and text', () async {
       final client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'task_id': 'bg_abc123',
-        },
+        handler: (_, _) => const <String, dynamic>{'task_id': 'bg_abc123'},
       );
       final repository = BackgroundRepositoryImpl(client);
 
@@ -113,10 +111,7 @@ void main() {
         const GatewayEvent(
           type: 'background.complete',
           sessionId: 'sess_2',
-          payload: <String, dynamic>{
-            'task_id': 'bg_wrong',
-            'text': 'ignore',
-          },
+          payload: <String, dynamic>{'task_id': 'bg_wrong', 'text': 'ignore'},
         ),
       );
 
@@ -125,10 +120,7 @@ void main() {
         const GatewayEvent(
           type: 'background.complete',
           sessionId: 'sess_1',
-          payload: <String, dynamic>{
-            'task_id': 'bg_right',
-            'text': 'correct',
-          },
+          payload: <String, dynamic>{'task_id': 'bg_right', 'text': 'correct'},
         ),
       );
 
@@ -162,10 +154,7 @@ void main() {
         const GatewayEvent(
           type: 'background.complete',
           sessionId: 'sess_1',
-          payload: <String, dynamic>{
-            'task_id': 'bg_2',
-            'text': 'done',
-          },
+          payload: <String, dynamic>{'task_id': 'bg_2', 'text': 'done'},
         ),
       );
 

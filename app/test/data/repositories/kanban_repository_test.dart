@@ -238,7 +238,9 @@ void main() {
       final requests = <RequestOptions>[];
       final repository = _repositoryWith((options) async {
         requests.add(options);
-        return _jsonResponse(200, <String, Object?>{'task': <String, Object?>{'id': '1', 'title': 'Test'}});
+        return _jsonResponse(200, <String, Object?>{
+          'task': <String, Object?>{'id': '1', 'title': 'Test'},
+        });
       });
 
       await repository.createTask(title: 'Test', board: 'ops');
@@ -283,7 +285,9 @@ void main() {
       final requests = <RequestOptions>[];
       final repository = _repositoryWith((options) async {
         requests.add(options);
-        return _jsonResponse(200, <String, Object?>{'task': <String, Object?>{}});
+        return _jsonResponse(200, <String, Object?>{
+          'task': <String, Object?>{},
+        });
       });
 
       await repository.editTask('7', title: 'Test', board: 'ops');

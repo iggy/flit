@@ -38,7 +38,8 @@ final class StagedAttachments {
   }
 
   @override
-  int get hashCode => Object.hash(Object.hashAll(images), Object.hashAll(files));
+  int get hashCode =>
+      Object.hash(Object.hashAll(images), Object.hashAll(files));
 
   @override
   String toString() {

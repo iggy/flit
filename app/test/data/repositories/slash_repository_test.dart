@@ -47,10 +47,7 @@ void main() {
           'sub': <String, dynamic>{
             '/plugin': <String>['list', 'add'],
           },
-          'canon': <String, String>{
-            '/m': '/model',
-            '/n': '/new',
-          },
+          'canon': <String, String>{'/m': '/model', '/n': '/new'},
           'categories': <Map<String, dynamic>>[
             <String, dynamic>{
               'name': 'Session',
@@ -116,32 +113,34 @@ void main() {
   });
 
   group('SlashRepositoryImpl.completeSlash (wire §complete.slash)', () {
-    test('sends complete.slash with {text} and parses items+replace_from',
-        () async {
-      final client = FakeGatewayRpcClient(
-        handler: (_, _) => <String, dynamic>{
-          'items': <Map<String, dynamic>>[
-            <String, dynamic>{
-              'text': '/model ',
-              'display': '/model',
-              'meta': 'Switch model',
-            },
-          ],
-          'replace_from': 1,
-        },
-      );
-      final repository = SlashRepositoryImpl(client);
+    test(
+      'sends complete.slash with {text} and parses items+replace_from',
+      () async {
+        final client = FakeGatewayRpcClient(
+          handler: (_, _) => <String, dynamic>{
+            'items': <Map<String, dynamic>>[
+              <String, dynamic>{
+                'text': '/model ',
+                'display': '/model',
+                'meta': 'Switch model',
+              },
+            ],
+            'replace_from': 1,
+          },
+        );
+        final repository = SlashRepositoryImpl(client);
 
-      final result = await repository.completeSlash('/m');
+        final result = await repository.completeSlash('/m');
 
-      expect(client.calls.single.method, 'complete.slash');
-      expect(client.calls.single.params, <String, dynamic>{'text': '/m'});
-      expect(result.items.length, 1);
-      expect(result.items[0].text, '/model ');
-      expect(result.items[0].display, '/model');
-      expect(result.items[0].meta, 'Switch model');
-      expect(result.replaceFrom, 1);
-    });
+        expect(client.calls.single.method, 'complete.slash');
+        expect(client.calls.single.params, <String, dynamic>{'text': '/m'});
+        expect(result.items.length, 1);
+        expect(result.items[0].text, '/model ');
+        expect(result.items[0].display, '/model');
+        expect(result.items[0].meta, 'Switch model');
+        expect(result.replaceFrom, 1);
+      },
+    );
 
     test('handles empty items and missing replace_from', () async {
       final repository = SlashRepositoryImpl(FakeGatewayRpcClient());
@@ -200,14 +199,11 @@ void main() {
       );
 
       expect(client.calls.single.method, 'command.dispatch');
-      expect(
-        client.calls.single.params,
-        <String, dynamic>{
-          'name': '/test',
-          'arg': 'foo',
-          'session_id': 'abc123',
-        },
-      );
+      expect(client.calls.single.params, <String, dynamic>{
+        'name': '/test',
+        'arg': 'foo',
+        'session_id': 'abc123',
+      });
       expect(result, isA<DispatchExec>());
       final exec = result as DispatchExec;
       expect(exec.output, 'Command executed.');
@@ -322,9 +318,7 @@ void main() {
 
     test('parses unknown type defensively', () async {
       final client = FakeGatewayRpcClient(
-        handler: (_, _) => <String, dynamic>{
-          'type': 'unknown_future_type',
-        },
+        handler: (_, _) => <String, dynamic>{'type': 'unknown_future_type'},
       );
       final repository = SlashRepositoryImpl(client);
 
@@ -355,13 +349,10 @@ void main() {
       );
 
       expect(client.calls.single.method, 'slash.exec');
-      expect(
-        client.calls.single.params,
-        <String, dynamic>{
-          'command': '/test foo',
-          'session_id': 'abc123',
-        },
-      );
+      expect(client.calls.single.params, <String, dynamic>{
+        'command': '/test foo',
+        'session_id': 'abc123',
+      });
       expect(result, isA<SlashExecOutput>());
       final output = result as SlashExecOutput;
       expect(output.output, 'Execution result.');
@@ -377,10 +368,7 @@ void main() {
       );
       final repository = SlashRepositoryImpl(client);
 
-      final result = await repository.exec(
-        command: '/send',
-        sessionId: 'x',
-      );
+      final result = await repository.exec(command: '/send', sessionId: 'x');
 
       expect(result, isA<SlashExecDispatch>());
       final dispatch = (result as SlashExecDispatch).dispatch;

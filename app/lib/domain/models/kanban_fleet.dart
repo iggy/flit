@@ -83,10 +83,7 @@ final class KanbanBoardMeta {
 
 /// List of boards + the current board slug (GET /boards).
 final class KanbanBoardList {
-  const KanbanBoardList({
-    required this.boards,
-    required this.current,
-  });
+  const KanbanBoardList({required this.boards, required this.current});
 
   final List<KanbanBoardMeta> boards;
   final String current;
@@ -133,10 +130,16 @@ final class KanbanStats {
   @override
   int get hashCode => Object.hash(
     Object.hashAll(byStatus.entries.map((e) => Object.hash(e.key, e.value))),
-    Object.hashAll(byAssignee.entries.map((e) => Object.hash(
-      e.key,
-      Object.hashAll(e.value.entries.map((ee) => Object.hash(ee.key, ee.value))),
-    ))),
+    Object.hashAll(
+      byAssignee.entries.map(
+        (e) => Object.hash(
+          e.key,
+          Object.hashAll(
+            e.value.entries.map((ee) => Object.hash(ee.key, ee.value)),
+          ),
+        ),
+      ),
+    ),
     oldestReadyAgeSeconds,
     now,
   );

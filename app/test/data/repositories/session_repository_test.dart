@@ -599,24 +599,30 @@ void main() {
   });
 
   group('steer (P3-07, §session.steer)', () {
-    test('sends LIVE id + text; maps status "queued" to SteerOutcome.queued', () async {
-      client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'status': 'queued',
+    test(
+      'sends LIVE id + text; maps status "queued" to SteerOutcome.queued',
+      () async {
+        client = FakeGatewayRpcClient(
+          handler: (_, _) => const <String, dynamic>{
+            'status': 'queued',
+            'text': 'Focus on error handling',
+          },
+        );
+        repository = SessionRepositoryImpl(client);
+
+        final result = await repository.steer(
+          'a1b2c3d4',
+          'Focus on error handling',
+        );
+
+        expect(client.calls.single.method, 'session.steer');
+        expect(client.calls.single.params, <String, dynamic>{
+          'session_id': 'a1b2c3d4',
           'text': 'Focus on error handling',
-        },
-      );
-      repository = SessionRepositoryImpl(client);
-
-      final result = await repository.steer('a1b2c3d4', 'Focus on error handling');
-
-      expect(client.calls.single.method, 'session.steer');
-      expect(client.calls.single.params, <String, dynamic>{
-        'session_id': 'a1b2c3d4',
-        'text': 'Focus on error handling',
-      });
-      expect(result, SteerOutcome.queued);
-    });
+        });
+        expect(result, SteerOutcome.queued);
+      },
+    );
 
     test('maps status "rejected" to SteerOutcome.rejected', () async {
       client = FakeGatewayRpcClient(

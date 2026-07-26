@@ -48,9 +48,7 @@ final class VoiceToggleResultDto {
 /// DTO for `voice.record` result.
 @JsonSerializable()
 final class VoiceRecordResultDto {
-  const VoiceRecordResultDto({
-    this.status,
-  });
+  const VoiceRecordResultDto({this.status});
 
   factory VoiceRecordResultDto.fromJson(Map<String, dynamic> json) =>
       _$VoiceRecordResultDtoFromJson(json);
@@ -60,18 +58,14 @@ final class VoiceRecordResultDto {
   Map<String, dynamic> toJson() => _$VoiceRecordResultDtoToJson(this);
 
   VoiceRecordResult toDomain() {
-    return VoiceRecordResult(
-      status: status ?? '',
-    );
+    return VoiceRecordResult(status: status ?? '');
   }
 }
 
 /// DTO for `voice.tts` result.
 @JsonSerializable()
 final class VoiceTtsResultDto {
-  const VoiceTtsResultDto({
-    this.status,
-  });
+  const VoiceTtsResultDto({this.status});
 
   factory VoiceTtsResultDto.fromJson(Map<String, dynamic> json) =>
       _$VoiceTtsResultDtoFromJson(json);
@@ -81,8 +75,6 @@ final class VoiceTtsResultDto {
   Map<String, dynamic> toJson() => _$VoiceTtsResultDtoToJson(this);
 
   VoiceTtsResult toDomain() {
-    return VoiceTtsResult(
-      status: status ?? '',
-    );
+    return VoiceTtsResult(status: status ?? '');
   }
 }

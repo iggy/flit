@@ -58,7 +58,9 @@ class _KanbanFleetScreenState extends ConsumerState<KanbanFleetScreen> {
                     Icons.close,
                     color: Theme.of(context).colorScheme.onErrorContainer,
                   ),
-                  onPressed: ref.read(kanbanFleetActionControllerProvider.notifier).clearError,
+                  onPressed: ref
+                      .read(kanbanFleetActionControllerProvider.notifier)
+                      .clearError,
                 ),
               ),
             ),
@@ -90,7 +92,10 @@ class _KanbanFleetScreenState extends ConsumerState<KanbanFleetScreen> {
     );
   }
 
-  Widget _buildStatsSection(BuildContext context, AsyncValue<KanbanStats?> statsAsync) {
+  Widget _buildStatsSection(
+    BuildContext context,
+    AsyncValue<KanbanStats?> statsAsync,
+  ) {
     return statsAsync.when(
       data: (stats) {
         if (stats == null) {
@@ -110,16 +115,18 @@ class _KanbanFleetScreenState extends ConsumerState<KanbanFleetScreen> {
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                   const SizedBox(height: 8),
-                  ...stats.byStatus.entries.map((MapEntry<String, int> entry) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: <Widget>[
-                        Text(entry.key),
-                        Text('${entry.value}'),
-                      ],
+                  ...stats.byStatus.entries.map(
+                    (MapEntry<String, int> entry) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: <Widget>[
+                          Text(entry.key),
+                          Text('${entry.value}'),
+                        ],
+                      ),
                     ),
-                  )),
+                  ),
                   if (stats.oldestReadyAgeSeconds != null) ...[
                     const SizedBox(height: 16),
                     Text(
@@ -161,7 +168,9 @@ class _KanbanFleetScreenState extends ConsumerState<KanbanFleetScreen> {
           children: workers.isEmpty
               ? <Widget>[const ListTile(title: Text('No active workers'))]
               : workers.map((worker) {
-                  final uptime = DateTime.now().toUtc().difference(worker.startedAt);
+                  final uptime = DateTime.now().toUtc().difference(
+                    worker.startedAt,
+                  );
                   return ListTile(
                     title: Text(worker.taskTitle),
                     subtitle: Column(
@@ -251,16 +260,16 @@ class _KanbanFleetScreenState extends ConsumerState<KanbanFleetScreen> {
     );
   }
 
-  Widget _buildDispatchSection(BuildContext context, KanbanFleetActionState actionState) {
+  Widget _buildDispatchSection(
+    BuildContext context,
+    KanbanFleetActionState actionState,
+  ) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(
-            'Dispatcher',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text('Dispatcher', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           Row(
             children: <Widget>[

@@ -196,11 +196,7 @@ class _NodeListTile extends ConsumerWidget {
     );
   }
 
-  void _showNodeDetail(
-    BuildContext context,
-    WidgetRef ref,
-    LearningNode node,
-  ) {
+  void _showNodeDetail(BuildContext context, WidgetRef ref, LearningNode node) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -235,9 +231,8 @@ class _NodeDetailSheetState extends ConsumerState<_NodeDetailSheet> {
             if (controllerState.error != null)
               _NodeDetailErrorBanner(
                 message: controllerState.error!,
-                onDismiss: () => ref
-                    .read(learningControllerProvider.notifier)
-                    .clearError(),
+                onDismiss: () =>
+                    ref.read(learningControllerProvider.notifier).clearError(),
               ),
             Expanded(
               child: _NodeDetailBody(
@@ -264,10 +259,7 @@ class _NodeDetailHeader extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       child: Row(
         children: <Widget>[
-          Text(
-            node.glyph,
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
+          Text(node.glyph, style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -277,10 +269,7 @@ class _NodeDetailHeader extends StatelessWidget {
                   node.fullLabel,
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
-                Text(
-                  node.meta,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
+                Text(node.meta, style: Theme.of(context).textTheme.bodySmall),
               ],
             ),
           ),
@@ -308,20 +297,14 @@ class _NodeDetailErrorBanner extends StatelessWidget {
     return MaterialBanner(
       content: Text(message),
       actions: <Widget>[
-        TextButton(
-          onPressed: onDismiss,
-          child: const Text('Dismiss'),
-        ),
+        TextButton(onPressed: onDismiss, child: const Text('Dismiss')),
       ],
     );
   }
 }
 
 class _NodeDetailBody extends ConsumerWidget {
-  const _NodeDetailBody({
-    required this.node,
-    required this.scrollController,
-  });
+  const _NodeDetailBody({required this.node, required this.scrollController});
 
   final LearningNode node;
   final ScrollController scrollController;
@@ -481,15 +464,17 @@ class _NodeDetailActions extends ConsumerWidget {
       return;
     }
 
-    await ref.read(learningControllerProvider.notifier).edit(node.id, newContent);
+    await ref
+        .read(learningControllerProvider.notifier)
+        .edit(node.id, newContent);
 
     if (context.mounted) {
       final error = ref.read(learningControllerProvider).error;
       if (error == null) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Content updated')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Content updated')));
       }
     }
   }
@@ -527,9 +512,9 @@ class _NodeDetailActions extends ConsumerWidget {
       final error = ref.read(learningControllerProvider).error;
       if (error == null) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Node deleted')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Node deleted')));
       }
     }
   }

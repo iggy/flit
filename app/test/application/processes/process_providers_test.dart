@@ -74,31 +74,32 @@ final class FakeProcessRepository implements ProcessRepository {
 
 void main() {
   group('ProcessActionController.kill', () {
-    test('calls repository.kill with processId and clears state on success',
-        () async {
-      final repository = FakeProcessRepository(
-        killResult: const ProcessKillResult(
-          status: 'killed',
-          output: 'Process terminated',
-        ),
-      );
-      final container = ProviderContainer(
-        overrides: [
-          processRepositoryProvider.overrideWithValue(repository),
-        ],
-      );
-      addTearDown(container.dispose);
+    test(
+      'calls repository.kill with processId and clears state on success',
+      () async {
+        final repository = FakeProcessRepository(
+          killResult: const ProcessKillResult(
+            status: 'killed',
+            output: 'Process terminated',
+          ),
+        );
+        final container = ProviderContainer(
+          overrides: [processRepositoryProvider.overrideWithValue(repository)],
+        );
+        addTearDown(container.dispose);
 
-      final controller =
-          container.read(processActionControllerProvider.notifier);
+        final controller = container.read(
+          processActionControllerProvider.notifier,
+        );
 
-      await controller.kill('proc_123');
+        await controller.kill('proc_123');
 
-      expect(repository.killedProcessIds, <String>['proc_123']);
-      final state = container.read(processActionControllerProvider);
-      expect(state.busy, false);
-      expect(state.error, isNull);
-    });
+        expect(repository.killedProcessIds, <String>['proc_123']);
+        final state = container.read(processActionControllerProvider);
+        expect(state.busy, false);
+        expect(state.error, isNull);
+      },
+    );
 
     test('sets error when kill result status is error', () async {
       final repository = FakeProcessRepository(
@@ -108,14 +109,13 @@ void main() {
         ),
       );
       final container = ProviderContainer(
-        overrides: [
-          processRepositoryProvider.overrideWithValue(repository),
-        ],
+        overrides: [processRepositoryProvider.overrideWithValue(repository)],
       );
       addTearDown(container.dispose);
 
-      final controller =
-          container.read(processActionControllerProvider.notifier);
+      final controller = container.read(
+        processActionControllerProvider.notifier,
+      );
 
       await controller.kill('proc_123');
 
@@ -129,14 +129,13 @@ void main() {
         shouldThrowGatewayException: true,
       );
       final container = ProviderContainer(
-        overrides: [
-          processRepositoryProvider.overrideWithValue(repository),
-        ],
+        overrides: [processRepositoryProvider.overrideWithValue(repository)],
       );
       addTearDown(container.dispose);
 
-      final controller =
-          container.read(processActionControllerProvider.notifier);
+      final controller = container.read(
+        processActionControllerProvider.notifier,
+      );
 
       await controller.kill('proc_123');
 
@@ -150,14 +149,13 @@ void main() {
         shouldThrowUnknownException: true,
       );
       final container = ProviderContainer(
-        overrides: [
-          processRepositoryProvider.overrideWithValue(repository),
-        ],
+        overrides: [processRepositoryProvider.overrideWithValue(repository)],
       );
       addTearDown(container.dispose);
 
-      final controller =
-          container.read(processActionControllerProvider.notifier);
+      final controller = container.read(
+        processActionControllerProvider.notifier,
+      );
 
       await controller.kill('proc_123');
 
@@ -168,14 +166,13 @@ void main() {
 
     test('sets error when repository is null (disconnected)', () async {
       final container = ProviderContainer(
-        overrides: [
-          processRepositoryProvider.overrideWithValue(null),
-        ],
+        overrides: [processRepositoryProvider.overrideWithValue(null)],
       );
       addTearDown(container.dispose);
 
-      final controller =
-          container.read(processActionControllerProvider.notifier);
+      final controller = container.read(
+        processActionControllerProvider.notifier,
+      );
 
       await controller.kill('proc_123');
 
@@ -198,8 +195,9 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final controller =
-          container.read(processActionControllerProvider.notifier);
+      final controller = container.read(
+        processActionControllerProvider.notifier,
+      );
 
       await controller.kill('proc_123');
 
@@ -211,14 +209,13 @@ void main() {
     test('calls repository.stopAll and clears state on success', () async {
       final repository = FakeProcessRepository(stopAllResult: 5);
       final container = ProviderContainer(
-        overrides: [
-          processRepositoryProvider.overrideWithValue(repository),
-        ],
+        overrides: [processRepositoryProvider.overrideWithValue(repository)],
       );
       addTearDown(container.dispose);
 
-      final controller =
-          container.read(processActionControllerProvider.notifier);
+      final controller = container.read(
+        processActionControllerProvider.notifier,
+      );
 
       await controller.stopAll();
 
@@ -233,14 +230,13 @@ void main() {
         shouldThrowGatewayException: true,
       );
       final container = ProviderContainer(
-        overrides: [
-          processRepositoryProvider.overrideWithValue(repository),
-        ],
+        overrides: [processRepositoryProvider.overrideWithValue(repository)],
       );
       addTearDown(container.dispose);
 
-      final controller =
-          container.read(processActionControllerProvider.notifier);
+      final controller = container.read(
+        processActionControllerProvider.notifier,
+      );
 
       await controller.stopAll();
 
@@ -251,14 +247,13 @@ void main() {
 
     test('sets error when repository is null (disconnected)', () async {
       final container = ProviderContainer(
-        overrides: [
-          processRepositoryProvider.overrideWithValue(null),
-        ],
+        overrides: [processRepositoryProvider.overrideWithValue(null)],
       );
       addTearDown(container.dispose);
 
-      final controller =
-          container.read(processActionControllerProvider.notifier);
+      final controller = container.read(
+        processActionControllerProvider.notifier,
+      );
 
       await controller.stopAll();
 
@@ -278,14 +273,13 @@ void main() {
         ),
       );
       final container = ProviderContainer(
-        overrides: [
-          processRepositoryProvider.overrideWithValue(repository),
-        ],
+        overrides: [processRepositoryProvider.overrideWithValue(repository)],
       );
       addTearDown(container.dispose);
 
-      final controller =
-          container.read(processActionControllerProvider.notifier);
+      final controller = container.read(
+        processActionControllerProvider.notifier,
+      );
 
       await controller.exec('echo "Hello World"');
 
@@ -308,14 +302,13 @@ void main() {
         ),
       );
       final container = ProviderContainer(
-        overrides: [
-          processRepositoryProvider.overrideWithValue(repository),
-        ],
+        overrides: [processRepositoryProvider.overrideWithValue(repository)],
       );
       addTearDown(container.dispose);
 
-      final controller =
-          container.read(processActionControllerProvider.notifier);
+      final controller = container.read(
+        processActionControllerProvider.notifier,
+      );
 
       await controller.exec('nonexistent');
 
@@ -329,14 +322,13 @@ void main() {
         shouldThrowGatewayException: true,
       );
       final container = ProviderContainer(
-        overrides: [
-          processRepositoryProvider.overrideWithValue(repository),
-        ],
+        overrides: [processRepositoryProvider.overrideWithValue(repository)],
       );
       addTearDown(container.dispose);
 
-      final controller =
-          container.read(processActionControllerProvider.notifier);
+      final controller = container.read(
+        processActionControllerProvider.notifier,
+      );
 
       await controller.exec('test');
 
@@ -348,14 +340,13 @@ void main() {
 
     test('sets error when repository is null (disconnected)', () async {
       final container = ProviderContainer(
-        overrides: [
-          processRepositoryProvider.overrideWithValue(null),
-        ],
+        overrides: [processRepositoryProvider.overrideWithValue(null)],
       );
       addTearDown(container.dispose);
 
-      final controller =
-          container.read(processActionControllerProvider.notifier);
+      final controller = container.read(
+        processActionControllerProvider.notifier,
+      );
 
       await controller.exec('test');
 
@@ -385,8 +376,9 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      final controller =
-          container.read(processActionControllerProvider.notifier);
+      final controller = container.read(
+        processActionControllerProvider.notifier,
+      );
       controller.clearError();
 
       final state = container.read(processActionControllerProvider);

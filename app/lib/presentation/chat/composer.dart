@@ -172,7 +172,9 @@ class _ComposerState extends ConsumerState<Composer> {
       unawaited(_dispatchSlash(liveId, text));
       return;
     }
-    final working = ref.read(messageListProvider(liveId)).messages
+    final working = ref
+        .read(messageListProvider(liveId))
+        .messages
         .any((message) => message.streaming);
     _controller.clear();
     setState(() {
@@ -209,7 +211,9 @@ class _ComposerState extends ConsumerState<Composer> {
 
   Future<void> _steer(String liveId, String text) async {
     try {
-      final outcome = await ref.read(sessionRepositoryProvider)?.steer(liveId, text);
+      final outcome = await ref
+          .read(sessionRepositoryProvider)
+          ?.steer(liveId, text);
       if (outcome == SteerOutcome.rejected && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Steer rejected by the agent')),
@@ -231,7 +235,11 @@ class _ComposerState extends ConsumerState<Composer> {
   }
 
   /// P3-03: dispatch a slash command and handle the discriminated result.
-  Future<void> _dispatchSlash(String liveId, String raw, [int depth = 0]) async {
+  Future<void> _dispatchSlash(
+    String liveId,
+    String raw, [
+    int depth = 0,
+  ]) async {
     if (depth > 3) {
       _showSnackBar('Command alias loop detected');
       return;
@@ -259,8 +267,9 @@ class _ComposerState extends ConsumerState<Composer> {
         case DispatchPrefill():
           // Populate the composer field.
           _controller.text = result.message;
-          _controller.selection =
-              TextSelection.collapsed(offset: result.message.length);
+          _controller.selection = TextSelection.collapsed(
+            offset: result.message.length,
+          );
           _focusNode.requestFocus();
           _showSnackBar(result.notice);
         case DispatchSend():
@@ -296,9 +305,9 @@ class _ComposerState extends ConsumerState<Composer> {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   /// P7: show the attachment picker bottom sheet.
@@ -421,7 +430,8 @@ class _ComposerState extends ConsumerState<Composer> {
       if (pickedFile == null || pickedFile.bytes == null) {
         return; // User cancelled or no data.
       }
-      final dataUrl = 'data:application/octet-stream;base64,${base64Encode(pickedFile.bytes!)}';
+      final dataUrl =
+          'data:application/octet-stream;base64,${base64Encode(pickedFile.bytes!)}';
       final fileResult = await repo.attachFile(
         liveId,
         dataUrl: dataUrl,
@@ -456,7 +466,9 @@ class _ComposerState extends ConsumerState<Composer> {
     final state = ref.read(voiceControllerProvider);
     if (!state.modeEnabled) {
       // Enable mode and start recording.
-      unawaited(controller.enableMode().then((_) => controller.startRecording(liveId)));
+      unawaited(
+        controller.enableMode().then((_) => controller.startRecording(liveId)),
+      );
     } else if (state.recording) {
       // Stop recording.
       unawaited(controller.stopRecording(liveId));
@@ -497,7 +509,9 @@ class _ComposerState extends ConsumerState<Composer> {
     // Only show errors when voice repository is available (avoid noise in tests).
     ref.listen(voiceControllerProvider, (previous, next) {
       final voiceRepo = ref.read(voiceRepositoryProvider);
-      if (voiceRepo != null && next.error != null && next.error != _lastVoiceError) {
+      if (voiceRepo != null &&
+          next.error != null &&
+          next.error != _lastVoiceError) {
         _lastVoiceError = next.error;
         if (mounted) {
           _showSnackBar('Voice: ${next.error}');
@@ -525,7 +539,8 @@ class _ComposerState extends ConsumerState<Composer> {
           if (_suggestions != null && _suggestions!.isNotEmpty)
             _buildSuggestionOverlay(),
           // P7: attachment chips row (shown above the field when non-empty).
-          if (stagedAttachments.images.isNotEmpty || stagedAttachments.files.isNotEmpty)
+          if (stagedAttachments.images.isNotEmpty ||
+              stagedAttachments.files.isNotEmpty)
             _buildAttachmentsRow(stagedAttachments, liveId),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -534,7 +549,9 @@ class _ComposerState extends ConsumerState<Composer> {
               IconButton(
                 key: const Key('composer_attach'),
                 tooltip: 'Attach',
-                onPressed: liveId == null ? null : () => _showAttachmentPicker(liveId),
+                onPressed: liveId == null
+                    ? null
+                    : () => _showAttachmentPicker(liveId),
                 icon: const Icon(Icons.attach_file),
               ),
               Expanded(
@@ -619,9 +636,7 @@ class _ComposerState extends ConsumerState<Composer> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant,
-        ),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Material(
         color: Colors.transparent,
@@ -692,12 +707,7 @@ class _ComposerState extends ConsumerState<Composer> {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: bytes != null
-                ? Image.memory(
-                    bytes,
-                    width: 48,
-                    height: 48,
-                    fit: BoxFit.cover,
-                  )
+                ? Image.memory(bytes, width: 48, height: 48, fit: BoxFit.cover)
                 : const Icon(Icons.image),
           ),
         ),
@@ -713,10 +723,7 @@ class _ComposerState extends ConsumerState<Composer> {
               ),
               child: Text(
                 '~$tokenEstimate tok',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                ),
+                style: const TextStyle(color: Colors.white, fontSize: 10),
               ),
             ),
           ),
@@ -746,10 +753,7 @@ class _ComposerState extends ConsumerState<Composer> {
       message: file.refText,
       child: Chip(
         avatar: const Icon(Icons.insert_drive_file),
-        label: Text(
-          file.name,
-          overflow: TextOverflow.ellipsis,
-        ),
+        label: Text(file.name, overflow: TextOverflow.ellipsis),
       ),
     );
   }

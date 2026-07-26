@@ -40,12 +40,12 @@ final class ProjectFacts {
 
   @override
   int get hashCode => Object.hash(
-        root,
-        Object.hashAll(manifests),
-        Object.hashAll(packageManagers),
-        Object.hashAll(verifyCommands),
-        Object.hashAll(contextFiles),
-      );
+    root,
+    Object.hashAll(manifests),
+    Object.hashAll(packageManagers),
+    Object.hashAll(verifyCommands),
+    Object.hashAll(contextFiles),
+  );
 
   @override
   String toString() =>

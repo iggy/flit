@@ -13,9 +13,7 @@ class InsightsScreen extends ConsumerWidget {
     final insights = ref.watch(insightsProvider);
     final window = ref.watch(insightsWindowProvider);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Insights'),
-      ),
+      appBar: AppBar(title: const Text('Insights')),
       body: Column(
         children: <Widget>[
           Padding(
@@ -107,23 +105,17 @@ class _InsightsContent extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              _StatCard(
-                label: 'Sessions',
-                value: insights.sessions.toString(),
-              ),
+              _StatCard(label: 'Sessions', value: insights.sessions.toString()),
               const SizedBox(width: 16),
-              _StatCard(
-                label: 'Messages',
-                value: insights.messages.toString(),
-              ),
+              _StatCard(label: 'Messages', value: insights.messages.toString()),
             ],
           ),
           const SizedBox(height: 16),
           Text(
             'over last ${insights.days} days',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -132,10 +124,7 @@ class _InsightsContent extends StatelessWidget {
 }
 
 class _StatCard extends StatelessWidget {
-  const _StatCard({
-    required this.label,
-    required this.value,
-  });
+  const _StatCard({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -150,15 +139,12 @@ class _StatCard extends StatelessWidget {
           children: <Widget>[
             Text(
               value,
-              style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.displayMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            Text(label, style: Theme.of(context).textTheme.titleMedium),
           ],
         ),
       ),
@@ -171,9 +157,7 @@ class _InsightsDisconnected extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Not connected to a gateway.'),
-    );
+    return const Center(child: Text('Not connected to a gateway.'));
   }
 }
 

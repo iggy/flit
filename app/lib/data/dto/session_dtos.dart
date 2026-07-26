@@ -225,11 +225,7 @@ class ResumeMessageDto {
 /// Inflight turn from `session.resume` (P2-02, §inflight).
 @JsonSerializable()
 class InflightTurnDto {
-  const InflightTurnDto({
-    this.user,
-    this.assistant,
-    this.streaming,
-  });
+  const InflightTurnDto({this.user, this.assistant, this.streaming});
 
   factory InflightTurnDto.fromJson(Map<String, dynamic> json) =>
       _$InflightTurnDtoFromJson(json);
@@ -407,12 +403,7 @@ class SessionUsageDto {
 /// One category entry from `session.context_breakdown` (Phase 2).
 @JsonSerializable()
 class ContextCategoryDto {
-  const ContextCategoryDto({
-    this.id,
-    this.label,
-    this.tokens,
-    this.color,
-  });
+  const ContextCategoryDto({this.id, this.label, this.tokens, this.color});
 
   factory ContextCategoryDto.fromJson(Map<String, dynamic> json) =>
       _$ContextCategoryDtoFromJson(json);
@@ -553,11 +544,7 @@ class CompressResultDto {
 /// `session.branch` result (Phase 2, §session.branch).
 @JsonSerializable()
 class BranchResultDto {
-  const BranchResultDto({
-    this.sessionId,
-    this.title,
-    this.parent,
-  });
+  const BranchResultDto({this.sessionId, this.title, this.parent});
 
   factory BranchResultDto.fromJson(Map<String, dynamic> json) =>
       _$BranchResultDtoFromJson(json);

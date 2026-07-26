@@ -38,23 +38,11 @@ final class FakeGatewayRpcClient extends GatewayRpcClient {
 const framesWire = <String, dynamic>{
   'frames': <String>[], // IGNORED by Flutter client
   'legend': <Map<String, dynamic>>[
-    <String, dynamic>{
-      'glyph': '●',
-      'style': 'skill',
-      'label': 'skills (12)',
-    },
-    <String, dynamic>{
-      'glyph': '◆',
-      'style': 'memory',
-      'label': 'memories (4)',
-    },
+    <String, dynamic>{'glyph': '●', 'style': 'skill', 'label': 'skills (12)'},
+    <String, dynamic>{'glyph': '◆', 'style': 'memory', 'label': 'memories (4)'},
   ],
   'categories': <Map<String, dynamic>>[
-    <String, dynamic>{
-      'glyph': '●',
-      'color': '#FF5733',
-      'label': 'coding (5)',
-    },
+    <String, dynamic>{'glyph': '●', 'color': '#FF5733', 'label': 'coding (5)'},
   ],
   'buckets': <Map<String, dynamic>>[
     <String, dynamic>{
@@ -92,10 +80,7 @@ const framesWire = <String, dynamic>{
     '12 learned skills · 4 memories · 6 skill links',
     '2 memory↔skill links · busiest day 3 Jul 2026 · 4 learned',
   ],
-  'axis': <String, dynamic>{
-    'start': 'oldest',
-    'end': 'now',
-  },
+  'axis': <String, dynamic>{'start': 'oldest', 'end': 'now'},
   'count': 16,
 };
 
@@ -117,9 +102,7 @@ void main() {
     });
 
     test('maps buckets, summary, legend, categories, axis, count', () async {
-      client = FakeGatewayRpcClient(
-        handler: (_, _) => framesWire,
-      );
+      client = FakeGatewayRpcClient(handler: (_, _) => framesWire);
       repository = LearningRepositoryImpl(client);
 
       final result = await repository.frames();
@@ -208,10 +191,9 @@ void main() {
       await repository.detail('refactor-helper');
 
       expect(client.calls.single.method, 'learning.detail');
-      expect(
-        client.calls.single.params,
-        <String, dynamic>{'id': 'refactor-helper'},
-      );
+      expect(client.calls.single.params, <String, dynamic>{
+        'id': 'refactor-helper',
+      });
     });
 
     test('maps success result', () async {
@@ -265,13 +247,10 @@ void main() {
       await repository.edit('refactor-helper', 'New content here');
 
       expect(client.calls.single.method, 'learning.edit');
-      expect(
-        client.calls.single.params,
-        <String, dynamic>{
-          'id': 'refactor-helper',
-          'content': 'New content here',
-        },
-      );
+      expect(client.calls.single.params, <String, dynamic>{
+        'id': 'refactor-helper',
+        'content': 'New content here',
+      });
     });
 
     test('maps success result', () async {

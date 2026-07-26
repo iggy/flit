@@ -164,14 +164,8 @@ void main() {
       container.read(messageListProvider(liveId));
 
       final history = <ChatMessage>[
-        const ChatMessage(
-          role: MessageRole.user,
-          text: 'first question',
-        ),
-        const ChatMessage(
-          role: MessageRole.assistant,
-          text: 'first answer',
-        ),
+        const ChatMessage(role: MessageRole.user, text: 'first question'),
+        const ChatMessage(role: MessageRole.assistant, text: 'first answer'),
       ];
 
       container
@@ -194,14 +188,8 @@ void main() {
         container.read(messageListProvider(liveId));
 
         final history = <ChatMessage>[
-          const ChatMessage(
-            role: MessageRole.user,
-            text: 'first question',
-          ),
-          const ChatMessage(
-            role: MessageRole.assistant,
-            text: 'first answer',
-          ),
+          const ChatMessage(role: MessageRole.user, text: 'first question'),
+          const ChatMessage(role: MessageRole.assistant, text: 'first answer'),
         ];
 
         final inflight = const InflightTurn(
@@ -232,41 +220,32 @@ void main() {
       },
     );
 
-    test(
-      'finished inflight marks assistant complete',
-      () {
-        container.read(messageListProvider(liveId));
+    test('finished inflight marks assistant complete', () {
+      container.read(messageListProvider(liveId));
 
-        final history = <ChatMessage>[
-          const ChatMessage(
-            role: MessageRole.user,
-            text: 'first question',
-          ),
-          const ChatMessage(
-            role: MessageRole.assistant,
-            text: 'first answer',
-          ),
-        ];
+      final history = <ChatMessage>[
+        const ChatMessage(role: MessageRole.user, text: 'first question'),
+        const ChatMessage(role: MessageRole.assistant, text: 'first answer'),
+      ];
 
-        final inflight = const InflightTurn(
-          user: 'q',
-          assistant: 'done',
-          streaming: false,
-        );
+      final inflight = const InflightTurn(
+        user: 'q',
+        assistant: 'done',
+        streaming: false,
+      );
 
-        container
-            .read(messageListProvider(liveId).notifier)
-            .seedHistory(history, inflight: inflight);
+      container
+          .read(messageListProvider(liveId).notifier)
+          .seedHistory(history, inflight: inflight);
 
-        final messages = container.read(messageListProvider(liveId)).messages;
-        expect(messages, hasLength(4));
-        // Inflight assistant message.
-        expect(messages[3].role, MessageRole.assistant);
-        expect(messages[3].text, 'done');
-        expect(messages[3].streaming, isFalse);
-        expect(messages[3].terminalStatus, MessageTerminalStatus.complete);
-      },
-    );
+      final messages = container.read(messageListProvider(liveId)).messages;
+      expect(messages, hasLength(4));
+      // Inflight assistant message.
+      expect(messages[3].role, MessageRole.assistant);
+      expect(messages[3].text, 'done');
+      expect(messages[3].streaming, isFalse);
+      expect(messages[3].terminalStatus, MessageTerminalStatus.complete);
+    });
 
     test(
       'streaming inflight with empty user appends only assistant bubble',
@@ -274,14 +253,8 @@ void main() {
         container.read(messageListProvider(liveId));
 
         final history = <ChatMessage>[
-          const ChatMessage(
-            role: MessageRole.user,
-            text: 'first question',
-          ),
-          const ChatMessage(
-            role: MessageRole.assistant,
-            text: 'first answer',
-          ),
+          const ChatMessage(role: MessageRole.user, text: 'first question'),
+          const ChatMessage(role: MessageRole.assistant, text: 'first answer'),
         ];
 
         final inflight = const InflightTurn(

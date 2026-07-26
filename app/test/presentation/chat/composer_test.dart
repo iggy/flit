@@ -60,7 +60,8 @@ final class FakeSlashRepository implements SlashRepository {
     required String name,
     required String arg,
     required String sessionId,
-  })? dispatchFn;
+  })?
+  dispatchFn;
 
   @override
   Future<SlashCompletionResult> completeSlash(String text) async {
@@ -127,7 +128,8 @@ final class FakeSessionRepository implements SessionRepository {
 
 /// Fake attachment repository for testing attachment operations.
 final class FakeAttachmentRepository implements AttachmentRepository {
-  final List<({String sessionId, String contentBase64, String? filename})> imagesAttached =
+  final List<({String sessionId, String contentBase64, String? filename})>
+  imagesAttached =
       <({String sessionId, String contentBase64, String? filename})>[];
   final List<({String sessionId, String path})> imagesDetached =
       <({String sessionId, String path})>[];
@@ -175,9 +177,7 @@ final class FakeVoiceRepository implements VoiceRepository {
     recordKey: 'Ctrl+B',
   );
 
-  VoiceRecordResult recordResult = const VoiceRecordResult(
-    status: 'recording',
-  );
+  VoiceRecordResult recordResult = const VoiceRecordResult(status: 'recording');
 
   @override
   Future<VoiceToggleResult> toggle(String action) async {
@@ -216,7 +216,9 @@ void main() {
         slashRepositoryProvider.overrideWithValue(slashRepository),
         chatRepositoryProvider.overrideWithValue(chatRepository),
         sessionRepositoryProvider.overrideWithValue(sessionRepository),
-        voiceRepositoryProvider.overrideWithValue(null), // P7: avoid voice errors in old tests
+        voiceRepositoryProvider.overrideWithValue(
+          null,
+        ), // P7: avoid voice errors in old tests
         connectionStateProvider.overrideWith(
           (ref) => Stream.value(GatewayConnectionState.ready),
         ),
@@ -229,8 +231,7 @@ void main() {
               ref.listen(activeSessionProvider, (previous, next) {});
               if (ref.read(activeSessionProvider).liveId == null) {
                 Future.microtask(
-                  () =>
-                      ref.read(activeSessionProvider.notifier).bootstrap(),
+                  () => ref.read(activeSessionProvider.notifier).bootstrap(),
                 );
               }
               return const Composer();
@@ -265,10 +266,7 @@ void main() {
       find.byKey(const ValueKey('slash_suggestion_/model')),
       findsOneWidget,
     );
-    expect(
-      find.byKey(const ValueKey('slash_suggestion_/new')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const ValueKey('slash_suggestion_/new')), findsOneWidget);
   });
 
   testWidgets('P3-02: tapping a suggestion sets field text', (tester) async {
@@ -289,24 +287,25 @@ void main() {
     expect(find.byKey(const Key('slash_suggestions')), findsNothing);
   });
 
-  testWidgets(
-    'P3-02: suggestions cleared when text no longer starts with /',
-    (tester) async {
-      await pumpComposer(tester);
+  testWidgets('P3-02: suggestions cleared when text no longer starts with /', (
+    tester,
+  ) async {
+    await pumpComposer(tester);
 
-      // Type '/mo' → suggestions appear.
-      await tester.enterText(find.byKey(composerFieldKey), '/mo');
-      await tester.pumpAndSettle();
-      expect(find.byKey(const Key('slash_suggestions')), findsOneWidget);
+    // Type '/mo' → suggestions appear.
+    await tester.enterText(find.byKey(composerFieldKey), '/mo');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('slash_suggestions')), findsOneWidget);
 
-      // Replace with normal text → suggestions disappear.
-      await tester.enterText(find.byKey(composerFieldKey), 'hello');
-      await tester.pumpAndSettle();
-      expect(find.byKey(const Key('slash_suggestions')), findsNothing);
-    },
-  );
+    // Replace with normal text → suggestions disappear.
+    await tester.enterText(find.byKey(composerFieldKey), 'hello');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('slash_suggestions')), findsNothing);
+  });
 
-  testWidgets('P3-03: submitting /model gpt routes to dispatch', (tester) async {
+  testWidgets('P3-03: submitting /model gpt routes to dispatch', (
+    tester,
+  ) async {
     // Set a dispatch result that does NOT trigger submitPrompt.
     slashRepository.dispatchResult = const DispatchExec('Model switched');
 
@@ -402,16 +401,17 @@ void main() {
 
   testWidgets('P3-03: DispatchAlias re-dispatches with target', (tester) async {
     // First dispatch returns an alias; second dispatch returns DispatchExec.
-    slashRepository.dispatchFn = ({
-      required String name,
-      required String arg,
-      required String sessionId,
-    }) {
-      if (name == '/m') {
-        return const DispatchAlias('/model');
-      }
-      return const DispatchExec('Model switched');
-    };
+    slashRepository.dispatchFn =
+        ({
+          required String name,
+          required String arg,
+          required String sessionId,
+        }) {
+          if (name == '/m') {
+            return const DispatchAlias('/model');
+          }
+          return const DispatchExec('Model switched');
+        };
 
     await pumpComposer(tester);
 
@@ -432,7 +432,9 @@ void main() {
     expect(slashRepository.dispatched[1].arg, 'gpt');
   });
 
-  testWidgets('P3-03: non-slash text keeps existing send behavior', (tester) async {
+  testWidgets('P3-03: non-slash text keeps existing send behavior', (
+    tester,
+  ) async {
     await pumpComposer(tester);
 
     // Enter normal text and submit.
@@ -500,8 +502,12 @@ void main() {
             slashRepositoryProvider.overrideWithValue(slashRepository),
             chatRepositoryProvider.overrideWithValue(chatRepository),
             sessionRepositoryProvider.overrideWithValue(sessionRepository),
-            attachmentRepositoryProvider.overrideWithValue(attachmentRepository),
-            stagedAttachmentsProvider.overrideWith(StagedAttachmentsNotifier.new),
+            attachmentRepositoryProvider.overrideWithValue(
+              attachmentRepository,
+            ),
+            stagedAttachmentsProvider.overrideWith(
+              StagedAttachmentsNotifier.new,
+            ),
             connectionStateProvider.overrideWith(
               (ref) => Stream.value(GatewayConnectionState.ready),
             ),
@@ -513,19 +519,24 @@ void main() {
                   ref.listen(activeSessionProvider, (previous, next) {});
                   if (ref.read(activeSessionProvider).liveId == null) {
                     Future.microtask(
-                      () => ref.read(activeSessionProvider.notifier).bootstrap(),
+                      () =>
+                          ref.read(activeSessionProvider.notifier).bootstrap(),
                     );
                   }
                   // Seed the staged attachments.
                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                    final notifier = ref.read(stagedAttachmentsProvider.notifier);
+                    final notifier = ref.read(
+                      stagedAttachmentsProvider.notifier,
+                    );
                     if (ref.read(stagedAttachmentsProvider).images.isEmpty) {
-                      notifier.addImage(const ImageAttachment(
-                        path: '/tmp/test.jpg',
-                        name: 'test.jpg',
-                        count: 1,
-                        tokenEstimate: 150,
-                      ));
+                      notifier.addImage(
+                        const ImageAttachment(
+                          path: '/tmp/test.jpg',
+                          name: 'test.jpg',
+                          count: 1,
+                          tokenEstimate: 150,
+                        ),
+                      );
                     }
                   });
                   return const Composer();
@@ -553,8 +564,12 @@ void main() {
             slashRepositoryProvider.overrideWithValue(slashRepository),
             chatRepositoryProvider.overrideWithValue(chatRepository),
             sessionRepositoryProvider.overrideWithValue(sessionRepository),
-            attachmentRepositoryProvider.overrideWithValue(attachmentRepository),
-            stagedAttachmentsProvider.overrideWith(StagedAttachmentsNotifier.new),
+            attachmentRepositoryProvider.overrideWithValue(
+              attachmentRepository,
+            ),
+            stagedAttachmentsProvider.overrideWith(
+              StagedAttachmentsNotifier.new,
+            ),
             connectionStateProvider.overrideWith(
               (ref) => Stream.value(GatewayConnectionState.ready),
             ),
@@ -566,19 +581,24 @@ void main() {
                   ref.listen(activeSessionProvider, (previous, next) {});
                   if (ref.read(activeSessionProvider).liveId == null) {
                     Future.microtask(
-                      () => ref.read(activeSessionProvider.notifier).bootstrap(),
+                      () =>
+                          ref.read(activeSessionProvider.notifier).bootstrap(),
                     );
                   }
                   // Seed the staged attachments.
                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                    final notifier = ref.read(stagedAttachmentsProvider.notifier);
+                    final notifier = ref.read(
+                      stagedAttachmentsProvider.notifier,
+                    );
                     if (ref.read(stagedAttachmentsProvider).images.isEmpty) {
-                      notifier.addImage(const ImageAttachment(
-                        path: '/tmp/test.jpg',
-                        name: 'test.jpg',
-                        count: 1,
-                        tokenEstimate: 150,
-                      ));
+                      notifier.addImage(
+                        const ImageAttachment(
+                          path: '/tmp/test.jpg',
+                          name: 'test.jpg',
+                          count: 1,
+                          tokenEstimate: 150,
+                        ),
+                      );
                     }
                   });
                   return const Composer();
@@ -673,7 +693,10 @@ void main() {
       final ttsButton = find.byKey(const Key('composer_tts'));
       expect(ttsButton, findsOneWidget);
       // Icon should be volume_up when tts is enabled.
-      expect(find.descendant(of: ttsButton, matching: find.byIcon(Icons.volume_up)), findsOneWidget);
+      expect(
+        find.descendant(of: ttsButton, matching: find.byIcon(Icons.volume_up)),
+        findsOneWidget,
+      );
     });
 
     testWidgets('tapping mic button starts recording', (tester) async {
@@ -698,7 +721,10 @@ void main() {
 
       // Verify toggle('on') and record('start') were called.
       expect(voiceRepository.toggleCalls, contains('on'));
-      expect(voiceRepository.recordCalls.any((c) => c.action == 'start'), isTrue);
+      expect(
+        voiceRepository.recordCalls.any((c) => c.action == 'start'),
+        isTrue,
+      );
     });
   });
 }

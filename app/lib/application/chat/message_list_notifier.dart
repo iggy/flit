@@ -90,10 +90,7 @@ class MessageListNotifier extends Notifier<FoldState> {
       // Append the user message if the prompt is non-empty.
       if (inflight.user.isNotEmpty) {
         inflightMessages.add(
-          ChatMessage(
-            role: MessageRole.user,
-            text: inflight.user,
-          ),
+          ChatMessage(role: MessageRole.user, text: inflight.user),
         );
       }
       // Append the assistant message if the response is non-empty OR if

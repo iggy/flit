@@ -25,9 +25,7 @@ final class BillingRepositoryImpl implements BillingRepository {
     required String amountUsd,
     String? idempotencyKey,
   }) async {
-    final params = <String, dynamic>{
-      'amount_usd': amountUsd,
-    };
+    final params = <String, dynamic>{'amount_usd': amountUsd};
     if (idempotencyKey != null) {
       params['idempotency_key'] = idempotencyKey;
     }
@@ -37,9 +35,10 @@ final class BillingRepositoryImpl implements BillingRepository {
 
   @override
   Future<BillingChargeStatus> chargeStatus(String chargeId) async {
-    final result = await _client.request('billing.charge_status', <String, dynamic>{
-      'charge_id': chargeId,
-    });
+    final result = await _client.request(
+      'billing.charge_status',
+      <String, dynamic>{'charge_id': chargeId},
+    );
     return BillingChargeStatusDto.fromJson(result).toDomain();
   }
 
@@ -49,11 +48,14 @@ final class BillingRepositoryImpl implements BillingRepository {
     required num threshold,
     required num topUpAmount,
   }) async {
-    final result = await _client.request('billing.auto_reload', <String, dynamic>{
-      'enabled': enabled,
-      'threshold': threshold,
-      'top_up_amount': topUpAmount,
-    });
+    final result = await _client.request(
+      'billing.auto_reload',
+      <String, dynamic>{
+        'enabled': enabled,
+        'threshold': threshold,
+        'top_up_amount': topUpAmount,
+      },
+    );
     return BillingMutationResultDto.fromJson(result).toDomain();
   }
 

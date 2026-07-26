@@ -51,16 +51,12 @@ void main() {
       await repository.getFast();
 
       expect(client.calls.single.method, 'config.get');
-      expect(client.calls.single.params, <String, dynamic>{
-        'key': 'fast',
-      });
+      expect(client.calls.single.params, <String, dynamic>{'key': 'fast'});
     });
 
     test('returns true when value is "fast"', () async {
       client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'value': 'fast',
-        },
+        handler: (_, _) => const <String, dynamic>{'value': 'fast'},
       );
       repository = ConfigRepositoryImpl(client);
 
@@ -71,9 +67,7 @@ void main() {
 
     test('returns false when value is "normal"', () async {
       client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'value': 'normal',
-        },
+        handler: (_, _) => const <String, dynamic>{'value': 'normal'},
       );
       repository = ConfigRepositoryImpl(client);
 
@@ -117,9 +111,7 @@ void main() {
 
     test('returns the value when present', () async {
       client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'value': 'helpful',
-        },
+        handler: (_, _) => const <String, dynamic>{'value': 'helpful'},
       );
       repository = ConfigRepositoryImpl(client);
 
@@ -157,9 +149,7 @@ void main() {
       await repository.getPrompt();
 
       expect(client.calls.single.method, 'config.get');
-      expect(client.calls.single.params, <String, dynamic>{
-        'key': 'prompt',
-      });
+      expect(client.calls.single.params, <String, dynamic>{'key': 'prompt'});
     });
 
     test('reads result["prompt"] not result["value"]', () async {
@@ -260,9 +250,7 @@ void main() {
       await repository.getKey('model');
 
       expect(client.calls.single.method, 'config.get');
-      expect(client.calls.single.params, <String, dynamic>{
-        'key': 'model',
-      });
+      expect(client.calls.single.params, <String, dynamic>{'key': 'model'});
     });
 
     test('includes session_id when provided', () async {
@@ -315,17 +303,19 @@ void main() {
       });
     });
 
-    test('includes confirm_expensive_model when confirmExpensive is true',
-        () async {
-      await repository.setKey('model', 'opus', confirmExpensive: true);
+    test(
+      'includes confirm_expensive_model when confirmExpensive is true',
+      () async {
+        await repository.setKey('model', 'opus', confirmExpensive: true);
 
-      expect(client.calls.single.method, 'config.set');
-      expect(client.calls.single.params, <String, dynamic>{
-        'key': 'model',
-        'value': 'opus',
-        'confirm_expensive_model': true,
-      });
-    });
+        expect(client.calls.single.method, 'config.set');
+        expect(client.calls.single.params, <String, dynamic>{
+          'key': 'model',
+          'value': 'opus',
+          'confirm_expensive_model': true,
+        });
+      },
+    );
 
     test('maps ConfigSetApplied to ConfigKeyApplied with warning', () async {
       client = FakeGatewayRpcClient(
@@ -344,12 +334,9 @@ void main() {
       expect(applied.warning, 'API key may need updating');
     });
 
-    test('maps ConfigSetApplied to ConfigKeyApplied without warning',
-        () async {
+    test('maps ConfigSetApplied to ConfigKeyApplied without warning', () async {
       client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'value': 'sonnet',
-        },
+        handler: (_, _) => const <String, dynamic>{'value': 'sonnet'},
       );
       repository = ConfigRepositoryImpl(client);
 
@@ -379,9 +366,7 @@ void main() {
 
     test('re-sends with confirmExpensive after confirmation', () async {
       client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'value': 'opus',
-        },
+        handler: (_, _) => const <String, dynamic>{'value': 'opus'},
       );
       repository = ConfigRepositoryImpl(client);
 

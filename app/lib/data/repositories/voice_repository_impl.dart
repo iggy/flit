@@ -15,9 +15,7 @@ final class VoiceRepositoryImpl implements VoiceRepository {
 
   @override
   Future<VoiceToggleResult> toggle(String action) async {
-    final params = <String, dynamic>{
-      'action': action,
-    };
+    final params = <String, dynamic>{'action': action};
     final result = await _client.request('voice.toggle', params);
     final dto = VoiceToggleResultDto.fromJson(result);
     return dto.toDomain();
@@ -36,9 +34,7 @@ final class VoiceRepositoryImpl implements VoiceRepository {
 
   @override
   Future<VoiceTtsResult> tts(String text) async {
-    final params = <String, dynamic>{
-      'text': text,
-    };
+    final params = <String, dynamic>{'text': text};
     final result = await _client.request('voice.tts', params);
     final dto = VoiceTtsResultDto.fromJson(result);
     return dto.toDomain();

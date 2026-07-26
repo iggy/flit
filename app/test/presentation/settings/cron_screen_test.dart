@@ -9,7 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../application/cron/cron_providers_test.dart' show FakeCronRepository;
+import '../../application/cron/cron_providers_test.dart'
+    show FakeCronRepository;
 
 Widget _wrap(FakeCronRepository repository) {
   return ProviderScope(
@@ -45,11 +46,10 @@ const _job2 = CronJob(
 );
 
 void main() {
-  testWidgets('renders jobs with schedule, next run, and last status',
-      (tester) async {
-    final repository = FakeCronRepository(
-      jobs: const <CronJob>[_job1, _job2],
-    );
+  testWidgets('renders jobs with schedule, next run, and last status', (
+    tester,
+  ) async {
+    final repository = FakeCronRepository(jobs: const <CronJob>[_job1, _job2]);
     await tester.pumpWidget(_wrap(repository));
     await tester.pumpAndSettle();
 
@@ -63,9 +63,7 @@ void main() {
   });
 
   testWidgets('shows paused chip for paused jobs', (tester) async {
-    final repository = FakeCronRepository(
-      jobs: const <CronJob>[_job1, _job2],
-    );
+    final repository = FakeCronRepository(jobs: const <CronJob>[_job1, _job2]);
     await tester.pumpWidget(_wrap(repository));
     await tester.pumpAndSettle();
 
@@ -94,11 +92,10 @@ void main() {
     );
   });
 
-  testWidgets('tapping delete opens confirm dialog and calls remove',
-      (tester) async {
-    final repository = FakeCronRepository(
-      jobs: const <CronJob>[_job1],
-    );
+  testWidgets('tapping delete opens confirm dialog and calls remove', (
+    tester,
+  ) async {
+    final repository = FakeCronRepository(jobs: const <CronJob>[_job1]);
     await tester.pumpWidget(_wrap(repository));
     await tester.pumpAndSettle();
 
@@ -126,9 +123,7 @@ void main() {
 
   testWidgets('pause action calls the controller', (tester) async {
     // Start with a non-paused job.
-    final repository = FakeCronRepository(
-      jobs: const <CronJob>[_job1],
-    );
+    final repository = FakeCronRepository(jobs: const <CronJob>[_job1]);
     await tester.pumpWidget(_wrap(repository));
     await tester.pumpAndSettle();
 
@@ -148,9 +143,7 @@ void main() {
 
   testWidgets('resume action calls the controller', (tester) async {
     // Start with a paused job.
-    final repository = FakeCronRepository(
-      jobs: const <CronJob>[_job2],
-    );
+    final repository = FakeCronRepository(jobs: const <CronJob>[_job2]);
     await tester.pumpWidget(_wrap(repository));
     await tester.pumpAndSettle();
 

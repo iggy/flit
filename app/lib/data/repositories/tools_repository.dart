@@ -13,9 +13,7 @@ final class ToolsRepositoryImpl implements ToolsRepository {
 
   @override
   Future<List<Toolset>> listTools({String? sessionId}) async {
-    final params = <String, dynamic>{
-      'session_id': ?sessionId,
-    };
+    final params = <String, dynamic>{'session_id': ?sessionId};
     final result = await _client.request('tools.list', params);
     final dto = ToolsListResultDto.fromJson(result);
     return dto.toDomain();
@@ -23,9 +21,7 @@ final class ToolsRepositoryImpl implements ToolsRepository {
 
   @override
   Future<List<Toolset>> listToolsets({String? sessionId}) async {
-    final params = <String, dynamic>{
-      'session_id': ?sessionId,
-    };
+    final params = <String, dynamic>{'session_id': ?sessionId};
     final result = await _client.request('toolsets.list', params);
     final dto = ToolsListResultDto.fromJson(result);
     return dto.toDomain();
@@ -33,9 +29,7 @@ final class ToolsRepositoryImpl implements ToolsRepository {
 
   @override
   Future<ToolsShow> showTools({String? sessionId}) async {
-    final params = <String, dynamic>{
-      'session_id': ?sessionId,
-    };
+    final params = <String, dynamic>{'session_id': ?sessionId};
     final result = await _client.request('tools.show', params);
     final dto = ToolsShowResultDto.fromJson(result);
     return dto.toDomain();

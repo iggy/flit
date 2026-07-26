@@ -12,17 +12,13 @@ void main() {
   testWidgets('submits title (required) and optional fields', (tester) async {
     final repository = _FakeKanbanRepository();
     final container = ProviderContainer(
-      overrides: [
-        kanbanRepositoryProvider.overrideWithValue(repository),
-      ],
+      overrides: [kanbanRepositoryProvider.overrideWithValue(repository)],
     );
 
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(
-          home: Scaffold(body: KanbanNewTaskDialog()),
-        ),
+        child: const MaterialApp(home: Scaffold(body: KanbanNewTaskDialog())),
       ),
     );
 
@@ -48,9 +44,7 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(
-          home: Scaffold(body: KanbanNewTaskDialog()),
-        ),
+        child: const MaterialApp(home: Scaffold(body: KanbanNewTaskDialog())),
       ),
     );
 
@@ -72,9 +66,7 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(
-          home: Scaffold(body: KanbanNewTaskDialog()),
-        ),
+        child: const MaterialApp(home: Scaffold(body: KanbanNewTaskDialog())),
       ),
     );
 
@@ -125,8 +117,9 @@ final class _FakeKanbanRepository implements KanbanRepository {
   Future<KanbanBoard> board({String? board}) async => const KanbanBoard();
 
   @override
-  Future<KanbanTaskDetail> task(String id) async =>
-      KanbanTaskDetail(task: KanbanTask(id: id, title: 'Test'));
+  Future<KanbanTaskDetail> task(String id) async => KanbanTaskDetail(
+    task: KanbanTask(id: id, title: 'Test'),
+  );
 
   @override
   Future<void> updateTaskStatus(String id, String status) async {}
@@ -143,8 +136,7 @@ final class _FakeKanbanRepository implements KanbanRepository {
     String? blockReason,
     String? summary,
     String? board,
-  }) async =>
-      null;
+  }) async => null;
 
   @override
   Future<void> deleteTask(String id, {String? board}) async {}
@@ -158,8 +150,7 @@ final class _FakeKanbanRepository implements KanbanRepository {
     bool? archive,
     bool? reclaimFirst,
     String? board,
-  }) async =>
-      const KanbanBulkResult(results: <KanbanBulkItem>[]);
+  }) async => const KanbanBulkResult(results: <KanbanBulkItem>[]);
 
   @override
   Future<void> addComment(
@@ -174,16 +165,14 @@ final class _FakeKanbanRepository implements KanbanRepository {
     String id, {
     String? author,
     String? board,
-  }) async =>
-      const KanbanSpecifyResult(ok: true, taskId: '');
+  }) async => const KanbanSpecifyResult(ok: true, taskId: '');
 
   @override
   Future<KanbanDecomposeResult> decompose(
     String id, {
     String? author,
     String? board,
-  }) async =>
-      const KanbanDecomposeResult(ok: true, taskId: '', fanout: false);
+  }) async => const KanbanDecomposeResult(ok: true, taskId: '', fanout: false);
 
   @override
   Future<void> reassign(

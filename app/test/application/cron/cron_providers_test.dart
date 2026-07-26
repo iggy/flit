@@ -15,13 +15,36 @@ final class FakeCronRepository implements CronRepository {
   List<CronJob> jobs;
   Exception? error;
   int listCalls = 0;
-  final List<({String action, String? jobId, String? prompt, String? schedule, String? name})> calls =
-      <({String action, String? jobId, String? prompt, String? schedule, String? name})>[];
+  final List<
+    ({
+      String action,
+      String? jobId,
+      String? prompt,
+      String? schedule,
+      String? name,
+    })
+  >
+  calls =
+      <
+        ({
+          String action,
+          String? jobId,
+          String? prompt,
+          String? schedule,
+          String? name,
+        })
+      >[];
 
   @override
   Future<List<CronJob>> list() async {
     listCalls++;
-    calls.add((action: 'list', jobId: null, prompt: null, schedule: null, name: null));
+    calls.add((
+      action: 'list',
+      jobId: null,
+      prompt: null,
+      schedule: null,
+      name: null,
+    ));
     final failure = error;
     if (failure != null) {
       throw failure;
@@ -147,50 +170,51 @@ void main() {
   });
 
   group('CronActionController.add', () {
-    test('happy path: calls repository.add with params and invalidates list',
-        () async {
-      final repository = FakeCronRepository();
-      final container = ProviderContainer(
-        overrides: [cronRepositoryProvider.overrideWithValue(repository)],
-      );
-      addTearDown(container.dispose);
+    test(
+      'happy path: calls repository.add with params and invalidates list',
+      () async {
+        final repository = FakeCronRepository();
+        final container = ProviderContainer(
+          overrides: [cronRepositoryProvider.overrideWithValue(repository)],
+        );
+        addTearDown(container.dispose);
 
-      await container.read(cronActionControllerProvider.notifier).add(
-            prompt: 'Test prompt',
-            schedule: 'daily',
-            name: 'Test job',
-          );
+        await container
+            .read(cronActionControllerProvider.notifier)
+            .add(prompt: 'Test prompt', schedule: 'daily', name: 'Test job');
 
-      // add call happens, then list is invalidated/called.
-      final addCall = repository.calls.firstWhere((c) => c.action == 'add');
-      expect(addCall.action, 'add');
-      expect(addCall.prompt, 'Test prompt');
-      expect(addCall.schedule, 'daily');
-      expect(addCall.name, 'Test job');
+        // add call happens, then list is invalidated/called.
+        final addCall = repository.calls.firstWhere((c) => c.action == 'add');
+        expect(addCall.action, 'add');
+        expect(addCall.prompt, 'Test prompt');
+        expect(addCall.schedule, 'daily');
+        expect(addCall.name, 'Test job');
 
-      final state = container.read(cronActionControllerProvider);
-      expect(state.busy, false);
-      expect(state.error, null);
-    });
+        final state = container.read(cronActionControllerProvider);
+        expect(state.busy, false);
+        expect(state.error, null);
+      },
+    );
 
-    test('failure path: sets error on GatewayException (never throws)',
-        () async {
-      final repository = FakeCronRepository()
-        ..error = const GatewayRpcException(-1, 'Invalid schedule');
-      final container = ProviderContainer(
-        overrides: [cronRepositoryProvider.overrideWithValue(repository)],
-      );
-      addTearDown(container.dispose);
+    test(
+      'failure path: sets error on GatewayException (never throws)',
+      () async {
+        final repository = FakeCronRepository()
+          ..error = const GatewayRpcException(-1, 'Invalid schedule');
+        final container = ProviderContainer(
+          overrides: [cronRepositoryProvider.overrideWithValue(repository)],
+        );
+        addTearDown(container.dispose);
 
-      await container.read(cronActionControllerProvider.notifier).add(
-            prompt: 'Test',
-            schedule: 'invalid',
-          );
+        await container
+            .read(cronActionControllerProvider.notifier)
+            .add(prompt: 'Test', schedule: 'invalid');
 
-      final state = container.read(cronActionControllerProvider);
-      expect(state.busy, false);
-      expect(state.error, 'Invalid schedule');
-    });
+        final state = container.read(cronActionControllerProvider);
+        expect(state.busy, false);
+        expect(state.error, 'Invalid schedule');
+      },
+    );
 
     test('not-connected: sets error when repository is null', () async {
       final container = ProviderContainer(
@@ -198,10 +222,9 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      await container.read(cronActionControllerProvider.notifier).add(
-            prompt: 'Test',
-            schedule: 'daily',
-          );
+      await container
+          .read(cronActionControllerProvider.notifier)
+          .add(prompt: 'Test', schedule: 'daily');
 
       final state = container.read(cronActionControllerProvider);
       expect(state.busy, false);
@@ -217,10 +240,14 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      await container.read(cronActionControllerProvider.notifier).remove('job_123');
+      await container
+          .read(cronActionControllerProvider.notifier)
+          .remove('job_123');
 
       // remove call happens, then list is invalidated/called.
-      final removeCall = repository.calls.firstWhere((c) => c.action == 'remove');
+      final removeCall = repository.calls.firstWhere(
+        (c) => c.action == 'remove',
+      );
       expect(removeCall.action, 'remove');
       expect(removeCall.jobId, 'job_123');
 
@@ -229,21 +256,25 @@ void main() {
       expect(state.error, null);
     });
 
-    test('failure path: sets error on GatewayException (never throws)',
-        () async {
-      final repository = FakeCronRepository()
-        ..error = const GatewayRpcException(-1, 'Job not found');
-      final container = ProviderContainer(
-        overrides: [cronRepositoryProvider.overrideWithValue(repository)],
-      );
-      addTearDown(container.dispose);
+    test(
+      'failure path: sets error on GatewayException (never throws)',
+      () async {
+        final repository = FakeCronRepository()
+          ..error = const GatewayRpcException(-1, 'Job not found');
+        final container = ProviderContainer(
+          overrides: [cronRepositoryProvider.overrideWithValue(repository)],
+        );
+        addTearDown(container.dispose);
 
-      await container.read(cronActionControllerProvider.notifier).remove('job_missing');
+        await container
+            .read(cronActionControllerProvider.notifier)
+            .remove('job_missing');
 
-      final state = container.read(cronActionControllerProvider);
-      expect(state.busy, false);
-      expect(state.error, 'Job not found');
-    });
+        final state = container.read(cronActionControllerProvider);
+        expect(state.busy, false);
+        expect(state.error, 'Job not found');
+      },
+    );
   });
 
   group('CronActionController.pause', () {
@@ -254,7 +285,9 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      await container.read(cronActionControllerProvider.notifier).pause('job_123');
+      await container
+          .read(cronActionControllerProvider.notifier)
+          .pause('job_123');
 
       // pause call happens, then list is invalidated/called.
       final pauseCall = repository.calls.firstWhere((c) => c.action == 'pause');
@@ -266,21 +299,25 @@ void main() {
       expect(state.error, null);
     });
 
-    test('failure path: sets error on GatewayException (never throws)',
-        () async {
-      final repository = FakeCronRepository()
-        ..error = const GatewayRpcException(-1, 'Job not found');
-      final container = ProviderContainer(
-        overrides: [cronRepositoryProvider.overrideWithValue(repository)],
-      );
-      addTearDown(container.dispose);
+    test(
+      'failure path: sets error on GatewayException (never throws)',
+      () async {
+        final repository = FakeCronRepository()
+          ..error = const GatewayRpcException(-1, 'Job not found');
+        final container = ProviderContainer(
+          overrides: [cronRepositoryProvider.overrideWithValue(repository)],
+        );
+        addTearDown(container.dispose);
 
-      await container.read(cronActionControllerProvider.notifier).pause('job_missing');
+        await container
+            .read(cronActionControllerProvider.notifier)
+            .pause('job_missing');
 
-      final state = container.read(cronActionControllerProvider);
-      expect(state.busy, false);
-      expect(state.error, 'Job not found');
-    });
+        final state = container.read(cronActionControllerProvider);
+        expect(state.busy, false);
+        expect(state.error, 'Job not found');
+      },
+    );
   });
 
   group('CronActionController.resume', () {
@@ -291,10 +328,14 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      await container.read(cronActionControllerProvider.notifier).resume('job_123');
+      await container
+          .read(cronActionControllerProvider.notifier)
+          .resume('job_123');
 
       // resume call happens, then list is invalidated/called.
-      final resumeCall = repository.calls.firstWhere((c) => c.action == 'resume');
+      final resumeCall = repository.calls.firstWhere(
+        (c) => c.action == 'resume',
+      );
       expect(resumeCall.action, 'resume');
       expect(resumeCall.jobId, 'job_123');
 
@@ -303,21 +344,25 @@ void main() {
       expect(state.error, null);
     });
 
-    test('failure path: sets error on GatewayException (never throws)',
-        () async {
-      final repository = FakeCronRepository()
-        ..error = const GatewayRpcException(-1, 'Job not found');
-      final container = ProviderContainer(
-        overrides: [cronRepositoryProvider.overrideWithValue(repository)],
-      );
-      addTearDown(container.dispose);
+    test(
+      'failure path: sets error on GatewayException (never throws)',
+      () async {
+        final repository = FakeCronRepository()
+          ..error = const GatewayRpcException(-1, 'Job not found');
+        final container = ProviderContainer(
+          overrides: [cronRepositoryProvider.overrideWithValue(repository)],
+        );
+        addTearDown(container.dispose);
 
-      await container.read(cronActionControllerProvider.notifier).resume('job_missing');
+        await container
+            .read(cronActionControllerProvider.notifier)
+            .resume('job_missing');
 
-      final state = container.read(cronActionControllerProvider);
-      expect(state.busy, false);
-      expect(state.error, 'Job not found');
-    });
+        final state = container.read(cronActionControllerProvider);
+        expect(state.busy, false);
+        expect(state.error, 'Job not found');
+      },
+    );
   });
 
   group('CronActionController.clearError', () {
@@ -330,7 +375,9 @@ void main() {
       addTearDown(container.dispose);
 
       // Trigger an error.
-      await container.read(cronActionControllerProvider.notifier).remove('job_missing');
+      await container
+          .read(cronActionControllerProvider.notifier)
+          .remove('job_missing');
       expect(container.read(cronActionControllerProvider).error, 'Test error');
 
       // Clear the error.

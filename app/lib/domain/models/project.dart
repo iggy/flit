@@ -107,18 +107,18 @@ final class Project {
 
   @override
   int get hashCode => Object.hash(
-        id,
-        slug,
-        name,
-        description,
-        icon,
-        color,
-        boardSlug,
-        primaryPath,
-        archived,
-        createdAt,
-        Object.hashAll(folders),
-      );
+    id,
+    slug,
+    name,
+    description,
+    icon,
+    color,
+    boardSlug,
+    primaryPath,
+    archived,
+    createdAt,
+    Object.hashAll(folders),
+  );
 
   @override
   String toString() {

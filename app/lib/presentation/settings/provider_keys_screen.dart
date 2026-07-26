@@ -21,15 +21,12 @@ class ProviderKeysScreen extends ConsumerWidget {
     final keyState = ref.watch(providerKeyControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Provider Keys'),
-      ),
+      appBar: AppBar(title: const Text('Provider Keys')),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           if (keyState.busy) const LinearProgressIndicator(),
-          if (keyState.error != null)
-            _ErrorBanner(message: keyState.error!),
+          if (keyState.error != null) _ErrorBanner(message: keyState.error!),
           Expanded(
             child: switch (optionsAsync) {
               AsyncData(:final value) => _buildProviderList(
@@ -78,7 +75,8 @@ class ProviderKeysScreen extends ConsumerWidget {
   }) {
     final theme = Theme.of(context);
     final authenticated = provider.authenticated;
-    final needsKey = !authenticated &&
+    final needsKey =
+        !authenticated &&
         (provider.authType == 'api_key' ||
             (provider.authType == null && provider.keyEnv != null));
 
@@ -86,10 +84,7 @@ class ProviderKeysScreen extends ConsumerWidget {
       title: Row(
         children: <Widget>[
           Expanded(
-            child: Text(
-              provider.name,
-              style: theme.textTheme.titleMedium,
-            ),
+            child: Text(provider.name, style: theme.textTheme.titleMedium),
           ),
           const SizedBox(width: 8),
           if (authenticated)
@@ -107,7 +102,9 @@ class ProviderKeysScreen extends ConsumerWidget {
             ),
         ],
       ),
-      subtitle: provider.keyEnv != null ? Text('Key: ${provider.keyEnv}') : null,
+      subtitle: provider.keyEnv != null
+          ? Text('Key: ${provider.keyEnv}')
+          : null,
       trailing: authenticated
           ? TextButton.icon(
               icon: const Icon(Icons.link_off, size: 16),
@@ -119,16 +116,16 @@ class ProviderKeysScreen extends ConsumerWidget {
                     ),
             )
           : (needsKey
-              ? TextButton.icon(
-                  icon: const Icon(Icons.key, size: 16),
-                  label: const Text('Add key'),
-                  onPressed: busy
-                      ? null
-                      : () => unawaited(
-                          _showAddKeyDialog(context, ref, provider),
-                        ),
-                )
-              : null),
+                ? TextButton.icon(
+                    icon: const Icon(Icons.key, size: 16),
+                    label: const Text('Add key'),
+                    onPressed: busy
+                        ? null
+                        : () => unawaited(
+                            _showAddKeyDialog(context, ref, provider),
+                          ),
+                  )
+                : null),
     );
   }
 

@@ -14,9 +14,7 @@ class CronScreen extends ConsumerWidget {
     final actionState = ref.watch(cronActionControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Scheduled tasks'),
-      ),
+      appBar: AppBar(title: const Text('Scheduled tasks')),
       body: jobsAsync.when(
         data: (jobs) {
           return Column(
@@ -49,11 +47,7 @@ class CronScreen extends ConsumerWidget {
                   ),
                 ),
               if (jobs.isEmpty)
-                const Expanded(
-                  child: Center(
-                    child: Text('No scheduled tasks'),
-                  ),
-                )
+                const Expanded(child: Center(child: Text('No scheduled tasks')))
               else
                 Expanded(
                   child: ListView.builder(
@@ -97,25 +91,31 @@ class CronScreen extends ConsumerWidget {
                                         )
                                         .resume(job.id);
                                   case 'delete':
-                                    _confirmDelete(context, ref, job.id, job.name);
+                                    _confirmDelete(
+                                      context,
+                                      ref,
+                                      job.id,
+                                      job.name,
+                                    );
                                 }
                               },
-                              itemBuilder: (context) => <PopupMenuEntry<String>>[
-                                if (!job.isPaused)
-                                  const PopupMenuItem<String>(
-                                    value: 'pause',
-                                    child: Text('Pause'),
-                                  ),
-                                if (job.isPaused)
-                                  const PopupMenuItem<String>(
-                                    value: 'resume',
-                                    child: Text('Resume'),
-                                  ),
-                                const PopupMenuItem<String>(
-                                  value: 'delete',
-                                  child: Text('Delete'),
-                                ),
-                              ],
+                              itemBuilder: (context) =>
+                                  <PopupMenuEntry<String>>[
+                                    if (!job.isPaused)
+                                      const PopupMenuItem<String>(
+                                        value: 'pause',
+                                        child: Text('Pause'),
+                                      ),
+                                    if (job.isPaused)
+                                      const PopupMenuItem<String>(
+                                        value: 'resume',
+                                        child: Text('Resume'),
+                                      ),
+                                    const PopupMenuItem<String>(
+                                      value: 'delete',
+                                      child: Text('Delete'),
+                                    ),
+                                  ],
                             ),
                           ],
                         ),
@@ -141,10 +141,7 @@ class CronScreen extends ConsumerWidget {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 8.0),
-                Text(
-                  error.toString(),
-                  textAlign: TextAlign.center,
-                ),
+                Text(error.toString(), textAlign: TextAlign.center),
               ],
             ),
           ),
@@ -214,7 +211,9 @@ class CronScreen extends ConsumerWidget {
               if (prompt.isEmpty || schedule.isEmpty) {
                 return;
               }
-              ref.read(cronActionControllerProvider.notifier).add(
+              ref
+                  .read(cronActionControllerProvider.notifier)
+                  .add(
                     prompt: prompt,
                     schedule: schedule,
                     name: name.isEmpty ? null : name,

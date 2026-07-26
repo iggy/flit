@@ -25,45 +25,45 @@ void main() {
       dio.httpClientAdapter = adapter;
     });
 
-    test('login completes the full PKCE flow and returns the session', () async {
-      const verifier = 'test-verifier';
-      const state = 'test-state';
-      const code = 'auth-code-123';
+    test(
+      'login completes the full PKCE flow and returns the session',
+      () async {
+        const verifier = 'test-verifier';
+        const state = 'test-state';
+        const code = 'auth-code-123';
 
-      adapter.mockPost(
-        '/auth/native/token',
-        <String, dynamic>{
+        adapter.mockPost('/auth/native/token', <String, dynamic>{
           'access_token': 'at-token',
           'refresh_token': 'rt-token',
           'token_type': 'Bearer',
           'expires_at': 1700000000,
           'provider': 'nous',
           'user_id': 'u123',
-        },
-      );
+        });
 
-      final client = OAuthClient(
-        config: config,
-        dio: dio,
-        launchUrl: (_) async {},
-        loopbackServerFactory: () =>
-            _fakeLoopbackServer(code: code, state: state),
-        codeVerifierGenerator: () => verifier,
-        stateGenerator: () => state,
-      );
+        final client = OAuthClient(
+          config: config,
+          dio: dio,
+          launchUrl: (_) async {},
+          loopbackServerFactory: () =>
+              _fakeLoopbackServer(code: code, state: state),
+          codeVerifierGenerator: () => verifier,
+          stateGenerator: () => state,
+        );
 
-      final session = await client.login(provider: 'nous');
+        final session = await client.login(provider: 'nous');
 
-      expect(session.accessToken, 'at-token');
-      expect(session.refreshToken, 'rt-token');
-      expect(session.expiresAt, 1700000000);
-      expect(session.provider, 'nous');
-      expect(adapter.lastRequest, isNotNull);
-      expect(adapter.lastRequest!.path, '/auth/native/token');
-      final body = adapter.lastRequest!.data as Map<String, dynamic>;
-      expect(body['code'], code);
-      expect(body['code_verifier'], verifier);
-    });
+        expect(session.accessToken, 'at-token');
+        expect(session.refreshToken, 'rt-token');
+        expect(session.expiresAt, 1700000000);
+        expect(session.provider, 'nous');
+        expect(adapter.lastRequest, isNotNull);
+        expect(adapter.lastRequest!.path, '/auth/native/token');
+        final body = adapter.lastRequest!.data as Map<String, dynamic>;
+        expect(body['code'], code);
+        expect(body['code_verifier'], verifier);
+      },
+    );
 
     test('login throws GatewayAuthException on state mismatch', () async {
       final client = OAuthClient(
@@ -78,11 +78,13 @@ void main() {
 
       expect(
         () => client.login(provider: 'nous'),
-        throwsA(isA<GatewayAuthException>().having(
-          (e) => e.message,
-          'message',
-          contains('state mismatch'),
-        )),
+        throwsA(
+          isA<GatewayAuthException>().having(
+            (e) => e.message,
+            'message',
+            contains('state mismatch'),
+          ),
+        ),
       );
     });
 
@@ -99,49 +101,53 @@ void main() {
 
       expect(
         () => client.login(provider: 'nous'),
-        throwsA(isA<GatewayAuthException>().having(
-          (e) => e.message,
-          'message',
-          contains('access_denied'),
-        )),
+        throwsA(
+          isA<GatewayAuthException>().having(
+            (e) => e.message,
+            'message',
+            contains('access_denied'),
+          ),
+        ),
       );
     });
 
-    test('login throws GatewayAuthException when code exchange returns 400', () async {
-      adapter.mockPost('/auth/native/token', null, statusCode: 400);
+    test(
+      'login throws GatewayAuthException when code exchange returns 400',
+      () async {
+        adapter.mockPost('/auth/native/token', null, statusCode: 400);
 
-      final client = OAuthClient(
-        config: config,
-        dio: dio,
-        launchUrl: (_) async {},
-        loopbackServerFactory: () =>
-            _fakeLoopbackServer(code: 'code', state: 'state'),
-        codeVerifierGenerator: () => 'verifier',
-        stateGenerator: () => 'state',
-      );
+        final client = OAuthClient(
+          config: config,
+          dio: dio,
+          launchUrl: (_) async {},
+          loopbackServerFactory: () =>
+              _fakeLoopbackServer(code: 'code', state: 'state'),
+          codeVerifierGenerator: () => 'verifier',
+          stateGenerator: () => 'state',
+        );
 
-      expect(
-        () => client.login(provider: 'nous'),
-        throwsA(isA<GatewayAuthException>().having(
-          (e) => e.message,
-          'message',
-          contains('authorization code is invalid'),
-        )),
-      );
-    });
+        expect(
+          () => client.login(provider: 'nous'),
+          throwsA(
+            isA<GatewayAuthException>().having(
+              (e) => e.message,
+              'message',
+              contains('authorization code is invalid'),
+            ),
+          ),
+        );
+      },
+    );
 
     test('refresh returns a rotated session', () async {
-      adapter.mockPost(
-        '/auth/native/refresh',
-        <String, dynamic>{
-          'access_token': 'new-at',
-          'refresh_token': 'new-rt',
-          'token_type': 'Bearer',
-          'expires_at': 1700001000,
-          'provider': 'nous',
-          'user_id': 'u123',
-        },
-      );
+      adapter.mockPost('/auth/native/refresh', <String, dynamic>{
+        'access_token': 'new-at',
+        'refresh_token': 'new-rt',
+        'token_type': 'Bearer',
+        'expires_at': 1700001000,
+        'provider': 'nous',
+        'user_id': 'u123',
+      });
 
       final client = OAuthClient(
         config: config,
@@ -186,19 +192,21 @@ void main() {
 
       expect(
         () => client.refresh(session: session),
-        throwsA(isA<GatewayAuthException>().having(
-          (e) => e.message,
-          'message',
-          contains('refresh token is invalid'),
-        )),
+        throwsA(
+          isA<GatewayAuthException>().having(
+            (e) => e.message,
+            'message',
+            contains('refresh token is invalid'),
+          ),
+        ),
       );
     });
 
     test('mintWsTicket returns the ticket with Bearer auth', () async {
-      adapter.mockPost(
-        '/api/auth/ws-ticket',
-        <String, dynamic>{'ticket': 'ticket-123', 'ttl_seconds': 30},
-      );
+      adapter.mockPost('/api/auth/ws-ticket', <String, dynamic>{
+        'ticket': 'ticket-123',
+        'ttl_seconds': 30,
+      });
 
       final client = OAuthClient(
         config: config,
@@ -210,26 +218,26 @@ void main() {
 
       expect(ticket, 'ticket-123');
       expect(adapter.lastRequest, isNotNull);
-      expect(
-        adapter.lastRequest!.headers['authorization'],
-        'Bearer at-token',
-      );
+      expect(adapter.lastRequest!.headers['authorization'], 'Bearer at-token');
     });
 
-    test('mintWsTicket throws GatewayParseException on missing ticket', () async {
-      adapter.mockPost('/api/auth/ws-ticket', <String, dynamic>{});
+    test(
+      'mintWsTicket throws GatewayParseException on missing ticket',
+      () async {
+        adapter.mockPost('/api/auth/ws-ticket', <String, dynamic>{});
 
-      final client = OAuthClient(
-        config: config,
-        dio: dio,
-        launchUrl: (_) async {},
-      );
+        final client = OAuthClient(
+          config: config,
+          dio: dio,
+          launchUrl: (_) async {},
+        );
 
-      expect(
-        () => client.mintWsTicket(accessToken: 'at-token'),
-        throwsA(isA<GatewayParseException>()),
-      );
-    });
+        expect(
+          () => client.mintWsTicket(accessToken: 'at-token'),
+          throwsA(isA<GatewayParseException>()),
+        );
+      },
+    );
   });
 }
 
@@ -243,18 +251,20 @@ Future<HttpServer> _fakeLoopbackServer({
   final server = FakeHttpServer(controller);
 
   // Immediately push a fake request with the redirect params
-  unawaited(Future<void>.microtask(() {
-    final params = <String, String>{'state': state};
-    if (code != null) {
-      params['code'] = code;
-    }
-    if (error != null) {
-      params['error'] = error;
-    }
-    final uri = Uri(path: '/', queryParameters: params);
-    final request = FakeHttpRequest(uri);
-    controller.add(request);
-  }));
+  unawaited(
+    Future<void>.microtask(() {
+      final params = <String, String>{'state': state};
+      if (code != null) {
+        params['code'] = code;
+      }
+      if (error != null) {
+        params['error'] = error;
+      }
+      final uri = Uri(path: '/', queryParameters: params);
+      final request = FakeHttpRequest(uri);
+      controller.add(request);
+    }),
+  );
 
   return server;
 }

@@ -13,9 +13,7 @@ final class ProcessRepositoryImpl implements ProcessRepository {
 
   @override
   Future<List<BackgroundProcess>> list({String? sessionId}) async {
-    final params = <String, dynamic>{
-      'session_id': ?sessionId,
-    };
+    final params = <String, dynamic>{'session_id': ?sessionId};
     final result = await _client.request('process.list', params);
     final dto = ProcessListResultDto.fromJson(result);
     return dto.toDomain();
@@ -41,9 +39,7 @@ final class ProcessRepositoryImpl implements ProcessRepository {
 
   @override
   Future<ShellExecResult> exec(String command) async {
-    final params = <String, dynamic>{
-      'command': command,
-    };
+    final params = <String, dynamic>{'command': command};
     final result = await _client.request('shell.exec', params);
     final dto = ShellExecResultDto.fromJson(result);
     return dto.toDomain();

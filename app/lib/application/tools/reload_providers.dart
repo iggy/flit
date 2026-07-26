@@ -61,9 +61,7 @@ final class ReloadState {
 
 /// Controller for reload operations: MCP servers and environment variables.
 final reloadControllerProvider =
-    NotifierProvider<ReloadController, ReloadState>(
-      ReloadController.new,
-    );
+    NotifierProvider<ReloadController, ReloadState>(ReloadController.new);
 
 class ReloadController extends Notifier<ReloadState> {
   @override
@@ -107,8 +105,10 @@ class ReloadController extends Notifier<ReloadState> {
     state = const ReloadState(busy: true);
     try {
       final sessionId = ref.read(activeSessionProvider).liveId;
-      final outcome =
-          await repository.reloadMcp(sessionId: sessionId, confirm: true);
+      final outcome = await repository.reloadMcp(
+        sessionId: sessionId,
+        confirm: true,
+      );
       switch (outcome) {
         case ReloadMcpConfirmRequired(:final message):
           // Defensive: shouldn't happen after confirm=true, but keep the gate.
@@ -141,7 +141,9 @@ class ReloadController extends Notifier<ReloadState> {
     state = const ReloadState(busy: true);
     try {
       final count = await repository.reloadEnv();
-      state = ReloadState(message: 'Reloaded $count environment variable${count == 1 ? '' : 's'}');
+      state = ReloadState(
+        message: 'Reloaded $count environment variable${count == 1 ? '' : 's'}',
+      );
     } on GatewayException catch (error) {
       state = ReloadState(error: error.message);
     } on Object catch (error) {

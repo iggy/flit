@@ -198,7 +198,9 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
                   return;
                 }
                 final folder = folderController.text.trim();
-                ref.read(projectsControllerProvider.notifier).create(
+                ref
+                    .read(projectsControllerProvider.notifier)
+                    .create(
                       name: name,
                       folders: folder.isEmpty ? null : <String>[folder],
                     );
@@ -222,9 +224,7 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
           title: const Text('Edit Project'),
           content: TextField(
             controller: nameController,
-            decoration: const InputDecoration(
-              labelText: 'Project name',
-            ),
+            decoration: const InputDecoration(labelText: 'Project name'),
             autofocus: true,
           ),
           actions: <Widget>[
@@ -286,10 +286,7 @@ class _ProjectsScreenState extends ConsumerState<ProjectsScreen> {
 }
 
 class _ErrorBanner extends StatelessWidget {
-  const _ErrorBanner({
-    required this.message,
-    required this.onDismiss,
-  });
+  const _ErrorBanner({required this.message, required this.onDismiss});
 
   final String message;
   final VoidCallback onDismiss;

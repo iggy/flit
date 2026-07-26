@@ -64,9 +64,7 @@ class ProcessesScreen extends ConsumerWidget {
                 ),
               if (processes.isEmpty)
                 const Expanded(
-                  child: Center(
-                    child: Text('No background processes'),
-                  ),
+                  child: Center(child: Text('No background processes')),
                 )
               else
                 Expanded(
@@ -80,8 +78,9 @@ class ProcessesScreen extends ConsumerWidget {
                             ? null
                             : () {
                                 ref
-                                    .read(processActionControllerProvider
-                                        .notifier,)
+                                    .read(
+                                      processActionControllerProvider.notifier,
+                                    )
                                     .kill(process.processId);
                               },
                       );
@@ -115,10 +114,7 @@ class ProcessesScreen extends ConsumerWidget {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 8.0),
-                Text(
-                  error.toString(),
-                  textAlign: TextAlign.center,
-                ),
+                Text(error.toString(), textAlign: TextAlign.center),
               ],
             ),
           ),
@@ -129,10 +125,7 @@ class ProcessesScreen extends ConsumerWidget {
 }
 
 class _ProcessTile extends StatefulWidget {
-  const _ProcessTile({
-    required this.process,
-    this.onKill,
-  });
+  const _ProcessTile({required this.process, this.onKill});
 
   final BackgroundProcess process;
   final VoidCallback? onKill;
@@ -244,9 +237,7 @@ class _StatusChip extends StatelessWidget {
       ),
       child: Text(
         status,
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: foregroundColor,
-        ),
+        style: theme.textTheme.labelSmall?.copyWith(color: foregroundColor),
       ),
     );
   }
@@ -285,10 +276,7 @@ class _ShellExecConsoleState extends State<_ShellExecConsole> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Text(
-            'Shell Execute',
-            style: theme.textTheme.titleSmall,
-          ),
+          Text('Shell Execute', style: theme.textTheme.titleSmall),
           const SizedBox(height: 8.0),
           Row(
             children: <Widget>[
@@ -343,10 +331,7 @@ class _ShellExecConsoleState extends State<_ShellExecConsole> {
                   ),
                   if (widget.execResult!.stdout.isNotEmpty) ...<Widget>[
                     const SizedBox(height: 8.0),
-                    Text(
-                      'stdout:',
-                      style: theme.textTheme.labelSmall,
-                    ),
+                    Text('stdout:', style: theme.textTheme.labelSmall),
                     const SizedBox(height: 4.0),
                     SelectableText(
                       widget.execResult!.stdout,

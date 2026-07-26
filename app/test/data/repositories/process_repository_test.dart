@@ -58,10 +58,9 @@ void main() {
       final processes = await repository.list(sessionId: 'sess_abc');
 
       expect(client.calls.single.method, 'process.list');
-      expect(
-        client.calls.single.params,
-        <String, dynamic>{'session_id': 'sess_abc'},
-      );
+      expect(client.calls.single.params, <String, dynamic>{
+        'session_id': 'sess_abc',
+      });
       expect(processes.length, 1);
       expect(processes[0].processId, 'proc_123');
       expect(processes[0].command, 'npm run dev');
@@ -144,9 +143,7 @@ void main() {
 
     test('omits session_id when null', () async {
       final client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'status': 'not_found',
-        },
+        handler: (_, _) => const <String, dynamic>{'status': 'not_found'},
       );
       final repository = ProcessRepositoryImpl(client);
 
@@ -190,9 +187,7 @@ void main() {
 
     test('parses polymorphic status: not_found', () async {
       final client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'status': 'not_found',
-        },
+        handler: (_, _) => const <String, dynamic>{'status': 'not_found'},
       );
       final repository = ProcessRepositoryImpl(client);
 
@@ -230,9 +225,7 @@ void main() {
   group('ProcessRepositoryImpl.stopAll (wire process.stop)', () {
     test('sends process.stop with no params', () async {
       final client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'killed': 3,
-        },
+        handler: (_, _) => const <String, dynamic>{'killed': 3},
       );
       final repository = ProcessRepositoryImpl(client);
 

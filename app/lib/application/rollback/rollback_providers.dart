@@ -169,9 +169,6 @@ class RollbackController extends Notifier<RollbackControllerState> {
   }
 
   void clearResult() {
-    state = RollbackControllerState(
-      busy: state.busy,
-      error: state.error,
-    );
+    state = RollbackControllerState(busy: state.busy, error: state.error);
   }
 }

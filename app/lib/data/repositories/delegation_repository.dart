@@ -23,15 +23,18 @@ final class DelegationRepositoryImpl implements DelegationRepository {
 
   @override
   Future<bool> setPaused(bool paused) async {
-    final result = await _client.request('delegation.pause', {'paused': paused});
+    final result = await _client.request('delegation.pause', {
+      'paused': paused,
+    });
     final dto = DelegationPauseResultDto.fromJson(result);
     return dto.paused ?? paused;
   }
 
   @override
   Future<bool> interrupt(String subagentId) async {
-    final result =
-        await _client.request('subagent.interrupt', {'subagent_id': subagentId});
+    final result = await _client.request('subagent.interrupt', {
+      'subagent_id': subagentId,
+    });
     final dto = SubagentInterruptResultDto.fromJson(result);
     return dto.found ?? false;
   }

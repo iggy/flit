@@ -13,9 +13,7 @@ class BackgroundScreen extends ConsumerWidget {
     final state = ref.watch(backgroundTasksProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Background tasks'),
-      ),
+      appBar: AppBar(title: const Text('Background tasks')),
       body: Column(
         children: <Widget>[
           _BackgroundComposer(
@@ -51,9 +49,7 @@ class BackgroundScreen extends ConsumerWidget {
             ),
           if (state.tasks.isEmpty)
             const Expanded(
-              child: Center(
-                child: Text('No background tasks yet.'),
-              ),
+              child: Center(child: Text('No background tasks yet.')),
             )
           else
             Expanded(
@@ -61,10 +57,10 @@ class BackgroundScreen extends ConsumerWidget {
                 itemCount: state.tasks.length,
                 itemBuilder: (context, index) {
                   final task = state.tasks[index];
-                  final title = task.prompt.isNotEmpty ? task.prompt : task.taskId;
-                  final subtitle = task.done
-                      ? (task.result ?? '')
-                      : 'Running…';
+                  final title = task.prompt.isNotEmpty
+                      ? task.prompt
+                      : task.taskId;
+                  final subtitle = task.done ? (task.result ?? '') : 'Running…';
                   return ListTile(
                     title: Text(
                       title,
@@ -81,9 +77,7 @@ class BackgroundScreen extends ConsumerWidget {
                         : const SizedBox(
                             width: 20.0,
                             height: 20.0,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.0,
-                            ),
+                            child: CircularProgressIndicator(strokeWidth: 2.0),
                           ),
                   );
                 },
@@ -96,10 +90,7 @@ class BackgroundScreen extends ConsumerWidget {
 }
 
 class _BackgroundComposer extends StatefulWidget {
-  const _BackgroundComposer({
-    required this.busy,
-    required this.onSubmit,
-  });
+  const _BackgroundComposer({required this.busy, required this.onSubmit});
 
   final bool busy;
   final void Function(String text) onSubmit;

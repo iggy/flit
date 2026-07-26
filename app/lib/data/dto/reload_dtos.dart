@@ -6,11 +6,7 @@ part 'reload_dtos.g.dart';
 /// Wire DTO for `reload.mcp` result.
 @JsonSerializable()
 class ReloadMcpResultDto {
-  const ReloadMcpResultDto({
-    this.status,
-    this.message,
-    this.coalesced,
-  });
+  const ReloadMcpResultDto({this.status, this.message, this.coalesced});
 
   factory ReloadMcpResultDto.fromJson(Map<String, dynamic> json) =>
       _$ReloadMcpResultDtoFromJson(json);

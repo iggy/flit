@@ -70,10 +70,7 @@ abstract interface class ProjectsRepository {
 
   /// `projects.project_sessions` → project with session/lane grouping (opaque
   /// nested structure). Returns raw map; the screen may treat it as opaque.
-  Future<Map<String, dynamic>> projectSessions(
-    String id, {
-    int? sessionLimit,
-  });
+  Future<Map<String, dynamic>> projectSessions(String id, {int? sessionLimit});
 
   /// `projects.discover_repos` → scan for repositories. Returns repo list.
   Future<List<DiscoveredRepo>> discoverRepos();

@@ -56,20 +56,14 @@ class _AgentSettingsScreenState extends ConsumerState<AgentSettingsScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Agent Settings'),
-      ),
+      appBar: AppBar(title: const Text('Agent Settings')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: <Widget>[
           if (state.busy) const LinearProgressIndicator(),
-          if (state.error != null)
-            _ErrorBanner(message: state.error!),
+          if (state.error != null) _ErrorBanner(message: state.error!),
           const SizedBox(height: 8),
-          Text(
-            'Fast Mode',
-            style: theme.textTheme.titleMedium,
-          ),
+          Text('Fast Mode', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
           SwitchListTile(
             title: const Text('Enable fast mode'),
@@ -84,10 +78,7 @@ class _AgentSettingsScreenState extends ConsumerState<AgentSettingsScreen> {
                   ),
           ),
           const Divider(height: 32),
-          Text(
-            'Personality',
-            style: theme.textTheme.titleMedium,
-          ),
+          Text('Personality', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
           TextField(
             controller: _personalityController,
@@ -117,10 +108,7 @@ class _AgentSettingsScreenState extends ConsumerState<AgentSettingsScreen> {
             ),
           ),
           const Divider(height: 32),
-          Text(
-            'System Prompt',
-            style: theme.textTheme.titleMedium,
-          ),
+          Text('System Prompt', style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
           TextField(
             controller: _promptController,

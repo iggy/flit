@@ -38,10 +38,7 @@ final class RollbackRepositoryImpl implements RollbackRepository {
     String? filePath,
   }) async {
     // P6-06: `rollback.restore {session_id, hash, file_path?}`.
-    final params = <String, dynamic>{
-      'session_id': sessionId,
-      'hash': hash,
-    };
+    final params = <String, dynamic>{'session_id': sessionId, 'hash': hash};
     if (filePath != null) {
       params['file_path'] = filePath;
     }

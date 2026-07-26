@@ -47,14 +47,8 @@ final class SpawnTreeSnapshotEntry {
   }
 
   @override
-  int get hashCode => Object.hash(
-        path,
-        sessionId,
-        finishedAt,
-        startedAt,
-        label,
-        count,
-      );
+  int get hashCode =>
+      Object.hash(path, sessionId, finishedAt, startedAt, label, count);
 
   @override
   String toString() {
@@ -105,12 +99,12 @@ final class SpawnTreeSnapshot {
 
   @override
   int get hashCode => Object.hash(
-        sessionId,
-        startedAt,
-        finishedAt,
-        label,
-        Object.hashAll(subagents),
-      );
+    sessionId,
+    startedAt,
+    finishedAt,
+    label,
+    Object.hashAll(subagents),
+  );
 
   @override
   String toString() {

@@ -126,7 +126,11 @@ void main() {
         throwsA(
           isA<GatewayRpcException>()
               .having((e) => e.code, 'code', -1)
-              .having((e) => e.message, 'message', 'Database connection failed'),
+              .having(
+                (e) => e.message,
+                'message',
+                'Database connection failed',
+              ),
         ),
       );
     });
@@ -201,30 +205,32 @@ void main() {
   });
 
   group('CronRepositoryImpl.add (wire cron.manage action=add)', () {
-    test('sends cron.manage with action=add, prompt, schedule, and name',
-        () async {
-      final client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'success': true,
-          'job_id': 'job_new',
-        },
-      );
-      final repository = CronRepositoryImpl(client);
+    test(
+      'sends cron.manage with action=add, prompt, schedule, and name',
+      () async {
+        final client = FakeGatewayRpcClient(
+          handler: (_, _) => const <String, dynamic>{
+            'success': true,
+            'job_id': 'job_new',
+          },
+        );
+        final repository = CronRepositoryImpl(client);
 
-      await repository.add(
-        prompt: 'Daily summary',
-        schedule: 'every day at 5pm',
-        name: 'Summary job',
-      );
+        await repository.add(
+          prompt: 'Daily summary',
+          schedule: 'every day at 5pm',
+          name: 'Summary job',
+        );
 
-      expect(client.calls.single.method, 'cron.manage');
-      expect(client.calls.single.params, <String, dynamic>{
-        'action': 'add',
-        'prompt': 'Daily summary',
-        'schedule': 'every day at 5pm',
-        'name': 'Summary job',
-      });
-    });
+        expect(client.calls.single.method, 'cron.manage');
+        expect(client.calls.single.params, <String, dynamic>{
+          'action': 'add',
+          'prompt': 'Daily summary',
+          'schedule': 'every day at 5pm',
+          'name': 'Summary job',
+        });
+      },
+    );
 
     test('omits name when null', () async {
       final client = FakeGatewayRpcClient(
@@ -257,10 +263,7 @@ void main() {
       final repository = CronRepositoryImpl(client);
 
       expect(
-        () => repository.add(
-          prompt: 'Test',
-          schedule: 'invalid',
-        ),
+        () => repository.add(prompt: 'Test', schedule: 'invalid'),
         throwsA(
           isA<GatewayRpcException>()
               .having((e) => e.code, 'code', -1)
@@ -319,10 +322,7 @@ void main() {
       final client = FakeGatewayRpcClient(
         handler: (_, _) => const <String, dynamic>{
           'success': true,
-          'job': <String, dynamic>{
-            'job_id': 'job_123',
-            'state': 'paused',
-          },
+          'job': <String, dynamic>{'job_id': 'job_123', 'state': 'paused'},
         },
       );
       final repository = CronRepositoryImpl(client);
@@ -361,10 +361,7 @@ void main() {
       final client = FakeGatewayRpcClient(
         handler: (_, _) => const <String, dynamic>{
           'success': true,
-          'job': <String, dynamic>{
-            'job_id': 'job_123',
-            'state': 'scheduled',
-          },
+          'job': <String, dynamic>{'job_id': 'job_123', 'state': 'scheduled'},
         },
       );
       final repository = CronRepositoryImpl(client);

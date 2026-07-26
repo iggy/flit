@@ -117,19 +117,16 @@ void main() {
     container.dispose();
   });
 
-  test(
-    'probe detects an OAuth-only gateway and offers the provider',
-    () async {
-      final controller = container.read(connectControllerProvider.notifier);
-      await controller.probe(url: 'https://gw.example.com');
+  test('probe detects an OAuth-only gateway and offers the provider', () async {
+    final controller = container.read(connectControllerProvider.notifier);
+    await controller.probe(url: 'https://gw.example.com');
 
-      final state = container.read(connectControllerProvider);
-      expect(state.phase, ConnectPhase.probed);
-      expect(state.authMode, AuthMode.oauth);
-      expect(state.providers, <AuthProviderInfo>[_oauthProvider]);
-      expect(state.errorMessage, isNull);
-    },
-  );
+    final state = container.read(connectControllerProvider);
+    expect(state.phase, ConnectPhase.probed);
+    expect(state.authMode, AuthMode.oauth);
+    expect(state.providers, <AuthProviderInfo>[_oauthProvider]);
+    expect(state.errorMessage, isNull);
+  });
 
   test('connectOAuth logs in, stores the session, connects the WS', () async {
     final controller = container.read(connectControllerProvider.notifier);
@@ -175,7 +172,9 @@ void main() {
         ),
         oauthLoginProvider.overrideWithValue(
           ({required config, required provider}) =>
-              throw const GatewayAuthException('OAuth login failed: access_denied'),
+              throw const GatewayAuthException(
+                'OAuth login failed: access_denied',
+              ),
         ),
         rpcClientProvider.overrideWith(() => FakeRpcClientNotifier(rpcClient)),
       ],

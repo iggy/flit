@@ -61,8 +61,8 @@ final class StepUpVerification {
 /// Cleared when consumed or when a new step-up starts.
 final stepUpVerificationProvider =
     NotifierProvider<StepUpVerificationNotifier, StepUpVerification?>(
-  StepUpVerificationNotifier.new,
-);
+      StepUpVerificationNotifier.new,
+    );
 
 class StepUpVerificationNotifier extends Notifier<StepUpVerification?> {
   @override

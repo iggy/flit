@@ -21,8 +21,9 @@ Widget _wrap(FakePluginRepository repository) {
 }
 
 void main() {
-  testWidgets('renders plugins with version, description, and source',
-      (tester) async {
+  testWidgets('renders plugins with version, description, and source', (
+    tester,
+  ) async {
     final repository = FakePluginRepository(
       details: const <PluginDetail>[
         PluginDetail(
@@ -56,8 +57,9 @@ void main() {
     expect(find.byType(Switch), findsNWidgets(2));
   });
 
-  testWidgets("'Open board' shows only for a present AND enabled kanban",
-      (tester) async {
+  testWidgets("'Open board' shows only for a present AND enabled kanban", (
+    tester,
+  ) async {
     // Enabled kanban → affordance.
     var repository = FakePluginRepository(
       details: const <PluginDetail>[

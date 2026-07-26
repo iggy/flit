@@ -33,9 +33,10 @@ final class ProjectsRepositoryImpl implements ProjectsRepository {
 
   @override
   Future<String?> setActive(String? id) async {
-    final result = await _client.request('projects.set_active', <String, dynamic>{
-      'id': id,
-    });
+    final result = await _client.request(
+      'projects.set_active',
+      <String, dynamic>{'id': id},
+    );
     final dto = SetActiveResultDto.fromJson(result);
     return dto.activeId;
   }
@@ -110,12 +111,13 @@ final class ProjectsRepositoryImpl implements ProjectsRepository {
     String? label,
     bool isPrimary = false,
   }) async {
-    final result = await _client.request('projects.add_folder', <String, dynamic>{
-      'id': id,
-      'path': path,
-      if (label != null) 'label': label,
-      if (isPrimary) 'is_primary': isPrimary,
-    });
+    final result = await _client
+        .request('projects.add_folder', <String, dynamic>{
+          'id': id,
+          'path': path,
+          if (label != null) 'label': label,
+          if (isPrimary) 'is_primary': isPrimary,
+        });
     final dto = ProjectResultDto.fromJson(result);
     final project = dto.toDomain();
     if (project == null) {
@@ -126,10 +128,10 @@ final class ProjectsRepositoryImpl implements ProjectsRepository {
 
   @override
   Future<Project> removeFolder(String id, String path) async {
-    final result = await _client.request('projects.remove_folder', <String, dynamic>{
-      'id': id,
-      'path': path,
-    });
+    final result = await _client.request(
+      'projects.remove_folder',
+      <String, dynamic>{'id': id, 'path': path},
+    );
     final dto = ProjectResultDto.fromJson(result);
     final project = dto.toDomain();
     if (project == null) {
@@ -140,10 +142,10 @@ final class ProjectsRepositoryImpl implements ProjectsRepository {
 
   @override
   Future<Project> setPrimary(String id, String path) async {
-    final result = await _client.request('projects.set_primary', <String, dynamic>{
-      'id': id,
-      'path': path,
-    });
+    final result = await _client.request(
+      'projects.set_primary',
+      <String, dynamic>{'id': id, 'path': path},
+    );
     final dto = ProjectResultDto.fromJson(result);
     final project = dto.toDomain();
     if (project == null) {
@@ -176,10 +178,13 @@ final class ProjectsRepositoryImpl implements ProjectsRepository {
     String id, {
     int? sessionLimit,
   }) async {
-    final result = await _client.request('projects.project_sessions', <String, dynamic>{
-      'id': id,
-      if (sessionLimit != null) 'session_limit': sessionLimit,
-    });
+    final result = await _client.request(
+      'projects.project_sessions',
+      <String, dynamic>{
+        'id': id,
+        if (sessionLimit != null) 'session_limit': sessionLimit,
+      },
+    );
     return result;
   }
 

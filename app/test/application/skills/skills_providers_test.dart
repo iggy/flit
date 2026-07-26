@@ -137,10 +137,7 @@ void main() {
 
       await container.read(skillsReloadControllerProvider.notifier).reload();
 
-      expect(
-        container.read(skillsReloadControllerProvider).error,
-        isNotNull,
-      );
+      expect(container.read(skillsReloadControllerProvider).error, isNotNull);
     });
 
     test('guards against null repository', () async {

@@ -17,16 +17,14 @@ class McpScreen extends ConsumerWidget {
         _showConfirmDialog(context, ref, next.confirmMessage!);
       }
       if (next.message != null && previous?.message != next.message) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(next.message!)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(next.message!)));
       }
     });
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('MCP & Environment'),
-      ),
+      appBar: AppBar(title: const Text('MCP & Environment')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -52,9 +50,7 @@ class McpScreen extends ConsumerWidget {
                       color: Theme.of(context).colorScheme.onErrorContainer,
                     ),
                     onPressed: () {
-                      ref
-                          .read(reloadControllerProvider.notifier)
-                          .clearError();
+                      ref.read(reloadControllerProvider.notifier).clearError();
                     },
                   ),
                 ),
@@ -65,9 +61,7 @@ class McpScreen extends ConsumerWidget {
               style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8.0),
-            const Text(
-              'Reload MCP servers to pick up configuration changes.',
-            ),
+            const Text('Reload MCP servers to pick up configuration changes.'),
             const SizedBox(height: 16.0),
             ElevatedButton.icon(
               onPressed: reloadState.busy
@@ -90,9 +84,7 @@ class McpScreen extends ConsumerWidget {
               style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8.0),
-            const Text(
-              'Reload environment variables from the current shell.',
-            ),
+            const Text('Reload environment variables from the current shell.'),
             const SizedBox(height: 16.0),
             ElevatedButton.icon(
               onPressed: reloadState.busy
@@ -115,11 +107,7 @@ class McpScreen extends ConsumerWidget {
     );
   }
 
-  void _showConfirmDialog(
-    BuildContext context,
-    WidgetRef ref,
-    String message,
-  ) {
+  void _showConfirmDialog(BuildContext context, WidgetRef ref, String message) {
     showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
@@ -136,9 +124,7 @@ class McpScreen extends ConsumerWidget {
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              ref
-                  .read(reloadControllerProvider.notifier)
-                  .confirmReloadMcp();
+              ref.read(reloadControllerProvider.notifier).confirmReloadMcp();
             },
             child: const Text('Continue'),
           ),

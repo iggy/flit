@@ -20,8 +20,7 @@ final class DispatchExec extends CommandDispatchResult {
   final bool isPlugin;
 
   @override
-  String toString() =>
-      'DispatchExec(output: $output, isPlugin: $isPlugin)';
+  String toString() => 'DispatchExec(output: $output, isPlugin: $isPlugin)';
 }
 
 /// `{type: "alias", target}` — command is an alias for another command.

@@ -300,9 +300,7 @@ class SessionActions {
     }
     try {
       final BranchResult result = await repository.branch(liveId, name: name);
-      _ref
-          .read(activeSessionProvider.notifier)
-          .switchTo(liveId: result.liveId);
+      _ref.read(activeSessionProvider.notifier).switchTo(liveId: result.liveId);
       _ref.invalidate(sessionListProvider);
       _ref.invalidate(activeSessionListProvider);
       return null;
@@ -321,7 +319,10 @@ class SessionActions {
       return _notConnected;
     }
     try {
-      final CompressResult result = await repository.compress(liveId, focusTopic: focusTopic);
+      final CompressResult result = await repository.compress(
+        liveId,
+        focusTopic: focusTopic,
+      );
       if (result.lockHeld) {
         return result.message ?? 'Compression is already in progress.';
       }

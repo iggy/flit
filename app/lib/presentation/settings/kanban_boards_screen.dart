@@ -26,9 +26,7 @@ class KanbanBoardsScreen extends ConsumerWidget {
       body: boardsAsync.when(
         data: (boardList) {
           if (boardList == null || boardList.boards.isEmpty) {
-            return const Center(
-              child: Text('No boards available'),
-            );
+            return const Center(child: Text('No boards available'));
           }
           return Column(
             children: <Widget>[
@@ -101,7 +99,10 @@ class KanbanBoardsScreen extends ConsumerWidget {
                             Text(board.description),
                           Text('Total tasks: ${board.total}'),
                           if (board.archived)
-                            const Text('(Archived)', style: TextStyle(fontStyle: FontStyle.italic)),
+                            const Text(
+                              '(Archived)',
+                              style: TextStyle(fontStyle: FontStyle.italic),
+                            ),
                         ],
                       ),
                       trailing: actionState.busy
@@ -114,26 +115,33 @@ class KanbanBoardsScreen extends ConsumerWidget {
                               onSelected: (value) {
                                 if (value == 'switch') {
                                   ref
-                                      .read(kanbanFleetActionControllerProvider.notifier)
+                                      .read(
+                                        kanbanFleetActionControllerProvider
+                                            .notifier,
+                                      )
                                       .switchBoard(board.slug);
                                 } else if (value == 'archive') {
                                   ref
-                                      .read(kanbanFleetActionControllerProvider.notifier)
+                                      .read(
+                                        kanbanFleetActionControllerProvider
+                                            .notifier,
+                                      )
                                       .deleteBoard(board.slug);
                                 }
                               },
-                              itemBuilder: (context) => <PopupMenuEntry<String>>[
-                                if (!board.isCurrent)
-                                  const PopupMenuItem<String>(
-                                    value: 'switch',
-                                    child: Text('Switch to this board'),
-                                  ),
-                                if (!board.archived)
-                                  const PopupMenuItem<String>(
-                                    value: 'archive',
-                                    child: Text('Archive board'),
-                                  ),
-                              ],
+                              itemBuilder: (context) =>
+                                  <PopupMenuEntry<String>>[
+                                    if (!board.isCurrent)
+                                      const PopupMenuItem<String>(
+                                        value: 'switch',
+                                        child: Text('Switch to this board'),
+                                      ),
+                                    if (!board.archived)
+                                      const PopupMenuItem<String>(
+                                        value: 'archive',
+                                        child: Text('Archive board'),
+                                      ),
+                                  ],
                             ),
                     );
                   },
@@ -156,10 +164,7 @@ class KanbanBoardsScreen extends ConsumerWidget {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 8.0),
-                Text(
-                  error.toString(),
-                  textAlign: TextAlign.center,
-                ),
+                Text(error.toString(), textAlign: TextAlign.center),
               ],
             ),
           ),
@@ -189,9 +194,7 @@ class KanbanBoardsScreen extends ConsumerWidget {
             ),
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Name (optional)',
-              ),
+              decoration: const InputDecoration(labelText: 'Name (optional)'),
             ),
             TextField(
               controller: descriptionController,
@@ -210,11 +213,17 @@ class KanbanBoardsScreen extends ConsumerWidget {
           TextButton(
             onPressed: () {
               if (slugController.text.isNotEmpty) {
-                ref.read(kanbanFleetActionControllerProvider.notifier).createBoard(
-                  slug: slugController.text,
-                  name: nameController.text.isNotEmpty ? nameController.text : null,
-                  description: descriptionController.text.isNotEmpty ? descriptionController.text : null,
-                );
+                ref
+                    .read(kanbanFleetActionControllerProvider.notifier)
+                    .createBoard(
+                      slug: slugController.text,
+                      name: nameController.text.isNotEmpty
+                          ? nameController.text
+                          : null,
+                      description: descriptionController.text.isNotEmpty
+                          ? descriptionController.text
+                          : null,
+                    );
                 Navigator.of(context).pop();
               }
             },

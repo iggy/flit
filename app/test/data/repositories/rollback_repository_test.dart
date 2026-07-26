@@ -63,10 +63,9 @@ void main() {
       await repository.list('session-123');
 
       expect(client.calls.single.method, 'rollback.list');
-      expect(
-        client.calls.single.params,
-        <String, dynamic>{'session_id': 'session-123'},
-      );
+      expect(client.calls.single.params, <String, dynamic>{
+        'session_id': 'session-123',
+      });
     });
 
     test('maps enabled flag and checkpoints array', () async {
@@ -92,24 +91,30 @@ void main() {
       expect(result.checkpoints[0].hash, checkpointWire['hash']);
       expect(result.checkpoints[0].timestamp, checkpointWire['timestamp']);
       expect(result.checkpoints[0].message, checkpointWire['message']);
-      expect(result.checkpoints[1].hash, 'def456abc123def456abc123def456abc123defg');
+      expect(
+        result.checkpoints[1].hash,
+        'def456abc123def456abc123def456abc123defg',
+      );
       expect(result.checkpoints[1].message, 'After cleanup');
     });
 
-    test('handles disabled checkpointing (enabled:false, empty list)', () async {
-      client = FakeGatewayRpcClient(
-        handler: (_, _) => <String, dynamic>{
-          'enabled': false,
-          'checkpoints': <Map<String, dynamic>>[],
-        },
-      );
-      repository = RollbackRepositoryImpl(client);
+    test(
+      'handles disabled checkpointing (enabled:false, empty list)',
+      () async {
+        client = FakeGatewayRpcClient(
+          handler: (_, _) => <String, dynamic>{
+            'enabled': false,
+            'checkpoints': <Map<String, dynamic>>[],
+          },
+        );
+        repository = RollbackRepositoryImpl(client);
 
-      final result = await repository.list('session-123');
+        final result = await repository.list('session-123');
 
-      expect(result.enabled, isFalse);
-      expect(result.checkpoints, isEmpty);
-    });
+        expect(result.enabled, isFalse);
+        expect(result.checkpoints, isEmpty);
+      },
+    );
   });
 
   group('diff (wire rollback.diff)', () {
@@ -125,20 +130,18 @@ void main() {
       await repository.diff('session-123', 'abc123');
 
       expect(client.calls.single.method, 'rollback.diff');
-      expect(
-        client.calls.single.params,
-        <String, dynamic>{
-          'session_id': 'session-123',
-          'hash': 'abc123',
-        },
-      );
+      expect(client.calls.single.params, <String, dynamic>{
+        'session_id': 'session-123',
+        'hash': 'abc123',
+      });
     });
 
     test('maps stat and diff fields', () async {
       client = FakeGatewayRpcClient(
         handler: (_, _) => <String, dynamic>{
           'stat': ' 2 files changed, 15 insertions(+), 8 deletions(-)',
-          'diff': 'diff --git a/lib/main.dart b/lib/main.dart\nindex abc..def\n--- a/lib/main.dart\n+++ b/lib/main.dart',
+          'diff':
+              'diff --git a/lib/main.dart b/lib/main.dart\nindex abc..def\n--- a/lib/main.dart\n+++ b/lib/main.dart',
         },
       );
       repository = RollbackRepositoryImpl(client);
@@ -151,10 +154,7 @@ void main() {
 
     test('defaults to empty strings when stat/diff are null', () async {
       client = FakeGatewayRpcClient(
-        handler: (_, _) => <String, dynamic>{
-          'stat': null,
-          'diff': null,
-        },
+        handler: (_, _) => <String, dynamic>{'stat': null, 'diff': null},
       );
       repository = RollbackRepositoryImpl(client);
 
@@ -166,31 +166,31 @@ void main() {
   });
 
   group('restore (wire rollback.restore)', () {
-    test('sends rollback.restore with session_id and hash (no file_path)', () async {
-      client = FakeGatewayRpcClient(
-        handler: (_, _) => <String, dynamic>{
-          'success': true,
-          'restored_to': 'abc123de',
-          'reason': 'Before refactoring',
-          'directory': '/home/user/repo',
-          'history_removed': 4,
-        },
-      );
-      repository = RollbackRepositoryImpl(client);
+    test(
+      'sends rollback.restore with session_id and hash (no file_path)',
+      () async {
+        client = FakeGatewayRpcClient(
+          handler: (_, _) => <String, dynamic>{
+            'success': true,
+            'restored_to': 'abc123de',
+            'reason': 'Before refactoring',
+            'directory': '/home/user/repo',
+            'history_removed': 4,
+          },
+        );
+        repository = RollbackRepositoryImpl(client);
 
-      await repository.restore('session-123', 'abc123');
+        await repository.restore('session-123', 'abc123');
 
-      expect(client.calls.single.method, 'rollback.restore');
-      expect(
-        client.calls.single.params,
-        <String, dynamic>{
+        expect(client.calls.single.method, 'rollback.restore');
+        expect(client.calls.single.params, <String, dynamic>{
           'session_id': 'session-123',
           'hash': 'abc123',
-        },
-      );
-      // file_path key should NOT be present when null.
-      expect(client.calls.single.params.containsKey('file_path'), isFalse);
-    });
+        });
+        // file_path key should NOT be present when null.
+        expect(client.calls.single.params.containsKey('file_path'), isFalse);
+      },
+    );
 
     test('includes file_path when provided', () async {
       client = FakeGatewayRpcClient(
@@ -201,17 +201,18 @@ void main() {
       );
       repository = RollbackRepositoryImpl(client);
 
-      await repository.restore('session-123', 'abc123', filePath: 'lib/main.dart');
+      await repository.restore(
+        'session-123',
+        'abc123',
+        filePath: 'lib/main.dart',
+      );
 
       expect(client.calls.single.method, 'rollback.restore');
-      expect(
-        client.calls.single.params,
-        <String, dynamic>{
-          'session_id': 'session-123',
-          'hash': 'abc123',
-          'file_path': 'lib/main.dart',
-        },
-      );
+      expect(client.calls.single.params, <String, dynamic>{
+        'session_id': 'session-123',
+        'hash': 'abc123',
+        'file_path': 'lib/main.dart',
+      });
     });
 
     test('maps full restore result with history_removed', () async {

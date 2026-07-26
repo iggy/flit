@@ -95,7 +95,8 @@ final class FakeSessionRepository implements SessionRepository {
   Future<MostRecentSession?> mostRecent({String? profile}) =>
       throw UnimplementedError();
 
-  final List<({String liveId, String title})> renamed = <({String liveId, String title})>[];
+  final List<({String liveId, String title})> renamed =
+      <({String liveId, String title})>[];
   final List<String> deleted = <String>[];
   final List<String> branched = <String>[];
 

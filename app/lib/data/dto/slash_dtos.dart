@@ -63,11 +63,9 @@ class CommandsCatalogDto {
       final commands = <SlashCommand>[];
       for (final p in catPairs) {
         if (p.length >= 2) {
-          commands.add(SlashCommand(
-            command: p[0],
-            description: p[1],
-            category: name,
-          ));
+          commands.add(
+            SlashCommand(command: p[0], description: p[1], category: name),
+          );
         }
       }
       cats.add(SlashCategory(name: name, commands: commands));

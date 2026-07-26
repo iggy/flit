@@ -195,7 +195,9 @@ void main() {
       final result = await repository.forCwd(cwd: '/other/path');
 
       expect(client.calls.single.method, 'projects.for_cwd');
-      expect(client.calls.single.params, <String, dynamic>{'cwd': '/other/path'});
+      expect(client.calls.single.params, <String, dynamic>{
+        'cwd': '/other/path',
+      });
       expect(result.project, isNull);
       expect(result.cwd, '/other/path');
       expect(result.branch, isNull);
@@ -212,7 +214,9 @@ void main() {
       await repository.create(name: 'New Project');
 
       expect(client.calls.single.method, 'projects.create');
-      expect(client.calls.single.params, <String, dynamic>{'name': 'New Project'});
+      expect(client.calls.single.params, <String, dynamic>{
+        'name': 'New Project',
+      });
     });
 
     test('includes only non-null optional params', () async {
@@ -234,20 +238,17 @@ void main() {
       );
 
       expect(client.calls.single.method, 'projects.create');
-      expect(
-        client.calls.single.params,
-        <String, dynamic>{
-          'name': 'New Project',
-          'slug': 'new-project',
-          'folders': <String>['/path/one', '/path/two'],
-          'primary_path': '/path/one',
-          'description': 'A new project',
-          'icon': '🚀',
-          'color': '#0000FF',
-          'board_slug': 'board',
-          'use': true,
-        },
-      );
+      expect(client.calls.single.params, <String, dynamic>{
+        'name': 'New Project',
+        'slug': 'new-project',
+        'folders': <String>['/path/one', '/path/two'],
+        'primary_path': '/path/one',
+        'description': 'A new project',
+        'icon': '🚀',
+        'color': '#0000FF',
+        'board_slug': 'board',
+        'use': true,
+      });
     });
   });
 
@@ -261,13 +262,10 @@ void main() {
       await repository.update('proj-123', name: 'Updated Name');
 
       expect(client.calls.single.method, 'projects.update');
-      expect(
-        client.calls.single.params,
-        <String, dynamic>{
-          'id': 'proj-123',
-          'name': 'Updated Name',
-        },
-      );
+      expect(client.calls.single.params, <String, dynamic>{
+        'id': 'proj-123',
+        'name': 'Updated Name',
+      });
     });
 
     test('includes all optional params when provided', () async {
@@ -286,17 +284,14 @@ void main() {
       );
 
       expect(client.calls.single.method, 'projects.update');
-      expect(
-        client.calls.single.params,
-        <String, dynamic>{
-          'id': 'proj-123',
-          'name': 'Updated',
-          'description': 'New desc',
-          'icon': '⭐',
-          'color': '#00FF00',
-          'board_slug': 'new-board',
-        },
-      );
+      expect(client.calls.single.params, <String, dynamic>{
+        'id': 'proj-123',
+        'name': 'Updated',
+        'description': 'New desc',
+        'icon': '⭐',
+        'color': '#00FF00',
+        'board_slug': 'new-board',
+      });
     });
   });
 
@@ -310,13 +305,10 @@ void main() {
       await repository.addFolder('proj-123', '/new/path');
 
       expect(client.calls.single.method, 'projects.add_folder');
-      expect(
-        client.calls.single.params,
-        <String, dynamic>{
-          'id': 'proj-123',
-          'path': '/new/path',
-        },
-      );
+      expect(client.calls.single.params, <String, dynamic>{
+        'id': 'proj-123',
+        'path': '/new/path',
+      });
     });
 
     test('includes label and is_primary when provided', () async {
@@ -333,15 +325,12 @@ void main() {
       );
 
       expect(client.calls.single.method, 'projects.add_folder');
-      expect(
-        client.calls.single.params,
-        <String, dynamic>{
-          'id': 'proj-123',
-          'path': '/new/path',
-          'label': 'New Folder',
-          'is_primary': true,
-        },
-      );
+      expect(client.calls.single.params, <String, dynamic>{
+        'id': 'proj-123',
+        'path': '/new/path',
+        'label': 'New Folder',
+        'is_primary': true,
+      });
     });
   });
 
@@ -355,13 +344,10 @@ void main() {
       await repository.removeFolder('proj-123', '/old/path');
 
       expect(client.calls.single.method, 'projects.remove_folder');
-      expect(
-        client.calls.single.params,
-        <String, dynamic>{
-          'id': 'proj-123',
-          'path': '/old/path',
-        },
-      );
+      expect(client.calls.single.params, <String, dynamic>{
+        'id': 'proj-123',
+        'path': '/old/path',
+      });
     });
   });
 
@@ -375,13 +361,10 @@ void main() {
       await repository.setPrimary('proj-123', '/primary/path');
 
       expect(client.calls.single.method, 'projects.set_primary');
-      expect(
-        client.calls.single.params,
-        <String, dynamic>{
-          'id': 'proj-123',
-          'path': '/primary/path',
-        },
-      );
+      expect(client.calls.single.params, <String, dynamic>{
+        'id': 'proj-123',
+        'path': '/primary/path',
+      });
     });
   });
 
@@ -398,12 +381,7 @@ void main() {
       await repository.archive('proj-123');
 
       expect(client.calls.single.method, 'projects.archive');
-      expect(
-        client.calls.single.params,
-        <String, dynamic>{
-          'id': 'proj-123',
-        },
-      );
+      expect(client.calls.single.params, <String, dynamic>{'id': 'proj-123'});
     });
 
     test('includes restore:true when restoring', () async {
@@ -418,13 +396,10 @@ void main() {
       await repository.archive('proj-123', restore: true);
 
       expect(client.calls.single.method, 'projects.archive');
-      expect(
-        client.calls.single.params,
-        <String, dynamic>{
-          'id': 'proj-123',
-          'restore': true,
-        },
-      );
+      expect(client.calls.single.params, <String, dynamic>{
+        'id': 'proj-123',
+        'restore': true,
+      });
     });
   });
 
@@ -441,12 +416,7 @@ void main() {
       await repository.delete('proj-123');
 
       expect(client.calls.single.method, 'projects.delete');
-      expect(
-        client.calls.single.params,
-        <String, dynamic>{
-          'id': 'proj-123',
-        },
-      );
+      expect(client.calls.single.params, <String, dynamic>{'id': 'proj-123'});
     });
   });
 

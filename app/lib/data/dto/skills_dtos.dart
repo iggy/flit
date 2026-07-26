@@ -21,12 +21,7 @@ class SkillsListResultDto {
   SkillCatalog toDomain() {
     final skillsMap = skills ?? <String, List<String>>{};
     final groups = skillsMap.entries
-        .map(
-          (entry) => SkillGroup(
-            category: entry.key,
-            names: entry.value,
-          ),
-        )
+        .map((entry) => SkillGroup(category: entry.key, names: entry.value))
         .toList();
     return SkillCatalog(groups: groups);
   }
@@ -114,10 +109,7 @@ class SkillBrowseItemDto {
 /// Wire DTO for `skills.reload` result (P5-09).
 @JsonSerializable()
 class SkillsReloadResultDto {
-  const SkillsReloadResultDto({
-    this.output,
-    this.result,
-  });
+  const SkillsReloadResultDto({this.output, this.result});
 
   factory SkillsReloadResultDto.fromJson(Map<String, dynamic> json) =>
       _$SkillsReloadResultDtoFromJson(json);
@@ -134,9 +126,10 @@ class SkillsReloadResultDto {
     final res = result;
     return SkillReloadResult(
       output: output ?? '',
-      added: res?.added?.map((dto) => dto.toDomain()).toList() ??
-          <SkillChange>[],
-      removed: res?.removed?.map((dto) => dto.toDomain()).toList() ??
+      added:
+          res?.added?.map((dto) => dto.toDomain()).toList() ?? <SkillChange>[],
+      removed:
+          res?.removed?.map((dto) => dto.toDomain()).toList() ??
           <SkillChange>[],
       unchanged: res?.unchanged ?? <String>[],
       total: res?.total ?? 0,
@@ -194,9 +187,6 @@ class SkillChangeDto {
   Map<String, dynamic> toJson() => _$SkillChangeDtoToJson(this);
 
   SkillChange toDomain() {
-    return SkillChange(
-      name: name ?? '',
-      description: description ?? '',
-    );
+    return SkillChange(name: name ?? '', description: description ?? '');
   }
 }

@@ -45,23 +45,22 @@ void main() {
       );
       final repository = ReloadRepositoryImpl(client);
 
-      final outcome =
-          await repository.reloadMcp(sessionId: 'sess_abc', confirm: false);
+      final outcome = await repository.reloadMcp(
+        sessionId: 'sess_abc',
+        confirm: false,
+      );
 
       expect(client.calls.single.method, 'reload.mcp');
-      expect(
-        client.calls.single.params,
-        <String, dynamic>{'session_id': 'sess_abc'},
-      );
+      expect(client.calls.single.params, <String, dynamic>{
+        'session_id': 'sess_abc',
+      });
       expect(outcome, isA<ReloadMcpDone>());
       expect((outcome as ReloadMcpDone).coalesced, false);
     });
 
     test('omits session_id when null', () async {
       final client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'status': 'reloaded',
-        },
+        handler: (_, _) => const <String, dynamic>{'status': 'reloaded'},
       );
       final repository = ReloadRepositoryImpl(client);
 
@@ -72,9 +71,7 @@ void main() {
 
     test('includes confirm:true when confirm is true', () async {
       final client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'status': 'reloaded',
-        },
+        handler: (_, _) => const <String, dynamic>{'status': 'reloaded'},
       );
       final repository = ReloadRepositoryImpl(client);
 
@@ -120,26 +117,26 @@ void main() {
       expect((outcome as ReloadMcpDone).coalesced, true);
     });
 
-    test('absent message in confirm_required falls back to empty string',
-        () async {
-      final client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'status': 'confirm_required',
-        },
-      );
-      final repository = ReloadRepositoryImpl(client);
+    test(
+      'absent message in confirm_required falls back to empty string',
+      () async {
+        final client = FakeGatewayRpcClient(
+          handler: (_, _) => const <String, dynamic>{
+            'status': 'confirm_required',
+          },
+        );
+        final repository = ReloadRepositoryImpl(client);
 
-      final outcome = await repository.reloadMcp();
+        final outcome = await repository.reloadMcp();
 
-      expect(outcome, isA<ReloadMcpConfirmRequired>());
-      expect((outcome as ReloadMcpConfirmRequired).message, '');
-    });
+        expect(outcome, isA<ReloadMcpConfirmRequired>());
+        expect((outcome as ReloadMcpConfirmRequired).message, '');
+      },
+    );
 
     test('absent coalesced in reloaded falls back to false', () async {
       final client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'status': 'reloaded',
-        },
+        handler: (_, _) => const <String, dynamic>{'status': 'reloaded'},
       );
       final repository = ReloadRepositoryImpl(client);
 
@@ -153,9 +150,7 @@ void main() {
   group('ReloadRepositoryImpl.reloadEnv (wire reload.env)', () {
     test('sends reload.env and reads updated count', () async {
       final client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'updated': 5,
-        },
+        handler: (_, _) => const <String, dynamic>{'updated': 5},
       );
       final repository = ReloadRepositoryImpl(client);
 

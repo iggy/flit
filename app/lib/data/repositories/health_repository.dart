@@ -25,10 +25,7 @@ final class HealthRepositoryImpl implements HealthRepository {
   }
 
   @override
-  Future<String> verificationStatus({
-    String? sessionId,
-    String? cwd,
-  }) async {
+  Future<String> verificationStatus({String? sessionId, String? cwd}) async {
     final params = <String, dynamic>{};
     if (sessionId != null) {
       params['session_id'] = sessionId;

@@ -44,10 +44,7 @@ final learningJourneyProvider = FutureProvider<LearningJourney>((ref) async {
 
 /// Interaction state for learning mutations (edit/delete).
 final class LearningControllerState {
-  const LearningControllerState({
-    this.busy = false,
-    this.error,
-  });
+  const LearningControllerState({this.busy = false, this.error});
 
   /// A mutating operation is in flight.
   final bool busy;

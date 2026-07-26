@@ -14,18 +14,13 @@ final class CronRepositoryImpl implements CronRepository {
 
   @override
   Future<List<CronJob>> list() async {
-    final params = <String, dynamic>{
-      'action': 'list',
-    };
+    final params = <String, dynamic>{'action': 'list'};
     final result = await _client.request('cron.manage', params);
     final dto = CronManageResultDto.fromJson(result);
 
     // Check for failure result.
     if (dto.success == false) {
-      throw GatewayRpcException(
-        -1,
-        dto.error ?? 'Cron list failed',
-      );
+      throw GatewayRpcException(-1, dto.error ?? 'Cron list failed');
     }
 
     return dto.toDomainList();
@@ -57,10 +52,7 @@ final class CronRepositoryImpl implements CronRepository {
 
   @override
   Future<void> remove(String jobId) async {
-    final params = <String, dynamic>{
-      'action': 'remove',
-      'name': jobId,
-    };
+    final params = <String, dynamic>{'action': 'remove', 'name': jobId};
     final result = await _client.request('cron.manage', params);
     final dto = CronManageResultDto.fromJson(result);
 
@@ -75,10 +67,7 @@ final class CronRepositoryImpl implements CronRepository {
 
   @override
   Future<void> pause(String jobId) async {
-    final params = <String, dynamic>{
-      'action': 'pause',
-      'name': jobId,
-    };
+    final params = <String, dynamic>{'action': 'pause', 'name': jobId};
     final result = await _client.request('cron.manage', params);
     final dto = CronManageResultDto.fromJson(result);
 
@@ -93,10 +82,7 @@ final class CronRepositoryImpl implements CronRepository {
 
   @override
   Future<void> resume(String jobId) async {
-    final params = <String, dynamic>{
-      'action': 'resume',
-      'name': jobId,
-    };
+    final params = <String, dynamic>{'action': 'resume', 'name': jobId};
     final result = await _client.request('cron.manage', params);
     final dto = CronManageResultDto.fromJson(result);
 

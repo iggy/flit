@@ -17,5 +17,5 @@ final class ComposerPrefillNotifier extends Notifier<String?> {
 
 final composerPrefillProvider =
     NotifierProvider<ComposerPrefillNotifier, String?>(
-  ComposerPrefillNotifier.new,
-);
+      ComposerPrefillNotifier.new,
+    );

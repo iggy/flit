@@ -37,10 +37,8 @@ class PluginsScreen extends ConsumerWidget {
                   ? const _PluginsEmpty()
                   : ListView.builder(
                       itemCount: list.length,
-                      itemBuilder: (context, index) => _PluginTile(
-                        list[index],
-                        busy: toggleState.busy,
-                      ),
+                      itemBuilder: (context, index) =>
+                          _PluginTile(list[index], busy: toggleState.busy),
                     ),
             ),
           ),
@@ -64,10 +62,7 @@ class _PluginTile extends ConsumerWidget {
     final openBoard = plugin.name == 'kanban' && plugin.isEnabled;
     return ListTile(
       leading: Chip(
-        label: Text(
-          plugin.source,
-          style: theme.textTheme.labelSmall,
-        ),
+        label: Text(plugin.source, style: theme.textTheme.labelSmall),
       ),
       title: Text(plugin.name),
       subtitle: Column(
@@ -99,8 +94,8 @@ class _PluginTile extends ConsumerWidget {
             onChanged: busy
                 ? null
                 : (value) => ref
-                    .read(pluginToggleControllerProvider.notifier)
-                    .toggle(plugin.name, value),
+                      .read(pluginToggleControllerProvider.notifier)
+                      .toggle(plugin.name, value),
           ),
         ],
       ),
@@ -150,10 +145,7 @@ class _PluginsError extends StatelessWidget {
 }
 
 class _PluginsErrorBanner extends StatelessWidget {
-  const _PluginsErrorBanner({
-    required this.message,
-    required this.onDismiss,
-  });
+  const _PluginsErrorBanner({required this.message, required this.onDismiss});
 
   final String message;
   final VoidCallback onDismiss;
@@ -163,10 +155,7 @@ class _PluginsErrorBanner extends StatelessWidget {
     return MaterialBanner(
       content: Text(message),
       actions: <Widget>[
-        TextButton(
-          onPressed: onDismiss,
-          child: const Text('Dismiss'),
-        ),
+        TextButton(onPressed: onDismiss, child: const Text('Dismiss')),
       ],
     );
   }

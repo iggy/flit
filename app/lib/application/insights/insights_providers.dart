@@ -19,8 +19,9 @@ final insightsRepositoryProvider = Provider<InsightsRepository?>((ref) {
 });
 
 /// The selected rolling window in days (7 / 30 / 90). Defaults to 30.
-final insightsWindowProvider =
-    NotifierProvider<InsightsWindowNotifier, int>(InsightsWindowNotifier.new);
+final insightsWindowProvider = NotifierProvider<InsightsWindowNotifier, int>(
+  InsightsWindowNotifier.new,
+);
 
 /// Holds the selected insights window; `set` swaps it (the codebase uses a
 /// [Notifier] for mutable UI state rather than the removed `StateProvider`).

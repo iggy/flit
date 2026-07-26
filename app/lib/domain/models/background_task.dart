@@ -6,10 +6,7 @@ library;
 /// A `background.complete` event (P5-02): the gateway pushed a task completion
 /// onto the parent session. Consumed by the background repository's stream.
 final class BackgroundCompletion {
-  const BackgroundCompletion({
-    required this.taskId,
-    required this.text,
-  });
+  const BackgroundCompletion({required this.taskId, required this.text});
 
   /// Server-assigned task id (e.g. "bg_ab12cd").
   final String taskId;

@@ -85,19 +85,11 @@ class _KanbanNewTaskDialogState extends ConsumerState<KanbanNewTaskDialog> {
               const SizedBox(height: 12),
               DropdownButtonFormField<int>(
                 initialValue: _priority,
-                decoration: const InputDecoration(
-                  labelText: 'Priority',
-                ),
+                decoration: const InputDecoration(labelText: 'Priority'),
                 items: <DropdownMenuItem<int>>[
-                  const DropdownMenuItem<int>(
-                    value: null,
-                    child: Text('None'),
-                  ),
+                  const DropdownMenuItem<int>(value: null, child: Text('None')),
                   for (final p in <int>[0, 1, 2, 3])
-                    DropdownMenuItem<int>(
-                      value: p,
-                      child: Text('$p'),
-                    ),
+                    DropdownMenuItem<int>(value: p, child: Text('$p')),
                 ],
                 onChanged: (value) {
                   setState(() {
@@ -147,7 +139,9 @@ class _KanbanNewTaskDialogState extends ConsumerState<KanbanNewTaskDialog> {
     final body = _bodyController.text.trim();
     final assignee = _assigneeController.text.trim();
 
-    await ref.read(kanbanTaskActionControllerProvider.notifier).createTask(
+    await ref
+        .read(kanbanTaskActionControllerProvider.notifier)
+        .createTask(
           title: title,
           body: body.isEmpty ? null : body,
           assignee: assignee.isEmpty ? null : assignee,

@@ -371,8 +371,7 @@ final class KanbanBulkResult {
 
   @override
   bool operator ==(Object other) {
-    return other is KanbanBulkResult &&
-        deepListEquals(other.results, results);
+    return other is KanbanBulkResult && deepListEquals(other.results, results);
   }
 
   @override
@@ -467,8 +466,14 @@ final class KanbanDecomposeResult {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(ok, taskId, reason, fanout, Object.hashAll(childIds), newTitle);
+  int get hashCode => Object.hash(
+    ok,
+    taskId,
+    reason,
+    fanout,
+    Object.hashAll(childIds),
+    newTitle,
+  );
 
   @override
   String toString() =>

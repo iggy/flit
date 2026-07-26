@@ -37,10 +37,7 @@ final projectsListProvider = FutureProvider<ProjectsList>((ref) async {
 
 /// Interaction state for project mutations.
 final class ProjectsControllerState {
-  const ProjectsControllerState({
-    this.busy = false,
-    this.error,
-  });
+  const ProjectsControllerState({this.busy = false, this.error});
 
   /// A mutating operation is in flight.
   final bool busy;

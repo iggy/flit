@@ -54,10 +54,9 @@ void main() {
       final toolsets = await repository.listTools(sessionId: 'sess_abc');
 
       expect(client.calls.single.method, 'tools.list');
-      expect(
-        client.calls.single.params,
-        <String, dynamic>{'session_id': 'sess_abc'},
-      );
+      expect(client.calls.single.params, <String, dynamic>{
+        'session_id': 'sess_abc',
+      });
       expect(toolsets.length, 1);
       expect(toolsets[0].name, 'filesystem');
       expect(toolsets[0].description, 'File operations');
@@ -68,7 +67,9 @@ void main() {
 
     test('omits session_id when null', () async {
       final client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{'toolsets': <Map<String, dynamic>>[]},
+        handler: (_, _) => const <String, dynamic>{
+          'toolsets': <Map<String, dynamic>>[],
+        },
       );
       final repository = ToolsRepositoryImpl(client);
 
@@ -105,10 +106,9 @@ void main() {
       final toolsets = await repository.listToolsets(sessionId: 'sess_xyz');
 
       expect(client.calls.single.method, 'toolsets.list');
-      expect(
-        client.calls.single.params,
-        <String, dynamic>{'session_id': 'sess_xyz'},
-      );
+      expect(client.calls.single.params, <String, dynamic>{
+        'session_id': 'sess_xyz',
+      });
       expect(toolsets.length, 1);
       expect(toolsets[0].name, 'web');
       expect(toolsets[0].tools, isEmpty);
@@ -116,7 +116,9 @@ void main() {
 
     test('omits session_id when null', () async {
       final client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{'toolsets': <Map<String, dynamic>>[]},
+        handler: (_, _) => const <String, dynamic>{
+          'toolsets': <Map<String, dynamic>>[],
+        },
       );
       final repository = ToolsRepositoryImpl(client);
 
@@ -127,45 +129,46 @@ void main() {
   });
 
   group('ToolsRepositoryImpl.showTools (wire tools.show)', () {
-    test('sends tools.show with session_id when provided and parses sections',
-        () async {
-      final client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'sections': <Map<String, dynamic>>[
-            <String, dynamic>{
-              'name': 'Core Tools',
-              'tools': <Map<String, dynamic>>[
-                <String, dynamic>{
-                  'name': 'read',
-                  'description': 'Read a file',
-                },
-                <String, dynamic>{
-                  'name': 'write',
-                  'description': 'Write a file',
-                },
-              ],
-            },
-          ],
-          'total': 2,
-        },
-      );
-      final repository = ToolsRepositoryImpl(client);
+    test(
+      'sends tools.show with session_id when provided and parses sections',
+      () async {
+        final client = FakeGatewayRpcClient(
+          handler: (_, _) => const <String, dynamic>{
+            'sections': <Map<String, dynamic>>[
+              <String, dynamic>{
+                'name': 'Core Tools',
+                'tools': <Map<String, dynamic>>[
+                  <String, dynamic>{
+                    'name': 'read',
+                    'description': 'Read a file',
+                  },
+                  <String, dynamic>{
+                    'name': 'write',
+                    'description': 'Write a file',
+                  },
+                ],
+              },
+            ],
+            'total': 2,
+          },
+        );
+        final repository = ToolsRepositoryImpl(client);
 
-      final show = await repository.showTools(sessionId: 'sess_abc');
+        final show = await repository.showTools(sessionId: 'sess_abc');
 
-      expect(client.calls.single.method, 'tools.show');
-      expect(
-        client.calls.single.params,
-        <String, dynamic>{'session_id': 'sess_abc'},
-      );
-      expect(show.sections.length, 1);
-      expect(show.sections[0].name, 'Core Tools');
-      expect(show.sections[0].tools.length, 2);
-      expect(show.sections[0].tools[0].name, 'read');
-      expect(show.sections[0].tools[0].description, 'Read a file');
-      expect(show.sections[0].tools[1].name, 'write');
-      expect(show.total, 2);
-    });
+        expect(client.calls.single.method, 'tools.show');
+        expect(client.calls.single.params, <String, dynamic>{
+          'session_id': 'sess_abc',
+        });
+        expect(show.sections.length, 1);
+        expect(show.sections[0].name, 'Core Tools');
+        expect(show.sections[0].tools.length, 2);
+        expect(show.sections[0].tools[0].name, 'read');
+        expect(show.sections[0].tools[0].description, 'Read a file');
+        expect(show.sections[0].tools[1].name, 'write');
+        expect(show.total, 2);
+      },
+    );
 
     test('omits session_id when null', () async {
       final client = FakeGatewayRpcClient(
@@ -235,10 +238,7 @@ void main() {
       );
       final repository = ToolsRepositoryImpl(client);
 
-      await repository.configure(
-        action: 'disable',
-        names: <String>['web'],
-      );
+      await repository.configure(action: 'disable', names: <String>['web']);
 
       expect(client.calls.single.params, <String, dynamic>{
         'action': 'disable',

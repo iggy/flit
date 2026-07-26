@@ -144,10 +144,7 @@ class _CheckpointsError extends StatelessWidget {
 }
 
 class _CheckpointTile extends ConsumerWidget {
-  const _CheckpointTile({
-    required this.checkpoint,
-    required this.busy,
-  });
+  const _CheckpointTile({required this.checkpoint, required this.busy});
 
   final Checkpoint checkpoint;
   final bool busy;
@@ -167,10 +164,7 @@ class _CheckpointTile extends ConsumerWidget {
       trailing: PopupMenuButton<String>(
         enabled: !busy,
         itemBuilder: (context) => <PopupMenuEntry<String>>[
-          const PopupMenuItem<String>(
-            value: 'diff',
-            child: Text('View diff'),
-          ),
+          const PopupMenuItem<String>(value: 'diff', child: Text('View diff')),
           const PopupMenuItem<String>(
             value: 'restore',
             child: Text('Restore to this checkpoint'),
@@ -187,11 +181,7 @@ class _CheckpointTile extends ConsumerWidget {
     );
   }
 
-  void _showDiffBottomSheet(
-    BuildContext context,
-    WidgetRef ref,
-    String hash,
-  ) {
+  void _showDiffBottomSheet(BuildContext context, WidgetRef ref, String hash) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -200,10 +190,8 @@ class _CheckpointTile extends ConsumerWidget {
         initialChildSize: 0.5,
         minChildSize: 0.25,
         maxChildSize: 0.9,
-        builder: (context, scrollController) => _DiffView(
-          hash: hash,
-          scrollController: scrollController,
-        ),
+        builder: (context, scrollController) =>
+            _DiffView(hash: hash, scrollController: scrollController),
       ),
     );
   }
@@ -243,10 +231,7 @@ class _CheckpointTile extends ConsumerWidget {
 }
 
 class _DiffView extends ConsumerWidget {
-  const _DiffView({
-    required this.hash,
-    required this.scrollController,
-  });
+  const _DiffView({required this.hash, required this.scrollController});
 
   final String hash;
   final ScrollController scrollController;

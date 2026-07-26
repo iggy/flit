@@ -36,10 +36,7 @@ final class Checkpoint {
 
 /// Result from `rollback.list`: the enabled flag and the checkpoint list.
 final class CheckpointList {
-  const CheckpointList({
-    required this.enabled,
-    required this.checkpoints,
-  });
+  const CheckpointList({required this.enabled, required this.checkpoints});
 
   /// Whether checkpointing is enabled for this session.
   final bool enabled;
@@ -65,10 +62,7 @@ final class CheckpointList {
 
 /// Result from `rollback.diff`: git diff statistics and content.
 final class CheckpointDiff {
-  const CheckpointDiff({
-    required this.stat,
-    required this.diff,
-  });
+  const CheckpointDiff({required this.stat, required this.diff});
 
   /// Git diff --stat summary line.
   final String stat;
@@ -78,9 +72,7 @@ final class CheckpointDiff {
 
   @override
   bool operator ==(Object other) {
-    return other is CheckpointDiff &&
-        other.stat == stat &&
-        other.diff == diff;
+    return other is CheckpointDiff && other.stat == stat && other.diff == diff;
   }
 
   @override
@@ -139,14 +131,14 @@ final class RestoreResult {
 
   @override
   int get hashCode => Object.hash(
-        success,
-        restoredTo,
-        reason,
-        directory,
-        file,
-        historyRemoved,
-        error,
-      );
+    success,
+    restoredTo,
+    reason,
+    directory,
+    file,
+    historyRemoved,
+    error,
+  );
 
   @override
   String toString() {

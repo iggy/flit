@@ -38,11 +38,7 @@ abstract interface class KanbanFleetRepository {
   });
 
   /// DELETE /boards/{slug} — archive (or delete if `delete=true`).
-  Future<void> deleteBoard(
-    String slug, {
-    bool delete = false,
-    String? board,
-  });
+  Future<void> deleteBoard(String slug, {bool delete = false, String? board});
 
   /// POST /boards/{slug}/switch — switch to the given board.
   Future<String> switchBoard(String slug);
@@ -67,11 +63,7 @@ abstract interface class KanbanFleetRepository {
   });
 
   /// POST /runs/{id}/terminate — terminate a running worker.
-  Future<void> terminateRun(
-    int runId, {
-    String? reason,
-    String? board,
-  });
+  Future<void> terminateRun(int runId, {String? reason, String? board});
 
   /// GET /assignees — profile roster with task counts.
   Future<List<KanbanAssignee>> listAssignees({String? board});

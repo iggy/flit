@@ -23,7 +23,9 @@ final reasoningOptionsProvider = Provider<List<ReasoningOption>>((ref) {
 });
 
 final currentReasoningProvider =
-    NotifierProvider<CurrentReasoningNotifier, String?>(CurrentReasoningNotifier.new);
+    NotifierProvider<CurrentReasoningNotifier, String?>(
+      CurrentReasoningNotifier.new,
+    );
 
 class CurrentReasoningNotifier extends Notifier<String?> {
   @override
@@ -68,10 +70,7 @@ class CurrentReasoningNotifier extends Notifier<String?> {
 }
 
 final class ReasoningPickerState {
-  const ReasoningPickerState({
-    this.switching = false,
-    this.error,
-  });
+  const ReasoningPickerState({this.switching = false, this.error});
 
   final bool switching;
   final String? error;
@@ -87,7 +86,8 @@ final class ReasoningPickerState {
   int get hashCode => Object.hash(switching, error);
 
   @override
-  String toString() => 'ReasoningPickerState(switching: $switching, error: $error)';
+  String toString() =>
+      'ReasoningPickerState(switching: $switching, error: $error)';
 }
 
 final reasoningPickerControllerProvider =
@@ -127,15 +127,14 @@ class ReasoningPickerController extends Notifier<ReasoningPickerState> {
   }
 
   void clearError() {
-    state = ReasoningPickerState(
-      switching: state.switching,
-    );
+    state = ReasoningPickerState(switching: state.switching);
   }
 }
 
 /// Current "fast" setting (ticket P4-02).
-final currentFastProvider =
-    NotifierProvider<CurrentFastNotifier, bool?>(CurrentFastNotifier.new);
+final currentFastProvider = NotifierProvider<CurrentFastNotifier, bool?>(
+  CurrentFastNotifier.new,
+);
 
 class CurrentFastNotifier extends Notifier<bool?> {
   @override
@@ -230,8 +229,9 @@ class CurrentPersonalityNotifier extends Notifier<String?> {
 }
 
 /// Current system prompt setting (ticket P4-02).
-final currentPromptProvider =
-    NotifierProvider<CurrentPromptNotifier, String?>(CurrentPromptNotifier.new);
+final currentPromptProvider = NotifierProvider<CurrentPromptNotifier, String?>(
+  CurrentPromptNotifier.new,
+);
 
 class CurrentPromptNotifier extends Notifier<String?> {
   @override
@@ -277,10 +277,7 @@ class CurrentPromptNotifier extends Notifier<String?> {
 
 /// Interaction state for agent settings (ticket P4-02).
 final class AgentSettingsState {
-  const AgentSettingsState({
-    this.busy = false,
-    this.error,
-  });
+  const AgentSettingsState({this.busy = false, this.error});
 
   final bool busy;
   final String? error;
@@ -418,13 +415,13 @@ final class ConfigEditorState {
 
   @override
   int get hashCode => Object.hash(
-        busy,
-        error,
-        warning,
-        confirmMessage,
-        pendingKey,
-        pendingValue,
-      );
+    busy,
+    error,
+    warning,
+    confirmMessage,
+    pendingKey,
+    pendingValue,
+  );
 
   @override
   String toString() {
@@ -457,11 +454,7 @@ class ConfigEditorController extends Notifier<ConfigEditorState> {
     final liveId = ref.read(activeSessionProvider).liveId;
     state = const ConfigEditorState(busy: true);
     try {
-      final outcome = await repository.setKey(
-        key,
-        value,
-        sessionId: liveId,
-      );
+      final outcome = await repository.setKey(key, value, sessionId: liveId);
       switch (outcome) {
         case ConfigKeyApplied(:final warning):
           state = ConfigEditorState(

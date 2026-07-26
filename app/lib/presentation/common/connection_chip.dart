@@ -17,9 +17,6 @@ class ConnectionChip extends StatelessWidget {
       ),
       _ => ('Offline', Icons.cloud_off),
     };
-    return Tooltip(
-      message: label,
-      child: Icon(icon, size: 20),
-    );
+    return Tooltip(message: label, child: Icon(icon, size: 20));
   }
 }

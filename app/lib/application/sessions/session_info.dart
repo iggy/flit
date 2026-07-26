@@ -35,7 +35,9 @@ final contextBreakdownProvider = FutureProvider<ContextBreakdown?>((ref) async {
 /// `session.most_recent` query (Phase 2, §session.most_recent) — returns the
 /// most recent eligible session for resuming, or null when disconnected or no
 /// session found. Surfaces RPC errors as [AsyncError].
-final mostRecentSessionProvider = FutureProvider<MostRecentSession?>((ref) async {
+final mostRecentSessionProvider = FutureProvider<MostRecentSession?>((
+  ref,
+) async {
   final repo = ref.watch(sessionRepositoryProvider);
   if (repo == null) {
     return null;
@@ -47,9 +49,10 @@ final mostRecentSessionProvider = FutureProvider<MostRecentSession?>((ref) async
 /// `session.info` events (so the UI live-updates after each turn WITHOUT an
 /// extra RPC). State starts null and is updated by each `session.info` event
 /// that carries a `usage` sub-dict.
-final liveUsageProvider = NotifierProvider<LiveUsageNotifier, SessionUsageStats?>(
-  LiveUsageNotifier.new,
-);
+final liveUsageProvider =
+    NotifierProvider<LiveUsageNotifier, SessionUsageStats?>(
+      LiveUsageNotifier.new,
+    );
 
 class LiveUsageNotifier extends Notifier<SessionUsageStats?> {
   @override

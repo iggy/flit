@@ -6,11 +6,7 @@ part 'rollback_dtos.g.dart';
 /// Wire DTO for a single checkpoint entry.
 @JsonSerializable()
 class CheckpointDto {
-  const CheckpointDto({
-    this.hash,
-    this.timestamp,
-    this.message,
-  });
+  const CheckpointDto({this.hash, this.timestamp, this.message});
 
   factory CheckpointDto.fromJson(Map<String, dynamic> json) =>
       _$CheckpointDtoFromJson(json);
@@ -65,10 +61,7 @@ class RollbackListResultDto {
 /// Wire DTO for `rollback.diff` result.
 @JsonSerializable()
 class RollbackDiffResultDto {
-  const RollbackDiffResultDto({
-    this.stat,
-    this.diff,
-  });
+  const RollbackDiffResultDto({this.stat, this.diff});
 
   factory RollbackDiffResultDto.fromJson(Map<String, dynamic> json) =>
       _$RollbackDiffResultDtoFromJson(json);
@@ -82,10 +75,7 @@ class RollbackDiffResultDto {
   Map<String, dynamic> toJson() => _$RollbackDiffResultDtoToJson(this);
 
   CheckpointDiff toDomain() {
-    return CheckpointDiff(
-      stat: stat ?? '',
-      diff: diff ?? '',
-    );
+    return CheckpointDiff(stat: stat ?? '', diff: diff ?? '');
   }
 }
 

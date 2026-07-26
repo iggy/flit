@@ -263,9 +263,7 @@ void main() {
       await repository.disconnectProvider(slug: 'nous');
 
       expect(client.calls.single.method, 'model.disconnect');
-      expect(client.calls.single.params, <String, dynamic>{
-        'slug': 'nous',
-      });
+      expect(client.calls.single.params, <String, dynamic>{'slug': 'nous'});
     });
   });
 }

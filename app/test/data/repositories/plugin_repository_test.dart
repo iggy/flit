@@ -122,38 +122,40 @@ void main() {
   });
 
   group('PluginRepositoryImpl.toggle (P5-08)', () {
-    test('sends plugins.manage {action:toggle, name, enable} and parses result',
-        () async {
-      final client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'ok': true,
-          'unchanged': false,
-          'name': 'kanban',
-          'plugin': <String, dynamic>{
+    test(
+      'sends plugins.manage {action:toggle, name, enable} and parses result',
+      () async {
+        final client = FakeGatewayRpcClient(
+          handler: (_, _) => const <String, dynamic>{
+            'ok': true,
+            'unchanged': false,
             'name': 'kanban',
-            'version': '1.0.0',
-            'description': 'Kanban board',
-            'source': 'bundled',
-            'status': 'enabled',
+            'plugin': <String, dynamic>{
+              'name': 'kanban',
+              'version': '1.0.0',
+              'description': 'Kanban board',
+              'source': 'bundled',
+              'status': 'enabled',
+            },
           },
-        },
-      );
-      final repository = PluginRepositoryImpl(client);
+        );
+        final repository = PluginRepositoryImpl(client);
 
-      final plugin = await repository.toggle('kanban', true);
+        final plugin = await repository.toggle('kanban', true);
 
-      expect(client.calls.single.method, 'plugins.manage');
-      // Wire field is `enable`, NOT `enabled`.
-      expect(client.calls.single.params, <String, dynamic>{
-        'action': 'toggle',
-        'name': 'kanban',
-        'enable': true,
-      });
-      expect(plugin, isNotNull);
-      expect(plugin!.name, 'kanban');
-      expect(plugin.status, 'enabled');
-      expect(plugin.isEnabled, true);
-    });
+        expect(client.calls.single.method, 'plugins.manage');
+        // Wire field is `enable`, NOT `enabled`.
+        expect(client.calls.single.params, <String, dynamic>{
+          'action': 'toggle',
+          'name': 'kanban',
+          'enable': true,
+        });
+        expect(plugin, isNotNull);
+        expect(plugin!.name, 'kanban');
+        expect(plugin.status, 'enabled');
+        expect(plugin.isEnabled, true);
+      },
+    );
 
     test('returns null when plugin is absent', () async {
       final client = FakeGatewayRpcClient(

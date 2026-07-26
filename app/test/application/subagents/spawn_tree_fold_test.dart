@@ -10,14 +10,16 @@ void main() {
   group('foldSubagentEvent', () {
     test('event with null subagent_id is a no-op', () {
       const state = SpawnTreeState();
-      const event = TypedGatewayEvent.subagentEvent(
-        sessionId: 's1',
-        type: 'subagent.spawn_requested',
-        goal: 'Scout',
-        taskCount: 1,
-        taskIndex: 0,
-        subagentId: null, // Thin event.
-      ) as SubagentEvent;
+      const event =
+          TypedGatewayEvent.subagentEvent(
+                sessionId: 's1',
+                type: 'subagent.spawn_requested',
+                goal: 'Scout',
+                taskCount: 1,
+                taskIndex: 0,
+                subagentId: null, // Thin event.
+              )
+              as SubagentEvent;
 
       final next = foldSubagentEvent(state, event);
 
@@ -28,18 +30,20 @@ void main() {
 
     test('subagent.start creates a new node with running status', () {
       const state = SpawnTreeState();
-      const event = TypedGatewayEvent.subagentEvent(
-        sessionId: 's1',
-        type: 'subagent.start',
-        goal: 'Analyze logs',
-        taskCount: 5,
-        taskIndex: 1,
-        subagentId: 'agent-123',
-        parentId: 'root',
-        depth: 1,
-        model: 'sonnet',
-        text: 'Starting analysis',
-      ) as SubagentEvent;
+      const event =
+          TypedGatewayEvent.subagentEvent(
+                sessionId: 's1',
+                type: 'subagent.start',
+                goal: 'Analyze logs',
+                taskCount: 5,
+                taskIndex: 1,
+                subagentId: 'agent-123',
+                parentId: 'root',
+                depth: 1,
+                model: 'sonnet',
+                text: 'Starting analysis',
+              )
+              as SubagentEvent;
 
       final next = foldSubagentEvent(state, event);
 
@@ -56,24 +60,23 @@ void main() {
     });
 
     test('nested start with parent_id links child to parent', () {
-      const parent = SubagentNode(
-        id: 'parent-1',
-        goal: 'Root task',
-      );
+      const parent = SubagentNode(id: 'parent-1', goal: 'Root task');
       final state = SpawnTreeState(
         nodes: {'parent-1': parent},
         order: ['parent-1'],
       );
-      const event = TypedGatewayEvent.subagentEvent(
-        sessionId: 's1',
-        type: 'subagent.start',
-        goal: 'Subtask',
-        taskCount: 1,
-        taskIndex: 0,
-        subagentId: 'child-1',
-        parentId: 'parent-1',
-        depth: 1,
-      ) as SubagentEvent;
+      const event =
+          TypedGatewayEvent.subagentEvent(
+                sessionId: 's1',
+                type: 'subagent.start',
+                goal: 'Subtask',
+                taskCount: 1,
+                taskIndex: 0,
+                subagentId: 'child-1',
+                parentId: 'parent-1',
+                depth: 1,
+              )
+              as SubagentEvent;
 
       final next = foldSubagentEvent(state, event);
 
@@ -94,15 +97,17 @@ void main() {
         nodes: {'agent-1': node},
         order: ['agent-1'],
       );
-      const event = TypedGatewayEvent.subagentEvent(
-        sessionId: 's1',
-        type: 'subagent.thinking',
-        goal: 'Task',
-        taskCount: 1,
-        taskIndex: 0,
-        subagentId: 'agent-1',
-        text: 'Thinking about X',
-      ) as SubagentEvent;
+      const event =
+          TypedGatewayEvent.subagentEvent(
+                sessionId: 's1',
+                type: 'subagent.thinking',
+                goal: 'Task',
+                taskCount: 1,
+                taskIndex: 0,
+                subagentId: 'agent-1',
+                text: 'Thinking about X',
+              )
+              as SubagentEvent;
 
       final next = foldSubagentEvent(state, event);
 
@@ -112,26 +117,25 @@ void main() {
     });
 
     test('subagent.tool updates lastToolName and lastActivity', () {
-      const node = SubagentNode(
-        id: 'agent-1',
-        goal: 'Task',
-      );
+      const node = SubagentNode(id: 'agent-1', goal: 'Task');
       final state = SpawnTreeState(
         nodes: {'agent-1': node},
         order: ['agent-1'],
       );
-      const event = TypedGatewayEvent.subagentEvent(
-        sessionId: 's1',
-        type: 'subagent.tool',
-        goal: 'Task',
-        taskCount: 1,
-        taskIndex: 0,
-        subagentId: 'agent-1',
-        toolName: 'shell',
-        toolPreview: 'ls -la',
-        text: 'List files',
-        toolCount: 3,
-      ) as SubagentEvent;
+      const event =
+          TypedGatewayEvent.subagentEvent(
+                sessionId: 's1',
+                type: 'subagent.tool',
+                goal: 'Task',
+                taskCount: 1,
+                taskIndex: 0,
+                subagentId: 'agent-1',
+                toolName: 'shell',
+                toolPreview: 'ls -la',
+                text: 'List files',
+                toolCount: 3,
+              )
+              as SubagentEvent;
 
       final next = foldSubagentEvent(state, event);
 
@@ -142,25 +146,24 @@ void main() {
     });
 
     test('subagent.tool with only text (no preview) uses text', () {
-      const node = SubagentNode(
-        id: 'agent-1',
-        goal: 'Task',
-      );
+      const node = SubagentNode(id: 'agent-1', goal: 'Task');
       final state = SpawnTreeState(
         nodes: {'agent-1': node},
         order: ['agent-1'],
       );
-      const event = TypedGatewayEvent.subagentEvent(
-        sessionId: 's1',
-        type: 'subagent.tool',
-        goal: 'Task',
-        taskCount: 1,
-        taskIndex: 0,
-        subagentId: 'agent-1',
-        toolName: 'read',
-        text: 'Reading file.txt',
-        toolCount: 1,
-      ) as SubagentEvent;
+      const event =
+          TypedGatewayEvent.subagentEvent(
+                sessionId: 's1',
+                type: 'subagent.tool',
+                goal: 'Task',
+                taskCount: 1,
+                taskIndex: 0,
+                subagentId: 'agent-1',
+                toolName: 'read',
+                text: 'Reading file.txt',
+                toolCount: 1,
+              )
+              as SubagentEvent;
 
       final next = foldSubagentEvent(state, event);
 
@@ -178,15 +181,17 @@ void main() {
         nodes: {'agent-1': node},
         order: ['agent-1'],
       );
-      const event = TypedGatewayEvent.subagentEvent(
-        sessionId: 's1',
-        type: 'subagent.progress',
-        goal: 'Task',
-        taskCount: 1,
-        taskIndex: 0,
-        subagentId: 'agent-1',
-        text: 'Progress: 50%',
-      ) as SubagentEvent;
+      const event =
+          TypedGatewayEvent.subagentEvent(
+                sessionId: 's1',
+                type: 'subagent.progress',
+                goal: 'Task',
+                taskCount: 1,
+                taskIndex: 0,
+                subagentId: 'agent-1',
+                text: 'Progress: 50%',
+              )
+              as SubagentEvent;
 
       final next = foldSubagentEvent(state, event);
 
@@ -206,31 +211,36 @@ void main() {
         nodes: {'agent-1': node},
         order: ['agent-1'],
       );
-      const event = TypedGatewayEvent.subagentEvent(
-        sessionId: 's1',
-        type: 'subagent.complete',
-        goal: 'Task',
-        taskCount: 1,
-        taskIndex: 0,
-        subagentId: 'agent-1',
-        status: 'completed',
-        summary: 'Task done',
-        durationSeconds: 12.5,
-        costUsd: 0.05,
-        inputTokens: 1000,
-        outputTokens: 500,
-        reasoningTokens: 200,
-        apiCalls: 3,
-        filesRead: ['a.txt', 'b.txt'],
-        filesWritten: ['out.txt'],
-      ) as SubagentEvent;
+      const event =
+          TypedGatewayEvent.subagentEvent(
+                sessionId: 's1',
+                type: 'subagent.complete',
+                goal: 'Task',
+                taskCount: 1,
+                taskIndex: 0,
+                subagentId: 'agent-1',
+                status: 'completed',
+                summary: 'Task done',
+                durationSeconds: 12.5,
+                costUsd: 0.05,
+                inputTokens: 1000,
+                outputTokens: 500,
+                reasoningTokens: 200,
+                apiCalls: 3,
+                filesRead: ['a.txt', 'b.txt'],
+                filesWritten: ['out.txt'],
+              )
+              as SubagentEvent;
 
       final next = foldSubagentEvent(state, event);
 
       final updated = next.nodes['agent-1']!;
       expect(updated.status, SubagentStatus.completed);
       expect(updated.summary, 'Task done');
-      expect(updated.lastActivity, 'Task done'); // summary supersedes old activity.
+      expect(
+        updated.lastActivity,
+        'Task done',
+      ); // summary supersedes old activity.
       expect(updated.durationSeconds, 12.5);
       expect(updated.costUsd, 0.05);
       expect(updated.inputTokens, 1000); // Rolled up.
@@ -251,16 +261,18 @@ void main() {
         nodes: {'agent-1': node},
         order: ['agent-1'],
       );
-      const event = TypedGatewayEvent.subagentEvent(
-        sessionId: 's1',
-        type: 'subagent.complete',
-        goal: 'Task',
-        taskCount: 1,
-        taskIndex: 0,
-        subagentId: 'agent-1',
-        status: 'error',
-        summary: 'Failed',
-      ) as SubagentEvent;
+      const event =
+          TypedGatewayEvent.subagentEvent(
+                sessionId: 's1',
+                type: 'subagent.complete',
+                goal: 'Task',
+                taskCount: 1,
+                taskIndex: 0,
+                subagentId: 'agent-1',
+                status: 'error',
+                summary: 'Failed',
+              )
+              as SubagentEvent;
 
       final next = foldSubagentEvent(state, event);
 
@@ -271,22 +283,26 @@ void main() {
 
     test('two siblings preserve order', () {
       const state = SpawnTreeState();
-      const event1 = TypedGatewayEvent.subagentEvent(
-        sessionId: 's1',
-        type: 'subagent.start',
-        goal: 'Task A',
-        taskCount: 1,
-        taskIndex: 0,
-        subagentId: 'agent-a',
-      ) as SubagentEvent;
-      const event2 = TypedGatewayEvent.subagentEvent(
-        sessionId: 's1',
-        type: 'subagent.start',
-        goal: 'Task B',
-        taskCount: 1,
-        taskIndex: 0,
-        subagentId: 'agent-b',
-      ) as SubagentEvent;
+      const event1 =
+          TypedGatewayEvent.subagentEvent(
+                sessionId: 's1',
+                type: 'subagent.start',
+                goal: 'Task A',
+                taskCount: 1,
+                taskIndex: 0,
+                subagentId: 'agent-a',
+              )
+              as SubagentEvent;
+      const event2 =
+          TypedGatewayEvent.subagentEvent(
+                sessionId: 's1',
+                type: 'subagent.start',
+                goal: 'Task B',
+                taskCount: 1,
+                taskIndex: 0,
+                subagentId: 'agent-b',
+              )
+              as SubagentEvent;
 
       final next1 = foldSubagentEvent(state, event1);
       final next2 = foldSubagentEvent(next1, event2);
@@ -296,23 +312,22 @@ void main() {
     });
 
     test('updates to existing nodes do not change order', () {
-      const node = SubagentNode(
-        id: 'agent-1',
-        goal: 'Task',
-      );
+      const node = SubagentNode(id: 'agent-1', goal: 'Task');
       final state = SpawnTreeState(
         nodes: {'agent-1': node},
         order: ['agent-1'],
       );
-      const event = TypedGatewayEvent.subagentEvent(
-        sessionId: 's1',
-        type: 'subagent.progress',
-        goal: 'Task',
-        taskCount: 1,
-        taskIndex: 0,
-        subagentId: 'agent-1',
-        text: 'Update',
-      ) as SubagentEvent;
+      const event =
+          TypedGatewayEvent.subagentEvent(
+                sessionId: 's1',
+                type: 'subagent.progress',
+                goal: 'Task',
+                taskCount: 1,
+                taskIndex: 0,
+                subagentId: 'agent-1',
+                text: 'Update',
+              )
+              as SubagentEvent;
 
       final next = foldSubagentEvent(state, event);
 
@@ -330,16 +345,18 @@ void main() {
         nodes: {'agent-1': node},
         order: ['agent-1'],
       );
-      const event = TypedGatewayEvent.subagentEvent(
-        sessionId: 's1',
-        type: 'subagent.complete',
-        goal: 'Task',
-        taskCount: 1,
-        taskIndex: 0,
-        subagentId: 'agent-1',
-        status: 'completed',
-        // inputTokens, filesRead are null in this event.
-      ) as SubagentEvent;
+      const event =
+          TypedGatewayEvent.subagentEvent(
+                sessionId: 's1',
+                type: 'subagent.complete',
+                goal: 'Task',
+                taskCount: 1,
+                taskIndex: 0,
+                subagentId: 'agent-1',
+                status: 'completed',
+                // inputTokens, filesRead are null in this event.
+              )
+              as SubagentEvent;
 
       final next = foldSubagentEvent(state, event);
 

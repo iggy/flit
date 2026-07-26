@@ -75,8 +75,7 @@ final class FakeSessionRepository implements SessionRepository {
     String? profile,
     String? cwd,
     String? model,
-  }) =>
-      throw UnimplementedError();
+  }) => throw UnimplementedError();
 
   @override
   Future<List<SessionSummary>> list() => throw UnimplementedError();
@@ -136,9 +135,7 @@ void main() {
       retry: (retryCount, error) => null,
       overrides: [
         sessionRepositoryProvider.overrideWithValue(repository),
-        gatewayEventsProvider.overrideWith(
-          (ref) => eventsController.stream,
-        ),
+        gatewayEventsProvider.overrideWith((ref) => eventsController.stream),
       ],
     );
   });
@@ -184,23 +181,29 @@ void main() {
     expect(breakdown, isNull);
   });
 
-  test('contextBreakdownProvider returns null when no active session', () async {
-    final breakdown = await container.read(contextBreakdownProvider.future);
+  test(
+    'contextBreakdownProvider returns null when no active session',
+    () async {
+      final breakdown = await container.read(contextBreakdownProvider.future);
 
-    expect(breakdown, isNull);
-  });
+      expect(breakdown, isNull);
+    },
+  );
 
-  test('contextBreakdownProvider fetches breakdown for active session', () async {
-    container
-        .read(activeSessionProvider.notifier)
-        .switchTo(liveId: 'a1b2c3d4', durableId: 'd');
+  test(
+    'contextBreakdownProvider fetches breakdown for active session',
+    () async {
+      container
+          .read(activeSessionProvider.notifier)
+          .switchTo(liveId: 'a1b2c3d4', durableId: 'd');
 
-    final breakdown = await container.read(contextBreakdownProvider.future);
+      final breakdown = await container.read(contextBreakdownProvider.future);
 
-    expect(breakdown, repository.contextBreakdownResult);
-    expect(breakdown?.model, 'claude-opus');
-    expect(breakdown?.categories, hasLength(1));
-  });
+      expect(breakdown, repository.contextBreakdownResult);
+      expect(breakdown?.model, 'claude-opus');
+      expect(breakdown?.categories, hasLength(1));
+    },
+  );
 
   test('mostRecentSessionProvider returns null when repo is null', () async {
     final disconnected = ProviderContainer();

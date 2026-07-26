@@ -52,9 +52,7 @@ void main() {
 
     test('returns true when provider_configured is true', () async {
       client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'provider_configured': true,
-        },
+        handler: (_, _) => const <String, dynamic>{'provider_configured': true},
       );
       repository = HealthRepositoryImpl(client);
 
@@ -89,13 +87,15 @@ void main() {
   });
 
   group('runtimeCheck (ticket P4-06)', () {
-    test('sends setup.runtime_check with empty params when no provider',
-        () async {
-      await repository.runtimeCheck();
+    test(
+      'sends setup.runtime_check with empty params when no provider',
+      () async {
+        await repository.runtimeCheck();
 
-      expect(client.calls.single.method, 'setup.runtime_check');
-      expect(client.calls.single.params, <String, dynamic>{});
-    });
+        expect(client.calls.single.method, 'setup.runtime_check');
+        expect(client.calls.single.params, <String, dynamic>{});
+      },
+    );
 
     test('includes provider when provided', () async {
       await repository.runtimeCheck(provider: 'anthropic');
@@ -146,29 +146,27 @@ void main() {
   });
 
   group('verificationStatus (ticket P4-06)', () {
-    test('sends verification.status with empty params when no sessionId/cwd',
-        () async {
-      client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'verification': <String, dynamic>{
-            'status': 'verified',
+    test(
+      'sends verification.status with empty params when no sessionId/cwd',
+      () async {
+        client = FakeGatewayRpcClient(
+          handler: (_, _) => const <String, dynamic>{
+            'verification': <String, dynamic>{'status': 'verified'},
           },
-        },
-      );
-      repository = HealthRepositoryImpl(client);
+        );
+        repository = HealthRepositoryImpl(client);
 
-      await repository.verificationStatus();
+        await repository.verificationStatus();
 
-      expect(client.calls.single.method, 'verification.status');
-      expect(client.calls.single.params, <String, dynamic>{});
-    });
+        expect(client.calls.single.method, 'verification.status');
+        expect(client.calls.single.params, <String, dynamic>{});
+      },
+    );
 
     test('includes session_id when provided', () async {
       client = FakeGatewayRpcClient(
         handler: (_, _) => const <String, dynamic>{
-          'verification': <String, dynamic>{
-            'status': 'verified',
-          },
+          'verification': <String, dynamic>{'status': 'verified'},
         },
       );
       repository = HealthRepositoryImpl(client);
@@ -184,9 +182,7 @@ void main() {
     test('includes cwd when provided', () async {
       client = FakeGatewayRpcClient(
         handler: (_, _) => const <String, dynamic>{
-          'verification': <String, dynamic>{
-            'status': 'verified',
-          },
+          'verification': <String, dynamic>{'status': 'verified'},
         },
       );
       repository = HealthRepositoryImpl(client);
@@ -243,9 +239,7 @@ void main() {
 
     test('defaults to "unknown" when verification is not a map', () async {
       client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'verification': 'not a map',
-        },
+        handler: (_, _) => const <String, dynamic>{'verification': 'not a map'},
       );
       repository = HealthRepositoryImpl(client);
 

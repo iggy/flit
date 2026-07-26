@@ -141,11 +141,7 @@ class LearningBucketDto {
 /// Wire DTO for a legend entry.
 @JsonSerializable()
 class LearningLegendDto {
-  const LearningLegendDto({
-    this.glyph,
-    this.style,
-    this.label,
-  });
+  const LearningLegendDto({this.glyph, this.style, this.label});
 
   factory LearningLegendDto.fromJson(Map<String, dynamic> json) =>
       _$LearningLegendDtoFromJson(json);
@@ -173,11 +169,7 @@ class LearningLegendDto {
 /// Wire DTO for a category entry.
 @JsonSerializable()
 class LearningCategoryDto {
-  const LearningCategoryDto({
-    this.glyph,
-    this.color,
-    this.label,
-  });
+  const LearningCategoryDto({this.glyph, this.color, this.label});
 
   factory LearningCategoryDto.fromJson(Map<String, dynamic> json) =>
       _$LearningCategoryDtoFromJson(json);
@@ -299,10 +291,7 @@ class LearningDetailResultDto {
 /// Wire DTO for `learning.edit` and `learning.delete` results.
 @JsonSerializable()
 class LearningMutationResultDto {
-  const LearningMutationResultDto({
-    this.ok,
-    this.message,
-  });
+  const LearningMutationResultDto({this.ok, this.message});
 
   factory LearningMutationResultDto.fromJson(Map<String, dynamic> json) =>
       _$LearningMutationResultDtoFromJson(json);

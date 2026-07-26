@@ -83,11 +83,7 @@ class _SecretPromptCardState extends ConsumerState<SecretPromptCard> {
           children: <Widget>[
             Row(
               children: <Widget>[
-                Icon(
-                  Icons.key,
-                  size: 18,
-                  color: scheme.onSecondaryContainer,
-                ),
+                Icon(Icons.key, size: 18, color: scheme.onSecondaryContainer),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(

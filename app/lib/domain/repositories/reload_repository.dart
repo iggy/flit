@@ -53,10 +53,7 @@ abstract interface class ReloadRepository {
   ///
   /// On first call (confirm=false), may return [ReloadMcpConfirmRequired].
   /// Re-call with confirm=true to proceed.
-  Future<ReloadMcpOutcome> reloadMcp({
-    String? sessionId,
-    bool confirm = false,
-  });
+  Future<ReloadMcpOutcome> reloadMcp({String? sessionId, bool confirm = false});
 
   /// `reload.env` — reload environment variables.
   ///

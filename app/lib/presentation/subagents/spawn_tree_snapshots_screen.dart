@@ -15,9 +15,7 @@ class SpawnTreeSnapshotsScreen extends ConsumerWidget {
     final liveId = activeSession.liveId;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Spawn Tree Snapshots'),
-      ),
+      appBar: AppBar(title: const Text('Spawn Tree Snapshots')),
       body: liveId == null
           ? const _DisconnectedMessage()
           : _SnapshotsList(sessionId: liveId),
@@ -47,12 +45,11 @@ class _SnapshotsList extends ConsumerWidget {
 
     return snapshots.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => Center(child: Text('Error loading snapshots: $error')),
+      error: (error, _) =>
+          Center(child: Text('Error loading snapshots: $error')),
       data: (entries) {
         if (entries.isEmpty) {
-          return const Center(
-            child: Text('No snapshots saved yet.'),
-          );
+          return const Center(child: Text('No snapshots saved yet.'));
         }
         return ListView.builder(
           padding: const EdgeInsets.all(16),
@@ -82,9 +79,7 @@ class _SnapshotEntryTile extends StatelessWidget {
     return Card(
       child: ListTile(
         title: Text(entry.label),
-        subtitle: Text(
-          '${entry.count} subagents • $formattedDate',
-        ),
+        subtitle: Text('${entry.count} subagents • $formattedDate'),
         trailing: const Icon(Icons.chevron_right),
         onTap: () {
           Navigator.of(context).push(
@@ -108,12 +103,11 @@ class _SnapshotDetailScreen extends ConsumerWidget {
     final snapshot = ref.watch(snapshotDetailProvider(path));
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Snapshot Details'),
-      ),
+      appBar: AppBar(title: const Text('Snapshot Details')),
       body: snapshot.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('Error loading snapshot: $error')),
+        error: (error, _) =>
+            Center(child: Text('Error loading snapshot: $error')),
         data: (data) {
           if (data == null) {
             return const Center(child: Text('Snapshot not found.'));
@@ -204,7 +198,8 @@ class _SnapshotDetailView extends StatelessWidget {
     }
 
     final goal = entry['goal'] as String? ?? '(no goal)';
-    final id = entry['id'] as String? ?? entry['subagent_id'] as String? ?? '(no id)';
+    final id =
+        entry['id'] as String? ?? entry['subagent_id'] as String? ?? '(no id)';
     final status = entry['status'] as String? ?? '';
 
     return Padding(

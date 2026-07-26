@@ -195,25 +195,25 @@ final class SubagentNode {
 
   @override
   int get hashCode => Object.hash(
-        id,
-        parentId,
-        depth,
-        goal,
-        model,
-        status,
-        lastActivity,
-        lastToolName,
-        toolCount,
-        inputTokens,
-        outputTokens,
-        reasoningTokens,
-        apiCalls,
-        Object.hashAll(filesRead),
-        Object.hashAll(filesWritten),
-        summary,
-        durationSeconds,
-        costUsd,
-      );
+    id,
+    parentId,
+    depth,
+    goal,
+    model,
+    status,
+    lastActivity,
+    lastToolName,
+    toolCount,
+    inputTokens,
+    outputTokens,
+    reasoningTokens,
+    apiCalls,
+    Object.hashAll(filesRead),
+    Object.hashAll(filesWritten),
+    summary,
+    durationSeconds,
+    costUsd,
+  );
 
   @override
   String toString() {

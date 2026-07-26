@@ -20,10 +20,16 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          kanbanAssigneesProvider.overrideWith((ref) => Future.value(assignees)),
-          kanbanProfilesProvider.overrideWith((ref) => Future.value(const <KanbanProfile>[])),
+          kanbanAssigneesProvider.overrideWith(
+            (ref) => Future.value(assignees),
+          ),
+          kanbanProfilesProvider.overrideWith(
+            (ref) => Future.value(const <KanbanProfile>[]),
+          ),
           kanbanOrchestrationProvider.overrideWith((ref) => Future.value(null)),
-          kanbanFleetActionControllerProvider.overrideWith(_FakeActionController.new),
+          kanbanFleetActionControllerProvider.overrideWith(
+            _FakeActionController.new,
+          ),
         ],
         child: const MaterialApp(home: KanbanOrchestrationScreen()),
       ),
@@ -50,10 +56,14 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          kanbanAssigneesProvider.overrideWith((ref) => Future.value(const <KanbanAssignee>[])),
+          kanbanAssigneesProvider.overrideWith(
+            (ref) => Future.value(const <KanbanAssignee>[]),
+          ),
           kanbanProfilesProvider.overrideWith((ref) => Future.value(profiles)),
           kanbanOrchestrationProvider.overrideWith((ref) => Future.value(null)),
-          kanbanFleetActionControllerProvider.overrideWith(_FakeActionController.new),
+          kanbanFleetActionControllerProvider.overrideWith(
+            _FakeActionController.new,
+          ),
         ],
         child: const MaterialApp(home: KanbanOrchestrationScreen()),
       ),
@@ -78,10 +88,18 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          kanbanAssigneesProvider.overrideWith((ref) => Future.value(const <KanbanAssignee>[])),
-          kanbanProfilesProvider.overrideWith((ref) => Future.value(const <KanbanProfile>[])),
-          kanbanOrchestrationProvider.overrideWith((ref) => Future.value(orchestration)),
-          kanbanFleetActionControllerProvider.overrideWith(_FakeActionController.new),
+          kanbanAssigneesProvider.overrideWith(
+            (ref) => Future.value(const <KanbanAssignee>[]),
+          ),
+          kanbanProfilesProvider.overrideWith(
+            (ref) => Future.value(const <KanbanProfile>[]),
+          ),
+          kanbanOrchestrationProvider.overrideWith(
+            (ref) => Future.value(orchestration),
+          ),
+          kanbanFleetActionControllerProvider.overrideWith(
+            _FakeActionController.new,
+          ),
         ],
         child: const MaterialApp(home: KanbanOrchestrationScreen()),
       ),
@@ -109,7 +127,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          kanbanAssigneesProvider.overrideWith((ref) => Future.value(const <KanbanAssignee>[])),
+          kanbanAssigneesProvider.overrideWith(
+            (ref) => Future.value(const <KanbanAssignee>[]),
+          ),
           kanbanProfilesProvider.overrideWith((ref) => Future.value(profiles)),
           kanbanOrchestrationProvider.overrideWith((ref) => Future.value(null)),
           kanbanFleetActionControllerProvider.overrideWith(() => controller),
@@ -154,9 +174,15 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          kanbanAssigneesProvider.overrideWith((ref) => Future.value(const <KanbanAssignee>[])),
-          kanbanProfilesProvider.overrideWith((ref) => Future.value(const <KanbanProfile>[])),
-          kanbanOrchestrationProvider.overrideWith((ref) => Future.value(orchestration)),
+          kanbanAssigneesProvider.overrideWith(
+            (ref) => Future.value(const <KanbanAssignee>[]),
+          ),
+          kanbanProfilesProvider.overrideWith(
+            (ref) => Future.value(const <KanbanProfile>[]),
+          ),
+          kanbanOrchestrationProvider.overrideWith(
+            (ref) => Future.value(orchestration),
+          ),
           kanbanFleetActionControllerProvider.overrideWith(() => controller),
         ],
         child: const MaterialApp(home: KanbanOrchestrationScreen()),
@@ -168,7 +194,10 @@ void main() {
     // The orchestration section is already expanded by default (initiallyExpanded: true)
     // Toggle auto decompose switch by finding the specific SwitchListTile
     final switchFinder = find.byWidgetPredicate(
-      (widget) => widget is SwitchListTile && widget.title is Text && (widget.title! as Text).data == 'Auto Decompose',
+      (widget) =>
+          widget is SwitchListTile &&
+          widget.title is Text &&
+          (widget.title! as Text).data == 'Auto Decompose',
     );
 
     expect(switchFinder, findsOneWidget);
@@ -181,10 +210,7 @@ void main() {
 }
 
 final class _FakeActionController extends KanbanFleetActionController {
-  _FakeActionController({
-    this.error,
-    this.lastMessage,
-  });
+  _FakeActionController({this.error, this.lastMessage});
 
   final String? error;
   final String? lastMessage;
@@ -194,10 +220,7 @@ final class _FakeActionController extends KanbanFleetActionController {
 
   @override
   KanbanFleetActionState build() {
-    return KanbanFleetActionState(
-      error: error,
-      lastMessage: lastMessage,
-    );
+    return KanbanFleetActionState(error: error, lastMessage: lastMessage);
   }
 
   @override

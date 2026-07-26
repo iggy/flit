@@ -6,12 +6,7 @@ part 'project_dtos.g.dart';
 /// Wire DTO for a project folder entry.
 @JsonSerializable()
 class ProjectFolderDto {
-  const ProjectFolderDto({
-    this.path,
-    this.label,
-    this.isPrimary,
-    this.addedAt,
-  });
+  const ProjectFolderDto({this.path, this.label, this.isPrimary, this.addedAt});
 
   factory ProjectFolderDto.fromJson(Map<String, dynamic> json) =>
       _$ProjectFolderDtoFromJson(json);
@@ -177,11 +172,7 @@ class ForCwdResultDto {
   Map<String, dynamic> toJson() => _$ForCwdResultDtoToJson(this);
 
   ({Project? project, String cwd, String? branch}) toDomain() {
-    return (
-      project: project?.toDomain(),
-      cwd: cwd ?? '',
-      branch: branch,
-    );
+    return (project: project?.toDomain(), cwd: cwd ?? '', branch: branch);
   }
 }
 

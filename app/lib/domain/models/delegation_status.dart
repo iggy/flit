@@ -37,11 +37,11 @@ final class DelegationStatus {
 
   @override
   int get hashCode => Object.hash(
-        Object.hashAll(active),
-        paused,
-        maxSpawnDepth,
-        maxConcurrentChildren,
-      );
+    Object.hashAll(active),
+    paused,
+    maxSpawnDepth,
+    maxConcurrentChildren,
+  );
 
   @override
   String toString() {
@@ -108,16 +108,16 @@ final class ActiveSubagent {
 
   @override
   int get hashCode => Object.hash(
-        id,
-        parentId,
-        depth,
-        goal,
-        model,
-        startedAt,
-        status,
-        toolCount,
-        lastTool,
-      );
+    id,
+    parentId,
+    depth,
+    goal,
+    model,
+    startedAt,
+    status,
+    toolCount,
+    lastTool,
+  );
 
   @override
   String toString() {

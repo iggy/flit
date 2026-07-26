@@ -30,11 +30,7 @@ final skillCatalogProvider = FutureProvider<SkillCatalog>((ref) async {
 
 /// Interaction state for skills reload (P5-09).
 final class SkillsReloadState {
-  const SkillsReloadState({
-    this.busy = false,
-    this.error,
-    this.lastResult,
-  });
+  const SkillsReloadState({this.busy = false, this.error, this.lastResult});
 
   /// A reload call is in flight.
   final bool busy;
@@ -96,9 +92,6 @@ class SkillsReloadController extends Notifier<SkillsReloadState> {
   }
 
   void clearError() {
-    state = SkillsReloadState(
-      busy: state.busy,
-      lastResult: state.lastResult,
-    );
+    state = SkillsReloadState(busy: state.busy, lastResult: state.lastResult);
   }
 }

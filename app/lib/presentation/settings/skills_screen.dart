@@ -26,7 +26,9 @@ class SkillsScreen extends ConsumerWidget {
                 : const Icon(Icons.refresh),
             onPressed: reloadState.busy
                 ? null
-                : () => ref.read(skillsReloadControllerProvider.notifier).reload(),
+                : () => ref
+                      .read(skillsReloadControllerProvider.notifier)
+                      .reload(),
             tooltip: 'Reload',
           ),
         ],
@@ -67,10 +69,7 @@ class SkillsScreen extends ConsumerWidget {
                       subtitle: Text('${group.names.length} skill(s)'),
                       children: group.names
                           .map(
-                            (name) => ListTile(
-                              title: Text(name),
-                              dense: true,
-                            ),
+                            (name) => ListTile(title: Text(name), dense: true),
                           )
                           .toList(),
                     );
@@ -126,10 +125,7 @@ class _SkillsError extends StatelessWidget {
 }
 
 class _SkillsErrorBanner extends StatelessWidget {
-  const _SkillsErrorBanner({
-    required this.message,
-    required this.onDismiss,
-  });
+  const _SkillsErrorBanner({required this.message, required this.onDismiss});
 
   final String message;
   final VoidCallback onDismiss;
@@ -139,10 +135,7 @@ class _SkillsErrorBanner extends StatelessWidget {
     return MaterialBanner(
       content: Text(message),
       actions: <Widget>[
-        TextButton(
-          onPressed: onDismiss,
-          child: const Text('Dismiss'),
-        ),
+        TextButton(onPressed: onDismiss, child: const Text('Dismiss')),
       ],
     );
   }
@@ -165,10 +158,7 @@ class _SkillsReloadResultBanner extends StatelessWidget {
         'Added: ${result.added.length}, Removed: ${result.removed.length}.',
       ),
       actions: <Widget>[
-        TextButton(
-          onPressed: onDismiss,
-          child: const Text('Dismiss'),
-        ),
+        TextButton(onPressed: onDismiss, child: const Text('Dismiss')),
       ],
     );
   }

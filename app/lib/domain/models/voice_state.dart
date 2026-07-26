@@ -54,14 +54,14 @@ final class VoiceToggleResult {
 
   @override
   int get hashCode => Object.hash(
-        enabled,
-        recordKey,
-        tts,
-        available,
-        audioAvailable,
-        sttAvailable,
-        details,
-      );
+    enabled,
+    recordKey,
+    tts,
+    available,
+    audioAvailable,
+    sttAvailable,
+    details,
+  );
 
   @override
   String toString() {
@@ -73,9 +73,7 @@ final class VoiceToggleResult {
 
 /// Result of `voice.record` — reports the recording status.
 final class VoiceRecordResult {
-  const VoiceRecordResult({
-    required this.status,
-  });
+  const VoiceRecordResult({required this.status});
 
   /// Wire `status` — "recording", "stopped", or "busy".
   final String status;
@@ -96,9 +94,7 @@ final class VoiceRecordResult {
 
 /// Result of `voice.tts` — reports the TTS status.
 final class VoiceTtsResult {
-  const VoiceTtsResult({
-    required this.status,
-  });
+  const VoiceTtsResult({required this.status});
 
   /// Wire `status` — e.g. "speaking".
   final String status;

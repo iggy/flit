@@ -23,8 +23,10 @@ final projectFactsRepositoryProvider = Provider<ProjectFactsRepository?>((ref) {
 /// OR when the cwd is not a code workspace (this is a normal result).
 /// Re-fetches on client swap (reconnect); refresh with
 /// `ref.invalidate(projectFactsProvider(cwd))`.
-final projectFactsProvider =
-    FutureProvider.family<ProjectFacts?, String?>((ref, cwd) async {
+final projectFactsProvider = FutureProvider.family<ProjectFacts?, String?>((
+  ref,
+  cwd,
+) async {
   final repository = ref.watch(projectFactsRepositoryProvider);
   if (repository == null) {
     return null;

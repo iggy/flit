@@ -445,11 +445,7 @@ void main() {
           GatewayEvent(
             type: type,
             sessionId: sid,
-            payload: {
-              'goal': 'Test',
-              'task_count': 1,
-              'task_index': 0,
-            },
+            payload: {'goal': 'Test', 'task_count': 1, 'task_index': 0},
           ),
         );
         expect(event, isA<SubagentEvent>(), reason: '$type should parse');

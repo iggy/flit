@@ -105,7 +105,8 @@ final class SkillBrowseResult {
   }
 
   @override
-  int get hashCode => Object.hash(Object.hashAll(items), page, totalPages, total);
+  int get hashCode =>
+      Object.hash(Object.hashAll(items), page, totalPages, total);
 
   @override
   String toString() {

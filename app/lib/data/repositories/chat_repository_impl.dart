@@ -87,11 +87,10 @@ final class ChatRepositoryImpl implements ChatRepository {
     // P3-08: correlated BY REQUEST_ID — no session_id.
     // Success shape is `{"status":"ok"}`; an already-resolved request comes
     // back as a JSON-RPC error (code 4009) → GatewayRpcException.
-    final result =
-        await _client.request('terminal.read.respond', <String, dynamic>{
-      'request_id': requestId,
-      'text': text,
-    });
+    final result = await _client.request(
+      'terminal.read.respond',
+      <String, dynamic>{'request_id': requestId, 'text': text},
+    );
     _expectStatus(result, 'ok');
   }
 

@@ -19,7 +19,9 @@ void main() {
 
       expect(container.read(backgroundTasksProvider).busy, isFalse);
 
-      final future = container.read(backgroundTasksProvider.notifier).submit('write a poem');
+      final future = container
+          .read(backgroundTasksProvider.notifier)
+          .submit('write a poem');
 
       expect(container.read(backgroundTasksProvider).busy, isTrue);
 
@@ -66,7 +68,7 @@ void main() {
         overrides: [
           backgroundRepositoryProvider.overrideWithValue(null),
           activeSessionProvider.overrideWith(
-                () => _FakeActiveSessionNotifier(
+            () => _FakeActiveSessionNotifier(
               const ActiveSessionState(liveId: 'sess_1'),
             ),
           ),
@@ -86,7 +88,7 @@ void main() {
         overrides: [
           backgroundRepositoryProvider.overrideWithValue(repo),
           activeSessionProvider.overrideWith(
-                () => _FakeActiveSessionNotifier(
+            () => _FakeActiveSessionNotifier(
               const ActiveSessionState(liveId: null),
             ),
           ),
@@ -105,7 +107,9 @@ void main() {
       final container = _containerWith(repo, liveId: 'sess_1');
 
       // Start first submit (don't await).
-      final future1 = container.read(backgroundTasksProvider.notifier).submit('first');
+      final future1 = container
+          .read(backgroundTasksProvider.notifier)
+          .submit('first');
 
       // Try to submit while busy.
       await container.read(backgroundTasksProvider.notifier).submit('second');
@@ -129,7 +133,9 @@ void main() {
       final container = _containerWith(repo, liveId: 'sess_1');
 
       // Submit a task.
-      await container.read(backgroundTasksProvider.notifier).submit('write a poem');
+      await container
+          .read(backgroundTasksProvider.notifier)
+          .submit('write a poem');
 
       expect(container.read(backgroundTasksProvider).tasks[0].done, isFalse);
 
@@ -203,9 +209,7 @@ ProviderContainer _containerWith(
     overrides: [
       backgroundRepositoryProvider.overrideWithValue(repository),
       activeSessionProvider.overrideWith(
-            () => _FakeActiveSessionNotifier(
-          ActiveSessionState(liveId: liveId),
-        ),
+        () => _FakeActiveSessionNotifier(ActiveSessionState(liveId: liveId)),
       ),
     ],
   );
@@ -226,7 +230,7 @@ final class _FakeBackgroundRepository implements BackgroundRepository {
     this.submitError,
     StreamController<BackgroundCompletion>? completionsController,
   }) : _completionsController =
-      completionsController ?? StreamController<BackgroundCompletion>();
+           completionsController ?? StreamController<BackgroundCompletion>();
 
   final Exception? submitError;
   final StreamController<BackgroundCompletion> _completionsController;

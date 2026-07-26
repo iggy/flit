@@ -20,9 +20,15 @@ void main() {
       ProviderScope(
         overrides: [
           kanbanStatsProvider.overrideWith((ref) => Future.value(stats)),
-          kanbanWorkersProvider.overrideWith((ref) => Future.value(const <KanbanWorker>[])),
-          kanbanDiagnosticsProvider.overrideWith((ref) => Future.value(const <KanbanDiagnosticGroup>[])),
-          kanbanFleetActionControllerProvider.overrideWith(_FakeActionController.new),
+          kanbanWorkersProvider.overrideWith(
+            (ref) => Future.value(const <KanbanWorker>[]),
+          ),
+          kanbanDiagnosticsProvider.overrideWith(
+            (ref) => Future.value(const <KanbanDiagnosticGroup>[]),
+          ),
+          kanbanFleetActionControllerProvider.overrideWith(
+            _FakeActionController.new,
+          ),
         ],
         child: const MaterialApp(home: KanbanFleetScreen()),
       ),
@@ -52,8 +58,12 @@ void main() {
         overrides: [
           kanbanStatsProvider.overrideWith((ref) => Future.value(null)),
           kanbanWorkersProvider.overrideWith((ref) => Future.value(workers)),
-          kanbanDiagnosticsProvider.overrideWith((ref) => Future.value(const <KanbanDiagnosticGroup>[])),
-          kanbanFleetActionControllerProvider.overrideWith(_FakeActionController.new),
+          kanbanDiagnosticsProvider.overrideWith(
+            (ref) => Future.value(const <KanbanDiagnosticGroup>[]),
+          ),
+          kanbanFleetActionControllerProvider.overrideWith(
+            _FakeActionController.new,
+          ),
         ],
         child: const MaterialApp(home: KanbanFleetScreen()),
       ),
@@ -83,7 +93,9 @@ void main() {
         overrides: [
           kanbanStatsProvider.overrideWith((ref) => Future.value(null)),
           kanbanWorkersProvider.overrideWith((ref) => Future.value(workers)),
-          kanbanDiagnosticsProvider.overrideWith((ref) => Future.value(const <KanbanDiagnosticGroup>[])),
+          kanbanDiagnosticsProvider.overrideWith(
+            (ref) => Future.value(const <KanbanDiagnosticGroup>[]),
+          ),
           kanbanFleetActionControllerProvider.overrideWith(() => controller),
         ],
         child: const MaterialApp(home: KanbanFleetScreen()),
@@ -111,8 +123,12 @@ void main() {
       ProviderScope(
         overrides: [
           kanbanStatsProvider.overrideWith((ref) => Future.value(null)),
-          kanbanWorkersProvider.overrideWith((ref) => Future.value(const <KanbanWorker>[])),
-          kanbanDiagnosticsProvider.overrideWith((ref) => Future.value(const <KanbanDiagnosticGroup>[])),
+          kanbanWorkersProvider.overrideWith(
+            (ref) => Future.value(const <KanbanWorker>[]),
+          ),
+          kanbanDiagnosticsProvider.overrideWith(
+            (ref) => Future.value(const <KanbanDiagnosticGroup>[]),
+          ),
           kanbanFleetActionControllerProvider.overrideWith(() => controller),
         ],
         child: const MaterialApp(home: KanbanFleetScreen()),
@@ -152,9 +168,15 @@ void main() {
       ProviderScope(
         overrides: [
           kanbanStatsProvider.overrideWith((ref) => Future.value(null)),
-          kanbanWorkersProvider.overrideWith((ref) => Future.value(const <KanbanWorker>[])),
-          kanbanDiagnosticsProvider.overrideWith((ref) => Future.value(diagnostics)),
-          kanbanFleetActionControllerProvider.overrideWith(_FakeActionController.new),
+          kanbanWorkersProvider.overrideWith(
+            (ref) => Future.value(const <KanbanWorker>[]),
+          ),
+          kanbanDiagnosticsProvider.overrideWith(
+            (ref) => Future.value(diagnostics),
+          ),
+          kanbanFleetActionControllerProvider.overrideWith(
+            _FakeActionController.new,
+          ),
         ],
         child: const MaterialApp(home: KanbanFleetScreen()),
       ),
@@ -167,10 +189,7 @@ void main() {
 }
 
 final class _FakeActionController extends KanbanFleetActionController {
-  _FakeActionController({
-    this.error,
-    this.lastMessage,
-  });
+  _FakeActionController({this.error, this.lastMessage});
 
   final String? error;
   final String? lastMessage;
@@ -181,28 +200,17 @@ final class _FakeActionController extends KanbanFleetActionController {
 
   @override
   KanbanFleetActionState build() {
-    return KanbanFleetActionState(
-      error: error,
-      lastMessage: lastMessage,
-    );
+    return KanbanFleetActionState(error: error, lastMessage: lastMessage);
   }
 
   @override
-  Future<void> dispatch({
-    bool dryRun = false,
-    int? max,
-    String? board,
-  }) async {
+  Future<void> dispatch({bool dryRun = false, int? max, String? board}) async {
     dispatchCalled = true;
     lastDryRun = dryRun;
   }
 
   @override
-  Future<void> terminateRun(
-    int runId, {
-    String? reason,
-    String? board,
-  }) async {
+  Future<void> terminateRun(int runId, {String? reason, String? board}) async {
     terminateRunCalled = true;
     lastRunId = runId;
   }

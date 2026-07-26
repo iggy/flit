@@ -52,7 +52,9 @@ final kanbanWorkersProvider = FutureProvider<List<KanbanWorker>>((ref) async {
 });
 
 /// Diagnostics from `GET /diagnostics`; empty when disconnected.
-final kanbanDiagnosticsProvider = FutureProvider<List<KanbanDiagnosticGroup>>((ref) async {
+final kanbanDiagnosticsProvider = FutureProvider<List<KanbanDiagnosticGroup>>((
+  ref,
+) async {
   final repository = ref.watch(kanbanFleetRepositoryProvider);
   if (repository == null) {
     return const <KanbanDiagnosticGroup>[];
@@ -61,7 +63,9 @@ final kanbanDiagnosticsProvider = FutureProvider<List<KanbanDiagnosticGroup>>((r
 });
 
 /// Assignees from `GET /assignees`; empty when disconnected.
-final kanbanAssigneesProvider = FutureProvider<List<KanbanAssignee>>((ref) async {
+final kanbanAssigneesProvider = FutureProvider<List<KanbanAssignee>>((
+  ref,
+) async {
   final repository = ref.watch(kanbanFleetRepositoryProvider);
   if (repository == null) {
     return const <KanbanAssignee>[];
@@ -79,7 +83,9 @@ final kanbanProfilesProvider = FutureProvider<List<KanbanProfile>>((ref) async {
 });
 
 /// Orchestration settings from `GET /orchestration`; null when disconnected.
-final kanbanOrchestrationProvider = FutureProvider<KanbanOrchestration?>((ref) async {
+final kanbanOrchestrationProvider = FutureProvider<KanbanOrchestration?>((
+  ref,
+) async {
   final repository = ref.watch(kanbanFleetRepositoryProvider);
   if (repository == null) {
     return null;
@@ -148,7 +154,9 @@ class KanbanFleetActionController extends Notifier<KanbanFleetActionState> {
     }
     final repository = ref.read(kanbanFleetRepositoryProvider);
     if (repository == null) {
-      state = const KanbanFleetActionState(error: 'Not connected to a gateway.');
+      state = const KanbanFleetActionState(
+        error: 'Not connected to a gateway.',
+      );
       return;
     }
     state = const KanbanFleetActionState(busy: true);
@@ -187,7 +195,9 @@ class KanbanFleetActionController extends Notifier<KanbanFleetActionState> {
     }
     final repository = ref.read(kanbanFleetRepositoryProvider);
     if (repository == null) {
-      state = const KanbanFleetActionState(error: 'Not connected to a gateway.');
+      state = const KanbanFleetActionState(
+        error: 'Not connected to a gateway.',
+      );
       return;
     }
     state = const KanbanFleetActionState(busy: true);
@@ -221,7 +231,9 @@ class KanbanFleetActionController extends Notifier<KanbanFleetActionState> {
     }
     final repository = ref.read(kanbanFleetRepositoryProvider);
     if (repository == null) {
-      state = const KanbanFleetActionState(error: 'Not connected to a gateway.');
+      state = const KanbanFleetActionState(
+        error: 'Not connected to a gateway.',
+      );
       return;
     }
     state = const KanbanFleetActionState(busy: true);
@@ -245,7 +257,9 @@ class KanbanFleetActionController extends Notifier<KanbanFleetActionState> {
     }
     final repository = ref.read(kanbanFleetRepositoryProvider);
     if (repository == null) {
-      state = const KanbanFleetActionState(error: 'Not connected to a gateway.');
+      state = const KanbanFleetActionState(
+        error: 'Not connected to a gateway.',
+      );
       return;
     }
     state = const KanbanFleetActionState(busy: true);
@@ -261,17 +275,15 @@ class KanbanFleetActionController extends Notifier<KanbanFleetActionState> {
   }
 
   /// Dispatch workers. NEVER throws — failures land in [KanbanFleetActionState.error].
-  Future<void> dispatch({
-    bool dryRun = false,
-    int? max,
-    String? board,
-  }) async {
+  Future<void> dispatch({bool dryRun = false, int? max, String? board}) async {
     if (state.busy) {
       return;
     }
     final repository = ref.read(kanbanFleetRepositoryProvider);
     if (repository == null) {
-      state = const KanbanFleetActionState(error: 'Not connected to a gateway.');
+      state = const KanbanFleetActionState(
+        error: 'Not connected to a gateway.',
+      );
       return;
     }
     state = const KanbanFleetActionState(busy: true);
@@ -295,17 +307,15 @@ class KanbanFleetActionController extends Notifier<KanbanFleetActionState> {
   }
 
   /// Terminate a worker. NEVER throws — failures land in [KanbanFleetActionState.error].
-  Future<void> terminateRun(
-    int runId, {
-    String? reason,
-    String? board,
-  }) async {
+  Future<void> terminateRun(int runId, {String? reason, String? board}) async {
     if (state.busy) {
       return;
     }
     final repository = ref.read(kanbanFleetRepositoryProvider);
     if (repository == null) {
-      state = const KanbanFleetActionState(error: 'Not connected to a gateway.');
+      state = const KanbanFleetActionState(
+        error: 'Not connected to a gateway.',
+      );
       return;
     }
     state = const KanbanFleetActionState(busy: true);
@@ -327,7 +337,9 @@ class KanbanFleetActionController extends Notifier<KanbanFleetActionState> {
     }
     final repository = ref.read(kanbanFleetRepositoryProvider);
     if (repository == null) {
-      state = const KanbanFleetActionState(error: 'Not connected to a gateway.');
+      state = const KanbanFleetActionState(
+        error: 'Not connected to a gateway.',
+      );
       return;
     }
     state = const KanbanFleetActionState(busy: true);
@@ -354,7 +366,9 @@ class KanbanFleetActionController extends Notifier<KanbanFleetActionState> {
     }
     final repository = ref.read(kanbanFleetRepositoryProvider);
     if (repository == null) {
-      state = const KanbanFleetActionState(error: 'Not connected to a gateway.');
+      state = const KanbanFleetActionState(
+        error: 'Not connected to a gateway.',
+      );
       return;
     }
     state = const KanbanFleetActionState(busy: true);
@@ -365,7 +379,9 @@ class KanbanFleetActionController extends Notifier<KanbanFleetActionState> {
         autoDecompose: autoDecompose,
         autoPromoteChildren: autoPromoteChildren,
       );
-      state = const KanbanFleetActionState(lastMessage: 'Orchestration updated');
+      state = const KanbanFleetActionState(
+        lastMessage: 'Orchestration updated',
+      );
       ref.invalidate(kanbanOrchestrationProvider);
     } on GatewayException catch (error) {
       state = KanbanFleetActionState(error: error.message);
@@ -375,6 +391,9 @@ class KanbanFleetActionController extends Notifier<KanbanFleetActionState> {
   }
 
   void clearError() {
-    state = KanbanFleetActionState(busy: state.busy, lastMessage: state.lastMessage);
+    state = KanbanFleetActionState(
+      busy: state.busy,
+      lastMessage: state.lastMessage,
+    );
   }
 }

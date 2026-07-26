@@ -19,10 +19,9 @@ final cronRepositoryProvider = Provider<CronRepository?>((ref) {
 });
 
 /// Refreshable list of cron jobs (from `cron.manage` action=list).
-final cronJobsProvider =
-    AsyncNotifierProvider<CronJobsNotifier, List<CronJob>>(
-      CronJobsNotifier.new,
-    );
+final cronJobsProvider = AsyncNotifierProvider<CronJobsNotifier, List<CronJob>>(
+  CronJobsNotifier.new,
+);
 
 class CronJobsNotifier extends AsyncNotifier<List<CronJob>> {
   @override
@@ -43,10 +42,7 @@ class CronJobsNotifier extends AsyncNotifier<List<CronJob>> {
 
 /// Interaction state for cron actions (add/remove/pause/resume).
 final class CronActionState {
-  const CronActionState({
-    this.busy = false,
-    this.error,
-  });
+  const CronActionState({this.busy = false, this.error});
 
   /// An action call is in flight.
   final bool busy;

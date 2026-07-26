@@ -305,7 +305,9 @@ class _DetailBodyState extends ConsumerState<_DetailBody> {
               label: const Text('Reclaim'),
             ),
             FilledButton.tonalIcon(
-              onPressed: actionState.busy ? null : () => _confirmDelete(task.id),
+              onPressed: actionState.busy
+                  ? null
+                  : () => _confirmDelete(task.id),
               icon: const Icon(Icons.delete_outline, size: 16),
               label: const Text('Delete'),
             ),
@@ -398,41 +400,35 @@ class _DetailBodyState extends ConsumerState<_DetailBody> {
   }
 
   Future<void> _specify(String id) async {
-    await ref
-        .read(kanbanTaskActionControllerProvider.notifier)
-        .specify(id);
+    await ref.read(kanbanTaskActionControllerProvider.notifier).specify(id);
 
     final state = ref.read(kanbanTaskActionControllerProvider);
     if (mounted && state.lastMessage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(state.lastMessage!)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(state.lastMessage!)));
     }
   }
 
   Future<void> _decompose(String id) async {
-    await ref
-        .read(kanbanTaskActionControllerProvider.notifier)
-        .decompose(id);
+    await ref.read(kanbanTaskActionControllerProvider.notifier).decompose(id);
 
     final state = ref.read(kanbanTaskActionControllerProvider);
     if (mounted && state.lastMessage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(state.lastMessage!)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(state.lastMessage!)));
     }
   }
 
   Future<void> _reclaim(String id) async {
-    await ref
-        .read(kanbanTaskActionControllerProvider.notifier)
-        .reclaim(id);
+    await ref.read(kanbanTaskActionControllerProvider.notifier).reclaim(id);
 
     final state = ref.read(kanbanTaskActionControllerProvider);
     if (mounted && state.lastMessage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(state.lastMessage!)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(state.lastMessage!)));
     }
   }
 
@@ -582,7 +578,9 @@ class _EditTaskDialogState extends ConsumerState<_EditTaskDialog> {
     final body = _bodyController.text.trim();
     final assignee = _assigneeController.text.trim();
 
-    await ref.read(kanbanTaskActionControllerProvider.notifier).editTask(
+    await ref
+        .read(kanbanTaskActionControllerProvider.notifier)
+        .editTask(
           widget.task.id,
           title: title.isEmpty ? null : title,
           body: body.isEmpty ? null : body,
@@ -665,7 +663,9 @@ class _ReassignDialogState extends ConsumerState<_ReassignDialog> {
   Future<void> _submit() async {
     final profile = _profileController.text.trim();
 
-    await ref.read(kanbanTaskActionControllerProvider.notifier).reassign(
+    await ref
+        .read(kanbanTaskActionControllerProvider.notifier)
+        .reassign(
           widget.taskId,
           profile: profile.isEmpty ? null : profile,
           reclaimFirst: _reclaimFirst,

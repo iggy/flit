@@ -376,10 +376,7 @@ void main() {
           .read(pluginToggleControllerProvider.notifier)
           .toggle('kanban', true);
 
-      expect(
-        container.read(pluginToggleControllerProvider).error,
-        isNotNull,
-      );
+      expect(container.read(pluginToggleControllerProvider).error, isNotNull);
     });
 
     test('guards against null repository', () async {

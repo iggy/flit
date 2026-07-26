@@ -92,10 +92,7 @@ final class ConfigRepositoryImpl implements ConfigRepository {
   }
 
   @override
-  Future<Map<String, dynamic>> getKey(
-    String key, {
-    String? sessionId,
-  }) async {
+  Future<Map<String, dynamic>> getKey(String key, {String? sessionId}) async {
     final params = <String, dynamic>{'key': key};
     if (sessionId != null) {
       params['session_id'] = sessionId;
@@ -110,10 +107,7 @@ final class ConfigRepositoryImpl implements ConfigRepository {
     String? sessionId,
     bool confirmExpensive = false,
   }) async {
-    final params = <String, dynamic>{
-      'key': key,
-      'value': value,
-    };
+    final params = <String, dynamic>{'key': key, 'value': value};
     if (sessionId != null) {
       params['session_id'] = sessionId;
     }

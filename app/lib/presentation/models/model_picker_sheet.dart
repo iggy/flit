@@ -151,23 +151,26 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
     required bool switching,
   }) {
     final query = _searchQuery.toLowerCase();
-    final filteredProviders = providers.map((provider) {
-      if (query.isEmpty) return provider;
-      final filteredModels = provider.models
-          .where((model) => model.toLowerCase().contains(query))
-          .toList();
-      return ModelProvider(
-        name: provider.name,
-        slug: provider.slug,
-        authenticated: provider.authenticated,
-        isCurrent: provider.isCurrent,
-        authType: provider.authType,
-        keyEnv: provider.keyEnv,
-        models: filteredModels,
-        totalModels: provider.totalModels,
-        warning: provider.warning,
-      );
-    }).where((provider) => query.isEmpty || provider.models.isNotEmpty).toList();
+    final filteredProviders = providers
+        .map((provider) {
+          if (query.isEmpty) return provider;
+          final filteredModels = provider.models
+              .where((model) => model.toLowerCase().contains(query))
+              .toList();
+          return ModelProvider(
+            name: provider.name,
+            slug: provider.slug,
+            authenticated: provider.authenticated,
+            isCurrent: provider.isCurrent,
+            authType: provider.authType,
+            keyEnv: provider.keyEnv,
+            models: filteredModels,
+            totalModels: provider.totalModels,
+            warning: provider.warning,
+          );
+        })
+        .where((provider) => query.isEmpty || provider.models.isNotEmpty)
+        .toList();
 
     if (filteredProviders.isEmpty) {
       return const _PaneMessage(
@@ -192,7 +195,8 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
               context,
               provider: provider,
               model: model,
-              isCurrent: current?.model == model && current?.provider == provider.slug,
+              isCurrent:
+                  current?.model == model && current?.provider == provider.slug,
               switching: switching,
             ),
         ],
@@ -312,19 +316,14 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: theme.dividerColor, width: 1),
-        ),
+        border: Border(top: BorderSide(color: theme.dividerColor, width: 1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: Text(
-              'Effort',
-              style: theme.textTheme.titleSmall,
-            ),
+            child: Text('Effort', style: theme.textTheme.titleSmall),
           ),
           if (reasoningPickerState.switching)
             const Padding(
@@ -347,7 +346,9 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
                         if (selected) {
                           unawaited(
                             ref
-                                .read(reasoningPickerControllerProvider.notifier)
+                                .read(
+                                  reasoningPickerControllerProvider.notifier,
+                                )
                                 .select(reasoning.value),
                           );
                         }
@@ -491,10 +492,7 @@ class _ErrorBannerReasoning extends ConsumerWidget {
           Expanded(
             child: Text(
               message,
-              style: TextStyle(
-                color: scheme.onErrorContainer,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: scheme.onErrorContainer, fontSize: 12),
             ),
           ),
           IconButton(
@@ -503,8 +501,9 @@ class _ErrorBannerReasoning extends ConsumerWidget {
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
             visualDensity: VisualDensity.compact,
-            onPressed: () =>
-                ref.read(reasoningPickerControllerProvider.notifier).clearError(),
+            onPressed: () => ref
+                .read(reasoningPickerControllerProvider.notifier)
+                .clearError(),
           ),
         ],
       ),

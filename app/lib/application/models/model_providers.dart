@@ -255,10 +255,7 @@ class ModelPickerController extends Notifier<ModelPickerState> {
 
 /// Interaction state for provider key management (ticket P4-01).
 final class ProviderKeyState {
-  const ProviderKeyState({
-    this.busy = false,
-    this.error,
-  });
+  const ProviderKeyState({this.busy = false, this.error});
 
   final bool busy;
   final String? error;

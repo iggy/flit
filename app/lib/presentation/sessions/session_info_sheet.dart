@@ -67,10 +67,7 @@ class _SessionInfoSheetState extends ConsumerState<SessionInfoSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              Text(
-                'Session',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
+              Text('Session', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 16),
               _buildUsageSection(),
               const SizedBox(height: 16),
@@ -105,10 +102,7 @@ class _SessionInfoSheetState extends ConsumerState<SessionInfoSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text(
-          'Usage',
-          style: Theme.of(context).textTheme.titleSmall,
-        ),
+        Text('Usage', style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 8),
         if (usage.model.isNotEmpty)
           _InfoRow(label: 'Model', value: usage.model),
@@ -118,7 +112,8 @@ class _SessionInfoSheetState extends ConsumerState<SessionInfoSheet> {
         _InfoRow(label: 'Calls', value: '${usage.calls}'),
         if (usage.reasoning != null)
           _InfoRow(label: 'Reasoning', value: '${usage.reasoning}'),
-        if (usage.contextPercent != null && usage.contextMax != null) ...<Widget>[
+        if (usage.contextPercent != null &&
+            usage.contextMax != null) ...<Widget>[
           const SizedBox(height: 8),
           LinearProgressIndicator(value: (usage.contextPercent ?? 0) / 100),
           const SizedBox(height: 4),
@@ -137,20 +132,24 @@ class _SessionInfoSheetState extends ConsumerState<SessionInfoSheet> {
     final breakdownAsync = ref.watch(contextBreakdownProvider);
 
     return switch (breakdownAsync) {
-      AsyncData(:final value) => value != null && value.categories.isNotEmpty
-          ? Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            'Context breakdown',
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
-          const SizedBox(height: 8),
-          for (final category in value.categories)
-            _InfoRow(label: category.label, value: '${category.tokens}'),
-        ],
-      )
-          : const SizedBox.shrink(),
+      AsyncData(:final value) =>
+        value != null && value.categories.isNotEmpty
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    'Context breakdown',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  for (final category in value.categories)
+                    _InfoRow(
+                      label: category.label,
+                      value: '${category.tokens}',
+                    ),
+                ],
+              )
+            : const SizedBox.shrink(),
       AsyncError(:final error) => Text(
         'Could not load breakdown: $error',
         style: TextStyle(color: Theme.of(context).colorScheme.error),
@@ -194,10 +193,7 @@ class _SessionInfoSheetState extends ConsumerState<SessionInfoSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text(
-          'Actions',
-          style: Theme.of(context).textTheme.titleSmall,
-        ),
+        Text('Actions', style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -207,8 +203,8 @@ class _SessionInfoSheetState extends ConsumerState<SessionInfoSheet> {
               key: sessionInfoCompressKey,
               onPressed: enabled
                   ? () async {
-                await _handleCompress(safeId, actions);
-              }
+                      await _handleCompress(safeId, actions);
+                    }
                   : null,
               icon: const Icon(Icons.compress),
               label: const Text('Compress context'),
@@ -217,8 +213,8 @@ class _SessionInfoSheetState extends ConsumerState<SessionInfoSheet> {
               key: sessionInfoUndoKey,
               onPressed: enabled
                   ? () async {
-                await _handleUndo(safeId, actions);
-              }
+                      await _handleUndo(safeId, actions);
+                    }
                   : null,
               icon: const Icon(Icons.undo),
               label: const Text('Undo last turn'),
@@ -227,8 +223,8 @@ class _SessionInfoSheetState extends ConsumerState<SessionInfoSheet> {
               key: sessionInfoSaveKey,
               onPressed: enabled
                   ? () async {
-                await _handleSave(safeId, actions);
-              }
+                      await _handleSave(safeId, actions);
+                    }
                   : null,
               icon: const Icon(Icons.save_outlined),
               label: const Text('Save conversation'),
@@ -237,8 +233,8 @@ class _SessionInfoSheetState extends ConsumerState<SessionInfoSheet> {
               key: sessionInfoCwdKey,
               onPressed: enabled
                   ? () async {
-                await _handleSetCwd(safeId, actions);
-              }
+                      await _handleSetCwd(safeId, actions);
+                    }
                   : null,
               icon: const Icon(Icons.folder_outlined),
               label: const Text('Set working directory'),
@@ -262,9 +258,9 @@ class _SessionInfoSheetState extends ConsumerState<SessionInfoSheet> {
     if (result == null) {
       ref.invalidate(sessionUsageProvider);
       ref.invalidate(contextBreakdownProvider);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Context compressed')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Context compressed')));
     } else {
       setState(() => _error = result);
     }
@@ -308,9 +304,9 @@ class _SessionInfoSheetState extends ConsumerState<SessionInfoSheet> {
       ref.invalidate(contextBreakdownProvider);
       // Note: the message list re-render from undo is out of scope for this
       // ticket; the RPC client's event stream will deliver the update.
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Turn undone')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Turn undone')));
     } else {
       setState(() => _error = result);
     }
@@ -327,9 +323,9 @@ class _SessionInfoSheetState extends ConsumerState<SessionInfoSheet> {
     }
     setState(() => _busy = false);
     if (result == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Conversation saved')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Conversation saved')));
     } else {
       setState(() => _error = result);
     }
@@ -401,9 +397,9 @@ class _InfoRow extends StatelessWidget {
           Text(label, style: Theme.of(context).textTheme.bodyMedium),
           Text(
             value,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
         ],
       ),

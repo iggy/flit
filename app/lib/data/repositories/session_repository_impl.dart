@@ -112,10 +112,10 @@ final class SessionRepositoryImpl implements SessionRepository {
   @override
   Future<ContextBreakdown> contextBreakdown(String liveId) async {
     // Phase 2, §session.context_breakdown: LIVE id (protocol §9).
-    final result =
-        await _client.request('session.context_breakdown', <String, dynamic>{
-      'session_id': liveId,
-    });
+    final result = await _client.request(
+      'session.context_breakdown',
+      <String, dynamic>{'session_id': liveId},
+    );
     return ContextBreakdownDto.fromJson(result).toDomain();
   }
 
@@ -151,10 +151,7 @@ final class SessionRepositoryImpl implements SessionRepository {
   @override
   Future<BranchResult> branch(String liveId, {String? name}) async {
     // Phase 2, §session.branch: LIVE id of parent (protocol §9). LONG handler.
-    final params = <String, dynamic>{
-      'session_id': liveId,
-      'name': ?name,
-    };
+    final params = <String, dynamic>{'session_id': liveId, 'name': ?name};
     final result = await _client.request('session.branch', params);
     return BranchResultDto.fromJson(result).toDomain();
   }

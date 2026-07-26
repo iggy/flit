@@ -43,13 +43,8 @@ final class Toolset {
   }
 
   @override
-  int get hashCode => Object.hash(
-        name,
-        description,
-        toolCount,
-        enabled,
-        Object.hashAll(tools),
-      );
+  int get hashCode =>
+      Object.hash(name, description, toolCount, enabled, Object.hashAll(tools));
 
   @override
   String toString() {
@@ -60,10 +55,7 @@ final class Toolset {
 
 /// Result of `tools.show` — tools grouped by section.
 final class ToolsShow {
-  const ToolsShow({
-    required this.sections,
-    required this.total,
-  });
+  const ToolsShow({required this.sections, required this.total});
 
   /// Wire `sections` — list of tool sections.
   final List<ToolSection> sections;
@@ -79,10 +71,7 @@ final class ToolsShow {
   }
 
   @override
-  int get hashCode => Object.hash(
-        Object.hashAll(sections),
-        total,
-      );
+  int get hashCode => Object.hash(Object.hashAll(sections), total);
 
   @override
   String toString() {
@@ -92,10 +81,7 @@ final class ToolsShow {
 
 /// One section entry from `tools.show`.
 final class ToolSection {
-  const ToolSection({
-    required this.name,
-    required this.tools,
-  });
+  const ToolSection({required this.name, required this.tools});
 
   /// Wire `name` — section name.
   final String name;
@@ -111,10 +97,7 @@ final class ToolSection {
   }
 
   @override
-  int get hashCode => Object.hash(
-        name,
-        Object.hashAll(tools),
-      );
+  int get hashCode => Object.hash(name, Object.hashAll(tools));
 
   @override
   String toString() {
@@ -124,10 +107,7 @@ final class ToolSection {
 
 /// One tool entry from `tools.show`.
 final class ToolInfo {
-  const ToolInfo({
-    required this.name,
-    required this.description,
-  });
+  const ToolInfo({required this.name, required this.description});
 
   /// Wire `name` — tool name.
   final String name;
@@ -188,12 +168,12 @@ final class ToolsConfigureResult {
 
   @override
   int get hashCode => Object.hash(
-        Object.hashAll(changed),
-        Object.hashAll(enabledToolsets),
-        Object.hashAll(missingServers),
-        reset,
-        Object.hashAll(unknown),
-      );
+    Object.hashAll(changed),
+    Object.hashAll(enabledToolsets),
+    Object.hashAll(missingServers),
+    reset,
+    Object.hashAll(unknown),
+  );
 
   @override
   String toString() {

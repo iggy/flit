@@ -14,15 +14,11 @@ class ToolsScreen extends ConsumerWidget {
     final configureState = ref.watch(toolsConfigureControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tools'),
-      ),
+      appBar: AppBar(title: const Text('Tools')),
       body: toolsAsync.when(
         data: (toolsets) {
           if (toolsets.isEmpty) {
-            return const Center(
-              child: Text('No toolsets available'),
-            );
+            return const Center(child: Text('No toolsets available'));
           }
           return Column(
             children: <Widget>[
@@ -65,7 +61,9 @@ class ToolsScreen extends ConsumerWidget {
                     title: Text(
                       'Some servers are not running: ${configureState.lastResult!.missingServers.join(", ")}',
                       style: TextStyle(
-                        color: Theme.of(context).colorScheme.onTertiaryContainer,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onTertiaryContainer,
                       ),
                     ),
                   ),
@@ -84,8 +82,9 @@ class ToolsScreen extends ConsumerWidget {
                             ? null
                             : (enabled) {
                                 ref
-                                    .read(toolsConfigureControllerProvider
-                                        .notifier,)
+                                    .read(
+                                      toolsConfigureControllerProvider.notifier,
+                                    )
                                     .setEnabled(toolset.name, enabled);
                               },
                       ),
@@ -97,13 +96,11 @@ class ToolsScreen extends ConsumerWidget {
                               ),
                             ]
                           : toolset.tools
-                              .map(
-                                (tool) => ListTile(
-                                  title: Text(tool),
-                                  dense: true,
-                                ),
-                              )
-                              .toList(),
+                                .map(
+                                  (tool) =>
+                                      ListTile(title: Text(tool), dense: true),
+                                )
+                                .toList(),
                     );
                   },
                 ),
@@ -125,10 +122,7 @@ class ToolsScreen extends ConsumerWidget {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 8.0),
-                Text(
-                  error.toString(),
-                  textAlign: TextAlign.center,
-                ),
+                Text(error.toString(), textAlign: TextAlign.center),
               ],
             ),
           ),

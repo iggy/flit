@@ -129,10 +129,7 @@ bool _nullableListEquals(List<String>? a, List<String>? b) {
 /// `sudo.request` (protocol §8.1 / P3-08): the agent needs a sudo password.
 /// Correlated by [requestId].
 final class SudoPrompt extends InteractivePrompt {
-  const SudoPrompt({
-    required this.sessionId,
-    required this.requestId,
-  });
+  const SudoPrompt({required this.sessionId, required this.requestId});
 
   /// Short live session id the prompt belongs to.
   final String sessionId;

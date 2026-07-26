@@ -125,10 +125,7 @@ class KanbanBoardNotifier extends AsyncNotifier<KanbanBoard?> {
 
 /// Interaction state for plugin toggle (P5-08).
 final class PluginToggleState {
-  const PluginToggleState({
-    this.busy = false,
-    this.error,
-  });
+  const PluginToggleState({this.busy = false, this.error});
 
   /// A toggle call is in flight.
   final bool busy;
@@ -461,8 +458,11 @@ class KanbanTaskActionController extends Notifier<KanbanTaskActionState> {
     }
     state = const KanbanTaskActionState(busy: true);
     try {
-      final result =
-          await repository.decompose(id, author: author, board: board);
+      final result = await repository.decompose(
+        id,
+        author: author,
+        board: board,
+      );
       final message = result.ok
           ? 'Task decomposed into ${result.childIds.length} children'
           : 'Decompose failed${result.reason != null ? ': ${result.reason}' : ''}';
@@ -604,6 +604,9 @@ class KanbanTaskActionController extends Notifier<KanbanTaskActionState> {
   }
 
   void clearError() {
-    state = KanbanTaskActionState(busy: state.busy, lastMessage: state.lastMessage);
+    state = KanbanTaskActionState(
+      busy: state.busy,
+      lastMessage: state.lastMessage,
+    );
   }
 }

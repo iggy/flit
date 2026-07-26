@@ -214,11 +214,7 @@ final class KanbanFleetRepositoryImpl implements KanbanFleetRepository {
   }
 
   @override
-  Future<void> terminateRun(
-    int runId, {
-    String? reason,
-    String? board,
-  }) async {
+  Future<void> terminateRun(int runId, {String? reason, String? board}) async {
     final requestBody = <String, dynamic>{};
     if (reason != null) {
       requestBody['reason'] = reason;
@@ -284,7 +280,10 @@ final class KanbanFleetRepositoryImpl implements KanbanFleetRepository {
       requestBody['auto_promote_children'] = autoPromoteChildren;
     }
 
-    final data = await _client.putJson('$_base/orchestration', body: requestBody);
+    final data = await _client.putJson(
+      '$_base/orchestration',
+      body: requestBody,
+    );
     final map = _expectMap(data, 'PUT $_base/orchestration');
     return _parseOrchestration(map);
   }
@@ -417,13 +416,17 @@ final class KanbanFleetRepositoryImpl implements KanbanFleetRepository {
       taskAssignee: _stringOrNull(json['task_assignee']),
       profile: _stringOrNull(json['profile']),
       workerPid: _intOrNull(json['worker_pid']) ?? 0,
-      startedAt: _epochSeconds(json['started_at']) ?? DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+      startedAt:
+          _epochSeconds(json['started_at']) ??
+          DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
       lastHeartbeatAt: _epochSeconds(json['last_heartbeat_at']),
       maxRuntimeSeconds: _intOrNull(json['max_runtime_seconds']),
     );
   }
 
-  static KanbanDiagnosticGroup _parseDiagnosticGroup(Map<String, dynamic> json) {
+  static KanbanDiagnosticGroup _parseDiagnosticGroup(
+    Map<String, dynamic> json,
+  ) {
     final diagnosticsList = _mapList(json['diagnostics']);
     final diagnostics = diagnosticsList.map(_parseDiagnostic).toList();
     return KanbanDiagnosticGroup(
@@ -441,8 +444,12 @@ final class KanbanFleetRepositoryImpl implements KanbanFleetRepository {
       severity: _stringOrNull(json['severity']) ?? '',
       title: _stringOrNull(json['title']) ?? '',
       detail: _stringOrNull(json['detail']) ?? '',
-      firstSeenAt: _epochSeconds(json['first_seen_at']) ?? DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
-      lastSeenAt: _epochSeconds(json['last_seen_at']) ?? DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+      firstSeenAt:
+          _epochSeconds(json['first_seen_at']) ??
+          DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+      lastSeenAt:
+          _epochSeconds(json['last_seen_at']) ??
+          DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
       count: _intOrNull(json['count']) ?? 0,
       runId: _intOrNull(json['run_id']),
     );
@@ -485,8 +492,10 @@ final class KanbanFleetRepositoryImpl implements KanbanFleetRepository {
       defaultAssignee: _stringOrNull(json['default_assignee']) ?? '',
       autoDecompose: _boolOr(json['auto_decompose'], false),
       autoPromoteChildren: _boolOr(json['auto_promote_children'], false),
-      resolvedOrchestratorProfile: _stringOrNull(json['resolved_orchestrator_profile']) ?? '',
-      resolvedDefaultAssignee: _stringOrNull(json['resolved_default_assignee']) ?? '',
+      resolvedOrchestratorProfile:
+          _stringOrNull(json['resolved_orchestrator_profile']) ?? '',
+      resolvedDefaultAssignee:
+          _stringOrNull(json['resolved_default_assignee']) ?? '',
       activeProfile: _stringOrNull(json['active_profile']) ?? '',
     );
   }

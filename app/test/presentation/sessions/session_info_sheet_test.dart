@@ -16,7 +16,8 @@ final class FakeSessionActions implements SessionActions {
   final List<String> compressCalls = <String>[];
   final List<String> undoCalls = <String>[];
   final List<String> saveCalls = <String>[];
-  final List<({String liveId, String cwd})> setCwdCalls = <({String liveId, String cwd})>[];
+  final List<({String liveId, String cwd})> setCwdCalls =
+      <({String liveId, String cwd})>[];
 
   /// Errors to return (keyed by action name: 'compress', 'undo', 'save', 'setCwd').
   final Map<String, String?> errors = <String, String?>{};
@@ -87,7 +88,7 @@ void main() {
         sessionActionsProvider.overrideWithValue(fakeActions),
         if (activeLiveId != null)
           activeSessionProvider.overrideWith(
-                () => _FakeActiveSessionNotifier(
+            () => _FakeActiveSessionNotifier(
               ActiveSessionState(liveId: activeLiveId),
             ),
           ),
@@ -125,7 +126,9 @@ void main() {
     expect(find.text('48000 / 128000 tokens (38%)'), findsOneWidget);
   });
 
-  testWidgets('renders context breakdown when categories present', (tester) async {
+  testWidgets('renders context breakdown when categories present', (
+    tester,
+  ) async {
     const usage = SessionUsageStats(
       model: 'm',
       input: 10,
@@ -170,7 +173,9 @@ void main() {
     expect(find.text('2000'), findsOneWidget);
   });
 
-  testWidgets('renders four action buttons when session is active', (tester) async {
+  testWidgets('renders four action buttons when session is active', (
+    tester,
+  ) async {
     const usage = SessionUsageStats(
       model: 'm',
       input: 10,
@@ -189,7 +194,9 @@ void main() {
     expect(find.byKey(sessionInfoCwdKey), findsOneWidget);
   });
 
-  testWidgets('tapping compress calls actions.compress with live id', (tester) async {
+  testWidgets('tapping compress calls actions.compress with live id', (
+    tester,
+  ) async {
     const usage = SessionUsageStats(
       model: 'm',
       input: 10,
@@ -209,35 +216,36 @@ void main() {
     expect(fakeActions.compressCalls, <String>['a1b2c3d4']);
   });
 
-  testWidgets('tapping undo shows confirm dialog, calls actions.undo on confirm', (
-    tester,
-  ) async {
-    const usage = SessionUsageStats(
-      model: 'm',
-      input: 10,
-      output: 10,
-      total: 20,
-      calls: 1,
-    );
-    await pumpSheet(
-      tester,
-      sheetHarness(usage: usage, activeLiveId: 'a1b2c3d4'),
-    );
+  testWidgets(
+    'tapping undo shows confirm dialog, calls actions.undo on confirm',
+    (tester) async {
+      const usage = SessionUsageStats(
+        model: 'm',
+        input: 10,
+        output: 10,
+        total: 20,
+        calls: 1,
+      );
+      await pumpSheet(
+        tester,
+        sheetHarness(usage: usage, activeLiveId: 'a1b2c3d4'),
+      );
 
-    await tester.tap(find.byKey(sessionInfoUndoKey));
-    await tester.pump();
-    await tester.pump(); // dialog opens
+      await tester.tap(find.byKey(sessionInfoUndoKey));
+      await tester.pump();
+      await tester.pump(); // dialog opens
 
-    expect(find.byType(AlertDialog), findsOneWidget);
-    expect(find.text('Undo last turn?'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Undo'), findsOneWidget);
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.text('Undo last turn?'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'Undo'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Undo'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100)); // async handler
+      await tester.tap(find.widgetWithText(FilledButton, 'Undo'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100)); // async handler
 
-    expect(fakeActions.undoCalls, <String>['a1b2c3d4']);
-  });
+      expect(fakeActions.undoCalls, <String>['a1b2c3d4']);
+    },
+  );
 
   testWidgets('tapping save calls actions.save with live id', (tester) async {
     const usage = SessionUsageStats(
@@ -286,10 +294,9 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100)); // async handler
 
-    expect(
-      fakeActions.setCwdCalls,
-      <({String liveId, String cwd})>[(liveId: 'a1b2c3d4', cwd: '/home/user/project')],
-    );
+    expect(fakeActions.setCwdCalls, <({String liveId, String cwd})>[
+      (liveId: 'a1b2c3d4', cwd: '/home/user/project'),
+    ]);
   });
 }
 

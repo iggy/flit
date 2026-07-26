@@ -31,11 +31,7 @@ final toolsListProvider = FutureProvider<List<Toolset>>((ref) async {
 
 /// Interaction state for tool configuration.
 final class ToolsConfigureState {
-  const ToolsConfigureState({
-    this.busy = false,
-    this.error,
-    this.lastResult,
-  });
+  const ToolsConfigureState({this.busy = false, this.error, this.lastResult});
 
   /// A configure call is in flight.
   final bool busy;
@@ -103,9 +99,6 @@ class ToolsConfigureController extends Notifier<ToolsConfigureState> {
   }
 
   void clearError() {
-    state = ToolsConfigureState(
-      busy: state.busy,
-      lastResult: state.lastResult,
-    );
+    state = ToolsConfigureState(busy: state.busy, lastResult: state.lastResult);
   }
 }

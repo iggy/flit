@@ -43,9 +43,11 @@ final class SpawnTreeState {
 
   @override
   int get hashCode => Object.hash(
-        Object.hashAllUnordered(nodes.entries.map((e) => Object.hash(e.key, e.value))),
-        Object.hashAll(order),
-      );
+    Object.hashAllUnordered(
+      nodes.entries.map((e) => Object.hash(e.key, e.value)),
+    ),
+    Object.hashAll(order),
+  );
 
   @override
   String toString() => 'SpawnTreeState(nodes: $nodes, order: $order)';
@@ -107,7 +109,9 @@ SpawnTreeState foldSubagentEvent(SpawnTreeState state, SubagentEvent event) {
   final newNodes = <String, SubagentNode>{...state.nodes};
   newNodes[subagentId] = updated;
 
-  final newOrder = existing == null ? <String>[...state.order, subagentId] : state.order;
+  final newOrder = existing == null
+      ? <String>[...state.order, subagentId]
+      : state.order;
 
   return SpawnTreeState(nodes: newNodes, order: newOrder);
 }
@@ -126,34 +130,34 @@ SubagentStatus _statusForEvent(SubagentEvent event) {
 SubagentNode _updateNode(SubagentNode node, SubagentEvent event) {
   return switch (event.type) {
     'subagent.start' => node.copyWith(
-        status: SubagentStatus.running,
-        lastActivity: event.text ?? node.lastActivity,
-      ),
+      status: SubagentStatus.running,
+      lastActivity: event.text ?? node.lastActivity,
+    ),
     'subagent.thinking' => node.copyWith(
-        status: SubagentStatus.thinking,
-        lastActivity: event.text ?? node.lastActivity,
-      ),
+      status: SubagentStatus.thinking,
+      lastActivity: event.text ?? node.lastActivity,
+    ),
     'subagent.tool' => node.copyWith(
-        lastToolName: event.toolName ?? node.lastToolName,
-        lastActivity: event.toolPreview ?? event.text ?? node.lastActivity,
-        toolCount: event.toolCount ?? node.toolCount,
-      ),
+      lastToolName: event.toolName ?? node.lastToolName,
+      lastActivity: event.toolPreview ?? event.text ?? node.lastActivity,
+      toolCount: event.toolCount ?? node.toolCount,
+    ),
     'subagent.progress' => node.copyWith(
-        lastActivity: event.text ?? node.lastActivity,
-      ),
+      lastActivity: event.text ?? node.lastActivity,
+    ),
     'subagent.complete' => node.copyWith(
-        status: parseSubagentStatus(event.status),
-        summary: event.summary ?? node.summary,
-        lastActivity: event.summary ?? event.text ?? node.lastActivity,
-        durationSeconds: event.durationSeconds ?? node.durationSeconds,
-        costUsd: event.costUsd ?? node.costUsd,
-        inputTokens: event.inputTokens ?? node.inputTokens,
-        outputTokens: event.outputTokens ?? node.outputTokens,
-        reasoningTokens: event.reasoningTokens ?? node.reasoningTokens,
-        apiCalls: event.apiCalls ?? node.apiCalls,
-        filesRead: event.filesRead ?? node.filesRead,
-        filesWritten: event.filesWritten ?? node.filesWritten,
-      ),
+      status: parseSubagentStatus(event.status),
+      summary: event.summary ?? node.summary,
+      lastActivity: event.summary ?? event.text ?? node.lastActivity,
+      durationSeconds: event.durationSeconds ?? node.durationSeconds,
+      costUsd: event.costUsd ?? node.costUsd,
+      inputTokens: event.inputTokens ?? node.inputTokens,
+      outputTokens: event.outputTokens ?? node.outputTokens,
+      reasoningTokens: event.reasoningTokens ?? node.reasoningTokens,
+      apiCalls: event.apiCalls ?? node.apiCalls,
+      filesRead: event.filesRead ?? node.filesRead,
+      filesWritten: event.filesWritten ?? node.filesWritten,
+    ),
     _ => node, // Unknown subagent event type → no-op.
   };
 }

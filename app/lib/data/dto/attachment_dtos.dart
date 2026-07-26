@@ -68,10 +68,7 @@ class ImageAttachDto {
 /// Wire DTO for `image.detach` result.
 @JsonSerializable()
 class DetachResultDto {
-  const DetachResultDto({
-    this.detached,
-    this.count,
-  });
+  const DetachResultDto({this.detached, this.count});
 
   factory DetachResultDto.fromJson(Map<String, dynamic> json) =>
       _$DetachResultDtoFromJson(json);
@@ -85,10 +82,7 @@ class DetachResultDto {
   Map<String, dynamic> toJson() => _$DetachResultDtoToJson(this);
 
   DetachResult toDomain() {
-    return DetachResult(
-      detached: detached ?? false,
-      count: count ?? 0,
-    );
+    return DetachResult(detached: detached ?? false, count: count ?? 0);
   }
 }
 
@@ -323,11 +317,7 @@ class ClipboardPasteDto {
 /// Wire DTO for `paste.collapse` result.
 @JsonSerializable()
 class PasteCollapseDto {
-  const PasteCollapseDto({
-    this.placeholder,
-    this.path,
-    this.lines,
-  });
+  const PasteCollapseDto({this.placeholder, this.path, this.lines});
 
   factory PasteCollapseDto.fromJson(Map<String, dynamic> json) =>
       _$PasteCollapseDtoFromJson(json);

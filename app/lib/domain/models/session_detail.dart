@@ -56,17 +56,17 @@ final class SessionUsageStats {
 
   @override
   int get hashCode => Object.hash(
-        model,
-        input,
-        output,
-        total,
-        calls,
-        reasoning,
-        contextUsed,
-        contextMax,
-        contextPercent,
-        compressions,
-      );
+    model,
+    input,
+    output,
+    total,
+    calls,
+    reasoning,
+    contextUsed,
+    contextMax,
+    contextPercent,
+    compressions,
+  );
 
   @override
   String toString() {
@@ -161,13 +161,13 @@ final class ContextBreakdown {
 
   @override
   int get hashCode => Object.hash(
-        Object.hashAll(categories),
-        contextMax,
-        contextPercent,
-        contextUsed,
-        estimatedTotal,
-        model,
-      );
+    Object.hashAll(categories),
+    contextMax,
+    contextPercent,
+    contextUsed,
+    estimatedTotal,
+    model,
+  );
 
   @override
   String toString() {
@@ -231,15 +231,15 @@ final class CompressResult {
 
   @override
   int get hashCode => Object.hash(
-        status,
-        removed,
-        beforeMessages,
-        afterMessages,
-        beforeTokens,
-        afterTokens,
-        lockHeld,
-        message,
-      );
+    status,
+    removed,
+    beforeMessages,
+    afterMessages,
+    beforeTokens,
+    afterTokens,
+    lockHeld,
+    message,
+  );
 
   @override
   String toString() {

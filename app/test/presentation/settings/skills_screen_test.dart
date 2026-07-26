@@ -21,7 +21,10 @@ Widget _wrap(FakeSkillsRepository repository) {
 
 const _catalog = SkillCatalog(
   groups: <SkillGroup>[
-    SkillGroup(category: 'built-in', names: <String>['loop', 'run', 'simplify']),
+    SkillGroup(
+      category: 'built-in',
+      names: <String>['loop', 'run', 'simplify'],
+    ),
     SkillGroup(category: 'project', names: <String>['custom-skill']),
   ],
 );

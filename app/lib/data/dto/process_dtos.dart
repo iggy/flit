@@ -6,9 +6,7 @@ part 'process_dtos.g.dart';
 /// Wire DTO for `process.list` result.
 @JsonSerializable()
 class ProcessListResultDto {
-  const ProcessListResultDto({
-    this.processes = const <BackgroundProcessDto>[],
-  });
+  const ProcessListResultDto({this.processes = const <BackgroundProcessDto>[]});
 
   factory ProcessListResultDto.fromJson(Map<String, dynamic> json) =>
       _$ProcessListResultDtoFromJson(json);
@@ -93,11 +91,7 @@ class BackgroundProcessDto {
 /// Wire DTO for `process.kill` result (polymorphic keyed by status).
 @JsonSerializable()
 class ProcessKillResultDto {
-  const ProcessKillResultDto({
-    this.status,
-    this.output,
-    this.error,
-  });
+  const ProcessKillResultDto({this.status, this.output, this.error});
 
   factory ProcessKillResultDto.fromJson(Map<String, dynamic> json) =>
       _$ProcessKillResultDtoFromJson(json);
@@ -125,9 +119,7 @@ class ProcessKillResultDto {
 /// Wire DTO for `process.stop` result.
 @JsonSerializable()
 class ProcessStopResultDto {
-  const ProcessStopResultDto({
-    this.killed,
-  });
+  const ProcessStopResultDto({this.killed});
 
   factory ProcessStopResultDto.fromJson(Map<String, dynamic> json) =>
       _$ProcessStopResultDtoFromJson(json);
@@ -145,11 +137,7 @@ class ProcessStopResultDto {
 /// Wire DTO for `shell.exec` result.
 @JsonSerializable()
 class ShellExecResultDto {
-  const ShellExecResultDto({
-    this.stdout,
-    this.stderr,
-    this.code,
-  });
+  const ShellExecResultDto({this.stdout, this.stderr, this.code});
 
   factory ShellExecResultDto.fromJson(Map<String, dynamic> json) =>
       _$ShellExecResultDtoFromJson(json);

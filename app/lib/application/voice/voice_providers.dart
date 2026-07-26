@@ -82,13 +82,13 @@ final class VoiceUiState {
 
   @override
   int get hashCode => Object.hash(
-        modeEnabled,
-        ttsEnabled,
-        recordKey,
-        micState,
-        recording,
-        error,
-      );
+    modeEnabled,
+    ttsEnabled,
+    recordKey,
+    micState,
+    recording,
+    error,
+  );
 
   @override
   String toString() {
@@ -100,8 +100,7 @@ final class VoiceUiState {
 
 /// Controller for voice actions: refresh status, enable/disable mode, toggle
 /// TTS, start/stop recording, and speak text.
-final voiceControllerProvider =
-    NotifierProvider<VoiceController, VoiceUiState>(
+final voiceControllerProvider = NotifierProvider<VoiceController, VoiceUiState>(
   VoiceController.new,
 );
 

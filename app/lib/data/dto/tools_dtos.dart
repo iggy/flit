@@ -6,9 +6,7 @@ part 'tools_dtos.g.dart';
 /// Wire DTO for `tools.list` and `toolsets.list` results.
 @JsonSerializable()
 class ToolsListResultDto {
-  const ToolsListResultDto({
-    this.toolsets = const <ToolsetDto>[],
-  });
+  const ToolsListResultDto({this.toolsets = const <ToolsetDto>[]});
 
   factory ToolsListResultDto.fromJson(Map<String, dynamic> json) =>
       _$ToolsListResultDtoFromJson(json);
@@ -95,10 +93,7 @@ class ToolsShowResultDto {
 /// One section entry from `tools.show`.
 @JsonSerializable()
 class ToolShowSectionDto {
-  const ToolShowSectionDto({
-    this.name,
-    this.tools = const <ToolInfoDto>[],
-  });
+  const ToolShowSectionDto({this.name, this.tools = const <ToolInfoDto>[]});
 
   factory ToolShowSectionDto.fromJson(Map<String, dynamic> json) =>
       _$ToolShowSectionDtoFromJson(json);
@@ -122,10 +117,7 @@ class ToolShowSectionDto {
 /// One tool entry from `tools.show`.
 @JsonSerializable()
 class ToolInfoDto {
-  const ToolInfoDto({
-    this.name,
-    this.description,
-  });
+  const ToolInfoDto({this.name, this.description});
 
   factory ToolInfoDto.fromJson(Map<String, dynamic> json) =>
       _$ToolInfoDtoFromJson(json);
@@ -139,10 +131,7 @@ class ToolInfoDto {
   Map<String, dynamic> toJson() => _$ToolInfoDtoToJson(this);
 
   ToolInfo toDomain() {
-    return ToolInfo(
-      name: name ?? '',
-      description: description ?? '',
-    );
+    return ToolInfo(name: name ?? '', description: description ?? '');
   }
 }
 

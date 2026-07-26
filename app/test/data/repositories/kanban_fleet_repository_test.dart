@@ -117,10 +117,7 @@ void main() {
       final repository = _repositoryWith((options) async {
         requests.add(options);
         return _jsonResponse(200, <String, Object?>{
-          'result': <String, Object?>{
-            'slug': 'old',
-            'action': 'deleted',
-          },
+          'result': <String, Object?>{'slug': 'old', 'action': 'deleted'},
         });
       });
 
@@ -378,25 +375,30 @@ void main() {
     });
   });
 
-  group('setProfileDescription (PATCH /api/plugins/kanban/profiles/{name})', () {
-    test('sends description in body', () async {
-      final requests = <RequestOptions>[];
-      final repository = _repositoryWith((options) async {
-        requests.add(options);
-        return _jsonResponse(200, <String, Object?>{
-          'ok': true,
-          'profile': 'default',
+  group(
+    'setProfileDescription (PATCH /api/plugins/kanban/profiles/{name})',
+    () {
+      test('sends description in body', () async {
+        final requests = <RequestOptions>[];
+        final repository = _repositoryWith((options) async {
+          requests.add(options);
+          return _jsonResponse(200, <String, Object?>{
+            'ok': true,
+            'profile': 'default',
+            'description': 'Updated',
+          });
+        });
+
+        await repository.setProfileDescription('default', 'Updated');
+
+        expect(requests.single.method, 'PATCH');
+        expect(requests.single.path, '/api/plugins/kanban/profiles/default');
+        expect(requests.single.data, <String, dynamic>{
           'description': 'Updated',
         });
       });
-
-      await repository.setProfileDescription('default', 'Updated');
-
-      expect(requests.single.method, 'PATCH');
-      expect(requests.single.path, '/api/plugins/kanban/profiles/default');
-      expect(requests.single.data, <String, dynamic>{'description': 'Updated'});
-    });
-  });
+    },
+  );
 
   group('orchestration (GET /api/plugins/kanban/orchestration)', () {
     test('parses orchestration settings', () async {

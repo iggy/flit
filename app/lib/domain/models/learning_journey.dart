@@ -42,13 +42,13 @@ final class LearningJourney {
 
   @override
   int get hashCode => Object.hash(
-        Object.hashAll(buckets),
-        Object.hashAll(summary),
-        Object.hashAll(legend),
-        Object.hashAll(categories),
-        axis,
-        count,
-      );
+    Object.hashAll(buckets),
+    Object.hashAll(summary),
+    Object.hashAll(legend),
+    Object.hashAll(categories),
+    axis,
+    count,
+  );
 
   @override
   String toString() {
@@ -114,16 +114,16 @@ final class LearningBucket {
 
   @override
   int get hashCode => Object.hash(
-        index,
-        label,
-        date,
-        skills,
-        memories,
-        total,
-        category,
-        color,
-        Object.hashAll(nodes),
-      );
+    index,
+    label,
+    date,
+    skills,
+    memories,
+    total,
+    category,
+    color,
+    Object.hashAll(nodes),
+  );
 
   @override
   String toString() {
@@ -179,15 +179,8 @@ final class LearningNode {
   }
 
   @override
-  int get hashCode => Object.hash(
-        id,
-        glyph,
-        label,
-        fullLabel,
-        meta,
-        body,
-        style,
-      );
+  int get hashCode =>
+      Object.hash(id, glyph, label, fullLabel, meta, body, style);
 
   @override
   String toString() {

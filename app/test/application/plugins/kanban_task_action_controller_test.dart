@@ -13,10 +13,7 @@ void main() {
     test('sets busy during call, then lastMessage on success', () async {
       final container = _containerWith(_FakeKanbanRepository());
 
-      expect(
-        container.read(kanbanTaskActionControllerProvider).busy,
-        isFalse,
-      );
+      expect(container.read(kanbanTaskActionControllerProvider).busy, isFalse);
 
       final future = container
           .read(kanbanTaskActionControllerProvider.notifier)
@@ -35,8 +32,9 @@ void main() {
     test('sets error on GatewayException (never throws)', () async {
       final container = _containerWith(
         _FakeKanbanRepository(
-          createTaskError:
-              const GatewayNetworkException('Gateway returned HTTP 500'),
+          createTaskError: const GatewayNetworkException(
+            'Gateway returned HTTP 500',
+          ),
         ),
       );
 
@@ -256,7 +254,10 @@ void main() {
           .read(kanbanTaskActionControllerProvider.notifier)
           .createTask(title: 'Test');
 
-      expect(container.read(kanbanTaskActionControllerProvider).error, isNotNull);
+      expect(
+        container.read(kanbanTaskActionControllerProvider).error,
+        isNotNull,
+      );
 
       container.read(kanbanTaskActionControllerProvider.notifier).clearError();
 
@@ -267,9 +268,7 @@ void main() {
 
 ProviderContainer _containerWith(KanbanRepository repository) {
   return ProviderContainer(
-    overrides: [
-      kanbanRepositoryProvider.overrideWithValue(repository),
-    ],
+    overrides: [kanbanRepositoryProvider.overrideWithValue(repository)],
   );
 }
 
@@ -297,7 +296,9 @@ final class _FakeKanbanRepository implements KanbanRepository {
 
   @override
   Future<KanbanTaskDetail> task(String id) async {
-    return KanbanTaskDetail(task: KanbanTask(id: id, title: 'Test'));
+    return KanbanTaskDetail(
+      task: KanbanTask(id: id, title: 'Test'),
+    );
   }
 
   @override

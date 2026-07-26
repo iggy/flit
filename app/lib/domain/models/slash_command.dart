@@ -38,10 +38,7 @@ final class SlashCommand {
 
 /// One category of slash commands (wire §commands.catalog).
 final class SlashCategory {
-  const SlashCategory({
-    required this.name,
-    required this.commands,
-  });
+  const SlashCategory({required this.name, required this.commands});
 
   /// Category name, e.g. "Session".
   final String name;
@@ -108,7 +105,8 @@ final class SlashCatalog {
   );
 
   @override
-  String toString() => 'SlashCatalog(allCommands: ${allCommands.length}, '
+  String toString() =>
+      'SlashCatalog(allCommands: ${allCommands.length}, '
       'categories: ${categories.length}, canon: $canon, '
       'skillCount: $skillCount, warning: $warning)';
 }

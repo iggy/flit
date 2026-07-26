@@ -31,10 +31,7 @@ final class AttachmentRepositoryImpl implements AttachmentRepository {
 
   @override
   Future<DetachResult> detachImage(String sessionId, String path) async {
-    final params = <String, dynamic>{
-      'session_id': sessionId,
-      'path': path,
-    };
+    final params = <String, dynamic>{'session_id': sessionId, 'path': path};
     final result = await _client.request('image.detach', params);
     final dto = DetachResultDto.fromJson(result);
     return dto.toDomain();
@@ -80,10 +77,7 @@ final class AttachmentRepositoryImpl implements AttachmentRepository {
 
   @override
   Future<DropDetection> detectDrop(String sessionId, String text) async {
-    final params = <String, dynamic>{
-      'session_id': sessionId,
-      'text': text,
-    };
+    final params = <String, dynamic>{'session_id': sessionId, 'text': text};
     final result = await _client.request('input.detect_drop', params);
     final dto = DropDetectionDto.fromJson(result);
     return dto.toDomain();
@@ -91,9 +85,7 @@ final class AttachmentRepositoryImpl implements AttachmentRepository {
 
   @override
   Future<ClipboardPasteResult> pasteClipboard(String sessionId) async {
-    final params = <String, dynamic>{
-      'session_id': sessionId,
-    };
+    final params = <String, dynamic>{'session_id': sessionId};
     final result = await _client.request('clipboard.paste', params);
     final dto = ClipboardPasteDto.fromJson(result);
     return dto.toDomain();
@@ -101,9 +93,7 @@ final class AttachmentRepositoryImpl implements AttachmentRepository {
 
   @override
   Future<PasteCollapseResult> collapsePaste(String text) async {
-    final params = <String, dynamic>{
-      'text': text,
-    };
+    final params = <String, dynamic>{'text': text};
     final result = await _client.request('paste.collapse', params);
     final dto = PasteCollapseDto.fromJson(result);
     return dto.toDomain();

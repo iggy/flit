@@ -73,8 +73,9 @@ class _TerminalReadPromptCardState
     final scheme = theme.colorScheme;
     final start = widget.prompt.start;
     final count = widget.prompt.count;
-    final rangeText =
-        start != null || count != null ? ' (start: $start, count: $count)' : '';
+    final rangeText = start != null || count != null
+        ? ' (start: $start, count: $count)'
+        : '';
     return Card(
       color: scheme.secondaryContainer,
       margin: const EdgeInsets.symmetric(vertical: 4),

@@ -18,8 +18,9 @@ class ProjectFactsScreen extends ConsumerWidget {
         if (activeId == null) {
           return null;
         }
-        final project =
-            data.projects.where((p) => p.id == activeId).firstOrNull;
+        final project = data.projects
+            .where((p) => p.id == activeId)
+            .firstOrNull;
         return project?.primaryPath;
       },
     );
@@ -65,9 +66,9 @@ class _ProjectFactsContent extends StatelessWidget {
         _SectionHeader(title: 'Root'),
         SelectableText(
           facts.root,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontFamily: 'monospace',
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontFamily: 'monospace'),
         ),
         const SizedBox(height: 16),
         if (facts.manifests.isNotEmpty) ...<Widget>[
@@ -106,9 +107,9 @@ class _SectionHeader extends StatelessWidget {
       child: Text(
         title,
         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.primary,
-            ),
+          fontWeight: FontWeight.bold,
+          color: Theme.of(context).colorScheme.primary,
+        ),
       ),
     );
   }
@@ -124,13 +125,7 @@ class _ChipList extends StatelessWidget {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: items
-          .map(
-            (item) => Chip(
-              label: Text(item),
-            ),
-          )
-          .toList(),
+      children: items.map((item) => Chip(label: Text(item))).toList(),
     );
   }
 }
@@ -153,9 +148,9 @@ class _CommandList extends StatelessWidget {
                   padding: const EdgeInsets.all(12),
                   child: SelectableText(
                     cmd,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontFamily: 'monospace',
-                        ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(fontFamily: 'monospace'),
                   ),
                 ),
               ),

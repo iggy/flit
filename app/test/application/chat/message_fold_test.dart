@@ -175,10 +175,7 @@ void main() {
   test('sudo.request surfaces a SudoPrompt out-of-band (P3-08)', () {
     final state = _foldAll(empty, const <TypedGatewayEvent>[
       TypedGatewayEvent.messageStart(sessionId: sid),
-      TypedGatewayEvent.sudoRequest(
-        sessionId: sid,
-        requestId: '9f3a1c2b',
-      ),
+      TypedGatewayEvent.sudoRequest(sessionId: sid, requestId: '9f3a1c2b'),
     ]);
 
     expect(state.messages, hasLength(1));

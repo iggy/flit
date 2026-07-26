@@ -76,9 +76,8 @@ class _SlashLauncherState extends ConsumerState<_SlashLauncher> {
             Expanded(
               child: catalogAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, stack) => Center(
-                  child: Text('Error loading catalog: $err'),
-                ),
+                error: (err, stack) =>
+                    Center(child: Text('Error loading catalog: $err')),
                 data: (catalog) {
                   if (catalog == null) {
                     return const Center(

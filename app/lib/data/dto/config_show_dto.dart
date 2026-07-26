@@ -9,9 +9,7 @@ part 'config_show_dto.g.dart';
 /// where rows are 2-element string arrays.
 @JsonSerializable()
 class ConfigShowResultDto {
-  const ConfigShowResultDto({
-    this.sections = const <ConfigSectionDto>[],
-  });
+  const ConfigShowResultDto({this.sections = const <ConfigSectionDto>[]});
 
   factory ConfigShowResultDto.fromJson(Map<String, dynamic> json) =>
       _$ConfigShowResultDtoFromJson(json);
@@ -29,10 +27,7 @@ class ConfigShowResultDto {
 /// One config section from `config.show`.
 @JsonSerializable()
 class ConfigSectionDto {
-  const ConfigSectionDto({
-    this.title,
-    this.rows = const <List<dynamic>>[],
-  });
+  const ConfigSectionDto({this.title, this.rows = const <List<dynamic>>[]});
 
   factory ConfigSectionDto.fromJson(Map<String, dynamic> json) =>
       _$ConfigSectionDtoFromJson(json);
@@ -58,9 +53,6 @@ class ConfigSectionDto {
         }
       }
     }
-    return ConfigSection(
-      title: title ?? '',
-      rows: domainRows,
-    );
+    return ConfigSection(title: title ?? '', rows: domainRows);
   }
 }

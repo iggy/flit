@@ -338,10 +338,7 @@ FoldState _onSudoRequest(FoldState state, SudoRequestEvent event) {
   return state.copyWith(
     pendingPrompts: <InteractivePrompt>[
       ...state.pendingPrompts,
-      SudoPrompt(
-        sessionId: event.sessionId ?? '',
-        requestId: event.requestId,
-      ),
+      SudoPrompt(sessionId: event.sessionId ?? '', requestId: event.requestId),
     ],
   );
 }

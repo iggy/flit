@@ -91,30 +91,31 @@ final class BillingState {
 
   @override
   int get hashCode => Object.hash(
-        ok,
-        loggedIn,
-        orgName,
-        orgSlug,
-        role,
-        isAdmin,
-        canChangePlan,
-        canCharge,
-        balanceUsd,
-        balanceDisplay,
-        cliBillingEnabled,
-        Object.hashAll(chargePresets),
-        Object.hashAll(chargePresetsDisplay),
-        minUsd,
-        maxUsd,
-        card,
-        monthlyCap,
-        autoReload,
-        portalUrl,
-        errorCode,
-      );
+    ok,
+    loggedIn,
+    orgName,
+    orgSlug,
+    role,
+    isAdmin,
+    canChangePlan,
+    canCharge,
+    balanceUsd,
+    balanceDisplay,
+    cliBillingEnabled,
+    Object.hashAll(chargePresets),
+    Object.hashAll(chargePresetsDisplay),
+    minUsd,
+    maxUsd,
+    card,
+    monthlyCap,
+    autoReload,
+    portalUrl,
+    errorCode,
+  );
 
   @override
-  String toString() => 'BillingState('
+  String toString() =>
+      'BillingState('
       'ok: $ok, '
       'loggedIn: $loggedIn, '
       'balanceDisplay: $balanceDisplay, '
@@ -199,15 +200,16 @@ final class BillingMonthlyCap {
 
   @override
   int get hashCode => Object.hash(
-        limitUsd,
-        limitDisplay,
-        spentThisMonthUsd,
-        spentDisplay,
-        isDefaultCeiling,
-      );
+    limitUsd,
+    limitDisplay,
+    spentThisMonthUsd,
+    spentDisplay,
+    isDefaultCeiling,
+  );
 
   @override
-  String toString() => 'BillingMonthlyCap('
+  String toString() =>
+      'BillingMonthlyCap('
       'limitDisplay: $limitDisplay, '
       'spentDisplay: $spentDisplay, '
       'isDefaultCeiling: $isDefaultCeiling)';
@@ -244,16 +246,17 @@ final class BillingAutoReload {
 
   @override
   int get hashCode => Object.hash(
-        enabled,
-        thresholdUsd,
-        thresholdDisplay,
-        reloadToUsd,
-        reloadToDisplay,
-        card,
-      );
+    enabled,
+    thresholdUsd,
+    thresholdDisplay,
+    reloadToUsd,
+    reloadToDisplay,
+    card,
+  );
 
   @override
-  String toString() => 'BillingAutoReload('
+  String toString() =>
+      'BillingAutoReload('
       'enabled: $enabled, '
       'thresholdDisplay: $thresholdDisplay, '
       'reloadToDisplay: $reloadToDisplay)';
@@ -283,8 +286,7 @@ final class BillingAutoReloadCard {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(kind, paymentMethodId, brand, last4);
+  int get hashCode => Object.hash(kind, paymentMethodId, brand, last4);
 
   @override
   String toString() => 'BillingAutoReloadCard(kind: $kind)';
@@ -324,17 +326,18 @@ final class BillingChargeResult {
 
   @override
   int get hashCode => Object.hash(
-        ok,
-        chargeId,
-        idempotencyKey,
-        errorCode,
-        message,
-        portalUrl,
-        retryAfter,
-      );
+    ok,
+    chargeId,
+    idempotencyKey,
+    errorCode,
+    message,
+    portalUrl,
+    retryAfter,
+  );
 
   @override
-  String toString() => 'BillingChargeResult('
+  String toString() =>
+      'BillingChargeResult('
       'ok: $ok, '
       'chargeId: $chargeId, '
       'errorCode: $errorCode)';
@@ -373,18 +376,12 @@ final class BillingChargeStatus {
   }
 
   @override
-  int get hashCode => Object.hash(
-        ok,
-        status,
-        amountUsd,
-        settledAt,
-        reason,
-        errorCode,
-        message,
-      );
+  int get hashCode =>
+      Object.hash(ok, status, amountUsd, settledAt, reason, errorCode, message);
 
   @override
-  String toString() => 'BillingChargeStatus('
+  String toString() =>
+      'BillingChargeStatus('
       'ok: $ok, '
       'status: $status, '
       'reason: $reason)';

@@ -34,92 +34,95 @@ final class FakeGatewayRpcClient extends GatewayRpcClient {
 }
 
 void main() {
-  group('AttachmentRepositoryImpl.attachImageBytes (wire image.attach_bytes)',
-      () {
-    test('sends image.attach_bytes with all params', () async {
-      final client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'attached': true,
-          'path': '/tmp/img_123.png',
-          'count': 1,
-          'name': 'photo.png',
-          'width': 800,
-          'height': 600,
-          'bytes': 51200,
-          'token_estimate': 1275,
-          'text': '',
-          'remainder': '',
-        },
-      );
-      final repository = AttachmentRepositoryImpl(client);
+  group(
+    'AttachmentRepositoryImpl.attachImageBytes (wire image.attach_bytes)',
+    () {
+      test('sends image.attach_bytes with all params', () async {
+        final client = FakeGatewayRpcClient(
+          handler: (_, _) => const <String, dynamic>{
+            'attached': true,
+            'path': '/tmp/img_123.png',
+            'count': 1,
+            'name': 'photo.png',
+            'width': 800,
+            'height': 600,
+            'bytes': 51200,
+            'token_estimate': 1275,
+            'text': '',
+            'remainder': '',
+          },
+        );
+        final repository = AttachmentRepositoryImpl(client);
 
-      final result = await repository.attachImageBytes(
-        'sess_abc',
-        contentBase64: 'iVBORw0KGgoAAAANSUhEUgAAAAUA',
-        filename: 'photo.png',
-        ext: 'png',
-      );
+        final result = await repository.attachImageBytes(
+          'sess_abc',
+          contentBase64: 'iVBORw0KGgoAAAANSUhEUgAAAAUA',
+          filename: 'photo.png',
+          ext: 'png',
+        );
 
-      expect(client.calls.single.method, 'image.attach_bytes');
-      expect(client.calls.single.params, <String, dynamic>{
-        'session_id': 'sess_abc',
-        'content_base64': 'iVBORw0KGgoAAAANSUhEUgAAAAUA',
-        'filename': 'photo.png',
-        'ext': 'png',
+        expect(client.calls.single.method, 'image.attach_bytes');
+        expect(client.calls.single.params, <String, dynamic>{
+          'session_id': 'sess_abc',
+          'content_base64': 'iVBORw0KGgoAAAANSUhEUgAAAAUA',
+          'filename': 'photo.png',
+          'ext': 'png',
+        });
+        expect(result.path, '/tmp/img_123.png');
+        expect(result.name, 'photo.png');
+        expect(result.count, 1);
+        expect(result.width, 800);
+        expect(result.height, 600);
+        expect(result.bytes, 51200);
+        expect(result.tokenEstimate, 1275);
       });
-      expect(result.path, '/tmp/img_123.png');
-      expect(result.name, 'photo.png');
-      expect(result.count, 1);
-      expect(result.width, 800);
-      expect(result.height, 600);
-      expect(result.bytes, 51200);
-      expect(result.tokenEstimate, 1275);
-    });
 
-    test('omits filename and ext when null', () async {
-      final client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'path': '/tmp/img_456.png',
-          'count': 2,
-          'name': 'image',
-        },
-      );
-      final repository = AttachmentRepositoryImpl(client);
+      test('omits filename and ext when null', () async {
+        final client = FakeGatewayRpcClient(
+          handler: (_, _) => const <String, dynamic>{
+            'path': '/tmp/img_456.png',
+            'count': 2,
+            'name': 'image',
+          },
+        );
+        final repository = AttachmentRepositoryImpl(client);
 
-      await repository.attachImageBytes(
-        'sess_abc',
-        contentBase64: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA',
-      );
+        await repository.attachImageBytes(
+          'sess_abc',
+          contentBase64: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA',
+        );
 
-      expect(client.calls.single.params, <String, dynamic>{
-        'session_id': 'sess_abc',
-        'content_base64': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA',
+        expect(client.calls.single.params, <String, dynamic>{
+          'session_id': 'sess_abc',
+          'content_base64':
+              'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA',
+        });
       });
-    });
 
-    test('handles absent optional fields (no PIL)', () async {
-      final client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'path': '/tmp/img_789.png',
-          'count': 1,
-          'name': 'screenshot.png',
-        },
-      );
-      final repository = AttachmentRepositoryImpl(client);
+      test('handles absent optional fields (no PIL)', () async {
+        final client = FakeGatewayRpcClient(
+          handler: (_, _) => const <String, dynamic>{
+            'path': '/tmp/img_789.png',
+            'count': 1,
+            'name': 'screenshot.png',
+          },
+        );
+        final repository = AttachmentRepositoryImpl(client);
 
-      final result = await repository.attachImageBytes(
-        'sess_abc',
-        contentBase64: 'iVBORw0KGgoAAAANSUhEUgAAAAUA',
-      );
+        final result = await repository.attachImageBytes(
+          'sess_abc',
+          contentBase64: 'iVBORw0KGgoAAAANSUhEUgAAAAUA',
+        );
 
-      expect(result.path, '/tmp/img_789.png');
-      expect(result.name, 'screenshot.png');
-      expect(result.count, 1);
-      expect(result.width, isNull);
-      expect(result.height, isNull);
-      expect(result.tokenEstimate, isNull);
-    });
-  });
+        expect(result.path, '/tmp/img_789.png');
+        expect(result.name, 'screenshot.png');
+        expect(result.count, 1);
+        expect(result.width, isNull);
+        expect(result.height, isNull);
+        expect(result.tokenEstimate, isNull);
+      });
+    },
+  );
 
   group('AttachmentRepositoryImpl.detachImage (wire image.detach)', () {
     test('sends image.detach with session_id and path', () async {
@@ -131,8 +134,10 @@ void main() {
       );
       final repository = AttachmentRepositoryImpl(client);
 
-      final result =
-          await repository.detachImage('sess_abc', '/tmp/img_123.png');
+      final result = await repository.detachImage(
+        'sess_abc',
+        '/tmp/img_123.png',
+      );
 
       expect(client.calls.single.method, 'image.detach');
       expect(client.calls.single.params, <String, dynamic>{
@@ -225,10 +230,7 @@ void main() {
       );
       final repository = AttachmentRepositoryImpl(client);
 
-      await repository.attachPdf(
-        'sess_abc',
-        contentBase64: 'JVBERi0xLjQK...',
-      );
+      await repository.attachPdf('sess_abc', contentBase64: 'JVBERi0xLjQK...');
 
       expect(client.calls.single.params, <String, dynamic>{
         'session_id': 'sess_abc',
@@ -300,9 +302,7 @@ void main() {
   group('AttachmentRepositoryImpl.detectDrop (wire input.detect_drop)', () {
     test('sends input.detect_drop with session_id and text', () async {
       final client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'matched': false,
-        },
+        handler: (_, _) => const <String, dynamic>{'matched': false},
       );
       final repository = AttachmentRepositoryImpl(client);
 
@@ -332,7 +332,10 @@ void main() {
       );
       final repository = AttachmentRepositoryImpl(client);
 
-      final result = await repository.detectDrop('sess_abc', '/path/to/img.png');
+      final result = await repository.detectDrop(
+        'sess_abc',
+        '/path/to/img.png',
+      );
 
       expect(result.matched, true);
       expect(result.isImage, true);
@@ -359,7 +362,10 @@ void main() {
       );
       final repository = AttachmentRepositoryImpl(client);
 
-      final result = await repository.detectDrop('sess_abc', '/path/to/file.txt');
+      final result = await repository.detectDrop(
+        'sess_abc',
+        '/path/to/file.txt',
+      );
 
       expect(result.matched, true);
       expect(result.isImage, false);
@@ -370,9 +376,7 @@ void main() {
 
     test('parses not-matched case', () async {
       final client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'matched': false,
-        },
+        handler: (_, _) => const <String, dynamic>{'matched': false},
       );
       final repository = AttachmentRepositoryImpl(client);
 
@@ -445,7 +449,9 @@ void main() {
       );
       final repository = AttachmentRepositoryImpl(client);
 
-      final result = await repository.collapsePaste('line1\nline2\n...\nline500');
+      final result = await repository.collapsePaste(
+        'line1\nline2\n...\nline500',
+      );
 
       expect(client.calls.single.method, 'paste.collapse');
       expect(client.calls.single.params, <String, dynamic>{

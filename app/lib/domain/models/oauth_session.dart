@@ -60,12 +60,8 @@ final class OAuthSession {
   }
 
   @override
-  int get hashCode => Object.hash(
-        accessToken,
-        refreshToken,
-        expiresAt,
-        provider,
-      );
+  int get hashCode =>
+      Object.hash(accessToken, refreshToken, expiresAt, provider);
 
   /// Token-redacted representation — safe for logs (never emit secrets).
   @override

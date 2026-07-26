@@ -85,25 +85,24 @@ final agentProcessesProvider = FutureProvider<List<AgentProcess>>((ref) async {
 /// Spawn-tree snapshots for a session (from `spawn_tree.list`, P3-06).
 /// Empty when disconnected or repository is null.
 final snapshotListProvider =
-    FutureProvider.family<List<SpawnTreeSnapshotEntry>, String>(
-  (ref, sessionId) async {
-    final repository = ref.watch(delegationRepositoryProvider);
-    if (repository == null) {
-      return const <SpawnTreeSnapshotEntry>[];
-    }
-    return repository.listSnapshots(sessionId);
-  },
-);
+    FutureProvider.family<List<SpawnTreeSnapshotEntry>, String>((
+      ref,
+      sessionId,
+    ) async {
+      final repository = ref.watch(delegationRepositoryProvider);
+      if (repository == null) {
+        return const <SpawnTreeSnapshotEntry>[];
+      }
+      return repository.listSnapshots(sessionId);
+    });
 
 /// A loaded spawn-tree snapshot by path (from `spawn_tree.load`, P3-06).
 /// Null when disconnected or repository is null.
 final snapshotDetailProvider =
-    FutureProvider.family<SpawnTreeSnapshot?, String>(
-  (ref, path) async {
-    final repository = ref.watch(delegationRepositoryProvider);
-    if (repository == null) {
-      return null;
-    }
-    return repository.loadSnapshot(path);
-  },
-);
+    FutureProvider.family<SpawnTreeSnapshot?, String>((ref, path) async {
+      final repository = ref.watch(delegationRepositoryProvider);
+      if (repository == null) {
+        return null;
+      }
+      return repository.loadSnapshot(path);
+    });
