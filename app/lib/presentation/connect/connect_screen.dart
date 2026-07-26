@@ -1,5 +1,6 @@
 import 'package:flit/application/connection/connect_controller.dart';
 import 'package:flit/application/connection/connection_providers.dart';
+import 'package:flit/core/router/pending_deep_link_provider.dart';
 import 'package:flit/data/transport/connection_config.dart';
 import 'package:flit/domain/models/auth_provider.dart';
 import 'package:flit/presentation/common/connection_chip.dart';
@@ -101,6 +102,7 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
     });
 
     // Connected → toast the gateway version and head to chat (P0-07).
+    // Ticket P9-02: honor a pending deep link instead of always going to /chat.
     ref.listen(connectControllerProvider, (previous, next) {
       if (next.phase == ConnectPhase.connected &&
           previous?.phase != ConnectPhase.connected) {
@@ -114,7 +116,11 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
             ),
           ),
         );
-        context.go('/chat');
+        // Check for a pending deep link; fall back to /chat.
+        final pending = ref
+            .read(pendingDeepLinkProvider.notifier)
+            .consumePending();
+        context.go(pending ?? '/chat');
       }
     });
 

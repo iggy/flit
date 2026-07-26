@@ -89,6 +89,24 @@ class SettingsScreen extends StatelessWidget {
             ),
             _SectionHeader('Configuration'),
             _SettingsTile(
+              icon: Icons.palette_outlined,
+              title: 'Appearance',
+              subtitle: 'Theme & Hermes skin',
+              route: '/settings/appearance',
+            ),
+            _SettingsTile(
+              icon: Icons.notifications_outlined,
+              title: 'Notifications',
+              subtitle: 'Alerts for finished background runs & approvals',
+              route: '/settings/notifications',
+            ),
+            _SettingsTile(
+              icon: Icons.travel_explore_outlined,
+              title: 'Browser & preview',
+              subtitle: 'Attach a Chrome session and restart dev previews',
+              route: '/settings/browser',
+            ),
+            _SettingsTile(
               icon: Icons.credit_card_outlined,
               title: 'Billing & credits',
               subtitle: 'Balance, top-ups & auto-reload',
@@ -138,6 +156,13 @@ class SettingsScreen extends StatelessWidget {
               title: 'Checkpoints',
               subtitle: 'Diff & restore git checkpoints for this session',
               route: '/settings/checkpoints',
+            ),
+            _SectionHeader('About'),
+            _SettingsTile(
+              icon: Icons.info_outline,
+              title: 'About Flit',
+              subtitle: 'App & gateway versions, update check',
+              route: '/settings/about',
             ),
           ],
         ),

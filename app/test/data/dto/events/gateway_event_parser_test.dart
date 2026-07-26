@@ -589,6 +589,10 @@ void main() {
         BackgroundCompleteEvent() => 'background.complete',
         VoiceStatusEvent() => 'voice.status',
         VoiceTranscriptEvent() => 'voice.transcript',
+        SkinChanged() => 'skin.changed',
+        BrowserProgressEvent() => 'browser.progress',
+        PreviewRestartProgressEvent() => 'preview.restart.progress',
+        PreviewRestartCompleteEvent() => 'preview.restart.complete',
         UnknownEvent() => 'unknown',
       };
 

@@ -68,12 +68,32 @@ final kanbanTaskDetailProvider =
       return repository.task(id);
     });
 
+/// The selected kanban board slug (for deep-link routing, ticket P9-02).
+/// Null means the current/default board.
+final selectedKanbanBoardProvider =
+    NotifierProvider<SelectedKanbanBoardNotifier, String?>(
+      SelectedKanbanBoardNotifier.new,
+    );
+
+class SelectedKanbanBoardNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  /// Set the board slug (e.g. from a deep link).
+  void selectBoard(String? slug) {
+    state = slug;
+  }
+}
+
 /// The kanban board for the current connection.
 ///
 /// MVP approach is poll-on-focus: the board is fetched on first build and on
 /// explicit [KanbanBoardNotifier.refresh] (app-bar button); the live
 /// `/api/plugins/kanban/events` WS feed (seeded from
 /// [KanbanBoard.latestEventId]) is Phase 5 — see 06-kanban-rest.md.
+///
+/// Ticket P9-02: the board slug is now read from [selectedKanbanBoardProvider]
+/// so deep links can target a specific board.
 final kanbanBoardProvider =
     AsyncNotifierProvider<KanbanBoardNotifier, KanbanBoard?>(
       KanbanBoardNotifier.new,
@@ -86,7 +106,8 @@ class KanbanBoardNotifier extends AsyncNotifier<KanbanBoard?> {
     if (repository == null) {
       return null;
     }
-    return repository.board();
+    final slug = ref.watch(selectedKanbanBoardProvider);
+    return repository.board(board: slug);
   }
 
   /// Re-fetch the board (poll-on-focus MVP; the live feed is Phase 5).
@@ -98,7 +119,8 @@ class KanbanBoardNotifier extends AsyncNotifier<KanbanBoard?> {
       state = const AsyncData(null);
       return;
     }
-    state = AsyncData(await repository.board());
+    final slug = ref.read(selectedKanbanBoardProvider);
+    state = AsyncData(await repository.board(board: slug));
   }
 
   /// Move [id] to column [toColumn] (= `PATCH {status: toColumn}`).

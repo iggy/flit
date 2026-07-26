@@ -81,10 +81,13 @@ FoldState foldGatewayEvent(FoldState state, TypedGatewayEvent event) {
     SecretRequestEvent() => _onSecretRequest(state, event),
     TerminalReadRequestEvent() => _onTerminalReadRequest(state, event),
     // session.info / status.update / gateway.ready / subagent.* /
-    // background.complete / voice.* / unknown: no message-list change (pass through).
+    // background.complete / voice.* / skin.changed / browser+preview
+    // progress / unknown: no message-list change (pass through).
     // Subagent events fold into the SEPARATE spawn-tree, not the chat list
     // (P3-04). Background completions are NOT chat messages (P5-02).
     // Voice events (P7-05) are handled by VoiceController, not the fold.
+    // skin.changed (P9-07) drives the theme; browser/preview progress
+    // (P9-05) drive their own surfaces — never the chat list.
     SessionInfo() ||
     StatusUpdate() ||
     GatewayReady() ||
@@ -92,6 +95,10 @@ FoldState foldGatewayEvent(FoldState state, TypedGatewayEvent event) {
     BackgroundCompleteEvent() ||
     VoiceStatusEvent() ||
     VoiceTranscriptEvent() ||
+    SkinChanged() ||
+    BrowserProgressEvent() ||
+    PreviewRestartProgressEvent() ||
+    PreviewRestartCompleteEvent() ||
     UnknownEvent() => state,
   };
 }

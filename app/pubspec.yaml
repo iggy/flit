@@ -53,6 +53,14 @@ dependencies:
   # computes the PKCE S256 challenge. Pinned exact — bump deliberately.
   url_launcher: 6.3.2
   crypto: 3.0.7
+  # Phase 9 platform polish. Pinned exact — bump deliberately.
+  # P9-01: native desktop window sizing/state (linux/macos/windows only).
+  window_manager: 0.5.2
+  # P9-03: local notifications (background.complete, pending approvals).
+  flutter_local_notifications: 22.2.0
+  # P9-08: in-app version/update check reads the bundled build version.
+  # Held at 9.x: 10.x wants win32 ^6 while file_picker 11.0.2 pins win32 ^5.
+  package_info_plus: 9.0.1
 
 dev_dependencies:
   flutter_test:

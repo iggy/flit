@@ -192,6 +192,44 @@ tasks:
       - pub-get
 
   # ---------------------------------------------------------------------------
+  # Desktop packaging (ticket P9-08)
+  # ---------------------------------------------------------------------------
+  package-linux:
+    desc: 'Package Linux build as AppImage'
+    cmds:
+      - ./packaging/linux_appimage.sh
+    deps:
+      - pub-get
+
+  package-macos:
+    desc: 'Package macOS build as DMG'
+    cmds:
+      - ./packaging/macos_dmg.sh
+    deps:
+      - pub-get
+
+  package-windows:
+    desc: 'Package Windows build as MSI/ZIP'
+    cmds:
+      - powershell -File packaging/windows_msi.ps1
+    deps:
+      - pub-get
+
+  package:
+    desc: 'Package for the current platform'
+    cmds:
+      - task: package-{{OS}}
+    vars:
+      OS:
+        sh: |
+          case "$(uname -s)" in
+            Linux*)   echo linux ;;
+            Darwin*)  echo macos ;;
+            MINGW*|MSYS*|CYGWIN*) echo windows ;;
+            *)        echo "unsupported" ;;
+          esac
+
+  # ---------------------------------------------------------------------------
   # Clean
   # ---------------------------------------------------------------------------
   clean:

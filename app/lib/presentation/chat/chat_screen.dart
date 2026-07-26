@@ -31,12 +31,14 @@ import 'package:flit/presentation/chat/secret_prompt_card.dart';
 import 'package:flit/presentation/chat/slash_launcher.dart';
 import 'package:flit/presentation/chat/sudo_prompt_card.dart';
 import 'package:flit/presentation/chat/terminal_read_prompt_card.dart';
+import 'package:flit/presentation/common/command_palette.dart';
 import 'package:flit/presentation/common/connection_chip.dart';
 import 'package:flit/presentation/models/model_picker_sheet.dart';
 import 'package:flit/presentation/profiles/profile_menu.dart';
 import 'package:flit/presentation/sessions/session_drawer.dart';
 import 'package:flit/presentation/sessions/session_info_sheet.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -114,70 +116,97 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final session = ref.watch(activeSessionProvider);
     final connectionState = ref.watch(connectionStateProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        // Title is the product name for now; a later wave (P1-12) adds
-        // model/profile actions and can surface the session title.
-        title: const Text('Hermes'),
-        actions: <Widget>[
-          // Connection state first (P1-16): a dropped socket shows
-          // 'Reconnecting' here while the client backs off and resumes.
-          Padding(
-            padding: const EdgeInsets.only(right: 4),
-            child: Center(child: ConnectionChip(state: connectionState.value)),
-          ),
-          // Feature slots — wired to stubs; P1-10/12/13/14 replace the
-          // stub implementations in place (same files, same class names).
-          const ModelPickerButton(),
-          const ProfileMenuButton(),
-          const SessionInfoButton(),
-          IconButton(
-            tooltip: 'Commands',
-            icon: const Icon(Icons.terminal),
-            onPressed: () async {
-              final command = await showSlashLauncher(context);
-              if (command != null) {
-                ref
-                    .read(composerPrefillProvider.notifier)
-                    .prefill('${command.command} ');
-              }
+    return Shortcuts(
+      shortcuts: <LogicalKeySet, Intent>{
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyK):
+            const _OpenPaletteIntent(),
+        LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyK):
+            const _OpenPaletteIntent(),
+      },
+      child: Actions(
+        actions: <Type, Action<Intent>>{
+          _OpenPaletteIntent: CallbackAction<_OpenPaletteIntent>(
+            onInvoke: (_) async {
+              await showCommandPalette(context);
+              return null;
             },
           ),
-          IconButton(
-            tooltip: 'Plugins',
-            icon: const Icon(Icons.extension_outlined),
-            onPressed: () => context.push('/plugins'),
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            // Title is the product name for now; a later wave (P1-12) adds
+            // model/profile actions and can surface the session title.
+            title: const Text('Hermes'),
+            actions: <Widget>[
+              // Connection state first (P1-16): a dropped socket shows
+              // 'Reconnecting' here while the client backs off and resumes.
+              Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Center(
+                  child: ConnectionChip(state: connectionState.value),
+                ),
+              ),
+              // Feature slots — wired to stubs; P1-10/12/13/14 replace the
+              // stub implementations in place (same files, same class names).
+              const ModelPickerButton(),
+              const ProfileMenuButton(),
+              const SessionInfoButton(),
+              IconButton(
+                tooltip: 'Command Palette (Ctrl/Cmd+K)',
+                icon: const Icon(Icons.search),
+                onPressed: () async {
+                  await showCommandPalette(context);
+                },
+              ),
+              IconButton(
+                tooltip: 'Commands',
+                icon: const Icon(Icons.terminal),
+                onPressed: () async {
+                  final command = await showSlashLauncher(context);
+                  if (command != null) {
+                    ref
+                        .read(composerPrefillProvider.notifier)
+                        .prefill('${command.command} ');
+                  }
+                },
+              ),
+              IconButton(
+                tooltip: 'Plugins',
+                icon: const Icon(Icons.extension_outlined),
+                onPressed: () => context.push('/plugins'),
+              ),
+              IconButton(
+                tooltip: 'Agents',
+                icon: const Icon(Icons.account_tree_outlined),
+                onPressed: () => context.push('/agents'),
+              ),
+              IconButton(
+                tooltip: 'Settings',
+                icon: const Icon(Icons.settings_outlined),
+                onPressed: () => context.push('/settings'),
+              ),
+              IconButton(
+                tooltip: 'Sign out',
+                icon: const Icon(Icons.logout),
+                onPressed: () async {
+                  await ref.read(connectControllerProvider.notifier).signOut();
+                  if (context.mounted) {
+                    context.go('/connect');
+                  }
+                },
+              ),
+              const SizedBox(width: 4),
+            ],
           ),
-          IconButton(
-            tooltip: 'Agents',
-            icon: const Icon(Icons.account_tree_outlined),
-            onPressed: () => context.push('/agents'),
+          drawer: const SessionDrawer(),
+          body: SafeArea(
+            child: Column(
+              children: <Widget>[
+                Expanded(child: _buildBody(session)),
+                const Composer(),
+              ],
+            ),
           ),
-          IconButton(
-            tooltip: 'Settings',
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () => context.push('/settings'),
-          ),
-          IconButton(
-            tooltip: 'Sign out',
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await ref.read(connectControllerProvider.notifier).signOut();
-              if (context.mounted) {
-                context.go('/connect');
-              }
-            },
-          ),
-          const SizedBox(width: 4),
-        ],
-      ),
-      drawer: const SessionDrawer(),
-      body: SafeArea(
-        child: Column(
-          children: <Widget>[
-            Expanded(child: _buildBody(session)),
-            const Composer(),
-          ],
         ),
       ),
     );
@@ -328,4 +357,9 @@ class _PromptCard extends StatelessWidget {
       ),
     };
   }
+}
+
+/// Intent for opening the command palette (P9-04).
+class _OpenPaletteIntent extends Intent {
+  const _OpenPaletteIntent();
 }

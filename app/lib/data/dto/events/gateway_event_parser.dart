@@ -198,6 +198,40 @@ sealed class TypedGatewayEvent with _$TypedGatewayEvent {
     required bool noSpeechLimit,
   }) = VoiceTranscriptEvent;
 
+  /// `skin.changed` (P9-07): the gateway's active skin moved (a name switch OR
+  /// an in-place color edit). Session-LESS global broadcast; [skin] IS the
+  /// payload dict — the same shape as `gateway.ready`'s payload
+  /// (`resolve_skin()` in tui_gateway/server.py). `{}` on gateway-side failure.
+  const factory TypedGatewayEvent.skinChanged({
+    required Map<String, dynamic> skin,
+  }) = SkinChanged;
+
+  /// `browser.progress` (P9-05): a CDP connect progress line, emitted only when
+  /// `browser.manage` was called WITH a `session_id`. [level] ∈ info|error.
+  const factory TypedGatewayEvent.browserProgress({
+    required String? sessionId,
+    required String message,
+    required String level,
+  }) = BrowserProgressEvent;
+
+  /// `preview.restart.progress` (P9-05): a progress line from the hidden
+  /// preview-restart agent, correlated by [taskId]. [level] defaults to `info`
+  /// (the first frame omits it).
+  const factory TypedGatewayEvent.previewRestartProgress({
+    required String? sessionId,
+    required String taskId,
+    required String text,
+    required String level,
+  }) = PreviewRestartProgressEvent;
+
+  /// `preview.restart.complete` (P9-05): the restart agent finished. [text] is
+  /// its final response, or `error: …` on failure.
+  const factory TypedGatewayEvent.previewRestartComplete({
+    required String? sessionId,
+    required String taskId,
+    required String text,
+  }) = PreviewRestartCompleteEvent;
+
   /// Fallback for any event type the MVP doesn't consume — keeps the raw
   /// frame so nothing is ever lost or thrown.
   const factory TypedGatewayEvent.unknown({
@@ -366,6 +400,28 @@ TypedGatewayEvent parseGatewayEvent(GatewayEvent raw) {
           sessionId: sessionId,
           text: _asString(payload['text']),
           noSpeechLimit: _asBool(payload['no_speech_limit']) ?? false,
+        );
+      case 'skin.changed':
+        // Session-less global broadcast; payload IS the skin (P9-07).
+        return TypedGatewayEvent.skinChanged(skin: payload);
+      case 'browser.progress':
+        return TypedGatewayEvent.browserProgress(
+          sessionId: sessionId,
+          message: _asString(payload['message']) ?? '',
+          level: _asString(payload['level']) ?? 'info',
+        );
+      case 'preview.restart.progress':
+        return TypedGatewayEvent.previewRestartProgress(
+          sessionId: sessionId,
+          taskId: _asString(payload['task_id']) ?? '',
+          text: _asString(payload['text']) ?? '',
+          level: _asString(payload['level']) ?? 'info',
+        );
+      case 'preview.restart.complete':
+        return TypedGatewayEvent.previewRestartComplete(
+          sessionId: sessionId,
+          taskId: _asString(payload['task_id']) ?? '',
+          text: _asString(payload['text']) ?? '',
         );
       default:
         return _unknown(raw);

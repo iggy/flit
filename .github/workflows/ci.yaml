@@ -1,0 +1,156 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+# All Flutter commands run in the app/ directory (the Flutter project is not
+# at the repo root). Use `defaults.run.working-directory` to set this per-job.
+defaults:
+  run:
+    working-directory: app
+
+jobs:
+  analyze-and-test:
+    name: Analyze and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.8
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run code generation
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+
+      - name: Run tests
+        run: flutter test
+
+  build:
+    name: Build - ${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
+    needs: analyze-and-test
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: linux
+            runner: ubuntu-latest
+          - target: web
+            runner: ubuntu-latest
+          - target: android-apk
+            runner: ubuntu-latest
+          - target: macos
+            runner: macos-latest
+          - target: ios
+            runner: macos-latest
+          - target: windows
+            runner: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.8
+          channel: stable
+          cache: true
+
+      - name: Install Linux dependencies
+        if: matrix.target == 'linux'
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run code generation
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Build Linux
+        if: matrix.target == 'linux'
+        run: flutter build linux --release
+
+      - name: Build Web
+        if: matrix.target == 'web'
+        run: flutter build web --release
+
+      - name: Build Android APK
+        if: matrix.target == 'android-apk'
+        run: flutter build apk --release
+
+      - name: Build macOS
+        if: matrix.target == 'macos'
+        run: flutter build macos --release
+
+      - name: Build iOS (no codesign)
+        if: matrix.target == 'ios'
+        run: flutter build ios --release --no-codesign
+
+      - name: Build Windows
+        if: matrix.target == 'windows'
+        run: flutter build windows --release
+
+      - name: Upload Linux artifact
+        if: matrix.target == 'linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: app/build/linux/x64/release/bundle/
+
+      - name: Upload Web artifact
+        if: matrix.target == 'web'
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: app/build/web/
+
+      - name: Upload Android APK artifact
+        if: matrix.target == 'android-apk'
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: app/build/app/outputs/flutter-apk/*.apk
+
+      - name: Upload macOS artifact
+        if: matrix.target == 'macos'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: app/build/macos/Build/Products/Release/*.app
+
+      - name: Upload iOS artifact
+        if: matrix.target == 'ios'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build
+          path: app/build/ios/iphoneos/*.app
+
+      - name: Upload Windows artifact
+        if: matrix.target == 'windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: app/build/windows/x64/runner/Release/
