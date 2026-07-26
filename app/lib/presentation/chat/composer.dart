@@ -15,19 +15,25 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
 
+import 'package:file_picker/file_picker.dart';
+import 'package:flit/application/attachments/attachment_providers.dart';
 import 'package:flit/application/chat/composer_prefill.dart';
 import 'package:flit/application/chat/message_list_notifier.dart';
 import 'package:flit/application/providers.dart';
 import 'package:flit/application/sessions/active_session.dart';
 import 'package:flit/application/slash/slash_providers.dart';
+import 'package:flit/application/voice/voice_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
+import 'package:flit/domain/models/attachment.dart';
 import 'package:flit/domain/models/command_dispatch.dart';
 import 'package:flit/domain/models/slash_completion.dart';
 import 'package:flit/domain/models/steer_result.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 /// Key of the composer's text field (widget tests target it directly).
 const Key composerFieldKey = Key('composer_field');
@@ -57,6 +63,15 @@ class _ComposerState extends ConsumerState<Composer> {
 
   /// Request generation counter to ignore stale async completeSlash results.
   int _completionRequestGen = 0;
+
+  /// P7: local thumbnail bytes keyed by attachment path (server-side path).
+  final Map<String, Uint8List> _localThumbs = <String, Uint8List>{};
+
+  /// P7: track voice error to detect changes (avoid snackbar spam).
+  String? _lastVoiceError;
+
+  /// P7: track whether we've done the initial voice status refresh.
+  bool _voiceStatusRefreshed = false;
 
   @override
   void initState() {
@@ -176,6 +191,9 @@ class _ComposerState extends ConsumerState<Composer> {
   Future<void> _send(String liveId, String text) async {
     try {
       await ref.read(chatRepositoryProvider)?.submitPrompt(liveId, text);
+      // P7: clear staged attachments after successful send (gateway auto-consumes).
+      ref.read(stagedAttachmentsProvider.notifier).clear();
+      _localThumbs.clear();
     } on Object catch (error) {
       _showError('Failed to send', error);
     }
@@ -283,6 +301,177 @@ class _ComposerState extends ConsumerState<Composer> {
     );
   }
 
+  /// P7: show the attachment picker bottom sheet.
+  void _showAttachmentPicker(String liveId) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Wrap(
+            children: <Widget>[
+              ListTile(
+                key: const Key('composer_attach_image'),
+                leading: const Icon(Icons.photo),
+                title: const Text('Photo'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  unawaited(_pickImage(liveId));
+                },
+              ),
+              ListTile(
+                key: const Key('composer_attach_pdf'),
+                leading: const Icon(Icons.picture_as_pdf),
+                title: const Text('PDF'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  unawaited(_pickPdf(liveId));
+                },
+              ),
+              ListTile(
+                key: const Key('composer_attach_file'),
+                leading: const Icon(Icons.insert_drive_file),
+                title: const Text('File'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  unawaited(_pickFile(liveId));
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// P7: pick an image from the gallery and attach it.
+  Future<void> _pickImage(String liveId) async {
+    final repo = ref.read(attachmentRepositoryProvider);
+    if (repo == null) {
+      _showError('Not connected', 'No attachment repository');
+      return;
+    }
+    try {
+      final picker = ImagePicker();
+      final xFile = await picker.pickImage(source: ImageSource.gallery);
+      if (xFile == null) {
+        return; // User cancelled.
+      }
+      final bytes = await xFile.readAsBytes();
+      final b64 = base64Encode(bytes);
+      final result = await repo.attachImageBytes(
+        liveId,
+        contentBase64: b64,
+        filename: xFile.name,
+      );
+      ref.read(stagedAttachmentsProvider.notifier).addImage(result);
+      setState(() {
+        _localThumbs[result.path] = bytes;
+      });
+    } on Object catch (error) {
+      _showError('Failed to attach image', error);
+    }
+  }
+
+  /// P7: pick a PDF file and attach it.
+  Future<void> _pickPdf(String liveId) async {
+    final repo = ref.read(attachmentRepositoryProvider);
+    if (repo == null) {
+      _showError('Not connected', 'No attachment repository');
+      return;
+    }
+    try {
+      final result = await FilePicker.pickFiles(
+        withData: true,
+        type: FileType.custom,
+        allowedExtensions: const <String>['pdf'],
+      );
+      final pickedFile = result?.files.single;
+      if (pickedFile == null || pickedFile.bytes == null) {
+        return; // User cancelled or no data.
+      }
+      final b64 = base64Encode(pickedFile.bytes!);
+      final pdfResult = await repo.attachPdf(
+        liveId,
+        contentBase64: b64,
+        filename: pickedFile.name,
+      );
+      // Add the page images to staged (PDF pages are images).
+      ref.read(stagedAttachmentsProvider.notifier).addPdfPages(pdfResult.pages);
+      // Store the PDF bytes for each page (use the same bytes for all pages).
+      for (final page in pdfResult.pages) {
+        setState(() {
+          _localThumbs[page.path] = pickedFile.bytes!;
+        });
+      }
+    } on Object catch (error) {
+      _showError('Failed to attach PDF', error);
+    }
+  }
+
+  /// P7: pick any file and attach it.
+  Future<void> _pickFile(String liveId) async {
+    final repo = ref.read(attachmentRepositoryProvider);
+    if (repo == null) {
+      _showError('Not connected', 'No attachment repository');
+      return;
+    }
+    try {
+      final result = await FilePicker.pickFiles(withData: true);
+      final pickedFile = result?.files.single;
+      if (pickedFile == null || pickedFile.bytes == null) {
+        return; // User cancelled or no data.
+      }
+      final dataUrl = 'data:application/octet-stream;base64,${base64Encode(pickedFile.bytes!)}';
+      final fileResult = await repo.attachFile(
+        liveId,
+        dataUrl: dataUrl,
+        name: pickedFile.name,
+      );
+      ref.read(stagedAttachmentsProvider.notifier).addFile(fileResult);
+    } on Object catch (error) {
+      _showError('Failed to attach file', error);
+    }
+  }
+
+  /// P7: remove an image attachment.
+  Future<void> _removeImage(String liveId, String path) async {
+    final repo = ref.read(attachmentRepositoryProvider);
+    if (repo == null) {
+      return;
+    }
+    try {
+      await repo.detachImage(liveId, path);
+      ref.read(stagedAttachmentsProvider.notifier).removeImage(path);
+      setState(() {
+        _localThumbs.remove(path);
+      });
+    } on Object catch (error) {
+      _showError('Failed to remove image', error);
+    }
+  }
+
+  /// P7: toggle mic recording.
+  void _toggleMic(String liveId) {
+    final controller = ref.read(voiceControllerProvider.notifier);
+    final state = ref.read(voiceControllerProvider);
+    if (!state.modeEnabled) {
+      // Enable mode and start recording.
+      unawaited(controller.enableMode().then((_) => controller.startRecording(liveId)));
+    } else if (state.recording) {
+      // Stop recording.
+      unawaited(controller.stopRecording(liveId));
+    } else {
+      // Start recording.
+      unawaited(controller.startRecording(liveId));
+    }
+  }
+
+  /// P7: toggle TTS.
+  void _toggleTts() {
+    final controller = ref.read(voiceControllerProvider.notifier);
+    unawaited(controller.toggleTts());
+  }
+
   @override
   Widget build(BuildContext context) {
     final liveId = ref.watch(activeSessionProvider).liveId;
@@ -301,6 +490,32 @@ class _ComposerState extends ConsumerState<Composer> {
       }
     });
 
+    // P7: watch staged attachments.
+    final stagedAttachments = ref.watch(stagedAttachmentsProvider);
+
+    // P7: listen for voice errors (separate from watching state for UI).
+    // Only show errors when voice repository is available (avoid noise in tests).
+    ref.listen(voiceControllerProvider, (previous, next) {
+      final voiceRepo = ref.read(voiceRepositoryProvider);
+      if (voiceRepo != null && next.error != null && next.error != _lastVoiceError) {
+        _lastVoiceError = next.error;
+        if (mounted) {
+          _showSnackBar('Voice: ${next.error}');
+        }
+      }
+    });
+
+    // P7: watch voice state for UI.
+    final voiceState = ref.watch(voiceControllerProvider);
+
+    // P7: refresh voice status on first build (only when voice repo is available).
+    if (!_voiceStatusRefreshed && ref.read(voiceRepositoryProvider) != null) {
+      _voiceStatusRefreshed = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(voiceControllerProvider.notifier).refreshStatus();
+      });
+    }
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
       child: Column(
@@ -309,9 +524,19 @@ class _ComposerState extends ConsumerState<Composer> {
           // P3-02: suggestion overlay (shown above the field when non-empty).
           if (_suggestions != null && _suggestions!.isNotEmpty)
             _buildSuggestionOverlay(),
+          // P7: attachment chips row (shown above the field when non-empty).
+          if (stagedAttachments.images.isNotEmpty || stagedAttachments.files.isNotEmpty)
+            _buildAttachmentsRow(stagedAttachments, liveId),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: <Widget>[
+              // P7: attach button (left of text field).
+              IconButton(
+                key: const Key('composer_attach'),
+                tooltip: 'Attach',
+                onPressed: liveId == null ? null : () => _showAttachmentPicker(liveId),
+                icon: const Icon(Icons.attach_file),
+              ),
               Expanded(
                 child: TextField(
                   key: composerFieldKey,
@@ -331,6 +556,31 @@ class _ComposerState extends ConsumerState<Composer> {
                 ),
               ),
               const SizedBox(width: 8),
+              // P7: mic button.
+              IconButton(
+                key: const Key('composer_mic'),
+                tooltip: voiceState.recording ? voiceState.micState : 'Voice',
+                onPressed: liveId == null ? null : () => _toggleMic(liveId),
+                icon: Icon(
+                  voiceState.micState == 'transcribing'
+                      ? Icons.hourglass_top
+                      : Icons.mic,
+                  color: voiceState.recording
+                      ? Theme.of(context).colorScheme.primary
+                      : null,
+                ),
+              ),
+              // P7: TTS toggle button.
+              IconButton(
+                key: const Key('composer_tts'),
+                tooltip: 'Text-to-speech',
+                onPressed: voiceState.modeEnabled && liveId != null
+                    ? _toggleTts
+                    : null,
+                icon: Icon(
+                  voiceState.ttsEnabled ? Icons.volume_up : Icons.volume_off,
+                ),
+              ),
               if (working && liveId != null) ...<Widget>[
                 IconButton.filled(
                   key: composerSteerKey,
@@ -391,6 +641,114 @@ class _ComposerState extends ConsumerState<Composer> {
               onTap: () => _applySuggestion(item),
             );
           },
+        ),
+      ),
+    );
+  }
+
+  /// P7: build the attachments row (thumbnails + chips).
+  Widget _buildAttachmentsRow(StagedAttachments attachments, String? liveId) {
+    return Container(
+      key: const Key('composer_attachments'),
+      margin: const EdgeInsets.only(bottom: 8),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: <Widget>[
+            // Image attachments (including PDF pages).
+            for (var i = 0; i < attachments.images.length; i++)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: _buildImageChip(attachments.images[i], i, liveId),
+              ),
+            // File attachments.
+            for (final file in attachments.files)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: _buildFileChip(file),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// P7: build an image attachment chip (thumbnail + token estimate + delete).
+  Widget _buildImageChip(ImageAttachment image, int index, String? liveId) {
+    final bytes = _localThumbs[image.path];
+    final tokenEstimate = image.tokenEstimate;
+    return Stack(
+      children: <Widget>[
+        Container(
+          key: ValueKey('attachment_$index'),
+          width: 72,
+          height: 72,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: bytes != null
+                ? Image.memory(
+                    bytes,
+                    width: 48,
+                    height: 48,
+                    fit: BoxFit.cover,
+                  )
+                : const Icon(Icons.image),
+          ),
+        ),
+        if (tokenEstimate != null)
+          Positioned(
+            bottom: 2,
+            left: 2,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                '~$tokenEstimate tok',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                ),
+              ),
+            ),
+          ),
+        Positioned(
+          top: 0,
+          right: 0,
+          child: IconButton(
+            icon: const Icon(Icons.close, size: 16),
+            onPressed: liveId == null
+                ? null
+                : () => unawaited(_removeImage(liveId, image.path)),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.black54,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// P7: build a file attachment chip (icon + name).
+  Widget _buildFileChip(FileAttachment file) {
+    return Tooltip(
+      message: file.refText,
+      child: Chip(
+        avatar: const Icon(Icons.insert_drive_file),
+        label: Text(
+          file.name,
+          overflow: TextOverflow.ellipsis,
         ),
       ),
     );

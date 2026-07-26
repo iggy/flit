@@ -184,6 +184,20 @@ sealed class TypedGatewayEvent with _$TypedGatewayEvent {
     required String text,
   }) = BackgroundCompleteEvent;
 
+  /// `voice.status` (P7-05): server-side mic state ∈ idle|listening|transcribing.
+  const factory TypedGatewayEvent.voiceStatus({
+    required String? sessionId,
+    required String state,
+  }) = VoiceStatusEvent;
+
+  /// `voice.transcript` (P7-05): a finished transcript to drop into the composer,
+  /// OR a no-speech-limit signal (three silent captures) when [noSpeechLimit].
+  const factory TypedGatewayEvent.voiceTranscript({
+    required String? sessionId,
+    String? text,
+    required bool noSpeechLimit,
+  }) = VoiceTranscriptEvent;
+
   /// Fallback for any event type the MVP doesn't consume — keeps the raw
   /// frame so nothing is ever lost or thrown.
   const factory TypedGatewayEvent.unknown({
@@ -341,6 +355,17 @@ TypedGatewayEvent parseGatewayEvent(GatewayEvent raw) {
           sessionId: sessionId,
           kind: _asString(payload['kind']),
           text: _asString(payload['text']),
+        );
+      case 'voice.status':
+        return TypedGatewayEvent.voiceStatus(
+          sessionId: sessionId,
+          state: _asString(payload['state']) ?? '',
+        );
+      case 'voice.transcript':
+        return TypedGatewayEvent.voiceTranscript(
+          sessionId: sessionId,
+          text: _asString(payload['text']),
+          noSpeechLimit: _asBool(payload['no_speech_limit']) ?? false,
         );
       default:
         return _unknown(raw);

@@ -591,10 +591,126 @@ void main() {
         SubagentEvent() => 'subagent',
         StatusUpdate() => 'status',
         BackgroundCompleteEvent() => 'background.complete',
+        VoiceStatusEvent() => 'voice.status',
+        VoiceTranscriptEvent() => 'voice.transcript',
         UnknownEvent() => 'unknown',
       };
 
       expect(label, 'start');
+    });
+  });
+
+  group('P7-05 voice.status', () {
+    const frame =
+        '{"jsonrpc":"2.0","method":"event","params":{"type":"voice.status",'
+        '"session_id":"a1b2c3d4","payload":{"state":"listening"}}}';
+
+    test('parses to VoiceStatusEvent with state', () {
+      final event = parseGatewayEvent(_eventFromFrame(frame));
+
+      expect(event, isA<VoiceStatusEvent>());
+      final voiceStatus = event as VoiceStatusEvent;
+      expect(voiceStatus.sessionId, 'a1b2c3d4');
+      expect(voiceStatus.state, 'listening');
+    });
+
+    test('handles various states: idle|listening|transcribing', () {
+      for (final state in ['idle', 'listening', 'transcribing']) {
+        final event = parseGatewayEvent(
+          GatewayEvent(
+            type: 'voice.status',
+            sessionId: 'a1b2c3d4',
+            payload: {'state': state},
+          ),
+        );
+
+        expect(event, isA<VoiceStatusEvent>());
+        expect((event as VoiceStatusEvent).state, state);
+      }
+    });
+
+    test('missing state falls back to empty string', () {
+      final event = parseGatewayEvent(
+        const GatewayEvent(
+          type: 'voice.status',
+          sessionId: 'a1b2c3d4',
+          payload: <String, dynamic>{},
+        ),
+      );
+
+      expect(event, isA<VoiceStatusEvent>());
+      expect((event as VoiceStatusEvent).state, '');
+    });
+
+    test('empty session_id is allowed (gateway could not attribute it)', () {
+      final event = parseGatewayEvent(
+        const GatewayEvent(
+          type: 'voice.status',
+          sessionId: '',
+          payload: {'state': 'idle'},
+        ),
+      );
+
+      expect(event, isA<VoiceStatusEvent>());
+      expect((event as VoiceStatusEvent).sessionId, '');
+    });
+  });
+
+  group('P7-05 voice.transcript', () {
+    test('parses to VoiceTranscriptEvent with text', () {
+      const frame =
+          '{"jsonrpc":"2.0","method":"event","params":{"type":"voice.transcript",'
+          '"session_id":"a1b2c3d4","payload":{"text":"Hello world"}}}';
+
+      final event = parseGatewayEvent(_eventFromFrame(frame));
+
+      expect(event, isA<VoiceTranscriptEvent>());
+      final transcript = event as VoiceTranscriptEvent;
+      expect(transcript.sessionId, 'a1b2c3d4');
+      expect(transcript.text, 'Hello world');
+      expect(transcript.noSpeechLimit, false);
+    });
+
+    test('parses no_speech_limit signal (three silent captures)', () {
+      const frame =
+          '{"jsonrpc":"2.0","method":"event","params":{"type":"voice.transcript",'
+          '"session_id":"a1b2c3d4","payload":{"no_speech_limit":true}}}';
+
+      final event = parseGatewayEvent(_eventFromFrame(frame));
+
+      expect(event, isA<VoiceTranscriptEvent>());
+      final transcript = event as VoiceTranscriptEvent;
+      expect(transcript.sessionId, 'a1b2c3d4');
+      expect(transcript.text, isNull);
+      expect(transcript.noSpeechLimit, true);
+    });
+
+    test('absent text and no_speech_limit fall back to defaults', () {
+      final event = parseGatewayEvent(
+        const GatewayEvent(
+          type: 'voice.transcript',
+          sessionId: 'a1b2c3d4',
+          payload: <String, dynamic>{},
+        ),
+      );
+
+      expect(event, isA<VoiceTranscriptEvent>());
+      final transcript = event as VoiceTranscriptEvent;
+      expect(transcript.text, isNull);
+      expect(transcript.noSpeechLimit, false);
+    });
+
+    test('empty session_id is allowed', () {
+      final event = parseGatewayEvent(
+        const GatewayEvent(
+          type: 'voice.transcript',
+          sessionId: '',
+          payload: {'text': 'Test'},
+        ),
+      );
+
+      expect(event, isA<VoiceTranscriptEvent>());
+      expect((event as VoiceTranscriptEvent).sessionId, '');
     });
   });
 }

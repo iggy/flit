@@ -9,18 +9,24 @@
 
 import 'dart:async';
 
+import 'package:flit/application/attachments/attachment_providers.dart';
 import 'package:flit/application/connection/connection_providers.dart';
 import 'package:flit/application/providers.dart';
 import 'package:flit/application/sessions/active_session.dart';
 import 'package:flit/application/slash/slash_providers.dart';
+import 'package:flit/application/voice/voice_providers.dart';
 import 'package:flit/data/dto/events/gateway_event_parser.dart';
 import 'package:flit/data/transport/gateway_rpc_client.dart';
+import 'package:flit/domain/models/attachment.dart';
 import 'package:flit/domain/models/command_dispatch.dart';
 import 'package:flit/domain/models/session_bootstrap.dart';
 import 'package:flit/domain/models/slash_completion.dart';
+import 'package:flit/domain/models/voice_state.dart';
+import 'package:flit/domain/repositories/attachment_repository.dart';
 import 'package:flit/domain/repositories/chat_repository.dart';
 import 'package:flit/domain/repositories/session_repository.dart';
 import 'package:flit/domain/repositories/slash_repository.dart';
+import 'package:flit/domain/repositories/voice_repository.dart';
 import 'package:flit/presentation/chat/composer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -119,6 +125,78 @@ final class FakeSessionRepository implements SessionRepository {
       throw UnimplementedError();
 }
 
+/// Fake attachment repository for testing attachment operations.
+final class FakeAttachmentRepository implements AttachmentRepository {
+  final List<({String sessionId, String contentBase64, String? filename})> imagesAttached =
+      <({String sessionId, String contentBase64, String? filename})>[];
+  final List<({String sessionId, String path})> imagesDetached =
+      <({String sessionId, String path})>[];
+
+  @override
+  Future<ImageAttachment> attachImageBytes(
+    String sessionId, {
+    required String contentBase64,
+    String? filename,
+    String? ext,
+  }) async {
+    imagesAttached.add((
+      sessionId: sessionId,
+      contentBase64: contentBase64,
+      filename: filename,
+    ));
+    return ImageAttachment(
+      path: '/tmp/image_${imagesAttached.length}.jpg',
+      name: filename ?? 'image.jpg',
+      count: imagesAttached.length,
+      tokenEstimate: 100,
+    );
+  }
+
+  @override
+  Future<DetachResult> detachImage(String sessionId, String path) async {
+    imagesDetached.add((sessionId: sessionId, path: path));
+    return DetachResult(detached: true, count: imagesAttached.length - 1);
+  }
+
+  @override
+  Future<dynamic> noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError();
+}
+
+/// Fake voice repository for testing voice operations.
+final class FakeVoiceRepository implements VoiceRepository {
+  final List<String> toggleCalls = <String>[];
+  final List<({String action, String? sessionId})> recordCalls =
+      <({String action, String? sessionId})>[];
+
+  VoiceToggleResult toggleResult = const VoiceToggleResult(
+    enabled: false,
+    tts: false,
+    recordKey: 'Ctrl+B',
+  );
+
+  VoiceRecordResult recordResult = const VoiceRecordResult(
+    status: 'recording',
+  );
+
+  @override
+  Future<VoiceToggleResult> toggle(String action) async {
+    toggleCalls.add(action);
+    return toggleResult;
+  }
+
+  @override
+  Future<VoiceRecordResult> record(String action, {String? sessionId}) async {
+    recordCalls.add((action: action, sessionId: sessionId));
+    return recordResult;
+  }
+
+  @override
+  Future<VoiceTtsResult> tts(String text) async {
+    return const VoiceTtsResult(status: 'speaking');
+  }
+}
+
 void main() {
   late FakeSlashRepository slashRepository;
   late FakeChatRepository chatRepository;
@@ -138,6 +216,7 @@ void main() {
         slashRepositoryProvider.overrideWithValue(slashRepository),
         chatRepositoryProvider.overrideWithValue(chatRepository),
         sessionRepositoryProvider.overrideWithValue(sessionRepository),
+        voiceRepositoryProvider.overrideWithValue(null), // P7: avoid voice errors in old tests
         connectionStateProvider.overrideWith(
           (ref) => Stream.value(GatewayConnectionState.ready),
         ),
@@ -368,5 +447,258 @@ void main() {
     // Verify submitPrompt was called with the normal text.
     expect(chatRepository.submitted.length, 1);
     expect(chatRepository.submitted.first.text, 'hello world');
+  });
+
+  group('P7: Attachments', () {
+    late FakeAttachmentRepository attachmentRepository;
+
+    setUp(() {
+      attachmentRepository = FakeAttachmentRepository();
+    });
+
+    Widget harnessWithAttachments() {
+      return ProviderScope(
+        overrides: [
+          slashRepositoryProvider.overrideWithValue(slashRepository),
+          chatRepositoryProvider.overrideWithValue(chatRepository),
+          sessionRepositoryProvider.overrideWithValue(sessionRepository),
+          attachmentRepositoryProvider.overrideWithValue(attachmentRepository),
+          connectionStateProvider.overrideWith(
+            (ref) => Stream.value(GatewayConnectionState.ready),
+          ),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: Consumer(
+              builder: (context, ref, child) {
+                ref.listen(activeSessionProvider, (previous, next) {});
+                if (ref.read(activeSessionProvider).liveId == null) {
+                  Future.microtask(
+                    () => ref.read(activeSessionProvider.notifier).bootstrap(),
+                  );
+                }
+                return const Composer();
+              },
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('attach button exists', (tester) async {
+      await tester.pumpWidget(harnessWithAttachments());
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byKey(const Key('composer_attach')), findsOneWidget);
+    });
+
+    testWidgets('staged images render attachment chips', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            slashRepositoryProvider.overrideWithValue(slashRepository),
+            chatRepositoryProvider.overrideWithValue(chatRepository),
+            sessionRepositoryProvider.overrideWithValue(sessionRepository),
+            attachmentRepositoryProvider.overrideWithValue(attachmentRepository),
+            stagedAttachmentsProvider.overrideWith(StagedAttachmentsNotifier.new),
+            connectionStateProvider.overrideWith(
+              (ref) => Stream.value(GatewayConnectionState.ready),
+            ),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: Consumer(
+                builder: (context, ref, child) {
+                  ref.listen(activeSessionProvider, (previous, next) {});
+                  if (ref.read(activeSessionProvider).liveId == null) {
+                    Future.microtask(
+                      () => ref.read(activeSessionProvider.notifier).bootstrap(),
+                    );
+                  }
+                  // Seed the staged attachments.
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    final notifier = ref.read(stagedAttachmentsProvider.notifier);
+                    if (ref.read(stagedAttachmentsProvider).images.isEmpty) {
+                      notifier.addImage(const ImageAttachment(
+                        path: '/tmp/test.jpg',
+                        name: 'test.jpg',
+                        count: 1,
+                        tokenEstimate: 150,
+                      ));
+                    }
+                  });
+                  return const Composer();
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(); // Let the postFrameCallback run.
+
+      // Verify the attachments container renders.
+      expect(find.byKey(const Key('composer_attachments')), findsOneWidget);
+
+      // Verify token estimate text renders.
+      expect(find.textContaining('150 tok'), findsOneWidget);
+    });
+
+    testWidgets('tapping image delete button removes it', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            slashRepositoryProvider.overrideWithValue(slashRepository),
+            chatRepositoryProvider.overrideWithValue(chatRepository),
+            sessionRepositoryProvider.overrideWithValue(sessionRepository),
+            attachmentRepositoryProvider.overrideWithValue(attachmentRepository),
+            stagedAttachmentsProvider.overrideWith(StagedAttachmentsNotifier.new),
+            connectionStateProvider.overrideWith(
+              (ref) => Stream.value(GatewayConnectionState.ready),
+            ),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: Consumer(
+                builder: (context, ref, child) {
+                  ref.listen(activeSessionProvider, (previous, next) {});
+                  if (ref.read(activeSessionProvider).liveId == null) {
+                    Future.microtask(
+                      () => ref.read(activeSessionProvider.notifier).bootstrap(),
+                    );
+                  }
+                  // Seed the staged attachments.
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    final notifier = ref.read(stagedAttachmentsProvider.notifier);
+                    if (ref.read(stagedAttachmentsProvider).images.isEmpty) {
+                      notifier.addImage(const ImageAttachment(
+                        path: '/tmp/test.jpg',
+                        name: 'test.jpg',
+                        count: 1,
+                        tokenEstimate: 150,
+                      ));
+                    }
+                  });
+                  return const Composer();
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(); // Let the postFrameCallback run.
+
+      // Verify the chip renders.
+      expect(find.byKey(const ValueKey('attachment_0')), findsOneWidget);
+
+      // Tap the delete button (close icon).
+      await tester.tap(find.byIcon(Icons.close).first);
+      await tester.pumpAndSettle();
+
+      // Verify detachImage was called.
+      expect(attachmentRepository.imagesDetached.length, 1);
+      expect(attachmentRepository.imagesDetached.first.path, '/tmp/test.jpg');
+
+      // The chip should be gone (removeImage was called).
+      expect(find.byKey(const ValueKey('attachment_0')), findsNothing);
+    });
+  });
+
+  group('P7: Voice', () {
+    late FakeVoiceRepository voiceRepository;
+
+    setUp(() {
+      voiceRepository = FakeVoiceRepository();
+    });
+
+    Widget harnessWithVoice() {
+      return ProviderScope(
+        overrides: [
+          slashRepositoryProvider.overrideWithValue(slashRepository),
+          chatRepositoryProvider.overrideWithValue(chatRepository),
+          sessionRepositoryProvider.overrideWithValue(sessionRepository),
+          voiceRepositoryProvider.overrideWithValue(voiceRepository),
+          connectionStateProvider.overrideWith(
+            (ref) => Stream.value(GatewayConnectionState.ready),
+          ),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: Consumer(
+              builder: (context, ref, child) {
+                ref.listen(activeSessionProvider, (previous, next) {});
+                if (ref.read(activeSessionProvider).liveId == null) {
+                  Future.microtask(
+                    () => ref.read(activeSessionProvider.notifier).bootstrap(),
+                  );
+                }
+                return const Composer();
+              },
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('mic button exists', (tester) async {
+      await tester.pumpWidget(harnessWithVoice());
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byKey(const Key('composer_mic')), findsOneWidget);
+    });
+
+    testWidgets('tts button exists and reflects state', (tester) async {
+      voiceRepository.toggleResult = const VoiceToggleResult(
+        enabled: true,
+        tts: true,
+        recordKey: 'Ctrl+B',
+      );
+
+      await tester.pumpWidget(harnessWithVoice());
+      await tester.pump();
+      await tester.pump();
+      // Trigger status refresh.
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('composer_tts')), findsOneWidget);
+
+      // After status refresh, ttsEnabled should be true.
+      // Find the button and check its icon.
+      final ttsButton = find.byKey(const Key('composer_tts'));
+      expect(ttsButton, findsOneWidget);
+      // Icon should be volume_up when tts is enabled.
+      expect(find.descendant(of: ttsButton, matching: find.byIcon(Icons.volume_up)), findsOneWidget);
+    });
+
+    testWidgets('tapping mic button starts recording', (tester) async {
+      voiceRepository.toggleResult = const VoiceToggleResult(
+        enabled: false,
+        tts: false,
+        recordKey: 'Ctrl+B',
+      );
+
+      await tester.pumpWidget(harnessWithVoice());
+      await tester.pump();
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      // Tap the mic button.
+      await tester.tap(find.byKey(const Key('composer_mic')));
+      await tester.pumpAndSettle();
+
+      // Wait for async calls.
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pumpAndSettle();
+
+      // Verify toggle('on') and record('start') were called.
+      expect(voiceRepository.toggleCalls, contains('on'));
+      expect(voiceRepository.recordCalls.any((c) => c.action == 'start'), isTrue);
+    });
   });
 }
