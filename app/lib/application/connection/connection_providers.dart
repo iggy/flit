@@ -10,11 +10,14 @@ import 'package:flit/data/storage/connection_store.dart';
 import 'package:flit/data/transport/connection_config.dart';
 import 'package:flit/data/transport/gateway_rest_client.dart';
 import 'package:flit/data/transport/gateway_rpc_client.dart';
+import 'package:flit/data/transport/oauth_client.dart';
 import 'package:flit/data/transport/session_cookie_jar.dart';
 import 'package:flit/domain/models/auth_provider.dart';
 import 'package:flit/domain/models/gateway_status.dart';
+import 'package:flit/domain/models/oauth_session.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Persistence for the connection config. Override in tests with an
 /// in-memory [KeyValueStore].
@@ -113,6 +116,53 @@ class SessionCookiesNotifier extends Notifier<SessionCookieJar> {
   }
 }
 
+/// The OAuth session (access + refresh tokens). Loads the stored session on
+/// first build; every mutation is persisted to secure storage. The tokens
+/// are NEVER stored anywhere else.
+final oauthSessionProvider =
+    NotifierProvider<OAuthSessionNotifier, OAuthSession?>(
+      OAuthSessionNotifier.new,
+    );
+
+class OAuthSessionNotifier extends Notifier<OAuthSession?> {
+  final Completer<void> _readyCompleter = Completer<void>();
+
+  /// Completes once the persisted session (if any) has been loaded —
+  /// await this before branching on the session's presence at app start.
+  Future<void> get ready => _readyCompleter.future;
+
+  @override
+  OAuthSession? build() {
+    Future<void>.microtask(_loadStored);
+    return null;
+  }
+
+  Future<void> _loadStored() async {
+    try {
+      final session = await ref.read(connectionStoreProvider).loadOAuthSession();
+      if (session != null && state == null) {
+        state = session;
+      }
+    } finally {
+      if (!_readyCompleter.isCompleted) {
+        _readyCompleter.complete();
+      }
+    }
+  }
+
+  /// Store a new session (login or refresh).
+  Future<void> set(OAuthSession session) async {
+    state = session;
+    await ref.read(connectionStoreProvider).saveOAuthSession(session);
+  }
+
+  /// Drop the session (logout / expired) locally and in storage.
+  Future<void> clear() async {
+    state = null;
+    await ref.read(connectionStoreProvider).clearOAuthSession();
+  }
+}
+
 /// Set when a gated request that presented cookies was rejected (401/403):
 /// the session is dead and the user must sign in again. The chat screen
 /// watches this to route back to /connect.
@@ -124,12 +174,13 @@ class SessionExpiredNotifier extends Notifier<bool> {
   @override
   bool build() => false;
 
-  /// Mark the gated session dead: clear the cookies and flag the UI.
+  /// Mark the gated session dead: clear the cookies/oauth and flag the UI.
   Future<void> expire() async {
     if (state) {
       return;
     }
     await ref.read(sessionCookiesProvider.notifier).clear();
+    await ref.read(oauthSessionProvider.notifier).clear();
     state = true;
   }
 
@@ -148,11 +199,21 @@ final restClientProvider = Provider<GatewayRestClient?>((ref) {
   if (config.authMode == AuthMode.token) {
     return GatewayRestClient(config);
   }
-  final jar = ref.watch(sessionCookiesProvider);
+  if (config.authMode == AuthMode.password) {
+    final jar = ref.watch(sessionCookiesProvider);
+    return GatewayRestClient(
+      config,
+      cookieJar: jar,
+      onCookiesChanged: () =>
+          ref.read(sessionCookiesProvider.notifier).persist(),
+      onAuthFailure: () => ref.read(sessionExpiredProvider.notifier).expire(),
+    );
+  }
+  // OAuth mode: Bearer auth with the access token.
+  ref.watch(oauthSessionProvider);
   return GatewayRestClient(
     config,
-    cookieJar: jar,
-    onCookiesChanged: () => ref.read(sessionCookiesProvider.notifier).persist(),
+    bearerTokenGetter: () => ref.read(oauthSessionProvider)?.accessToken,
     onAuthFailure: () => ref.read(sessionExpiredProvider.notifier).expire(),
   );
 });
@@ -253,6 +314,43 @@ final passwordLoginProvider = Provider<PasswordLogin>((ref) {
       onCookiesChanged: () =>
           ref.read(sessionCookiesProvider.notifier).persist(),
     ).passwordLogin(provider: provider, username: username, password: password);
+  };
+});
+
+/// The OAuth login flow (protocol §2.3). Injectable so tests can drive the
+/// OAuth connect flow without a real browser/network.
+typedef OAuthLogin = Future<OAuthSession> Function({
+  required ConnectionConfig config,
+  required String provider,
+});
+
+/// The default OAuth login: a real [OAuthClient] with the system browser.
+final oauthLoginProvider = Provider<OAuthLogin>((ref) {
+  return ({required config, required provider}) {
+    return OAuthClient(
+      config: config,
+      launchUrl: (uri) async {
+        if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+          throw Exception('Could not launch $uri');
+        }
+      },
+    ).login(provider: provider);
+  };
+});
+
+/// The OAuth refresh call (protocol §2.3). Injectable for tests.
+typedef OAuthRefresh = Future<OAuthSession> Function({
+  required ConnectionConfig config,
+  required OAuthSession session,
+});
+
+/// The default OAuth refresh: a real [OAuthClient].
+final oauthRefreshProvider = Provider<OAuthRefresh>((ref) {
+  return ({required config, required session}) {
+    return OAuthClient(
+      config: config,
+      launchUrl: (_) async {},
+    ).refresh(session: session);
   };
 });
 

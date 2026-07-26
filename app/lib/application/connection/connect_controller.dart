@@ -8,6 +8,7 @@ import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/data/transport/connection_config.dart';
 import 'package:flit/domain/models/auth_provider.dart';
 import 'package:flit/domain/models/gateway_status.dart';
+import 'package:flit/domain/models/oauth_session.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Where the connect flow currently stands.
@@ -113,14 +114,12 @@ class ConnectController extends Notifier<ConnectUiState> {
         .where((p) => p.supportsPassword)
         .toList();
     if (passwordProviders.isEmpty) {
+      // OAuth-only gateway: the UI renders "Sign in with <provider>" buttons.
       state = ConnectUiState(
         phase: ConnectPhase.probed,
         status: status,
         authMode: AuthMode.oauth,
         providers: providers,
-        errorMessage:
-            'This gateway only offers OAuth sign-in, which is not supported '
-            'yet (Phase 8).',
       );
       return;
     }
@@ -217,29 +216,93 @@ class ConnectController extends Notifier<ConnectUiState> {
     await _connectGated(config, status);
   }
 
-  /// Reconnect with the persisted cookies (app restart; the 30-day refresh
-  /// cookie usually still holds). Fails back to the login form on 401.
+  /// Reconnect with the persisted cookies or OAuth session (app restart).
+  /// Password mode: the 30-day refresh cookie usually still holds.
+  /// OAuth mode: refresh the access token if needed, then connect.
+  /// Fails back to the login form on 401.
   Future<void> connectStored() async {
     final config = ref.read(connectionConfigProvider);
-    if (config == null || config.authMode != AuthMode.password) {
+    if (config == null) {
       return;
     }
-    await ref.read(sessionCookiesProvider.notifier).ready;
-    final jar = ref.read(sessionCookiesProvider);
-    if (jar.isEmpty) {
-      return; // No session to resume — the UI shows the login form.
+    if (config.authMode == AuthMode.password) {
+      await ref.read(sessionCookiesProvider.notifier).ready;
+      final jar = ref.read(sessionCookiesProvider);
+      if (jar.isEmpty) {
+        return; // No session to resume — the UI shows the login form.
+      }
+      state = ConnectUiState(
+        phase: ConnectPhase.connecting,
+        authMode: AuthMode.password,
+      );
+      // Best-effort display probe (version etc.); never blocks the connect.
+      GatewayStatus? status;
+      try {
+        status = await ref.read(statusProbeProvider)(config);
+      } on GatewayException {
+        status = null;
+      }
+      await _connectGated(config, status);
+    } else if (config.authMode == AuthMode.oauth) {
+      await ref.read(oauthSessionProvider.notifier).ready;
+      final session = ref.read(oauthSessionProvider);
+      if (session == null) {
+        return; // No session to resume — the UI shows the login form.
+      }
+      state = ConnectUiState(
+        phase: ConnectPhase.connecting,
+        authMode: AuthMode.oauth,
+      );
+      // Refresh if the access token is expired or expires soon.
+      final refreshed = await _refreshIfNeeded(config, session);
+      if (refreshed == null) {
+        return; // Refresh failed, error state set.
+      }
+      GatewayStatus? status;
+      try {
+        status = await ref.read(statusProbeProvider)(config);
+      } on GatewayException {
+        status = null;
+      }
+      await _connectGated(config, status);
     }
+  }
+
+  /// OAuth login: PKCE flow → code exchange → store tokens → connect gated.
+  Future<void> connectOAuth({
+    required String url,
+    required String provider,
+  }) async {
+    final status = state.status;
     state = ConnectUiState(
       phase: ConnectPhase.connecting,
-      authMode: AuthMode.password,
+      status: status,
+      authMode: AuthMode.oauth,
     );
-    // Best-effort display probe (version etc.); never blocks the connect.
-    GatewayStatus? status;
+    final config = ConnectionConfig(
+      baseUrl: url,
+      authMode: AuthMode.oauth,
+      authProvider: provider,
+    );
+
+    final OAuthSession session;
     try {
-      status = await ref.read(statusProbeProvider)(config);
-    } on GatewayException {
-      status = null;
+      session = await ref.read(oauthLoginProvider)(
+        config: config,
+        provider: provider,
+      );
+    } on GatewayException catch (error) {
+      state = ConnectUiState(
+        phase: ConnectPhase.error,
+        status: status,
+        authMode: AuthMode.oauth,
+        providers: state.providers,
+        errorMessage: error.message,
+      );
+      return;
     }
+
+    await ref.read(oauthSessionProvider.notifier).set(session);
     await _connectGated(config, status);
   }
 
@@ -305,15 +368,53 @@ class ConnectController extends Notifier<ConnectUiState> {
     );
   }
 
-  /// Sign out of a gated session: revoke best-effort, clear cookies and the
-  /// stored connection, and return the UI to the connect screen.
+  /// Sign out of a gated session: revoke best-effort, clear cookies/oauth and
+  /// the stored connection, and return the UI to the connect screen.
   Future<void> signOut() async {
     final rest = ref.read(restClientProvider);
     await rest?.logout();
     await ref.read(sessionCookiesProvider.notifier).clear();
+    await ref.read(oauthSessionProvider.notifier).clear();
     await ref.read(connectionConfigProvider.notifier).clear();
     ref.read(gatewayStatusProvider.notifier).clear();
     state = const ConnectUiState();
+  }
+
+  /// Refresh the OAuth access token if it's expired or expires soon. Returns
+  /// the refreshed session (or the original if no refresh was needed), or
+  /// null on failure (sets error state). Called before connect and reconnect.
+  Future<OAuthSession?> _refreshIfNeeded(
+    ConnectionConfig config,
+    OAuthSession session,
+  ) async {
+    if (!session.expiresSoon()) {
+      return session;
+    }
+    try {
+      final refreshed = await ref.read(oauthRefreshProvider)(
+        config: config,
+        session: session,
+      );
+      await ref.read(oauthSessionProvider.notifier).set(refreshed);
+      return refreshed;
+    } on GatewayAuthException {
+      await ref.read(oauthSessionProvider.notifier).clear();
+      state = ConnectUiState(
+        phase: ConnectPhase.error,
+        status: state.status,
+        authMode: AuthMode.oauth,
+        errorMessage: 'The OAuth session expired. Sign in again.',
+      );
+      return null;
+    } on GatewayException catch (error) {
+      state = ConnectUiState(
+        phase: ConnectPhase.error,
+        status: state.status,
+        authMode: AuthMode.oauth,
+        errorMessage: error.message,
+      );
+      return null;
+    }
   }
 
   /// Reset to idle (e.g. after showing an error).

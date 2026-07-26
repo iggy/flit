@@ -8,6 +8,7 @@ import 'package:flit/presentation/plugins/kanban/kanban_board_screen.dart';
 import 'package:flit/presentation/plugins/plugins_screen.dart';
 import 'package:flit/presentation/settings/agent_settings_screen.dart';
 import 'package:flit/presentation/settings/background_screen.dart';
+import 'package:flit/presentation/settings/billing_screen.dart';
 import 'package:flit/presentation/settings/checkpoints_screen.dart';
 import 'package:flit/presentation/settings/config_editor_screen.dart';
 import 'package:flit/presentation/settings/cron_screen.dart';
@@ -158,6 +159,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/settings/checkpoints',
         name: 'settings-checkpoints',
         builder: (context, state) => const CheckpointsScreen(),
+      ),
+      GoRoute(
+        path: '/settings/billing',
+        name: 'settings-billing',
+        builder: (context, state) => const BillingScreen(),
       ),
     ],
   );

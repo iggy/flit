@@ -1,4 +1,5 @@
 import 'package:flit/data/transport/connection_config.dart';
+import 'package:flit/domain/models/oauth_session.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Minimal key-value abstraction so persistence is testable without platform
@@ -44,6 +45,10 @@ final class ConnectionStore {
   static const String usernameKey = 'connection.username';
   static const String providerKey = 'connection.auth_provider';
   static const String cookiesKey = 'connection.session_cookies';
+  static const String oauthAccessTokenKey = 'connection.oauth_access_token';
+  static const String oauthRefreshTokenKey = 'connection.oauth_refresh_token';
+  static const String oauthExpiresAtKey = 'connection.oauth_expires_at';
+  static const String oauthProviderKey = 'connection.oauth_provider';
 
   /// Save (or overwrite) the stored connection. A null token clears any
   /// previously stored token; a null username clears any stored username.
@@ -116,6 +121,53 @@ final class ConnectionStore {
     await _store.delete(cookiesKey);
   }
 
+  /// Persist the OAuth session tokens (access, refresh, expires_at, provider).
+  ///
+  /// These are session tokens — they live in secure storage and are wiped by
+  /// [forget] / [clearOAuthSession]. The tokens are NEVER stored anywhere else.
+  Future<void> saveOAuthSession(OAuthSession session) async {
+    await _store.write(oauthAccessTokenKey, session.accessToken);
+    await _store.write(oauthRefreshTokenKey, session.refreshToken);
+    await _store.write(oauthExpiresAtKey, session.expiresAt.toString());
+    await _store.write(oauthProviderKey, session.provider);
+  }
+
+  /// The previously stored OAuth session, or null.
+  Future<OAuthSession?> loadOAuthSession() async {
+    final accessToken = await _store.read(oauthAccessTokenKey);
+    final refreshToken = await _store.read(oauthRefreshTokenKey);
+    final expiresAtRaw = await _store.read(oauthExpiresAtKey);
+    final provider = await _store.read(oauthProviderKey);
+
+    if (accessToken == null ||
+        refreshToken == null ||
+        expiresAtRaw == null ||
+        provider == null) {
+      return null;
+    }
+
+    final expiresAt = int.tryParse(expiresAtRaw);
+    if (expiresAt == null) {
+      await clearOAuthSession();
+      return null;
+    }
+
+    return OAuthSession(
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+      expiresAt: expiresAt,
+      provider: provider,
+    );
+  }
+
+  /// Drop just the OAuth session (session expired / logout).
+  Future<void> clearOAuthSession() async {
+    await _store.delete(oauthAccessTokenKey);
+    await _store.delete(oauthRefreshTokenKey);
+    await _store.delete(oauthExpiresAtKey);
+    await _store.delete(oauthProviderKey);
+  }
+
   /// Forget the stored connection entirely.
   Future<void> forget() async {
     await _store.delete(baseUrlKey);
@@ -124,5 +176,6 @@ final class ConnectionStore {
     await _store.delete(usernameKey);
     await _store.delete(providerKey);
     await _store.delete(cookiesKey);
+    await clearOAuthSession();
   }
 }

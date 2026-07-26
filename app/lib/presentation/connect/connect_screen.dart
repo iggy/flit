@@ -67,8 +67,12 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
           password: _passwordController.text,
         );
       case AuthMode.oauth:
+        await controller.connectOAuth(
+          url: _urlController.text.trim(),
+          provider: _selectedProvider ?? '',
+        );
       case null:
-        break; // Nothing to submit (OAuth is Phase 8 / not probed yet).
+        break; // Not probed yet.
     }
   }
 
@@ -86,7 +90,8 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
         _tokenController.text = next.token ?? '';
         _usernameController.text = next.username ?? '';
         _selectedProvider = next.authProvider;
-        if (next.authMode == AuthMode.password &&
+        if ((next.authMode == AuthMode.password ||
+                next.authMode == AuthMode.oauth) &&
             ref.read(connectControllerProvider).phase == ConnectPhase.idle) {
           Future<void>.microtask(
             () => ref.read(connectControllerProvider.notifier).connectStored(),
@@ -208,6 +213,30 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
                     label: const Text('Connect'),
                   ),
                 ],
+                if (connectState.authMode == AuthMode.oauth &&
+                    !connectState.busy) ...<Widget>[
+                  if (providers != null && providers.isNotEmpty) ...<Widget>[
+                    Text(
+                      'Sign in with OAuth',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 16),
+                    for (final AuthProviderInfo provider in providers)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: FilledButton.icon(
+                          onPressed: () {
+                            _selectedProvider = provider.name;
+                            _submit();
+                          },
+                          icon: const Icon(Icons.login),
+                          label: Text(
+                            'Sign in with ${provider.displayName.isEmpty ? provider.name : provider.displayName}',
+                          ),
+                        ),
+                      ),
+                  ],
+                ],
                 if (connectState.authMode == AuthMode.password &&
                     !connectState.busy) ...<Widget>[
                   if (providers != null && providers.length > 1)
@@ -277,9 +306,7 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
                   const SizedBox(height: 16),
                   _StatusCard(state: connectState),
                 ],
-                if (connectState.phase == ConnectPhase.error ||
-                    (connectState.errorMessage != null &&
-                        connectState.authMode == AuthMode.oauth)) ...<Widget>[
+                if (connectState.phase == ConnectPhase.error) ...<Widget>[
                   const SizedBox(height: 16),
                   Card(
                     color: Theme.of(context).colorScheme.errorContainer,

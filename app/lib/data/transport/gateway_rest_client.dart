@@ -31,12 +31,18 @@ final class GatewayRestClient {
   /// holds session tokens; secure storage only). [onAuthFailure] fires when
   /// a gated request is answered 401/403 — the session is dead, re-login is
   /// required.
+  ///
+  /// [bearerToken] (or [bearerTokenGetter]) supplies the OAuth access token
+  /// for `Authorization: Bearer` in OAuth mode. Use a getter if the token
+  /// can be refreshed mid-flight.
   GatewayRestClient(
     this._config, {
     Dio? dio,
     this.cookieJar,
     this.onCookiesChanged,
     this.onAuthFailure,
+    this.bearerToken,
+    this.bearerTokenGetter,
   }) : _dio = dio ?? Dio() {
     _dio.options.baseUrl = _config.baseUrl;
     _dio.interceptors.add(
@@ -52,11 +58,16 @@ final class GatewayRestClient {
                 options.headers['X-Hermes-Session-Token'] = token;
               }
             case AuthMode.password:
-            case AuthMode.oauth:
-              // Gated mode: replay the session cookies (protocol §2.2).
+              // Password mode: replay the session cookies (protocol §2.2).
               final jar = cookieJar;
               if (jar != null && jar.isNotEmpty) {
                 options.headers['Cookie'] = jar.cookieHeader;
+              }
+            case AuthMode.oauth:
+              // OAuth mode: send the Bearer token (protocol §2.3).
+              final token = bearerTokenGetter?.call() ?? bearerToken;
+              if (token != null) {
+                options.headers['Authorization'] = 'Bearer $token';
               }
           }
           handler.next(options);
@@ -70,13 +81,16 @@ final class GatewayRestClient {
           final statusCode = error.response?.statusCode;
           final presentedCookies =
               error.requestOptions.headers['Cookie'] != null;
+          final authHeader = error.requestOptions.headers['Authorization'];
+          final presentedBearer =
+              authHeader is String && authHeader.startsWith('Bearer ');
           if (_config.authMode != AuthMode.token &&
-              presentedCookies &&
+              (presentedCookies || presentedBearer) &&
               (statusCode == 401 || statusCode == 403)) {
-            // A request that PRESENTED session cookies was rejected — the
-            // session is dead (expired/revoked). The app layer clears the
-            // jar and sends the user back to login. (A 401 on a cookiless
-            // request — e.g. a failed login — is not a session expiry.)
+            // A request that PRESENTED session cookies or a Bearer token was
+            // rejected — the session is dead (expired/revoked). The app layer
+            // clears the session and sends the user back to login. (A 401 on
+            // a sessionless request — e.g. a failed login — is not expiry.)
             onAuthFailure?.call();
           }
           handler.next(error);
@@ -90,6 +104,8 @@ final class GatewayRestClient {
   final SessionCookieJar? cookieJar;
   final void Function()? onCookiesChanged;
   final void Function()? onAuthFailure;
+  final String? bearerToken;
+  final String? Function()? bearerTokenGetter;
 
   void _captureCookies(Response<dynamic>? response) {
     final jar = cookieJar;

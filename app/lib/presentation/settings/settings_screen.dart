@@ -89,6 +89,12 @@ class SettingsScreen extends StatelessWidget {
             ),
             _SectionHeader('Configuration'),
             _SettingsTile(
+              icon: Icons.credit_card_outlined,
+              title: 'Billing & credits',
+              subtitle: 'Balance, top-ups & auto-reload',
+              route: '/settings/billing',
+            ),
+            _SettingsTile(
               icon: Icons.settings_outlined,
               title: 'Config editor',
               subtitle: 'View and edit gateway config keys',

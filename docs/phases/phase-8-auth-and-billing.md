@@ -52,5 +52,24 @@ dedicated gateway, so picking a connection = picking a profile's backend — the
 **Exit criteria:** the app connects to a hosted OAuth-gated Hermes, manages
 credits/billing, and juggles several saved gateways.
 
+## Implementation status (2026-07-25)
+
+- **P8-01/02/03 (OAuth) — implemented.** The gateway's OAuth is the RFC 8252
+  native-app flow (system browser + loopback redirect + PKCE S256), not a custom
+  URL scheme: `GET /auth/native/authorize` → capture the `127.0.0.1` loopback
+  `?code=` → `POST /auth/native/token` → `{access_token, refresh_token,
+  expires_at}`. OAuth REST auth is `Authorization: Bearer` (NOT cookies); the WS
+  still uses a single-use `/api/auth/ws-ticket`. Access-token refresh is
+  client-driven via `POST /auth/native/refresh` (rotating). Added deps
+  (pinned): `url_launcher`, `crypto`.
+- **P8-04/05 (billing) — implemented for `billing.*` only.** `credits.view` is
+  **NOT a registered RPC** in the referenced hermes-agent checkout (only
+  `billing.*` exist; `/topup` renders from `billing.state`). Deferred — it's a
+  likely-to-change API. Screen renders `billing.state`, `billing.charge` +
+  `charge_status` polling, `billing.auto_reload`, and the `billing.step_up`
+  device flow (consuming the `billing.step_up.verification` event).
+- **P8-06 (multi-gateway) — deferred** pending Open question #1 (profile ↔
+  gateway shape). The single-connection `ConnectionStore` is unchanged.
+
 > Open question #1 (roadmap): whether the Hermes team prefers per-profile
 > gateways vs a live profile-relaunch RPC determines P8-06's exact shape.
