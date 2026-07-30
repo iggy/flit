@@ -35,6 +35,13 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    // AGP 9's lint crashes on image_picker_android's ExifDataCopier.java
+    // (List.removeLast() Java 21 API). Disable lintVital for release until
+    // image_picker_android ships a fix compatible with AGP 9's lint.
+    lint {
+        checkReleaseBuilds = false
+    }
 }
 
 kotlin {
