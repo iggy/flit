@@ -60,7 +60,7 @@ dependencies:
   flutter_local_notifications: 22.2.0
   # P9-08: in-app version/update check reads the bundled build version.
   # Held at 9.x: 10.x wants win32 ^6 while file_picker 11.0.2 pins win32 ^5.
-  package_info_plus: 9.0.1
+  package_info_plus: 10.2.1
 
 dev_dependencies:
   flutter_test:
