@@ -115,42 +115,42 @@ jobs:
 
       - name: Upload Linux artifact
         if: matrix.target == 'linux'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: linux-build
           path: app/build/linux/x64/release/bundle/
 
       - name: Upload Web artifact
         if: matrix.target == 'web'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: web-build
           path: app/build/web/
 
       - name: Upload Android APK artifact
         if: matrix.target == 'android-apk'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: android-apk
           path: app/build/app/outputs/flutter-apk/*.apk
 
       - name: Upload macOS artifact
         if: matrix.target == 'macos'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: macos-build
           path: app/build/macos/Build/Products/Release/*.app
 
       - name: Upload iOS artifact
         if: matrix.target == 'ios'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ios-build
           path: app/build/ios/iphoneos/*.app
 
       - name: Upload Windows artifact
         if: matrix.target == 'windows'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-build
           path: app/build/windows/x64/runner/Release/

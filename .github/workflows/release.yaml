@@ -97,7 +97,7 @@ jobs:
 
       - name: Upload Linux artifact
         if: matrix.target == 'linux'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-linux
           path: app/build/linux/flit-x86_64.AppImage
@@ -118,7 +118,7 @@ jobs:
 
       - name: Upload Web artifact
         if: matrix.target == 'web'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-web
           path: app/build/flit-web.zip
@@ -133,7 +133,7 @@ jobs:
 
       - name: Upload Android APK artifact
         if: matrix.target == 'android-apk'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-android-apk
           path: app/build/app/outputs/flutter-apk/*.apk
@@ -148,7 +148,7 @@ jobs:
 
       - name: Upload macOS artifact
         if: matrix.target == 'macos'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-macos
           path: app/build/macos/flit.dmg
@@ -171,7 +171,7 @@ jobs:
 
       - name: Upload iOS artifact
         if: matrix.target == 'ios'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-ios
           path: app/build/flit-ios-unsigned.zip
@@ -187,7 +187,7 @@ jobs:
 
       - name: Upload Windows artifact
         if: matrix.target == 'windows'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-windows
           path: app/build/windows/flit-windows-x64.zip
@@ -220,7 +220,7 @@ jobs:
           echo "version=$v" >> "$GITHUB_OUTPUT"
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: release-*
           merge-multiple: true
