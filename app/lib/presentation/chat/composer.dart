@@ -390,15 +390,15 @@ class _ComposerState extends ConsumerState<Composer> {
     }
     try {
       final result = await FilePicker.pickFiles(
-        withData: true,
         type: FileType.custom,
         allowedExtensions: const <String>['pdf'],
       );
       final pickedFile = result?.files.single;
-      if (pickedFile == null || pickedFile.bytes == null) {
-        return; // User cancelled or no data.
+      if (pickedFile == null) {
+        return; // User cancelled.
       }
-      final b64 = base64Encode(pickedFile.bytes!);
+      final pdfBytes = await pickedFile.readAsBytes();
+      final b64 = base64Encode(pdfBytes);
       final pdfResult = await repo.attachPdf(
         liveId,
         contentBase64: b64,
@@ -409,7 +409,7 @@ class _ComposerState extends ConsumerState<Composer> {
       // Store the PDF bytes for each page (use the same bytes for all pages).
       for (final page in pdfResult.pages) {
         setState(() {
-          _localThumbs[page.path] = pickedFile.bytes!;
+          _localThumbs[page.path] = pdfBytes;
         });
       }
     } on Object catch (error) {
@@ -425,13 +425,13 @@ class _ComposerState extends ConsumerState<Composer> {
       return;
     }
     try {
-      final result = await FilePicker.pickFiles(withData: true);
+      final result = await FilePicker.pickFiles();
       final pickedFile = result?.files.single;
-      if (pickedFile == null || pickedFile.bytes == null) {
-        return; // User cancelled or no data.
+      if (pickedFile == null) {
+        return; // User cancelled.
       }
       final dataUrl =
-          'data:application/octet-stream;base64,${base64Encode(pickedFile.bytes!)}';
+          'data:application/octet-stream;base64,${base64Encode(await pickedFile.readAsBytes())}';
       final fileResult = await repo.attachFile(
         liveId,
         dataUrl: dataUrl,
