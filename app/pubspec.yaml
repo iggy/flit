@@ -35,7 +35,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   # Pinned exact versions (Phase 0 / P0-03). Bump deliberately.
   cupertino_icons: 1.0.9
-  flutter_riverpod: 3.3.2
+  flutter_riverpod: 3.4.2
   riverpod_annotation: 4.0.3
   web_socket_channel: 3.0.3
   stream_channel: 2.1.4
