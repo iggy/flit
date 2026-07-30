@@ -25,8 +25,8 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: 3.44.8
-          channel: stable
+          flutter-version: 3.47.0-0.2.pre
+          channel: beta
           cache: true
 
       - name: Install dependencies
@@ -73,8 +73,8 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: 3.44.8
-          channel: stable
+          flutter-version: 3.47.0-0.2.pre
+          channel: beta
           cache: true
 
       - name: Install Linux dependencies

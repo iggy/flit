@@ -11,7 +11,7 @@ OAuth-only gateways are detected and honestly flagged as Phase 8.
 
 ## Toolchain (pinned, Phase 0 / P0-01)
 
-- **Flutter 3.44.8** (stable channel, installed at `~/flutter`)
+- **Flutter 3.47.0-0.2.pre** (beta channel, installed at `~/flutter`)
 - **Dart 3.12.2** (bundled with Flutter)
 - Targets enabled: android, ios, linux, macos, windows, web.
   - Linux desktop is the primary dev target (GTK + clang toolchain installed).
