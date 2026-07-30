@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.nousresearch" "\0"
-            VALUE "FileDescription", "hermes" "\0"
+            VALUE "FileDescription", "flit" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "hermes" "\0"
+            VALUE "InternalName", "flit" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.nousresearch. All rights reserved." "\0"
-            VALUE "OriginalFilename", "hermes.exe" "\0"
-            VALUE "ProductName", "hermes" "\0"
+            VALUE "OriginalFilename", "flit.exe" "\0"
+            VALUE "ProductName", "flit" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
