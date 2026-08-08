@@ -28,6 +28,7 @@ import 'package:flit/application/voice/voice_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/domain/models/attachment.dart';
 import 'package:flit/domain/models/command_dispatch.dart';
+import 'package:flit/domain/models/prompt_submit_status.dart';
 import 'package:flit/domain/models/slash_completion.dart';
 import 'package:flit/domain/models/steer_result.dart';
 import 'package:flutter/material.dart';
@@ -192,10 +193,27 @@ class _ComposerState extends ConsumerState<Composer> {
 
   Future<void> _send(String liveId, String text) async {
     try {
-      await ref.read(chatRepositoryProvider)?.submitPrompt(liveId, text);
+      final result = await ref
+          .read(chatRepositoryProvider)
+          ?.submitPrompt(liveId, text);
       // P7: clear staged attachments after successful send (gateway auto-consumes).
       ref.read(stagedAttachmentsProvider.notifier).clear();
       _localThumbs.clear();
+      // The session was busy when the prompt landed (gateway 0.20
+      // `_handle_busy_submit`): surface how it was disposed instead of
+      // letting it look like a failed send or a phantom stream.
+      if (result != null && mounted) {
+        switch (result.status) {
+          case PromptSubmitStatus.queued:
+            _showSnackBar('Queued — will run after the current turn');
+          case PromptSubmitStatus.steered:
+            _showSnackBar('Steered into the current turn');
+          case PromptSubmitStatus.redirected:
+            _showSnackBar('Current turn redirected to your message');
+          case PromptSubmitStatus.streaming:
+            break;
+        }
+      }
     } on Object catch (error) {
       _showError('Failed to send', error);
     }
@@ -228,7 +246,17 @@ class _ComposerState extends ConsumerState<Composer> {
     if (!mounted) {
       return;
     }
-    final detail = error is GatewayException ? error.message : '$error';
+    final detail = switch (error) {
+      // Gateway 0.20: truncation refused without the confirm flags (4028/4029),
+      // disk full on persist (5070), and unclassifiable storage write failure
+      // (5071) — surface the actionable part rather than the raw RPC message.
+      GatewayRpcException(code: 4028 || 4029) =>
+        'refused: resubmit with truncation confirmed',
+      GatewayRpcException(code: 5070) => 'disk full — free some space and try again',
+      GatewayRpcException(code: 5071) => 'session storage could not be written',
+      GatewayException() => error.message,
+      _ => '$error',
+    };
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text('$prefix: $detail')));

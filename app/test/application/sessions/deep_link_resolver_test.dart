@@ -22,10 +22,12 @@ import 'package:flit/data/dto/events/gateway_event_parser.dart';
 import 'package:flit/data/transport/gateway_rpc_client.dart';
 import 'package:flit/domain/models/active_session.dart';
 import 'package:flit/domain/models/chat_message.dart';
+import 'package:flit/domain/models/prompt_submit_status.dart';
 import 'package:flit/domain/models/session_bootstrap.dart';
 import 'package:flit/domain/models/session_detail.dart';
 import 'package:flit/domain/models/session_summary.dart';
 import 'package:flit/domain/models/steer_result.dart';
+import 'package:flit/domain/models/submit_prompt_result.dart';
 import 'package:flit/domain/repositories/chat_repository.dart';
 import 'package:flit/domain/repositories/session_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -127,7 +129,15 @@ final class FakeChatRepository implements ChatRepository {
   Stream<TypedGatewayEvent> turnEvents(String liveId) => _events.stream;
 
   @override
-  Future<void> submitPrompt(String liveId, String text) async {}
+  Future<SubmitPromptResult> submitPrompt(
+    String liveId,
+    String text, {
+    int? truncateBeforeUserOrdinal,
+    bool confirmTruncate = false,
+    bool confirmEmptyTruncate = false,
+  }) async {
+    return const SubmitPromptResult(PromptSubmitStatus.streaming);
+  }
 
   @override
   Future<void> respondApproval(String liveId, String choice) async {}

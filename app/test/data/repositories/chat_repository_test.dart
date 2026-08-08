@@ -8,6 +8,7 @@ import 'dart:async';
 import 'package:flit/data/dto/events/gateway_event_parser.dart';
 import 'package:flit/data/repositories/chat_repository_impl.dart';
 import 'package:flit/data/transport/gateway_rpc_client.dart';
+import 'package:flit/domain/models/prompt_submit_status.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Hand-written fake: subclasses [GatewayRpcClient] and overrides ONLY the
@@ -67,13 +68,89 @@ void main() {
       );
       repository = ChatRepositoryImpl(client);
 
-      await repository.submitPrompt('a1b2c3d4', 'List the files in the repo.');
+      final result = await repository.submitPrompt(
+        'a1b2c3d4',
+        'List the files in the repo.',
+      );
 
       expect(client.calls.single.method, 'prompt.submit');
       expect(client.calls.single.params, <String, dynamic>{
         'session_id': 'a1b2c3d4',
         'text': 'List the files in the repo.',
       });
+      expect(result.status, PromptSubmitStatus.streaming);
+    });
+
+    test('maps busy-submit ack statuses (steered/redirected/queued)', () async {
+      for (final entry in <(String, PromptSubmitStatus)>[
+        ('steered', PromptSubmitStatus.steered),
+        ('redirected', PromptSubmitStatus.redirected),
+        ('queued', PromptSubmitStatus.queued),
+      ]) {
+        final (status, expected) = entry;
+        client = FakeGatewayRpcClient(
+          handler: (_, _) => <String, dynamic>{'status': status},
+        );
+        repository = ChatRepositoryImpl(client);
+
+        final result = await repository.submitPrompt('a1b2c3d4', 'mid-turn');
+
+        expect(result.status, expected);
+      }
+    });
+
+    test('unknown/missing status falls back to streaming', () async {
+      for (final handler in <Map<String, dynamic> Function(String, Map<String, dynamic>)>[
+        (_, _) => const <String, dynamic>{'status': 'something-new'},
+        (_, _) => const <String, dynamic>{},
+      ]) {
+        client = FakeGatewayRpcClient(handler: handler);
+        repository = ChatRepositoryImpl(client);
+
+        final result = await repository.submitPrompt('a1b2c3d4', 'hi');
+
+        expect(result.status, PromptSubmitStatus.streaming);
+      }
+    });
+
+    test('sends truncate params only when requested', () async {
+      client = FakeGatewayRpcClient(
+        handler: (_, _) => const <String, dynamic>{'status': 'streaming'},
+      );
+      repository = ChatRepositoryImpl(client);
+
+      // Plain send: no truncation params at all.
+      await repository.submitPrompt('a1b2c3d4', 'plain');
+      expect(client.calls.single.params, <String, dynamic>{
+        'session_id': 'a1b2c3d4',
+        'text': 'plain',
+      });
+
+      // Rewind with confirmation: ordinal + confirm flags sent.
+      await repository.submitPrompt(
+        'a1b2c3d4',
+        'replay',
+        truncateBeforeUserOrdinal: 3,
+        confirmTruncate: true,
+      );
+      final rewind = client.calls.last.params;
+      expect(rewind['truncate_before_user_ordinal'], 3);
+      expect(rewind['confirm_truncate'], isTrue);
+      // Empty-truncate stays off for a non-empty cut.
+      expect(rewind.containsKey('confirm_empty_truncate'), isFalse);
+
+      // Whole-transcript wipe: ordinal 0 needs confirm_empty_truncate too.
+      await repository.submitPrompt(
+        'a1b2c3d4',
+        'wipe',
+        truncateBeforeUserOrdinal: 0,
+        confirmTruncate: true,
+        confirmEmptyTruncate: true,
+      );
+      final wipe = client.calls.last.params;
+      expect(wipe['truncate_before_user_ordinal'], 0);
+      expect(wipe['confirm_truncate'], isTrue);
+      expect(wipe['confirm_empty_truncate'], isTrue);
     });
   });
 

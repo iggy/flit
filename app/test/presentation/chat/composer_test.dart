@@ -15,12 +15,15 @@ import 'package:flit/application/providers.dart';
 import 'package:flit/application/sessions/active_session.dart';
 import 'package:flit/application/slash/slash_providers.dart';
 import 'package:flit/application/voice/voice_providers.dart';
+import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/data/dto/events/gateway_event_parser.dart';
 import 'package:flit/data/transport/gateway_rpc_client.dart';
 import 'package:flit/domain/models/attachment.dart';
 import 'package:flit/domain/models/command_dispatch.dart';
+import 'package:flit/domain/models/prompt_submit_status.dart';
 import 'package:flit/domain/models/session_bootstrap.dart';
 import 'package:flit/domain/models/slash_completion.dart';
+import 'package:flit/domain/models/submit_prompt_result.dart';
 import 'package:flit/domain/models/voice_state.dart';
 import 'package:flit/domain/repositories/attachment_repository.dart';
 import 'package:flit/domain/repositories/chat_repository.dart';
@@ -95,12 +98,31 @@ final class FakeChatRepository implements ChatRepository {
   final List<({String liveId, String text})> submitted =
       <({String liveId, String text})>[];
 
+  /// Canned ack status for submitPrompt (defaults to streaming).
+  SubmitPromptResult submitResult = const SubmitPromptResult(
+    PromptSubmitStatus.streaming,
+  );
+
+  /// When set, submitPrompt throws this error instead of returning.
+  Exception? submitError;
+
   @override
   Stream<TypedGatewayEvent> turnEvents(String liveId) => _events.stream;
 
   @override
-  Future<void> submitPrompt(String liveId, String text) async {
+  Future<SubmitPromptResult> submitPrompt(
+    String liveId,
+    String text, {
+    int? truncateBeforeUserOrdinal,
+    bool confirmTruncate = false,
+    bool confirmEmptyTruncate = false,
+  }) async {
     submitted.add((liveId: liveId, text: text));
+    final error = submitError;
+    if (error != null) {
+      throw error;
+    }
+    return submitResult;
   }
 
   @override
@@ -449,6 +471,109 @@ void main() {
     // Verify submitPrompt was called with the normal text.
     expect(chatRepository.submitted.length, 1);
     expect(chatRepository.submitted.first.text, 'hello world');
+  });
+
+  group('P9: prompt.submit ack statuses (gateway 0.20)', () {
+    testWidgets('queued ack shows "will run after the current turn"', (
+      tester,
+    ) async {
+      chatRepository.submitResult = const SubmitPromptResult(
+        PromptSubmitStatus.queued,
+      );
+      await pumpComposer(tester);
+
+      await tester.enterText(find.byKey(composerFieldKey), 'queued message');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(composerSendKey));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Queued — will run after the current turn'), findsOneWidget);
+    });
+
+    testWidgets('steered ack shows steer notice; streaming shows none', (
+      tester,
+    ) async {
+      chatRepository.submitResult = const SubmitPromptResult(
+        PromptSubmitStatus.steered,
+      );
+      await pumpComposer(tester);
+
+      await tester.enterText(find.byKey(composerFieldKey), 'steer me');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(composerSendKey));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Steered into the current turn'), findsOneWidget);
+
+      // Streaming (idle session) stays silent.
+      chatRepository.submitResult = const SubmitPromptResult(
+        PromptSubmitStatus.streaming,
+      );
+      await tester.enterText(find.byKey(composerFieldKey), 'plain');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(composerSendKey));
+      await tester.pumpAndSettle();
+      // Let the first snackbar (4s) expire before asserting it is gone.
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Steered into the current turn'), findsNothing);
+      expect(find.text('Queued — will run after the current turn'), findsNothing);
+    });
+
+    testWidgets('redirected ack shows redirect notice', (tester) async {
+      chatRepository.submitResult = const SubmitPromptResult(
+        PromptSubmitStatus.redirected,
+      );
+      await pumpComposer(tester);
+
+      await tester.enterText(find.byKey(composerFieldKey), 'redirect me');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(composerSendKey));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Current turn redirected to your message'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('5070 disk-full RPC error surfaces friendly message', (
+      tester,
+    ) async {
+      chatRepository.submitError = const GatewayRpcException(
+        5070,
+        'disk full: session storage could not be written — free some disk space and try again',
+      );
+      await pumpComposer(tester);
+
+      await tester.enterText(find.byKey(composerFieldKey), 'big message');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(composerSendKey));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('disk full'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('4029 unconfirmed truncation surfaces refusal message', (
+      tester,
+    ) async {
+      chatRepository.submitError = const GatewayRpcException(
+        4029,
+        'truncate_before_user_ordinal requires confirm_truncate=true',
+      );
+      await pumpComposer(tester);
+
+      await tester.enterText(find.byKey(composerFieldKey), 'rewind');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(composerSendKey));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('truncation confirmed'), findsOneWidget);
+    });
   });
 
   group('P7: Attachments', () {

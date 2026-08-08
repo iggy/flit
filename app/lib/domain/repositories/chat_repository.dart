@@ -1,4 +1,5 @@
 import 'package:flit/data/dto/events/gateway_event_parser.dart';
+import 'package:flit/domain/models/submit_prompt_result.dart';
 
 /// Intent-level chat operations (ticket P1-05).
 ///
@@ -6,8 +7,22 @@ import 'package:flit/data/dto/events/gateway_event_parser.dart';
 /// crossed: approvals answer by **session**, clarifications by **request_id**.
 abstract interface class ChatRepository {
   /// `prompt.submit` (wire §6): fire-and-forget for content — the reply
-  /// arrives as turn events on [turnEvents]. Expects `{status:"streaming"}`.
-  Future<void> submitPrompt(String liveId, String text);
+  /// arrives as turn events on [turnEvents]. Returns the gateway's
+  /// disposition: `streaming` when the turn started immediately, or the
+  /// busy-session outcome `steered` / `redirected` / `queued` (gateway 0.20
+  /// `_handle_busy_submit`) when the session was mid-turn.
+  ///
+  /// [truncateBeforeUserOrdinal] (rewind/regenerate/edit) requires
+  /// [confirmTruncate] = true, and [confirmEmptyTruncate] = true when the cut
+  /// would wipe the whole transcript (ordinal 0) — otherwise the gateway
+  /// refuses with JSON-RPC 4028/4029.
+  Future<SubmitPromptResult> submitPrompt(
+    String liveId,
+    String text, {
+    int? truncateBeforeUserOrdinal,
+    bool confirmTruncate = false,
+    bool confirmEmptyTruncate = false,
+  });
 
   /// The typed turn event stream for one live session: the client's raw
   /// event stream filtered to `session_id == liveId` (null-session events
