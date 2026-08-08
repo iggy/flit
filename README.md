@@ -1,14 +1,9 @@
-# Hermes Flutter
+# Flit
 
 A cross-platform (mobile + desktop) client for [Hermes Agent](https://github.com/NousResearch/hermes-agent),
 built in Flutter. It connects to a running Hermes **gateway** and gives you
 chat, tool-calling, model selection, plugins (kanban, etc.), and full parity
 with the existing desktop/TUI experiences.
-
-> **Status:** Implemented. All planned phases (0–9) are complete and the app
-> builds and runs on iOS, Android, macOS, Windows, Linux, and web from one
-> codebase. See [Phases](#phases) below, or the per-phase tickets in
-> [`docs/phases/`](docs/phases/). The Flutter project lives in [`app/`](app/).
 
 ## What this is
 
@@ -19,8 +14,7 @@ codebase, with mobile as a first-class target the others don't serve.
 
 The app is a **gateway client**. It does *not* embed or spawn the Python
 backend the way the Electron desktop app does — it connects to a gateway you
-point it at (URL + token, or username/password for gated gateways). That keeps
-the mobile story simple and the app small.
+point it at.
 
 ## How it talks to Hermes
 
@@ -36,7 +30,7 @@ The full, source-grounded protocol contract lives in
 ## Repository layout
 
 ```
-hermes-agent-flutter/
+flit/
 ├── README.md                     ← you are here
 ├── AGENTS.md / CLAUDE.md         ← build/test commands + architecture rules for agents
 ├── docs/
@@ -55,23 +49,6 @@ hermes-agent-flutter/
 │   └── phases/                   ← per-phase tickets (P0-… through P9-…)
 └── app/                          ← the Flutter project
 ```
-
-## Phases
-
-All phases are complete:
-
-| Phase | Theme | Outcome |
-|------:|-------|---------|
-| **0** | Foundation | Flutter project scaffolded; transport core (RPC + REST clients); connects to a gateway and prints `gateway.ready`. |
-| **1** | **MVP** (demo target) | Connect → chat with streaming + tool cards → model picker → profile dropdown → plugins list → kanban board (read+move) → approvals/clarify. |
-| **2** | Session depth | Full session management: history, resume, list, rename, branch, delete, compress, usage, multi-session switching, reconnect resilience. |
-| **3** | Agent transparency | Slash commands + autocomplete; subagent/delegation visualization; steer; sudo/secret prompts; interrupt controls. |
-| **4** | Config & models | Provider key management; reasoning/fast toggles; tools & toolsets config; MCP reload; projects/workspaces; full config editor. |
-| **5** | Automation & plugins | Cron scheduler UI; full kanban (fleet/runs/boards/orchestration); plugins hub (enable/disable); background tasks; process control; handoff. |
-| **6** | Memory & learning | Learning timeline (/journey) view/edit; insights/analytics; project facts; git rollback/checkpoints. |
-| **7** | Rich I/O | Image/PDF/file attachments (mobile-native); voice (record/TTS); paste handling. |
-| **8** | Auth & billing | OAuth mode (ticket flow, cookie session); credits & billing (state/charge/auto-reload/step-up); multi-gateway connection manager. |
-| **9** | Platform polish | Desktop window chrome; deep links; notifications; command palette; browser/preview control; theming (Hermes skin); optional pet mascot; store packaging. |
 
 ## Prerequisites
 
