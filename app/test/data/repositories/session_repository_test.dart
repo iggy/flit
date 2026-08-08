@@ -501,6 +501,65 @@ void main() {
 
       expect(result.lockHeld, isTrue);
       expect(result.message, 'session busy');
+      expect(result.aborted, isFalse);
+    });
+
+    test('maps aborted outcome from summary.aborted', () async {
+      client = FakeGatewayRpcClient(
+        handler: (_, _) => const <String, dynamic>{
+          'status': 'aborted',
+          'removed': 0,
+          'before_messages': 24,
+          'after_messages': 24,
+          'before_tokens': 90000,
+          'after_tokens': 90000,
+          'summary': <String, dynamic>{'aborted': true, 'reason': 'tool busy'},
+          'usage': <String, dynamic>{'total': 42},
+          'info': <String, dynamic>{'model': 'hermes-4-405b'},
+          'messages': <Map<String, dynamic>>[
+            <String, dynamic>{'role': 'user', 'text': 'hi'},
+          ],
+        },
+      );
+      repository = SessionRepositoryImpl(client);
+
+      final result = await repository.compress('a1b2c3d4');
+
+      expect(result.aborted, isTrue);
+      expect(result.status, 'aborted');
+      expect(result.summary, <String, dynamic>{'aborted': true, 'reason': 'tool busy'});
+      expect(result.usage, <String, dynamic>{'total': 42});
+      expect(result.info, <String, dynamic>{'model': 'hermes-4-405b'});
+      expect(result.messages, hasLength(1));
+      expect(result.messages.single.text, 'hi');
+      expect(result.messages.single.role, MessageRole.user);
+    });
+
+    test('derives aborted from status == aborted without summary', () async {
+      client = FakeGatewayRpcClient(
+        handler: (_, _) => const <String, dynamic>{
+          'status': 'aborted',
+        },
+      );
+      repository = SessionRepositoryImpl(client);
+
+      final result = await repository.compress('a1b2c3d4');
+
+      expect(result.aborted, isTrue);
+    });
+
+    test('aborted is false when summary.aborted is false', () async {
+      client = FakeGatewayRpcClient(
+        handler: (_, _) => const <String, dynamic>{
+          'status': 'compressed',
+          'summary': <String, dynamic>{'aborted': false},
+        },
+      );
+      repository = SessionRepositoryImpl(client);
+
+      final result = await repository.compress('a1b2c3d4');
+
+      expect(result.aborted, isFalse);
     });
   });
 

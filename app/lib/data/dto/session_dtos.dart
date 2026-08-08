@@ -480,6 +480,12 @@ class ContextBreakdownDto {
 }
 
 /// `session.compress` result (Phase 2, §session.compress LOCAL success path).
+///
+/// Gateway 0.18→0.20 (docs/updates/gateway-0.18-to-0.20-required.md #1): the
+/// result now carries `summary` (incl. its `aborted` flag — compression was
+/// refused because a tool was mid-flight or the model declined), opaque
+/// `usage` / `info` dicts, and the post-compression canonical `messages`
+/// list (same shape `session.resume` returns).
 @JsonSerializable()
 class CompressResultDto {
   const CompressResultDto({
@@ -492,6 +498,10 @@ class CompressResultDto {
     this.compressed,
     this.lockHeld,
     this.message,
+    this.summary,
+    this.usage,
+    this.info,
+    this.messages = const <ResumeMessageDto>[],
   });
 
   factory CompressResultDto.fromJson(Map<String, dynamic> json) =>
@@ -525,6 +535,22 @@ class CompressResultDto {
   @JsonKey(name: 'message')
   final String? message;
 
+  /// Opaque compress summary dict (`{"aborted": bool, …}` — the other keys
+  /// are not pinned by the docs).
+  final Map<String, dynamic>? summary;
+
+  /// Opaque session usage dict (same shape as `session.usage`).
+  final Map<String, dynamic>? usage;
+
+  /// Full `_session_info` dict — see `session.info` event payload
+  /// (docs/reference/07-session-depth-wire-shapes.md).
+  final Map<String, dynamic>? info;
+
+  /// Canonical message list, post-compression (same shape `session.resume`
+  /// returns — `_history_to_messages`).
+  @JsonKey(name: 'messages')
+  final List<ResumeMessageDto> messages;
+
   Map<String, dynamic> toJson() => _$CompressResultDtoToJson(this);
 
   CompressResult toDomain() {
@@ -537,6 +563,11 @@ class CompressResultDto {
       afterTokens: afterTokens,
       lockHeld: lockHeld ?? false,
       message: message,
+      summary: summary,
+      usage: usage,
+      info: info,
+      messages: messages.map((dto) => dto.toDomain()).toList(),
+      aborted: summary?['aborted'] == true || status == 'aborted',
     );
   }
 }

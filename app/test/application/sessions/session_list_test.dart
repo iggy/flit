@@ -721,6 +721,19 @@ void main() {
       ]);
     });
 
+    test('compress with aborted result returns a distinct message', () async {
+      repository.compressResult = const CompressResult(
+        status: 'aborted',
+        aborted: true,
+        message: 'tool mid-flight',
+      );
+
+      final error = await readActions().compress('live-1');
+
+      expect(error, contains('Compression was not applied'));
+      expect(error, contains('tool mid-flight'));
+    });
+
     test('compress returns error message on GatewayException', () async {
       repository.compressError = const GatewayRpcException(
         -32000,

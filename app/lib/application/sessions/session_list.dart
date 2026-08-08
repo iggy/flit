@@ -313,6 +313,11 @@ class SessionActions {
 
   /// `session.compress` (wire §session.compress, protocol §9 LIVE id).
   /// Compress conversation context. LONG handler.
+  ///
+  /// Returns null on success, a distinct "aborted" message when the gateway
+  /// refused compression (`summary.aborted` — tool mid-flight or the model
+  /// declined), and the lock-held message when another operation holds the
+  /// session lock.
   Future<String?> compress(String liveId, {String? focusTopic}) async {
     final repository = _ref.read(sessionRepositoryProvider);
     if (repository == null) {
@@ -325,6 +330,10 @@ class SessionActions {
       );
       if (result.lockHeld) {
         return result.message ?? 'Compression is already in progress.';
+      }
+      if (result.aborted) {
+        return 'Compression was not applied — '
+            '${result.message ?? 'a tool was mid-flight or the model declined.'}';
       }
       _ref.invalidate(activeSessionListProvider);
       return null;

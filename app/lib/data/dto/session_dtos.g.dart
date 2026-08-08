@@ -235,6 +235,14 @@ CompressResultDto _$CompressResultDtoFromJson(Map<String, dynamic> json) =>
       compressed: json['compressed'] as bool?,
       lockHeld: json['lock_held'] as bool?,
       message: json['message'] as String?,
+      summary: json['summary'] as Map<String, dynamic>?,
+      usage: json['usage'] as Map<String, dynamic>?,
+      info: json['info'] as Map<String, dynamic>?,
+      messages:
+          (json['messages'] as List<dynamic>?)
+              ?.map((e) => ResumeMessageDto.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <ResumeMessageDto>[],
     );
 
 Map<String, dynamic> _$CompressResultDtoToJson(CompressResultDto instance) =>
@@ -248,6 +256,10 @@ Map<String, dynamic> _$CompressResultDtoToJson(CompressResultDto instance) =>
       'compressed': instance.compressed,
       'lock_held': instance.lockHeld,
       'message': instance.message,
+      'summary': instance.summary,
+      'usage': instance.usage,
+      'info': instance.info,
+      'messages': instance.messages,
     };
 
 BranchResultDto _$BranchResultDtoFromJson(Map<String, dynamic> json) =>

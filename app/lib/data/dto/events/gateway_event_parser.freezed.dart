@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'gateway_event_parser.dart';
@@ -9,6 +9,7 @@ part of 'gateway_event_parser.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -307,7 +308,7 @@ return unknown(_that.type,_that.sessionId,_that.payload);case _:
 
 
 class GatewayReady implements TypedGatewayEvent {
-  const GatewayReady({required final  Map<String, dynamic> skin}): _skin = skin;
+  const GatewayReady({required  Map<String, dynamic> skin}): _skin = skin;
   
 
  final  Map<String, dynamic> _skin;
@@ -379,7 +380,7 @@ as Map<String, dynamic>,
 
 
 class SessionInfo implements TypedGatewayEvent {
-  const SessionInfo({required this.sessionId, required final  Map<String, dynamic> info}): _info = info;
+  const SessionInfo({required this.sessionId, required  Map<String, dynamic> info}): _info = info;
   
 
  final  String? sessionId;
@@ -733,7 +734,7 @@ as String?,
 
 
 class ToolStart implements TypedGatewayEvent {
-  const ToolStart({required this.sessionId, required this.toolId, required this.name, this.context, this.argsText, final  List<dynamic>? todos}): _todos = todos;
+  const ToolStart({required this.sessionId, required this.toolId, required this.name, this.context, this.argsText,  List<dynamic>? todos}): _todos = todos;
   
 
  final  String? sessionId;
@@ -887,7 +888,7 @@ as String,
 
 
 class ToolComplete implements TypedGatewayEvent {
-  const ToolComplete({required this.sessionId, required this.toolId, required this.name, this.args, this.result, this.durationS, this.summary, this.resultText, this.inlineDiff, final  List<dynamic>? todos, this.error}): _todos = todos;
+  const ToolComplete({required this.sessionId, required this.toolId, required this.name, this.args, this.result, this.durationS, this.summary, this.resultText, this.inlineDiff,  List<dynamic>? todos, this.error}): _todos = todos;
   
 
  final  String? sessionId;
@@ -981,7 +982,7 @@ as String?,
 
 
 class ApprovalRequestEvent implements TypedGatewayEvent {
-  const ApprovalRequestEvent({required this.sessionId, required this.command, required this.description, this.patternKey, required final  List<String> patternKeys, required this.allowPermanent}): _patternKeys = patternKeys;
+  const ApprovalRequestEvent({required this.sessionId, required this.command, required this.description, this.patternKey, required  List<String> patternKeys, required this.allowPermanent}): _patternKeys = patternKeys;
   
 
  final  String? sessionId;
@@ -1063,7 +1064,7 @@ as bool,
 
 
 class ClarifyRequestEvent implements TypedGatewayEvent {
-  const ClarifyRequestEvent({required this.sessionId, required this.question, final  List<String>? choices, required this.requestId}): _choices = choices;
+  const ClarifyRequestEvent({required this.sessionId, required this.question,  List<String>? choices, required this.requestId}): _choices = choices;
   
 
  final  String? sessionId;
@@ -1355,7 +1356,7 @@ as int?,
 
 
 class SubagentEvent implements TypedGatewayEvent {
-  const SubagentEvent({required this.sessionId, required this.type, required this.goal, required this.taskCount, required this.taskIndex, this.subagentId, this.parentId, this.childSessionId, this.depth, this.model, this.toolCount, final  List<String>? toolsets, this.inputTokens, this.outputTokens, this.reasoningTokens, this.apiCalls, final  List<String>? filesRead, final  List<String>? filesWritten, this.toolName, this.toolPreview, this.text, this.status, this.summary, this.durationSeconds, this.costUsd}): _toolsets = toolsets,_filesRead = filesRead,_filesWritten = filesWritten;
+  const SubagentEvent({required this.sessionId, required this.type, required this.goal, required this.taskCount, required this.taskIndex, this.subagentId, this.parentId, this.childSessionId, this.depth, this.model, this.toolCount,  List<String>? toolsets, this.inputTokens, this.outputTokens, this.reasoningTokens, this.apiCalls,  List<String>? filesRead,  List<String>? filesWritten, this.toolName, this.toolPreview, this.text, this.status, this.summary, this.durationSeconds, this.costUsd}): _toolsets = toolsets,_filesRead = filesRead,_filesWritten = filesWritten;
   
 
  final  String? sessionId;
@@ -1771,7 +1772,7 @@ as bool,
 
 
 class SkinChanged implements TypedGatewayEvent {
-  const SkinChanged({required final  Map<String, dynamic> skin}): _skin = skin;
+  const SkinChanged({required  Map<String, dynamic> skin}): _skin = skin;
   
 
  final  Map<String, dynamic> _skin;
@@ -2055,7 +2056,7 @@ as String,
 
 
 class UnknownEvent implements TypedGatewayEvent {
-  const UnknownEvent({required this.type, required this.sessionId, required final  Map<String, dynamic> payload}): _payload = payload;
+  const UnknownEvent({required this.type, required this.sessionId, required  Map<String, dynamic> payload}): _payload = payload;
   
 
  final  String type;

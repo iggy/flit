@@ -1,3 +1,4 @@
+import 'package:flit/domain/models/chat_message.dart';
 import 'package:flit/domain/models/deep_equals.dart';
 
 /// Phase 2 session-depth domain models (from
@@ -178,7 +179,9 @@ final class ContextBreakdown {
 }
 
 /// Result of `session.compress` LOCAL success path. Wire shape documented in
-/// §session.compress.
+/// §session.compress. Gateway 0.18→0.20 adds the `summary` (incl. its
+/// `aborted` flag), opaque `usage` / `info`, and post-compression canonical
+/// `messages` — see docs/updates/gateway-0.18-to-0.20-required.md #1.
 final class CompressResult {
   const CompressResult({
     this.status = '',
@@ -189,6 +192,11 @@ final class CompressResult {
     this.afterTokens,
     this.lockHeld = false,
     this.message,
+    this.summary,
+    this.usage,
+    this.info,
+    this.messages = const <ChatMessage>[],
+    this.aborted = false,
   });
 
   /// Compression status (e.g. `compressed`, `aborted`).
@@ -216,6 +224,27 @@ final class CompressResult {
   /// Lock-held message (from the lock-held variant).
   final String? message;
 
+  /// Opaque compress summary dict. Wire `summary` — the only pinned key is
+  /// `aborted`; the rest are not documented.
+  final Map<String, dynamic>? summary;
+
+  /// Opaque session usage dict (same shape as `session.usage`). Wire `usage`.
+  final Map<String, dynamic>? usage;
+
+  /// Full `_session_info` dict. Wire `info` — same shape as the
+  /// `session.info` event payload.
+  final Map<String, dynamic>? info;
+
+  /// Canonical message list, post-compression. Wire `messages` — same shape
+  /// `session.resume` returns.
+  final List<ChatMessage> messages;
+
+  /// True when compression was refused (tool mid-flight or model declined) —
+  /// the desktop surfaces this as a distinct toast. Derived from
+  /// `summary.aborted` (or `status == "aborted"`); always false for the
+  /// lock-held variant (which omits `summary` entirely).
+  final bool aborted;
+
   @override
   bool operator ==(Object other) {
     return other is CompressResult &&
@@ -226,7 +255,12 @@ final class CompressResult {
         other.beforeTokens == beforeTokens &&
         other.afterTokens == afterTokens &&
         other.lockHeld == lockHeld &&
-        other.message == message;
+        other.message == message &&
+        _nullableMapEquals(other.summary, summary) &&
+        _nullableMapEquals(other.usage, usage) &&
+        _nullableMapEquals(other.info, info) &&
+        deepListEquals(other.messages, messages) &&
+        other.aborted == aborted;
   }
 
   @override
@@ -239,6 +273,11 @@ final class CompressResult {
     afterTokens,
     lockHeld,
     message,
+    summary == null ? null : Object.hashAll(summary!.keys),
+    usage == null ? null : Object.hashAll(usage!.keys),
+    info == null ? null : Object.hashAll(info!.keys),
+    Object.hashAll(messages),
+    aborted,
   );
 
   @override
@@ -246,8 +285,16 @@ final class CompressResult {
     return 'CompressResult(status: $status, removed: $removed, '
         'beforeMessages: $beforeMessages, afterMessages: $afterMessages, '
         'beforeTokens: $beforeTokens, afterTokens: $afterTokens, '
-        'lockHeld: $lockHeld, message: $message)';
+        'lockHeld: $lockHeld, message: $message, aborted: $aborted)';
   }
+}
+
+/// Null-safe shallow map equality for the opaque dicts on [CompressResult].
+bool _nullableMapEquals(Map<String, dynamic>? a, Map<String, dynamic>? b) {
+  if (a == null || b == null) {
+    return a == null && b == null;
+  }
+  return shallowMapEquals(a, b);
 }
 
 /// Result of `session.branch`. Wire shape documented in §session.branch.
