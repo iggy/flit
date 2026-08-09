@@ -213,7 +213,11 @@ final class _FakeKanbanRepository implements KanbanRepository {
   }
 
   @override
-  Future<KanbanBoard> board({String? board}) async => const KanbanBoard();
+  Future<KanbanBoard> board({
+    String? board,
+    String? workflowTemplateId,
+    String? currentStepKey,
+  }) async => const KanbanBoard();
 
   @override
   Future<KanbanTaskDetail> task(String id) async => KanbanTaskDetail(

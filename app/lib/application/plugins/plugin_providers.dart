@@ -6,6 +6,7 @@
 library;
 
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:flit/application/connection/connection_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
@@ -85,6 +86,228 @@ class SelectedKanbanBoardNotifier extends Notifier<String?> {
   }
 }
 
+/// The board's workflow filters — the server-side `workflow_template_id` /
+/// `current_step_key` predicates on `GET /board`.
+///
+/// Both are independent: a step key filters across every template unless a
+/// template is also named. Null means "no filter"; an empty string would be a
+/// filter for an empty value, so the UI never sends one.
+final class KanbanBoardFilter {
+  const KanbanBoardFilter({this.workflowTemplateId, this.currentStepKey});
+
+  /// Only tasks driven by this workflow template.
+  final String? workflowTemplateId;
+
+  /// Only tasks sitting at this workflow step.
+  final String? currentStepKey;
+
+  /// True when the board on screen is narrowed — the UI has to say so, since
+  /// a filtered board otherwise just looks like tasks went missing.
+  bool get isActive => workflowTemplateId != null || currentStepKey != null;
+
+  @override
+  bool operator ==(Object other) {
+    return other is KanbanBoardFilter &&
+        other.workflowTemplateId == workflowTemplateId &&
+        other.currentStepKey == currentStepKey;
+  }
+
+  @override
+  int get hashCode => Object.hash(workflowTemplateId, currentStepKey);
+
+  @override
+  String toString() =>
+      'KanbanBoardFilter(workflowTemplateId: $workflowTemplateId, '
+      'currentStepKey: $currentStepKey)';
+}
+
+/// The active board filter. Changing it re-fetches the board, because the
+/// filtering happens server-side (`plugin_api.py` `get_board` → SQL).
+final kanbanBoardFilterProvider =
+    NotifierProvider<KanbanBoardFilterNotifier, KanbanBoardFilter>(
+      KanbanBoardFilterNotifier.new,
+    );
+
+class KanbanBoardFilterNotifier extends Notifier<KanbanBoardFilter> {
+  @override
+  KanbanBoardFilter build() {
+    // A template id / step key belongs to ONE board's tasks, so switching
+    // boards drops the filter instead of carrying a predicate that matches
+    // nothing over to the new board.
+    ref.watch(selectedKanbanBoardProvider);
+    return const KanbanBoardFilter();
+  }
+
+  /// Apply both predicates at once (the filter sheet's Apply).
+  void apply({String? workflowTemplateId, String? currentStepKey}) {
+    state = KanbanBoardFilter(
+      workflowTemplateId: workflowTemplateId,
+      currentStepKey: currentStepKey,
+    );
+  }
+
+  /// Back to the whole board.
+  void clear() {
+    state = const KanbanBoardFilter();
+  }
+}
+
+/// The workflow values actually present on the board — what the filter sheet
+/// offers. Template ids are opaque strings nobody can be expected to type.
+///
+/// Empty means the board has no workflow-driven tasks at all, which is also
+/// what an older gateway looks like (it sends neither field on a task, and
+/// FastAPI would silently ignore the query params) — so the filter affordance
+/// hides itself rather than promising a filter that does nothing.
+final class KanbanWorkflowOptions {
+  const KanbanWorkflowOptions({
+    this.templateIds = const <String>[],
+    this.stepKeys = const <String>[],
+    this.stepKeysByTemplate = const <String, List<String>>{},
+  });
+
+  /// Every `workflow_template_id` seen, sorted.
+  final List<String> templateIds;
+
+  /// Every `current_step_key` seen, sorted — including steps on tasks with
+  /// no template.
+  final List<String> stepKeys;
+
+  /// Step keys per template, so picking a template can't leave an
+  /// impossible step selected behind it.
+  final Map<String, List<String>> stepKeysByTemplate;
+
+  bool get isEmpty => templateIds.isEmpty && stepKeys.isEmpty;
+
+  /// The steps worth offering for [templateId] — all of them when no
+  /// template is chosen.
+  List<String> stepKeysFor(String? templateId) {
+    if (templateId == null) {
+      return stepKeys;
+    }
+    return stepKeysByTemplate[templateId] ?? const <String>[];
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (other is! KanbanWorkflowOptions) {
+      return false;
+    }
+    if (!_sameStrings(other.templateIds, templateIds) ||
+        !_sameStrings(other.stepKeys, stepKeys) ||
+        other.stepKeysByTemplate.length != stepKeysByTemplate.length) {
+      return false;
+    }
+    for (final entry in stepKeysByTemplate.entries) {
+      final theirs = other.stepKeysByTemplate[entry.key];
+      if (theirs == null || !_sameStrings(theirs, entry.value)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  static bool _sameStrings(List<String> a, List<String> b) {
+    if (a.length != b.length) {
+      return false;
+    }
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    Object.hashAll(templateIds),
+    Object.hashAll(stepKeys),
+    Object.hashAll(stepKeysByTemplate.keys),
+  );
+
+  @override
+  String toString() =>
+      'KanbanWorkflowOptions(templateIds: ${templateIds.length}, '
+      'stepKeys: ${stepKeys.length})';
+}
+
+/// Filter options harvested from the board.
+///
+/// Read from UNFILTERED loads only: a filtered board no longer contains the
+/// other templates' tasks, so harvesting off one would strand the user on the
+/// choice they just made with no way back to a sibling template.
+final kanbanWorkflowOptionsProvider =
+    NotifierProvider<KanbanWorkflowOptionsNotifier, KanbanWorkflowOptions>(
+      KanbanWorkflowOptionsNotifier.new,
+    );
+
+class KanbanWorkflowOptionsNotifier extends Notifier<KanbanWorkflowOptions> {
+  @override
+  KanbanWorkflowOptions build() {
+    // Another board means another set of workflows.
+    ref.watch(selectedKanbanBoardProvider);
+    ref.listen(kanbanBoardProvider, (previous, next) {
+      _record(next.value);
+    });
+    // A plain listen only fires on CHANGE, and the board has usually loaded
+    // before anything watches this provider (the filter button is in the
+    // app bar of the screen that loaded it) — so seed from what is there.
+    return _optionsOf(_unfilteredBoard()) ?? const KanbanWorkflowOptions();
+  }
+
+  void _record(KanbanBoard? board) {
+    final options = _optionsOf(board);
+    if (options != null && options != state) {
+      state = options;
+    }
+  }
+
+  /// The loaded board, or null when it is absent or narrowed. Reading the
+  /// filter (rather than watching it) keeps applying a filter from wiping
+  /// the very options it was chosen from.
+  KanbanBoard? _unfilteredBoard() {
+    if (ref.read(kanbanBoardFilterProvider).isActive) {
+      return null;
+    }
+    return ref.read(kanbanBoardProvider).value;
+  }
+
+  KanbanWorkflowOptions? _optionsOf(KanbanBoard? board) {
+    if (board == null || ref.read(kanbanBoardFilterProvider).isActive) {
+      return null;
+    }
+    final templateIds = SplayTreeSet<String>();
+    final stepKeys = SplayTreeSet<String>();
+    final byTemplate = <String, SplayTreeSet<String>>{};
+    for (final column in board.columns) {
+      for (final task in column.tasks) {
+        final template = task.workflowTemplateId;
+        final step = task.currentStepKey;
+        if (template != null && template.isNotEmpty) {
+          templateIds.add(template);
+        }
+        if (step != null && step.isNotEmpty) {
+          stepKeys.add(step);
+          if (template != null && template.isNotEmpty) {
+            byTemplate
+                .putIfAbsent(template, SplayTreeSet<String>.new)
+                .add(step);
+          }
+        }
+      }
+    }
+    return KanbanWorkflowOptions(
+      templateIds: templateIds.toList(growable: false),
+      stepKeys: stepKeys.toList(growable: false),
+      stepKeysByTemplate: <String, List<String>>{
+        for (final entry in byTemplate.entries)
+          entry.key: entry.value.toList(growable: false),
+      },
+    );
+  }
+}
+
 /// The kanban board for the current connection.
 ///
 /// MVP approach is poll-on-focus: the board is fetched on first build and on
@@ -93,7 +316,9 @@ class SelectedKanbanBoardNotifier extends Notifier<String?> {
 /// [KanbanBoard.latestEventId]) is Phase 5 — see 06-kanban-rest.md.
 ///
 /// Ticket P9-02: the board slug is now read from [selectedKanbanBoardProvider]
-/// so deep links can target a specific board.
+/// so deep links can target a specific board. The workflow narrowing comes
+/// from [kanbanBoardFilterProvider] and is applied by the SERVER, so changing
+/// it re-fetches.
 final kanbanBoardProvider =
     AsyncNotifierProvider<KanbanBoardNotifier, KanbanBoard?>(
       KanbanBoardNotifier.new,
@@ -107,7 +332,12 @@ class KanbanBoardNotifier extends AsyncNotifier<KanbanBoard?> {
       return null;
     }
     final slug = ref.watch(selectedKanbanBoardProvider);
-    return repository.board(board: slug);
+    final filter = ref.watch(kanbanBoardFilterProvider);
+    return repository.board(
+      board: slug,
+      workflowTemplateId: filter.workflowTemplateId,
+      currentStepKey: filter.currentStepKey,
+    );
   }
 
   /// Re-fetch the board (poll-on-focus MVP; the live feed is Phase 5).
@@ -120,7 +350,14 @@ class KanbanBoardNotifier extends AsyncNotifier<KanbanBoard?> {
       return;
     }
     final slug = ref.read(selectedKanbanBoardProvider);
-    state = AsyncData(await repository.board(board: slug));
+    final filter = ref.read(kanbanBoardFilterProvider);
+    state = AsyncData(
+      await repository.board(
+        board: slug,
+        workflowTemplateId: filter.workflowTemplateId,
+        currentStepKey: filter.currentStepKey,
+      ),
+    );
   }
 
   /// Move [id] to column [toColumn] (= `PATCH {status: toColumn}`).

@@ -11,6 +11,9 @@ import 'package:flit/domain/repositories/kanban_repository.dart';
 ///
 /// ## Parsing (sanctioned defensive field list)
 ///
+/// The board fetch also forwards the server's `workflow_template_id` /
+/// `current_step_key` filters; see [board].
+///
 /// The docs pin the board ENVELOPE exactly (`columns[{name, tasks[]}]`,
 /// `tenants`, `assignees`, `latest_event_id`, `now`) and the derived task
 /// fields (`age`, `latest_summary`, `link_counts {parents, children}`,
@@ -30,10 +33,22 @@ final class KanbanRepositoryImpl implements KanbanRepository {
   static const _base = '/api/plugins/kanban';
 
   @override
-  Future<KanbanBoard> board({String? board}) async {
+  Future<KanbanBoard> board({
+    String? board,
+    String? workflowTemplateId,
+    String? currentStepKey,
+  }) async {
+    // Every filter is omitted when null — the server treats a PRESENT param
+    // as an equality predicate, so sending an empty string would filter for
+    // empty values rather than clear the filter.
+    final queryParameters = <String, String>{
+      'board': ?board,
+      'workflow_template_id': ?workflowTemplateId,
+      'current_step_key': ?currentStepKey,
+    };
     final data = await _client.getJson(
       '$_base/board',
-      queryParameters: board == null ? null : <String, String>{'board': board},
+      queryParameters: queryParameters.isEmpty ? null : queryParameters,
     );
     return _parseBoard(_expectMap(data, 'GET $_base/board'));
   }

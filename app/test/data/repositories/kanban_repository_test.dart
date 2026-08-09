@@ -86,6 +86,74 @@ void main() {
       expect(requests.single.uri.queryParameters['board'], 'ops');
     });
 
+    test('forwards the workflow filters alongside ?board=', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, _cannedBoard);
+      });
+
+      await repository.board(
+        board: 'ops',
+        workflowTemplateId: 'wf-2',
+        currentStepKey: 'implement',
+      );
+
+      expect(requests.single.uri.queryParameters, <String, String>{
+        'board': 'ops',
+        'workflow_template_id': 'wf-2',
+        'current_step_key': 'implement',
+      });
+    });
+
+    test(
+      'a step key filters without a template (they are independent)',
+      () async {
+        final requests = <RequestOptions>[];
+        final repository = _repositoryWith((options) async {
+          requests.add(options);
+          return _jsonResponse(200, _cannedBoard);
+        });
+
+        await repository.board(currentStepKey: 'review');
+
+        expect(requests.single.uri.queryParameters, <String, String>{
+          'current_step_key': 'review',
+        });
+      },
+    );
+
+    test('an omitted filter sends no param at all', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, _cannedBoard);
+      });
+
+      await repository.board(workflowTemplateId: 'wf-2');
+
+      // A PRESENT param is an equality predicate server-side, so the unset
+      // filter must be absent rather than empty.
+      expect(requests.single.uri.queryParameters, <String, String>{
+        'workflow_template_id': 'wf-2',
+      });
+    });
+
+    test(
+      'an empty filter string IS sent (it is a value, not a clear)',
+      () async {
+        final requests = <RequestOptions>[];
+        final repository = _repositoryWith((options) async {
+          requests.add(options);
+          return _jsonResponse(200, _cannedBoard);
+        });
+
+        await repository.board(currentStepKey: '');
+
+        expect(requests.single.uri.query, contains('current_step_key='));
+      },
+    );
+
     test('a task missing EVERYTHING still parses (tolerant)', () async {
       final repository = _repositoryWith((options) async {
         return _jsonResponse(200, <String, Object?>{

@@ -341,6 +341,144 @@ void main() {
     expect(find.textContaining('tokens'), findsNothing);
   });
 
+  group('workflow filter (gateway board filters)', () {
+    const workflowBoard = KanbanBoard(
+      columns: <KanbanColumn>[
+        KanbanColumn(
+          name: 'todo',
+          tasks: <KanbanTask>[
+            KanbanTask(
+              id: '1',
+              title: 'Spec it',
+              status: 'todo',
+              workflowTemplateId: 'wf-release',
+              currentStepKey: 'specify',
+            ),
+          ],
+        ),
+        KanbanColumn(
+          name: 'running',
+          tasks: <KanbanTask>[
+            KanbanTask(
+              id: '2',
+              title: 'Build it',
+              status: 'running',
+              workflowTemplateId: 'wf-audit',
+              currentStepKey: 'implement',
+            ),
+          ],
+        ),
+      ],
+    );
+
+    testWidgets('no filter button when nothing on the board uses a workflow', (
+      tester,
+    ) async {
+      // Also the older-gateway case: it sends neither field on a task, and
+      // offering a filter that can only empty the board is worse than none.
+      final repository = FakeKanbanRepository(boardResult: _board);
+      await tester.pumpWidget(_wrap(repository));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.filter_alt_outlined), findsNothing);
+    });
+
+    testWidgets('picking a template re-fetches with the filter', (
+      tester,
+    ) async {
+      final repository = FakeKanbanRepository(boardResult: workflowBoard);
+      await tester.pumpWidget(_wrap(repository));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.filter_alt_outlined));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(DropdownButtonFormField<String>).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('wf-audit').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Apply'));
+      await tester.pumpAndSettle();
+
+      expect(repository.boardCalls.last, (
+        board: null,
+        workflowTemplateId: 'wf-audit',
+        currentStepKey: null,
+      ));
+      // The banner names what is being hidden…
+      expect(find.text('Showing workflow wf-audit'), findsOneWidget);
+      // …and the app-bar button reads as active (filled, not outlined).
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.byIcon(Icons.filter_alt),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.filter_alt_outlined), findsNothing);
+    });
+
+    testWidgets('the step list narrows to the chosen template', (tester) async {
+      final repository = FakeKanbanRepository(boardResult: workflowBoard);
+      await tester.pumpWidget(_wrap(repository));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.filter_alt_outlined));
+      await tester.pumpAndSettle();
+
+      // Both steps are offered while no template is chosen.
+      await tester.tap(find.byType(DropdownButtonFormField<String>).last);
+      await tester.pumpAndSettle();
+      expect(find.text('specify'), findsWidgets);
+      expect(find.text('implement'), findsWidgets);
+      await tester.tap(find.text('implement').last);
+      await tester.pumpAndSettle();
+
+      // Choosing the OTHER template drops the now-impossible step rather than
+      // fetching a board that cannot contain anything.
+      await tester.tap(find.byType(DropdownButtonFormField<String>).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('wf-release').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Apply'));
+      await tester.pumpAndSettle();
+
+      expect(repository.boardCalls.last, (
+        board: null,
+        workflowTemplateId: 'wf-release',
+        currentStepKey: null,
+      ));
+    });
+
+    testWidgets('the banner Clear button restores the whole board', (
+      tester,
+    ) async {
+      final repository = FakeKanbanRepository(boardResult: workflowBoard);
+      await tester.pumpWidget(_wrap(repository));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.filter_alt_outlined));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(DropdownButtonFormField<String>).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('specify').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Apply'));
+      await tester.pumpAndSettle();
+      expect(find.text('Showing step specify'), findsOneWidget);
+
+      await tester.tap(find.text('Clear'));
+      await tester.pumpAndSettle();
+
+      expect(repository.boardCalls.last, (
+        board: null,
+        workflowTemplateId: null,
+        currentStepKey: null,
+      ));
+      expect(find.textContaining('Showing'), findsNothing);
+    });
+  });
+
   testWidgets('refresh button re-fetches the board', (tester) async {
     final repository = FakeKanbanRepository(boardResult: _board);
     await tester.pumpWidget(_wrap(repository));

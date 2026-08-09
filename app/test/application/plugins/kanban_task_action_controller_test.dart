@@ -394,7 +394,11 @@ final class _FakeKanbanRepository implements KanbanRepository {
   Exception? estimateError;
 
   @override
-  Future<KanbanBoard> board({String? board}) async {
+  Future<KanbanBoard> board({
+    String? board,
+    String? workflowTemplateId,
+    String? currentStepKey,
+  }) async {
     return const KanbanBoard();
   }
 

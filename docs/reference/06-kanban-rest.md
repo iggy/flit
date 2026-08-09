@@ -41,10 +41,12 @@ current board.
 Each task dict = the `Task` dataclass plus derived fields: `age`,
 `latest_summary` (200-char preview), `link_counts {parents,children}`,
 `comment_count`, `progress {done,total}|null`, optional `diagnostics`/
-`warnings`. Query params on `/board` (`plugin_api.py:378-407`): `tenant`,
-`include_archived`, `board`, `workflow_template_id`, `current_step_key` — flit
-sends none of the last two yet
-(`../updates/gateway-0.18-to-0.20-optional.md` §6).
+`warnings`. Query params on `/board` (`plugin_api.py:379-408`): `tenant`,
+`include_archived`, `board`, `workflow_template_id`, `current_step_key`. The
+last two are independent equality predicates AND-ed into the task query
+(`kanban_db.list_tasks`, `hermes_cli/kanban_db.py:3385-3390`) — a step key with
+no template matches that step across every workflow. flit sends both from its
+board filter; `tenant` / `include_archived` are still unsent.
 
 The task dict is a plain `asdict(task)` (`_task_dict`,
 `plugin_api.py:158-176`), so every `Task` field ships on every task endpoint —

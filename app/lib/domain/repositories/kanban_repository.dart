@@ -7,7 +7,18 @@ import 'package:flit/domain/models/kanban.dart';
 abstract interface class KanbanRepository {
   /// `GET /api/plugins/kanban/board` (optional `?board=<slug>`) → the whole
   /// board envelope in one call.
-  Future<KanbanBoard> board({String? board});
+  ///
+  /// [workflowTemplateId] and [currentStepKey] are the server's own board
+  /// filters (`plugin_api.py` `get_board`): two INDEPENDENT equality
+  /// predicates AND-ed into the task query, so a step key can be filtered
+  /// without naming a template. Both are omitted from the request when null,
+  /// and an empty string is a filter for "tasks whose value is empty" — not
+  /// an absence — so callers must pass null to mean "no filter".
+  Future<KanbanBoard> board({
+    String? board,
+    String? workflowTemplateId,
+    String? currentStepKey,
+  });
 
   /// `GET /api/plugins/kanban/tasks/{id}` → task + comments (+ raw extras).
   Future<KanbanTaskDetail> task(String id);

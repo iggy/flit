@@ -173,17 +173,50 @@ replay path for the transcript view).
 
 ---
 
-## 6. Kanban: `workflow_template_id` / `current_step_key` board filters
+## 6. Kanban: `workflow_template_id` / `current_step_key` board filters — ✅ DONE
 
-**Gateway** (`hermes-agent/plugins/kanban/dashboard/plugin_api.py:378-410`):
+**Gateway** (`hermes-agent/plugins/kanban/dashboard/plugin_api.py:379-408`):
 `GET /board` accepts `workflow_template_id` and `current_step_key` filters
 alongside `tenant`/`include_archived`/`board`.
 
-**flit**: `kanban_repository.dart:33` fetches `/board` without these query
+**flit**: `kanban_repository.dart` fetched `/board` without these query
 params.
 
-**TODO**: add optional filter params to the board fetch when the UI needs
-workflow-filtered views.
+**Done**: `KanbanRepository.board` takes both as optional params;
+`kanbanBoardFilterProvider` holds the active pair and `kanbanBoardProvider`
+watches it, so applying a filter re-fetches (the narrowing is SQL server-side,
+not a client-side list filter — `kanban_db.list_tasks`). The board screen grew
+a filter action opening a sheet of two pickers, plus a banner naming the active
+predicates with a Clear button.
+
+Both filters are pickers, not text fields: a template id is an opaque string
+and a typo would come back as an empty board indistinguishable from a correct
+filter that matches nothing. The choices are harvested from the tasks on the
+board (`kanbanWorkflowOptionsProvider`), which is also how the feature
+self-hides against an older gateway — it sends neither field on a task, FastAPI
+would ignore both query params, so with no workflow tasks anywhere the filter
+action never renders.
+
+The traps are all about not stranding the user on their own filter:
+- **The options must come from an UNFILTERED board.** A filtered fetch no
+  longer contains the sibling templates' tasks, so harvesting off one would
+  shrink the picker to the choice just made, with no way back. The options
+  notifier ignores loads made while a filter is active.
+- **A filtered board looks exactly like a board whose tasks vanished**, hence
+  the banner. Without it the honest server behaviour reads as data loss.
+- **The two predicates are INDEPENDENT** — they're separate `AND` clauses, so a
+  step key with no template matches that step across every workflow. Picking a
+  template does narrow the step picker to that template's steps and drops a
+  step that isn't one of them, since that pair can only ever return nothing.
+- **Switching boards drops the filter.** Template ids belong to one board's
+  tasks; carrying one across would silently empty the new board.
+- **Absent ≠ empty on the wire.** A present param is an equality predicate, so
+  an unset filter is omitted from the query entirely; `''` would filter for
+  tasks whose value IS empty. Null is the only "no filter".
+
+Not wired: the `tenant` and `include_archived` params of the same endpoint —
+`tenants` already rides on the board envelope but nothing filters by it, and
+archived tasks are a separate column-visibility question.
 
 ---
 
