@@ -60,22 +60,37 @@ final class FakePluginRepository implements PluginRepository {
   }
 }
 
+/// One recorded `editTask` call — enough to assert the model/effort clear
+/// flags, which an omitted field cannot express.
+typedef EditTaskCall = ({
+  String id,
+  String? modelOverride,
+  String? providerOverride,
+  bool clearModelOverride,
+  String? reasoningEffort,
+  bool clearReasoningEffort,
+});
+
 /// Fake kanban repository with a settable board and recorded PATCHes.
 final class FakeKanbanRepository implements KanbanRepository {
-  FakeKanbanRepository({required this.boardResult});
+  FakeKanbanRepository({required this.boardResult, this.taskDetail});
 
   KanbanBoard boardResult;
+
+  /// Detail answered by [task]; null falls back to a bare `Task <id>`.
+  KanbanTaskDetail? taskDetail;
   Exception? updateError;
   final List<({String id, String status})> statusUpdates =
       <({String id, String status})>[];
+  final List<EditTaskCall> editCalls = <EditTaskCall>[];
 
   @override
   Future<KanbanBoard> board({String? board}) async => boardResult;
 
   @override
-  Future<KanbanTaskDetail> task(String id) async => KanbanTaskDetail(
-    task: KanbanTask(id: id, title: 'Task $id'),
-  );
+  Future<KanbanTaskDetail> task(String id) async =>
+      taskDetail ??
+      KanbanTaskDetail(task: KanbanTask(id: id, title: 'Task $id'));
 
   @override
   Future<void> updateTaskStatus(String id, String status) async {
@@ -97,6 +112,13 @@ final class FakeKanbanRepository implements KanbanRepository {
     List<String>? parents,
     bool? triage,
     List<String>? skills,
+    String? modelOverride,
+    String? providerOverride,
+    String? reasoningEffort,
+    bool? goalMode,
+    int? goalMaxTurns,
+    int? maxRuntimeSeconds,
+    String? projectId,
     String? board,
   }) async => null;
 
@@ -111,8 +133,23 @@ final class FakeKanbanRepository implements KanbanRepository {
     String? result,
     String? blockReason,
     String? summary,
+    String? modelOverride,
+    String? providerOverride,
+    bool clearModelOverride = false,
+    String? reasoningEffort,
+    bool clearReasoningEffort = false,
     String? board,
-  }) async => null;
+  }) async {
+    editCalls.add((
+      id: id,
+      modelOverride: modelOverride,
+      providerOverride: providerOverride,
+      clearModelOverride: clearModelOverride,
+      reasoningEffort: reasoningEffort,
+      clearReasoningEffort: clearReasoningEffort,
+    ));
+    return null;
+  }
 
   @override
   Future<void> deleteTask(String id, {String? board}) async {}

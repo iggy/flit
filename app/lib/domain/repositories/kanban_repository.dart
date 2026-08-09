@@ -19,6 +19,11 @@ abstract interface class KanbanRepository {
 
   /// `POST /api/plugins/kanban/tasks` — create a task (P5-05).
   /// Returns the created task or null on failure.
+  ///
+  /// [modelOverride] / [providerOverride] / [reasoningEffort] pin the
+  /// dispatched worker's model and thinking depth; [goalMode] runs it as a
+  /// goal loop bounded by [goalMaxTurns]; [projectId] anchors the task to a
+  /// project (a project-scoped board supplies one when this is omitted).
   Future<KanbanTask?> createTask({
     required String title,
     String? body,
@@ -29,11 +34,24 @@ abstract interface class KanbanRepository {
     List<String>? parents,
     bool? triage,
     List<String>? skills,
+    String? modelOverride,
+    String? providerOverride,
+    String? reasoningEffort,
+    bool? goalMode,
+    int? goalMaxTurns,
+    int? maxRuntimeSeconds,
+    String? projectId,
     String? board,
   });
 
   /// `PATCH /api/plugins/kanban/tasks/{id}` — general update (P5-05).
   /// Returns the updated task or null.
+  ///
+  /// The two clear flags exist because a PATCH can't say "set to NULL" with
+  /// an omitted field: [clearModelOverride] drops the model AND provider
+  /// override, [clearReasoningEffort] falls the depth back to the profile.
+  /// They are separate so dropping a model doesn't reset a chosen depth,
+  /// and `reasoningEffort: 'none'` is a VALUE (thinking off), not a clear.
   Future<KanbanTask?> editTask(
     String id, {
     String? status,
@@ -44,6 +62,11 @@ abstract interface class KanbanRepository {
     String? result,
     String? blockReason,
     String? summary,
+    String? modelOverride,
+    String? providerOverride,
+    bool clearModelOverride = false,
+    String? reasoningEffort,
+    bool clearReasoningEffort = false,
     String? board,
   });
 

@@ -45,6 +45,7 @@ final class KanbanFleetRepositoryImpl implements KanbanFleetRepository {
     String? icon,
     String? color,
     String? defaultWorkdir,
+    String? projectId,
     bool switchTo = false,
     String? board,
   }) async {
@@ -63,6 +64,9 @@ final class KanbanFleetRepositoryImpl implements KanbanFleetRepository {
     }
     if (defaultWorkdir != null) {
       requestBody['default_workdir'] = defaultWorkdir;
+    }
+    if (projectId != null) {
+      requestBody['project_id'] = projectId;
     }
     if (switchTo) {
       requestBody['switch'] = switchTo;
@@ -89,6 +93,7 @@ final class KanbanFleetRepositoryImpl implements KanbanFleetRepository {
     String? icon,
     String? color,
     String? defaultWorkdir,
+    String? projectId,
     String? board,
   }) async {
     final requestBody = <String, dynamic>{};
@@ -106,6 +111,9 @@ final class KanbanFleetRepositoryImpl implements KanbanFleetRepository {
     }
     if (defaultWorkdir != null) {
       requestBody['default_workdir'] = defaultWorkdir;
+    }
+    if (projectId != null) {
+      requestBody['project_id'] = projectId;
     }
 
     final data = await _client.patchJson(
@@ -395,6 +403,8 @@ final class KanbanFleetRepositoryImpl implements KanbanFleetRepository {
       counts: _stringIntMap(json['counts']),
       total: _intOrNull(json['total']) ?? 0,
       defaultWorkspaceKind: _stringOrNull(json['default_workspace_kind']) ?? '',
+      projectId: _stringOrNull(json['project_id']),
+      projectName: _stringOrNull(json['project_name']),
     );
   }
 

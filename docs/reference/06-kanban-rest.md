@@ -46,6 +46,18 @@ Each task dict = the `Task` dataclass plus derived fields: `age`,
 sends none of the last two yet
 (`../updates/gateway-0.18-to-0.20-optional.md` §6).
 
+The task dict is a plain `asdict(task)` (`_task_dict`,
+`plugin_api.py:158-176`), so every `Task` field ships on every task endpoint —
+including the execution block: `model_override`, `provider_override`,
+`reasoning_effort`, `goal_mode`, `goal_max_turns`, `project_id`, `session_id`,
+`block_kind`, `block_recurrences`, `consecutive_failures`, `max_retries`,
+`last_failure_error`, `skills`, `workflow_template_id`, `current_step_key`,
+`current_run_id`, `claim_lock`, `claim_expires`, `worker_pid`,
+`last_heartbeat_at`, `max_runtime_seconds`. Two traps: `skills` is `null` for
+"profile defaults" and `[]` for "explicitly none", and
+`reasoning_effort: "none"` is a value (thinking off), not an absence.
+There is no `project_name` on a task — that's a board-level annotation.
+
 ## Live updates
 
 `WS /api/plugins/kanban/events` — tails the append-only `task_events` table with
@@ -60,8 +72,8 @@ platforms — not a client feed.)
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/tasks/{id}` | Detail drawer: task + comments + events + attachments + links + runs |
-| POST | `/tasks` | Create. Body `CreateTaskBody {title*, body?, assignee?, tenant?, priority, workspace_kind, parents[], triage, skills?, ...}` |
-| PATCH | `/tasks/{id}` | Update status/assignee/priority/title/body/result/block_reason (+ handoff summary) |
+| POST | `/tasks` | Create. Body `CreateTaskBody {title*, body?, assignee?, tenant?, priority, workspace_kind, parents[], triage, skills?, model_override?, provider_override?, reasoning_effort?, goal_mode, goal_max_turns?, max_runtime_seconds?, project_id?, ...}` |
+| PATCH | `/tasks/{id}` | Update status/assignee/priority/title/body/result/block_reason (+ handoff summary), plus `model_override`/`provider_override`/`reasoning_effort` and their `clear_*` flags (an omitted field means "unchanged", so NULLing needs the flag) |
 | DELETE | `/tasks/{id}` | Delete |
 | POST | `/tasks/bulk` | One patch → many ids. Body `{ids[]*, status?, assignee?, priority?, archive?, ...}`; returns per-id `{id, ok, error?}` |
 | POST | `/tasks/{id}/comments` | Add comment `{body*, author}` |
@@ -83,9 +95,9 @@ platforms — not a client feed.)
 ### Boards
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/boards` | List boards (+ current, counts) |
-| POST | `/boards` | Create board (idempotent) `{slug*, name?, ...}` |
-| PATCH | `/boards/{slug}` | Update display metadata (slug immutable) |
+| GET | `/boards` | List boards (+ current, counts, `project_id`/`project_name`) |
+| POST | `/boards` | Create board (idempotent) `{slug*, name?, project_id?, ...}` |
+| PATCH | `/boards/{slug}` | Update display metadata + `project_id` (slug immutable) |
 | DELETE | `/boards/{slug}` | Archive (or `?delete=true`) |
 | POST | `/boards/{slug}/switch` | Set active board pointer |
 

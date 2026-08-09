@@ -6,6 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// One task card (ticket P1-15): title, assignee, a 1–2 line
 /// `latest_summary` preview, comment-count / progress badges when present,
 /// and a "move to" popup menu listing the OTHER columns.
+///
+/// Also badges the per-task execution overrides the gateway carries on every
+/// task (model / thinking depth / goal loop) plus the distress signals
+/// (typed block reason, failure streak) — all optional, all hidden when the
+/// task doesn't set them.
 class KanbanCard extends ConsumerWidget {
   const KanbanCard({super.key, required this.task, required this.columnNames});
 
@@ -70,6 +75,23 @@ class KanbanCard extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
+              if (_badges(task).isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    children: <Widget>[
+                      for (final badge in _badges(task))
+                        _TaskBadge(
+                          icon: badge.icon,
+                          label: badge.label,
+                          tooltip: badge.tooltip,
+                          alarming: badge.alarming,
+                        ),
+                    ],
+                  ),
+                ),
               if (task.commentCount != null || task.progress != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 6),
@@ -123,6 +145,140 @@ class KanbanCard extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       builder: (context) => KanbanTaskDetailSheet(taskId: task.id),
+    );
+  }
+}
+
+/// The per-task execution overrides and distress signals worth a chip on the
+/// card, in the order they render. Empty for a plain task.
+List<_BadgeSpec> _badges(KanbanTask task) {
+  final badges = <_BadgeSpec>[];
+  final model = task.modelOverride;
+  if (model != null && model.isNotEmpty) {
+    final provider = task.providerOverride;
+    badges.add(
+      _BadgeSpec(
+        icon: Icons.memory,
+        label: model,
+        tooltip: provider == null || provider.isEmpty
+            ? 'Model override: $model'
+            : 'Model override: $model ($provider)',
+      ),
+    );
+  }
+  final effort = task.reasoningEffort;
+  if (effort != null && effort.isNotEmpty) {
+    // "none" is a value, not an absence — it means thinking is off.
+    badges.add(
+      _BadgeSpec(
+        icon: Icons.psychology_outlined,
+        label: effort == 'none' ? 'no thinking' : effort,
+        tooltip: effort == 'none'
+            ? 'Thinking disabled for this task'
+            : 'Thinking depth: $effort',
+      ),
+    );
+  }
+  if (task.goalMode) {
+    final turns = task.goalMaxTurns;
+    badges.add(
+      _BadgeSpec(
+        icon: Icons.loop,
+        label: turns == null ? 'goal' : 'goal ≤$turns',
+        tooltip: turns == null
+            ? 'Goal loop: runs until a judge agrees it is done'
+            : 'Goal loop, up to $turns turns',
+      ),
+    );
+  }
+  final blockKind = task.blockKind;
+  if (blockKind != null && blockKind.isNotEmpty) {
+    final recurrences = task.blockRecurrences;
+    badges.add(
+      _BadgeSpec(
+        icon: Icons.block,
+        label: recurrences > 1 ? '$blockKind ×$recurrences' : blockKind,
+        tooltip: recurrences > 1
+            ? 'Blocked ($blockKind) — re-blocked $recurrences times'
+            : 'Blocked: $blockKind',
+        alarming: true,
+      ),
+    );
+  }
+  if (task.consecutiveFailures > 0) {
+    final last = task.lastFailureError;
+    badges.add(
+      _BadgeSpec(
+        icon: Icons.error_outline,
+        label: '${task.consecutiveFailures} failed',
+        tooltip: last == null || last.isEmpty
+            ? '${task.consecutiveFailures} consecutive failures'
+            : '${task.consecutiveFailures} consecutive failures — $last',
+        alarming: true,
+      ),
+    );
+  }
+  return badges;
+}
+
+class _BadgeSpec {
+  const _BadgeSpec({
+    required this.icon,
+    required this.label,
+    required this.tooltip,
+    this.alarming = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final String tooltip;
+
+  /// Failure/block signals get the error colour; overrides stay neutral.
+  final bool alarming;
+}
+
+class _TaskBadge extends StatelessWidget {
+  const _TaskBadge({
+    required this.icon,
+    required this.label,
+    required this.tooltip,
+    required this.alarming,
+  });
+
+  final IconData icon;
+  final String label;
+  final String tooltip;
+  final bool alarming;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final background = alarming
+        ? scheme.errorContainer
+        : scheme.surfaceContainerHighest;
+    final foreground = alarming ? scheme.onErrorContainer : scheme.onSurface;
+    return Tooltip(
+      message: tooltip,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(icon, size: 12, color: foreground),
+            const SizedBox(width: 3),
+            Text(
+              label,
+              style: Theme.of(
+                context,
+              ).textTheme.labelSmall?.copyWith(color: foreground),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -238,8 +394,50 @@ class _DetailBodyState extends ConsumerState<_DetailBody> {
                 'Links: ${linkCounts.parents} parents, '
                 '${linkCounts.children} children',
               ),
+            // Tasks carry the project id only; the name is a board-level
+            // annotation the task endpoints don't resolve.
+            if (task.projectId != null) Text('Project: ${task.projectId}'),
+            if (task.modelOverride != null)
+              Text(
+                'Model: ${task.modelOverride}'
+                '${task.providerOverride != null ? ' (${task.providerOverride})' : ''}',
+              ),
+            if (task.reasoningEffort != null)
+              Text(
+                task.reasoningEffort == 'none'
+                    ? 'Thinking: off'
+                    : 'Thinking: ${task.reasoningEffort}',
+              ),
+            if (task.goalMode)
+              Text(
+                'Goal loop'
+                '${task.goalMaxTurns != null ? ' (≤ ${task.goalMaxTurns} turns)' : ''}',
+              ),
+            if (task.blockKind != null)
+              Text(
+                'Blocked: ${task.blockKind}'
+                '${task.blockRecurrences > 1 ? ' (×${task.blockRecurrences})' : ''}',
+              ),
+            if (task.consecutiveFailures > 0)
+              Text('Failures: ${task.consecutiveFailures}'),
+            if (task.workflowTemplateId != null)
+              Text(
+                'Workflow: ${task.workflowTemplateId}'
+                '${task.currentStepKey != null ? ' → ${task.currentStepKey}' : ''}',
+              ),
+            if (task.workerPid != null) Text('Worker PID: ${task.workerPid}'),
           ],
         ),
+        if (task.lastFailureError != null &&
+            task.lastFailureError!.isNotEmpty) ...<Widget>[
+          const SizedBox(height: 8),
+          Text(
+            'Last failure: ${task.lastFailureError}',
+            style: widget.theme.textTheme.bodySmall?.copyWith(
+              color: widget.theme.colorScheme.error,
+            ),
+          ),
+        ],
         if (actionState.error != null) ...<Widget>[
           const SizedBox(height: 12),
           Container(
@@ -497,7 +695,25 @@ class _EditTaskDialogState extends ConsumerState<_EditTaskDialog> {
   late final TextEditingController _titleController;
   late final TextEditingController _bodyController;
   late final TextEditingController _assigneeController;
+  late final TextEditingController _modelController;
+  late final TextEditingController _providerController;
   late int? _priority;
+
+  /// The dispatcher's own depth levels (`VALID_REASONING_EFFORTS` plus
+  /// `"none"`, which means thinking off rather than "inherit").
+  static const _effortLevels = <String>[
+    'none',
+    'minimal',
+    'low',
+    'medium',
+    'high',
+    'xhigh',
+    'max',
+    'ultra',
+  ];
+
+  /// Null = inherit the assigned profile's own depth.
+  late String? _reasoningEffort;
 
   @override
   void initState() {
@@ -505,9 +721,15 @@ class _EditTaskDialogState extends ConsumerState<_EditTaskDialog> {
     _titleController = TextEditingController(text: widget.task.title);
     _bodyController = TextEditingController(text: widget.task.body);
     _assigneeController = TextEditingController(text: widget.task.assignee);
+    _modelController = TextEditingController(text: widget.task.modelOverride);
+    _providerController = TextEditingController(
+      text: widget.task.providerOverride,
+    );
     _priority = widget.task.priority != null
         ? int.tryParse(widget.task.priority!)
         : null;
+    final effort = widget.task.reasoningEffort;
+    _reasoningEffort = _effortLevels.contains(effort) ? effort : null;
   }
 
   @override
@@ -515,6 +737,8 @@ class _EditTaskDialogState extends ConsumerState<_EditTaskDialog> {
     _titleController.dispose();
     _bodyController.dispose();
     _assigneeController.dispose();
+    _modelController.dispose();
+    _providerController.dispose();
     super.dispose();
   }
 
@@ -557,6 +781,43 @@ class _EditTaskDialogState extends ConsumerState<_EditTaskDialog> {
                 });
               },
             ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _modelController,
+              decoration: const InputDecoration(
+                labelText: 'Model override',
+                helperText: 'Empty inherits the profile model',
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _providerController,
+              decoration: const InputDecoration(
+                labelText: 'Provider override',
+                helperText: 'Provider the model above belongs to',
+              ),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              initialValue: _reasoningEffort,
+              decoration: const InputDecoration(labelText: 'Thinking depth'),
+              items: <DropdownMenuItem<String>>[
+                const DropdownMenuItem<String>(
+                  value: null,
+                  child: Text('Inherit profile'),
+                ),
+                for (final level in _effortLevels)
+                  DropdownMenuItem<String>(
+                    value: level,
+                    child: Text(level == 'none' ? 'none (off)' : level),
+                  ),
+              ],
+              onChanged: (value) {
+                setState(() {
+                  _reasoningEffort = value;
+                });
+              },
+            ),
           ],
         ),
       ),
@@ -577,6 +838,15 @@ class _EditTaskDialogState extends ConsumerState<_EditTaskDialog> {
     final title = _titleController.text.trim();
     final body = _bodyController.text.trim();
     final assignee = _assigneeController.text.trim();
+    final model = _modelController.text.trim();
+    final provider = _providerController.text.trim();
+
+    // Emptying a field that HAD an override is a clear, which a PATCH can
+    // only say with the explicit flag; emptying one that was already unset
+    // is nothing at all. The model clear takes the provider with it.
+    final clearModel = model.isEmpty && widget.task.modelOverride != null;
+    final clearEffort =
+        _reasoningEffort == null && widget.task.reasoningEffort != null;
 
     await ref
         .read(kanbanTaskActionControllerProvider.notifier)
@@ -586,6 +856,11 @@ class _EditTaskDialogState extends ConsumerState<_EditTaskDialog> {
           body: body.isEmpty ? null : body,
           assignee: assignee.isEmpty ? null : assignee,
           priority: _priority,
+          modelOverride: model.isEmpty ? null : model,
+          providerOverride: provider.isEmpty ? null : provider,
+          clearModelOverride: clearModel,
+          reasoningEffort: _reasoningEffort,
+          clearReasoningEffort: clearEffort,
         );
 
     final state = ref.read(kanbanTaskActionControllerProvider);

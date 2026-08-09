@@ -315,6 +315,13 @@ final class _FakeKanbanRepository implements KanbanRepository {
     List<String>? parents,
     bool? triage,
     List<String>? skills,
+    String? modelOverride,
+    String? providerOverride,
+    String? reasoningEffort,
+    bool? goalMode,
+    int? goalMaxTurns,
+    int? maxRuntimeSeconds,
+    String? projectId,
     String? board,
   }) async {
     if (createTaskError != null) {
@@ -334,6 +341,11 @@ final class _FakeKanbanRepository implements KanbanRepository {
     String? result,
     String? blockReason,
     String? summary,
+    String? modelOverride,
+    String? providerOverride,
+    bool clearModelOverride = false,
+    String? reasoningEffort,
+    bool clearReasoningEffort = false,
     String? board,
   }) async {
     return KanbanTask(id: id, title: title ?? 'Test');

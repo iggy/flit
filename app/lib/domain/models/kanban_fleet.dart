@@ -24,6 +24,8 @@ final class KanbanBoardMeta {
     required this.counts,
     required this.total,
     required this.defaultWorkspaceKind,
+    this.projectId,
+    this.projectName,
   });
 
   final String slug;
@@ -40,6 +42,15 @@ final class KanbanBoardMeta {
   final int total;
   final String defaultWorkspaceKind;
 
+  /// First-class project this board is scoped to; null = unscoped. A scoped
+  /// board mirrors the project's primary repo as its `default_workdir` and
+  /// its tasks inherit the project.
+  final String? projectId;
+
+  /// Display name for [projectId], resolved server-side. Null when the
+  /// board is unscoped or the project no longer exists.
+  final String? projectName;
+
   @override
   bool operator ==(Object other) {
     return other is KanbanBoardMeta &&
@@ -55,11 +66,13 @@ final class KanbanBoardMeta {
         other.isCurrent == isCurrent &&
         shallowMapEquals(other.counts, counts) &&
         other.total == total &&
-        other.defaultWorkspaceKind == defaultWorkspaceKind;
+        other.defaultWorkspaceKind == defaultWorkspaceKind &&
+        other.projectId == projectId &&
+        other.projectName == projectName;
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll(<Object?>[
     slug,
     name,
     description,
@@ -73,7 +86,9 @@ final class KanbanBoardMeta {
     Object.hashAll(counts.entries.map((e) => Object.hash(e.key, e.value))),
     total,
     defaultWorkspaceKind,
-  );
+    projectId,
+    projectName,
+  ]);
 
   @override
   String toString() {

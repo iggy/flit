@@ -251,6 +251,7 @@ final class _FakeRepository implements KanbanFleetRepository {
     String? icon,
     String? color,
     String? defaultWorkdir,
+    String? projectId,
     bool switchTo = false,
     String? board,
   }) async {
@@ -280,6 +281,7 @@ final class _FakeRepository implements KanbanFleetRepository {
     String? icon,
     String? color,
     String? defaultWorkdir,
+    String? projectId,
     String? board,
   }) async {
     return null;

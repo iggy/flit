@@ -105,6 +105,182 @@ void main() {
     expect(find.text('No comments yet.'), findsOneWidget);
   });
 
+  testWidgets('cards badge the execution overrides and distress signals', (
+    tester,
+  ) async {
+    const board = KanbanBoard(
+      columns: <KanbanColumn>[
+        KanbanColumn(
+          name: 'running',
+          tasks: <KanbanTask>[
+            KanbanTask(
+              id: '9',
+              title: 'Deep task',
+              status: 'running',
+              modelOverride: 'claude-opus-5',
+              providerOverride: 'anthropic',
+              reasoningEffort: 'ultra',
+              goalMode: true,
+              goalMaxTurns: 8,
+              blockKind: 'needs_input',
+              blockRecurrences: 3,
+              consecutiveFailures: 2,
+            ),
+          ],
+        ),
+      ],
+    );
+    final repository = FakeKanbanRepository(boardResult: board);
+    await tester.pumpWidget(_wrap(repository));
+    await tester.pumpAndSettle();
+
+    expect(find.text('claude-opus-5'), findsOneWidget);
+    expect(find.text('ultra'), findsOneWidget);
+    expect(find.text('goal ≤8'), findsOneWidget);
+    expect(find.text('needs_input ×3'), findsOneWidget);
+    expect(find.text('2 failed'), findsOneWidget);
+  });
+
+  testWidgets('a plain card badges nothing', (tester) async {
+    final repository = FakeKanbanRepository(boardResult: _board);
+    await tester.pumpWidget(_wrap(repository));
+    await tester.pumpAndSettle();
+
+    // "no thinking" is the label for reasoning_effort: none, which is a
+    // VALUE — a task that never set one must not show it.
+    expect(find.text('no thinking'), findsNothing);
+    expect(find.text('goal'), findsNothing);
+  });
+
+  testWidgets('reasoning_effort "none" badges as thinking-off', (tester) async {
+    const board = KanbanBoard(
+      columns: <KanbanColumn>[
+        KanbanColumn(
+          name: 'todo',
+          tasks: <KanbanTask>[
+            KanbanTask(
+              id: '3',
+              title: 'Quick task',
+              status: 'todo',
+              reasoningEffort: 'none',
+            ),
+          ],
+        ),
+      ],
+    );
+    final repository = FakeKanbanRepository(boardResult: board);
+    await tester.pumpWidget(_wrap(repository));
+    await tester.pumpAndSettle();
+
+    expect(find.text('no thinking'), findsOneWidget);
+  });
+
+  testWidgets('the detail sheet shows the execution fields', (tester) async {
+    const task = KanbanTask(
+      id: '9',
+      title: 'Deep task',
+      status: 'running',
+      projectId: 'proj-1',
+      modelOverride: 'claude-opus-5',
+      providerOverride: 'anthropic',
+      reasoningEffort: 'high',
+      goalMode: true,
+      goalMaxTurns: 8,
+      consecutiveFailures: 2,
+      lastFailureError: 'worker crashed',
+      workflowTemplateId: 'wf-2',
+      currentStepKey: 'implement',
+      workerPid: 4242,
+    );
+    final repository = FakeKanbanRepository(
+      boardResult: const KanbanBoard(
+        columns: <KanbanColumn>[
+          KanbanColumn(name: 'running', tasks: <KanbanTask>[task]),
+        ],
+      ),
+      taskDetail: const KanbanTaskDetail(task: task),
+    );
+    await tester.pumpWidget(_wrap(repository));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Deep task'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Project: proj-1'), findsOneWidget);
+    expect(find.text('Model: claude-opus-5 (anthropic)'), findsOneWidget);
+    expect(find.text('Thinking: high'), findsOneWidget);
+    expect(find.text('Goal loop (≤ 8 turns)'), findsOneWidget);
+    expect(find.text('Failures: 2'), findsOneWidget);
+    expect(find.text('Workflow: wf-2 → implement'), findsOneWidget);
+    expect(find.text('Worker PID: 4242'), findsOneWidget);
+    expect(find.text('Last failure: worker crashed'), findsOneWidget);
+  });
+
+  testWidgets('emptying a set model override sends the clear flag', (
+    tester,
+  ) async {
+    const task = KanbanTask(
+      id: '9',
+      title: 'Deep task',
+      status: 'running',
+      modelOverride: 'claude-opus-5',
+      reasoningEffort: 'high',
+    );
+    final repository = FakeKanbanRepository(
+      boardResult: const KanbanBoard(
+        columns: <KanbanColumn>[
+          KanbanColumn(name: 'running', tasks: <KanbanTask>[task]),
+        ],
+      ),
+      taskDetail: const KanbanTaskDetail(task: task),
+    );
+    await tester.pumpWidget(_wrap(repository));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Deep task'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+
+    // Wipe the model field and drop the depth back to "Inherit profile".
+    // The dialog scrolls, so the depth dropdown needs bringing into view.
+    await tester.enterText(find.widgetWithText(TextField, 'Model override'), '');
+    final depthDropdown = find.byType(DropdownButtonFormField<String>);
+    await tester.ensureVisible(depthDropdown);
+    await tester.pumpAndSettle();
+    await tester.tap(depthDropdown);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Inherit profile').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    final call = repository.editCalls.single;
+    expect(call.modelOverride, isNull);
+    expect(call.clearModelOverride, isTrue);
+    expect(call.reasoningEffort, isNull);
+    expect(call.clearReasoningEffort, isTrue);
+  });
+
+  testWidgets('editing a task that never had overrides clears nothing', (
+    tester,
+  ) async {
+    final repository = FakeKanbanRepository(boardResult: _board);
+    await tester.pumpWidget(_wrap(repository));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Task one'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    final call = repository.editCalls.single;
+    expect(call.clearModelOverride, isFalse);
+    expect(call.clearReasoningEffort, isFalse);
+  });
+
   testWidgets('refresh button re-fetches the board', (tester) async {
     final repository = FakeKanbanRepository(boardResult: _board);
     await tester.pumpWidget(_wrap(repository));

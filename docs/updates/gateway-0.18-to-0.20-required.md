@@ -236,7 +236,7 @@ Two things worth knowing:
 
 ---
 
-## 7. Kanban: task/board fields dropped by the model — LOW/MEDIUM
+## 7. Kanban: task/board fields dropped by the model — LOW/MEDIUM — DONE
 
 **Gateway change** (`hermes-agent/hermes_cli/kanban_db.py:905-980` Task
 dataclass; `plugins/kanban/dashboard/plugin_api.py`):
@@ -256,13 +256,33 @@ don't model any of these. Non-breaking (unknown keys ignored) but the board UI
 can't render per-task model/reasoning badges or project-scoped boards, and
 task creation can't set them.
 
-**Work to do**:
-- Add the fields above to `KanbanTask` (at minimum `modelOverride`,
-  `providerOverride`, `reasoningEffort`, `projectId`, `blockKind`,
-  `goalMode`, `consecutiveFailures`) and `KanbanBoardMeta` (`projectId`,
-  `projectName`).
-- Extend create/update task request bodies to set the new fields if the UI
-  wants to control them.
+**Done**: `KanbanTask` carries the whole execution block — the dispatch
+overrides (`modelOverride`, `providerOverride`, `reasoningEffort`), the goal
+loop (`goalMode`, `goalMaxTurns`), scoping (`projectId`, `sessionId`), the
+block/failure bookkeeping (`blockKind`, `blockRecurrences`,
+`consecutiveFailures`, `maxRetries`, `lastFailureError`), the workflow step
+pointer, `skills`, and the claim/run fields — all parsed with the same
+tolerant helpers as the identity fields, so an older gateway reads as unset.
+`KanbanBoardMeta` gained `projectId` / `projectName`.
+
+Wired through both directions: `createTask` sends the overrides (behind an
+"Execution" expander in the new-task dialog), `editTask` sets the model and
+depth, `createBoard`/`updateBoard` take `projectId`, and the card badges the
+overrides plus the distress signals while the detail drawer lists them.
+
+Three wire details that are easy to get wrong:
+- `skills` distinguishes `null` (profile defaults) from `[]` (explicitly no
+  extra skills), so a missing key must NOT parse to an empty list.
+- `reasoning_effort: "none"` is a VALUE — thinking off — not an absence.
+  Clearing it back to the profile's own level is `clear_reasoning_effort`.
+- A PATCH can't say "set to NULL" with an omitted field, so the gateway takes
+  `clear_model_override` (which drops the provider with it) and
+  `clear_reasoning_effort`. They're separate flags so dropping a model doesn't
+  silently reset the depth the operator chose; the edit dialog only sends one
+  when the task actually HAD that override.
+
+`project_name` is a board-level annotation — `_task_dict` is a plain
+`asdict(task)`, so tasks carry the project id only.
 
 ---
 

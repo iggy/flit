@@ -146,6 +146,7 @@ class KanbanFleetActionController extends Notifier<KanbanFleetActionState> {
     String? icon,
     String? color,
     String? defaultWorkdir,
+    String? projectId,
     bool switchTo = false,
     String? board,
   }) async {
@@ -168,6 +169,7 @@ class KanbanFleetActionController extends Notifier<KanbanFleetActionState> {
         icon: icon,
         color: color,
         defaultWorkdir: defaultWorkdir,
+        projectId: projectId,
         switchTo: switchTo,
         board: board,
       );
@@ -188,6 +190,7 @@ class KanbanFleetActionController extends Notifier<KanbanFleetActionState> {
     String? icon,
     String? color,
     String? defaultWorkdir,
+    String? projectId,
     String? board,
   }) async {
     if (state.busy) {
@@ -209,6 +212,7 @@ class KanbanFleetActionController extends Notifier<KanbanFleetActionState> {
         icon: icon,
         color: color,
         defaultWorkdir: defaultWorkdir,
+        projectId: projectId,
         board: board,
       );
       state = const KanbanFleetActionState(lastMessage: 'Board updated');

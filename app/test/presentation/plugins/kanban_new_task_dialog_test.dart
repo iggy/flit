@@ -34,6 +34,93 @@ void main() {
     expect(repository.lastCreateCall?.assignee, 'default');
   });
 
+  testWidgets('sends nothing extra while the Execution expander is shut', (
+    tester,
+  ) async {
+    final repository = _FakeKanbanRepository();
+    final container = ProviderContainer(
+      overrides: [kanbanRepositoryProvider.overrideWithValue(repository)],
+    );
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: Scaffold(body: KanbanNewTaskDialog())),
+      ),
+    );
+
+    await tester.enterText(find.byType(TextFormField).at(0), 'Plain task');
+    await tester.tap(find.widgetWithText(FilledButton, 'Create'));
+    await tester.pumpAndSettle();
+
+    final call = repository.lastCreateCall;
+    expect(call?.title, 'Plain task');
+    expect(call?.modelOverride, isNull);
+    expect(call?.providerOverride, isNull);
+    expect(call?.reasoningEffort, isNull);
+    // Off means omitted, not `false` — the create body already defaults it.
+    expect(call?.goalMode, isNull);
+    expect(call?.goalMaxTurns, isNull);
+  });
+
+  testWidgets('submits the execution overrides from the expander', (
+    tester,
+  ) async {
+    // The expanded dialog is taller than the default 800x600 test surface.
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final repository = _FakeKanbanRepository();
+    final container = ProviderContainer(
+      overrides: [kanbanRepositoryProvider.overrideWithValue(repository)],
+    );
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: Scaffold(body: KanbanNewTaskDialog())),
+      ),
+    );
+
+    await tester.enterText(find.byType(TextFormField).at(0), 'Deep task');
+    await tester.tap(find.text('Execution'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Model override'),
+      'claude-opus-5',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Provider override'),
+      'anthropic',
+    );
+
+    await tester.tap(find.byType(DropdownButtonFormField<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('ultra').last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(SwitchListTile, 'Goal loop'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Goal turn budget'),
+      '8',
+    );
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Create'));
+    await tester.pumpAndSettle();
+
+    final call = repository.lastCreateCall;
+    expect(call?.title, 'Deep task');
+    expect(call?.modelOverride, 'claude-opus-5');
+    expect(call?.providerOverride, 'anthropic');
+    expect(call?.reasoningEffort, 'ultra');
+    expect(call?.goalMode, isTrue);
+    expect(call?.goalMaxTurns, 8);
+  });
+
   testWidgets('requires title', (tester) async {
     final container = ProviderContainer(
       overrides: [
@@ -98,6 +185,13 @@ final class _FakeKanbanRepository implements KanbanRepository {
     List<String>? parents,
     bool? triage,
     List<String>? skills,
+    String? modelOverride,
+    String? providerOverride,
+    String? reasoningEffort,
+    bool? goalMode,
+    int? goalMaxTurns,
+    int? maxRuntimeSeconds,
+    String? projectId,
     String? board,
   }) async {
     lastCreateCall = _CreateTaskCall(
@@ -106,6 +200,11 @@ final class _FakeKanbanRepository implements KanbanRepository {
       assignee: assignee,
       priority: priority,
       triage: triage,
+      modelOverride: modelOverride,
+      providerOverride: providerOverride,
+      reasoningEffort: reasoningEffort,
+      goalMode: goalMode,
+      goalMaxTurns: goalMaxTurns,
     );
     if (delayMs > 0) {
       await Future<void>.delayed(Duration(milliseconds: delayMs));
@@ -135,6 +234,11 @@ final class _FakeKanbanRepository implements KanbanRepository {
     String? result,
     String? blockReason,
     String? summary,
+    String? modelOverride,
+    String? providerOverride,
+    bool clearModelOverride = false,
+    String? reasoningEffort,
+    bool clearReasoningEffort = false,
     String? board,
   }) async => null;
 
@@ -208,6 +312,11 @@ final class _CreateTaskCall {
     this.assignee,
     this.priority,
     this.triage,
+    this.modelOverride,
+    this.providerOverride,
+    this.reasoningEffort,
+    this.goalMode,
+    this.goalMaxTurns,
   });
 
   final String title;
@@ -215,4 +324,9 @@ final class _CreateTaskCall {
   final String? assignee;
   final int? priority;
   final bool? triage;
+  final String? modelOverride;
+  final String? providerOverride;
+  final String? reasoningEffort;
+  final bool? goalMode;
+  final int? goalMaxTurns;
 }

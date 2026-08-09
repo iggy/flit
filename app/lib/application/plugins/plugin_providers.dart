@@ -265,6 +265,13 @@ class KanbanTaskActionController extends Notifier<KanbanTaskActionState> {
     List<String>? parents,
     bool? triage,
     List<String>? skills,
+    String? modelOverride,
+    String? providerOverride,
+    String? reasoningEffort,
+    bool? goalMode,
+    int? goalMaxTurns,
+    int? maxRuntimeSeconds,
+    String? projectId,
     String? board,
   }) async {
     if (state.busy) {
@@ -287,6 +294,13 @@ class KanbanTaskActionController extends Notifier<KanbanTaskActionState> {
         parents: parents,
         triage: triage,
         skills: skills,
+        modelOverride: modelOverride,
+        providerOverride: providerOverride,
+        reasoningEffort: reasoningEffort,
+        goalMode: goalMode,
+        goalMaxTurns: goalMaxTurns,
+        maxRuntimeSeconds: maxRuntimeSeconds,
+        projectId: projectId,
         board: board,
       );
       state = const KanbanTaskActionState(lastMessage: 'Task created');
@@ -309,6 +323,11 @@ class KanbanTaskActionController extends Notifier<KanbanTaskActionState> {
     String? result,
     String? blockReason,
     String? summary,
+    String? modelOverride,
+    String? providerOverride,
+    bool clearModelOverride = false,
+    String? reasoningEffort,
+    bool clearReasoningEffort = false,
     String? board,
   }) async {
     if (state.busy) {
@@ -331,6 +350,11 @@ class KanbanTaskActionController extends Notifier<KanbanTaskActionState> {
         result: result,
         blockReason: blockReason,
         summary: summary,
+        modelOverride: modelOverride,
+        providerOverride: providerOverride,
+        clearModelOverride: clearModelOverride,
+        reasoningEffort: reasoningEffort,
+        clearReasoningEffort: clearReasoningEffort,
         board: board,
       );
       state = const KanbanTaskActionState(lastMessage: 'Task updated');

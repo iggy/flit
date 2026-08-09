@@ -97,6 +97,10 @@ class KanbanBoardsScreen extends ConsumerWidget {
                         children: <Widget>[
                           if (board.description.isNotEmpty)
                             Text(board.description),
+                          if (board.projectName != null)
+                            Text('Project: ${board.projectName}')
+                          else if (board.projectId != null)
+                            Text('Project: ${board.projectId}'),
                           Text('Total tasks: ${board.total}'),
                           if (board.archived)
                             const Text(
@@ -177,6 +181,7 @@ class KanbanBoardsScreen extends ConsumerWidget {
     final slugController = TextEditingController();
     final nameController = TextEditingController();
     final descriptionController = TextEditingController();
+    final projectController = TextEditingController();
 
     showDialog<void>(
       context: context,
@@ -203,6 +208,15 @@ class KanbanBoardsScreen extends ConsumerWidget {
               ),
               maxLines: 2,
             ),
+            TextField(
+              controller: projectController,
+              decoration: const InputDecoration(
+                labelText: 'Project (optional)',
+                // A scoped board takes the project's primary repo as its
+                // default workdir and hands the project to every new task.
+                helperText: 'Project id or slug to scope this board to',
+              ),
+            ),
           ],
         ),
         actions: <Widget>[
@@ -222,6 +236,9 @@ class KanbanBoardsScreen extends ConsumerWidget {
                           : null,
                       description: descriptionController.text.isNotEmpty
                           ? descriptionController.text
+                          : null,
+                      projectId: projectController.text.isNotEmpty
+                          ? projectController.text
                           : null,
                     );
                 Navigator.of(context).pop();
