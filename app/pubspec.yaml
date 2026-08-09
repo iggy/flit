@@ -57,7 +57,7 @@ dependencies:
   # P9-01: native desktop window sizing/state (linux/macos/windows only).
   window_manager: 0.5.2
   # P9-03: local notifications (background.complete, pending approvals).
-  flutter_local_notifications: 22.2.0
+  flutter_local_notifications: 22.3.0
   # P9-08: in-app version/update check reads the bundled build version.
   # file_picker 12.0.0-beta.7 + package_info_plus 10.2.1 both want win32 ^6.
   package_info_plus: 10.2.1
