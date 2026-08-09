@@ -26,7 +26,6 @@ echo "==> Assembling AppDir..."
 rm -rf "$APPDIR"
 mkdir -p "$APPDIR/usr/bin"
 mkdir -p "$APPDIR/usr/lib"
-mkdir -p "$APPDIR/usr/share/icons/hicolor/256x256/apps"
 
 # Copy the bundle
 cp -r "$BUNDLE_DIR"/* "$APPDIR/usr/bin/"
@@ -45,7 +44,7 @@ chmod +x "$APPDIR/AppRun"
 # Create .desktop file
 cat > "$APPDIR/flit.desktop" <<'EOF'
 [Desktop Entry]
-Name=flit
+Name=Flit
 Comment=Flutter client for Hermes Agent gateway
 Exec=flit
 Icon=flit
@@ -54,18 +53,24 @@ Categories=Utility;Development;
 Terminal=false
 EOF
 
-# Create a placeholder icon (256x256 transparent PNG)
-# In a real setup, replace this with the actual app icon
-cat > "$APPDIR/usr/share/icons/hicolor/256x256/apps/flit.png" <<'EOF_ICON'
-iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAYAAABccqhmAAAACXBIWXMAAAsTAAALEwEAmpwYAAAA
-GXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAADhJREFUeNrs0DEBAAAAwqD1T20M
-H6AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHwGBBgAEc4AAcc0JgIAAAAASUVORK5C
-YII=
-EOF_ICON
-chmod 644 "$APPDIR/usr/share/icons/hicolor/256x256/apps/flit.png"
+# Install the app icons into the hicolor theme. Sources are generated from the
+# master artwork by packaging/generate_app_icons.py and shipped in the bundle.
+ICON_SRC_DIR="$BUNDLE_DIR/data/resources"
+for size in 16 32 48 64 128 256 512; do
+  icon="$ICON_SRC_DIR/flit_${size}.png"
+  if [[ ! -f "$icon" ]]; then
+    echo "Error: missing app icon $icon"
+    echo "       Run: python3 packaging/generate_app_icons.py"
+    exit 1
+  fi
+  dest="$APPDIR/usr/share/icons/hicolor/${size}x${size}/apps"
+  mkdir -p "$dest"
+  install -m 644 "$icon" "$dest/flit.png"
+done
 
-# Symlink icon to AppDir root
-ln -sf "usr/share/icons/hicolor/256x256/apps/flit.png" "$APPDIR/flit.png"
+# appimagetool expects the .desktop file's icon next to AppRun. It must be a
+# real file, not a symlink into usr/ (some appimagetool builds reject those).
+install -m 644 "$ICON_SRC_DIR/flit_256.png" "$APPDIR/flit.png"
 
 echo "==> Checking for appimagetool..."
 if ! command -v appimagetool &> /dev/null; then

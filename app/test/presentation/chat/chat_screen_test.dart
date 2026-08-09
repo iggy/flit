@@ -19,10 +19,12 @@ import 'package:flit/data/dto/events/gateway_event_parser.dart';
 import 'package:flit/data/transport/gateway_rpc_client.dart';
 import 'package:flit/domain/models/active_session.dart';
 import 'package:flit/domain/models/chat_message.dart';
+import 'package:flit/domain/models/prompt_submit_status.dart';
 import 'package:flit/domain/models/session_bootstrap.dart';
 import 'package:flit/domain/models/session_detail.dart';
 import 'package:flit/domain/models/session_summary.dart';
 import 'package:flit/domain/models/steer_result.dart';
+import 'package:flit/domain/models/submit_prompt_result.dart';
 import 'package:flit/domain/repositories/chat_repository.dart';
 import 'package:flit/domain/repositories/session_repository.dart';
 import 'package:flit/presentation/chat/chat_screen.dart';
@@ -65,8 +67,15 @@ final class FakeChatRepository implements ChatRepository {
   }
 
   @override
-  Future<void> submitPrompt(String liveId, String text) async {
+  Future<SubmitPromptResult> submitPrompt(
+    String liveId,
+    String text, {
+    int? truncateBeforeUserOrdinal,
+    bool confirmTruncate = false,
+    bool confirmEmptyTruncate = false,
+  }) async {
     submitted.add((liveId: liveId, text: text));
+    return const SubmitPromptResult(PromptSubmitStatus.streaming);
   }
 
   @override
@@ -122,6 +131,11 @@ final class FakeSessionRepository implements SessionRepository {
     String? profile,
     String? cwd,
     String? model,
+    String? provider,
+    String? reasoningEffort,
+    bool? fast,
+    String? parentSessionId,
+    String? source,
   }) async {
     createCalls++;
     final error = createError;
@@ -144,7 +158,11 @@ final class FakeSessionRepository implements SessionRepository {
       throw UnimplementedError();
 
   @override
-  Future<SessionResumeResult> resume(String durableId) async {
+  Future<SessionResumeResult> resume(
+    String durableId, {
+    bool omitMessages = false,
+    bool lazy = false,
+  }) async {
     resumed.add(durableId);
     final error = resumeError;
     if (error != null) {
@@ -374,6 +392,59 @@ void main() {
     // Back to idle: the send button returns.
     expect(find.byKey(composerSendKey), findsOneWidget);
     expect(find.byKey(composerStopKey), findsNothing);
+  });
+
+  testWidgets('reasoning.delta streams into a Thinking… disclosure', (
+    tester,
+  ) async {
+    await pumpChat(tester);
+
+    // No reasoning yet → no disclosure at all (absent, not empty).
+    chatRepository.emit(
+      const TypedGatewayEvent.messageStart(sessionId: liveId),
+    );
+    await tester.pump();
+    expect(find.byKey(reasoningDisclosureKey), findsNothing);
+
+    // Thinking streams: header reads "Thinking…", and the tail trails in the
+    // collapsed header so a silent thinking phase still looks alive.
+    chatRepository.emit(
+      const TypedGatewayEvent.reasoningDelta(
+        sessionId: liveId,
+        text: 'Checking the directory first',
+        verbose: false,
+      ),
+    );
+    await tester.pump();
+    expect(find.byKey(reasoningDisclosureKey), findsOneWidget);
+    expect(find.text('Thinking…'), findsOneWidget);
+    expect(find.text('Checking the directory first'), findsOneWidget);
+
+    // Expanding shows the full text.
+    await tester.tap(find.byKey(reasoningDisclosureKey));
+    await tester.pump();
+    expect(
+      find.descendant(
+        of: find.byKey(reasoningDisclosureKey),
+        matching: find.byType(SelectableText),
+      ),
+      findsOneWidget,
+    );
+
+    // Turn ends: the disclosure SURVIVES, but stops claiming to be thinking.
+    chatRepository.emit(
+      const TypedGatewayEvent.messageComplete(
+        sessionId: liveId,
+        text: 'One file.',
+        status: MessageTerminalStatus.complete,
+      ),
+    );
+    await tester.pump();
+    expect(find.byKey(reasoningDisclosureKey), findsOneWidget);
+    expect(find.text('Thinking…'), findsNothing);
+    expect(find.text('Thought'), findsOneWidget);
+    // Still expanded (the user opened it mid-turn).
+    expect(find.text('Checking the directory first'), findsOneWidget);
   });
 
   testWidgets('stop button interrupts the active session', (tester) async {

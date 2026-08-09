@@ -70,6 +70,8 @@ FoldState foldGatewayEvent(FoldState state, TypedGatewayEvent event) {
   return switch (event) {
     MessageStart() => _onMessageStart(state),
     MessageDelta() => _onMessageDelta(state, event),
+    ReasoningDelta() => _onReasoningDelta(state, event),
+    ReasoningAvailable() => _onReasoningAvailable(state, event),
     ToolStart() => _onToolStart(state, event),
     ToolProgress() => _onToolProgress(state, event),
     ToolComplete() => _onToolComplete(state, event),
@@ -144,6 +146,88 @@ FoldState _onMessageDelta(FoldState state, MessageDelta event) {
       rendered: event.rendered ?? current.rendered,
     ),
   );
+}
+
+/// Cap on accumulated reasoning text. A long extended-thinking turn can run
+/// to hundreds of KB, and every delta rebuilds the string — so past the cap
+/// the OLDEST reasoning is dropped and the tail (what the user is watching)
+/// is kept. Mirrors the reference TUI's turn controller.
+const int _reasoningCap = 80000;
+const int _reasoningKeep = 60000;
+
+/// `reasoning.delta` → accumulate into the current streaming message's
+/// [ChatMessage.reasoning] and mark it actively thinking. The text lands
+/// NEXT TO the reply text, not in it: this is the live view of what
+/// `message.complete.reasoning` will carry.
+///
+/// Defensive (a delta before `message.start`, or after a terminal frame):
+/// a fresh streaming assistant message is created rather than mutating a
+/// finalized one — thinking always precedes its reply.
+FoldState _onReasoningDelta(FoldState state, ReasoningDelta event) {
+  final index = _streamingAssistantIndex(state.messages);
+  if (index == null) {
+    return state.copyWith(
+      messages: <ChatMessage>[
+        ...state.messages,
+        ChatMessage(
+          role: MessageRole.assistant,
+          text: '',
+          reasoning: event.text,
+          reasoningStreaming: true,
+          streaming: true,
+        ),
+      ],
+    );
+  }
+  final current = state.messages[index];
+  return _replaceMessage(
+    state,
+    index,
+    current.copyWith(
+      reasoning: _capReasoning((current.reasoning ?? '') + event.text),
+      reasoningStreaming: true,
+    ),
+  );
+}
+
+/// `reasoning.available` → the non-streaming FALLBACK (protocol §6): a
+/// provider that returns reasoning whole emits this once instead of a delta
+/// stream. Ignored when deltas already accumulated something (the stream is
+/// the fuller record) and when the text is blank.
+FoldState _onReasoningAvailable(FoldState state, ReasoningAvailable event) {
+  if (event.text.trim().isEmpty) {
+    return state;
+  }
+  final index = _streamingAssistantIndex(state.messages);
+  if (index == null) {
+    return state.copyWith(
+      messages: <ChatMessage>[
+        ...state.messages,
+        ChatMessage(
+          role: MessageRole.assistant,
+          text: '',
+          reasoning: event.text,
+          reasoningStreaming: true,
+          streaming: true,
+        ),
+      ],
+    );
+  }
+  final current = state.messages[index];
+  if ((current.reasoning ?? '').trim().isNotEmpty) {
+    return state;
+  }
+  return _replaceMessage(
+    state,
+    index,
+    current.copyWith(reasoning: event.text, reasoningStreaming: true),
+  );
+}
+
+String _capReasoning(String reasoning) {
+  return reasoning.length > _reasoningCap
+      ? reasoning.substring(reasoning.length - _reasoningKeep)
+      : reasoning;
 }
 
 /// `tool.start` → attach a running [ToolCall] to the current streaming
@@ -235,6 +319,11 @@ FoldState _onToolComplete(FoldState state, ToolComplete event) {
 /// the payload (∈ complete|interrupted|error), text = the authoritative
 /// final payload text, rendered supersedes when present, usage recorded.
 ///
+/// The turn's reasoning SURVIVES the terminal frame (only the "thinking now"
+/// flag clears) so the disclosure stays browsable after the reply lands.
+/// `payload.reasoning` is the authoritative full text but arrives clamped in
+/// some gateway configs, so it only fills in when nothing streamed.
+///
 /// Defensive (complete without a streaming message): append an
 /// already-finalized assistant message rather than dropping the text.
 FoldState _onMessageComplete(FoldState state, MessageComplete event) {
@@ -247,6 +336,7 @@ FoldState _onMessageComplete(FoldState state, MessageComplete event) {
           role: MessageRole.assistant,
           text: event.text,
           rendered: event.rendered,
+          reasoning: event.reasoning,
           terminalStatus: event.status,
           usage: event.usage,
         ),
@@ -260,6 +350,10 @@ FoldState _onMessageComplete(FoldState state, MessageComplete event) {
     current.copyWith(
       text: event.text,
       rendered: event.rendered ?? current.rendered,
+      reasoning: (current.reasoning ?? '').trim().isEmpty
+          ? event.reasoning
+          : current.reasoning,
+      reasoningStreaming: false,
       streaming: false,
       terminalStatus: event.status,
       usage: event.usage,
@@ -299,6 +393,7 @@ FoldState _onTurnError(FoldState state, TurnError event) {
     index,
     current.copyWith(
       text: text,
+      reasoningStreaming: false,
       streaming: false,
       terminalStatus: MessageTerminalStatus.error,
     ),

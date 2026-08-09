@@ -22,6 +22,45 @@ static void first_frame_cb(MyApplication* self, FlView* view) {
   gtk_widget_show(gtk_widget_get_toplevel(GTK_WIDGET(view)));
 }
 
+// Load the app icon into the window so shells that read the window's icon
+// (taskbars, alt-tab, Wayland compositors without a .desktop match) show the
+// branded icon rather than a generic placeholder.
+//
+// Icons are installed next to the executable at data/resources by
+// linux/CMakeLists.txt. `flutter run` launches the unbundled binary from
+// intermediates_do_not_run/, so the source tree is checked as a fallback to keep
+// the icon visible during development. Missing files are not fatal.
+static void set_window_icon(GtkWindow* window) {
+  g_autofree gchar* executable = g_file_read_link("/proc/self/exe", nullptr);
+  if (executable == nullptr) {
+    return;
+  }
+  g_autofree gchar* bundle = g_path_get_dirname(executable);
+
+  const gchar* roots[] = {bundle, LINUX_RUNNER_SOURCE_DIR};
+  const int sizes[] = {16, 32, 48, 64, 128, 256, 512};
+
+  for (gsize root = 0; root < G_N_ELEMENTS(roots); root++) {
+    GList* icons = nullptr;
+    for (gsize i = 0; i < G_N_ELEMENTS(sizes); i++) {
+      g_autofree gchar* name = g_strdup_printf("flit_%d.png", sizes[i]);
+      g_autofree gchar* path =
+          root == 0
+              ? g_build_filename(roots[root], "data", "resources", name, nullptr)
+              : g_build_filename(roots[root], "resources", name, nullptr);
+      GdkPixbuf* pixbuf = gdk_pixbuf_new_from_file(path, nullptr);
+      if (pixbuf != nullptr) {
+        icons = g_list_prepend(icons, pixbuf);
+      }
+    }
+    if (icons != nullptr) {
+      gtk_window_set_icon_list(window, icons);
+      g_list_free_full(icons, g_object_unref);
+      return;
+    }
+  }
+}
+
 // Implements GApplication::activate.
 static void my_application_activate(GApplication* application) {
   MyApplication* self = MY_APPLICATION(application);
@@ -66,6 +105,7 @@ static void my_application_activate(GApplication* application) {
   }
 
   gtk_window_set_default_size(window, 1280, 720);
+  set_window_icon(window);
 
   g_autoptr(FlDartProject) project = fl_dart_project_new();
   fl_dart_project_set_dart_entrypoint_arguments(

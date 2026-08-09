@@ -86,6 +86,74 @@ void main() {
       expect(requests.single.uri.queryParameters['board'], 'ops');
     });
 
+    test('forwards the workflow filters alongside ?board=', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, _cannedBoard);
+      });
+
+      await repository.board(
+        board: 'ops',
+        workflowTemplateId: 'wf-2',
+        currentStepKey: 'implement',
+      );
+
+      expect(requests.single.uri.queryParameters, <String, String>{
+        'board': 'ops',
+        'workflow_template_id': 'wf-2',
+        'current_step_key': 'implement',
+      });
+    });
+
+    test(
+      'a step key filters without a template (they are independent)',
+      () async {
+        final requests = <RequestOptions>[];
+        final repository = _repositoryWith((options) async {
+          requests.add(options);
+          return _jsonResponse(200, _cannedBoard);
+        });
+
+        await repository.board(currentStepKey: 'review');
+
+        expect(requests.single.uri.queryParameters, <String, String>{
+          'current_step_key': 'review',
+        });
+      },
+    );
+
+    test('an omitted filter sends no param at all', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, _cannedBoard);
+      });
+
+      await repository.board(workflowTemplateId: 'wf-2');
+
+      // A PRESENT param is an equality predicate server-side, so the unset
+      // filter must be absent rather than empty.
+      expect(requests.single.uri.queryParameters, <String, String>{
+        'workflow_template_id': 'wf-2',
+      });
+    });
+
+    test(
+      'an empty filter string IS sent (it is a value, not a clear)',
+      () async {
+        final requests = <RequestOptions>[];
+        final repository = _repositoryWith((options) async {
+          requests.add(options);
+          return _jsonResponse(200, _cannedBoard);
+        });
+
+        await repository.board(currentStepKey: '');
+
+        expect(requests.single.uri.query, contains('current_step_key='));
+      },
+    );
+
     test('a task missing EVERYTHING still parses (tolerant)', () async {
       final repository = _repositoryWith((options) async {
         return _jsonResponse(200, <String, Object?>{
@@ -115,6 +183,121 @@ void main() {
         repository.board(),
         throwsA(isA<GatewayAuthException>()),
       );
+    });
+
+    test('parses the 0.20 execution block', () async {
+      final repository = _repositoryWith((options) async {
+        return _jsonResponse(200, <String, Object?>{
+          'columns': <Object?>[
+            <String, Object?>{
+              'name': 'running',
+              'tasks': <Object?>[
+                <String, Object?>{
+                  'id': '11',
+                  'title': 'Long job',
+                  'project_id': 'proj-1',
+                  'session_id': 'sess-9',
+                  'block_kind': 'needs_input',
+                  'block_recurrences': 2,
+                  'consecutive_failures': 3,
+                  'model_override': 'claude-opus-5',
+                  'provider_override': 'anthropic',
+                  'reasoning_effort': 'high',
+                  'goal_mode': true,
+                  'goal_max_turns': 12,
+                  'skills': <String>['research'],
+                  'workflow_template_id': 'wf-2',
+                  'current_step_key': 'implement',
+                  'max_retries': 4,
+                  'max_runtime_seconds': 1800,
+                  'current_run_id': 55,
+                  'claim_lock': 'lock-abc',
+                  'claim_expires': 1783200600,
+                  'last_failure_error': 'worker crashed',
+                  'last_heartbeat_at': 1783200000,
+                  'worker_pid': 4242,
+                },
+              ],
+            },
+          ],
+        });
+      });
+
+      final task = (await repository.board()).columns.single.tasks.single;
+
+      expect(task.projectId, 'proj-1');
+      expect(task.sessionId, 'sess-9');
+      expect(task.blockKind, 'needs_input');
+      expect(task.blockRecurrences, 2);
+      expect(task.consecutiveFailures, 3);
+      expect(task.modelOverride, 'claude-opus-5');
+      expect(task.providerOverride, 'anthropic');
+      expect(task.reasoningEffort, 'high');
+      expect(task.goalMode, isTrue);
+      expect(task.goalMaxTurns, 12);
+      expect(task.skills, <String>['research']);
+      expect(task.workflowTemplateId, 'wf-2');
+      expect(task.currentStepKey, 'implement');
+      expect(task.maxRetries, 4);
+      expect(task.maxRuntimeSeconds, 1800);
+      expect(task.currentRunId, 55);
+      expect(task.claimLock, 'lock-abc');
+      expect(
+        task.claimExpires,
+        DateTime.fromMillisecondsSinceEpoch(1783200600 * 1000, isUtc: true),
+      );
+      expect(task.lastFailureError, 'worker crashed');
+      expect(
+        task.lastHeartbeatAt,
+        DateTime.fromMillisecondsSinceEpoch(1783200000 * 1000, isUtc: true),
+      );
+      expect(task.workerPid, 4242);
+    });
+
+    test(
+      'an older gateway omitting the execution block reads as unset',
+      () async {
+        final repository = _repositoryWith((options) async {
+          return _jsonResponse(200, _cannedBoard);
+        });
+
+        final task = (await repository.board()).columns.first.tasks.single;
+
+        expect(task.projectId, isNull);
+        expect(task.modelOverride, isNull);
+        expect(task.reasoningEffort, isNull);
+        expect(task.goalMode, isFalse);
+        expect(task.blockKind, isNull);
+        expect(task.blockRecurrences, 0);
+        expect(task.consecutiveFailures, 0);
+        // `null` (profile defaults) and `[]` (no extra skills) are different
+        // values, so a missing key must NOT become an empty list.
+        expect(task.skills, isNull);
+      },
+    );
+
+    test('an explicitly empty skills list stays empty, not null', () async {
+      final repository = _repositoryWith((options) async {
+        return _jsonResponse(200, <String, Object?>{
+          'columns': <Object?>[
+            <String, Object?>{
+              'name': 'todo',
+              'tasks': <Object?>[
+                <String, Object?>{
+                  'id': '12',
+                  'title': 'No skills',
+                  'skills': <String>[],
+                },
+              ],
+            },
+          ],
+        });
+      });
+
+      final task = (await repository.board()).columns.single.tasks.single;
+
+      expect(task.skills, isEmpty);
+      expect(task.skills, isNotNull);
     });
   });
 
@@ -257,6 +440,52 @@ void main() {
 
       expect(task, isNull);
     });
+
+    test('sends the execution overrides when set', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, <String, Object?>{
+          'task': <String, Object?>{'id': '9', 'title': 'Deep task'},
+        });
+      });
+
+      await repository.createTask(
+        title: 'Deep task',
+        modelOverride: 'claude-opus-5',
+        providerOverride: 'anthropic',
+        reasoningEffort: 'ultra',
+        goalMode: true,
+        goalMaxTurns: 8,
+        maxRuntimeSeconds: 900,
+        projectId: 'proj-1',
+      );
+
+      expect(requests.single.data, <String, dynamic>{
+        'title': 'Deep task',
+        'model_override': 'claude-opus-5',
+        'provider_override': 'anthropic',
+        'reasoning_effort': 'ultra',
+        'goal_mode': true,
+        'goal_max_turns': 8,
+        'max_runtime_seconds': 900,
+        'project_id': 'proj-1',
+      });
+    });
+
+    test('omits every override when none are set', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, <String, Object?>{
+          'task': <String, Object?>{'id': '9', 'title': 'Plain'},
+        });
+      });
+
+      await repository.createTask(title: 'Plain');
+
+      expect(requests.single.data, <String, dynamic>{'title': 'Plain'});
+    });
   });
 
   group('editTask (PATCH /api/plugins/kanban/tasks/{id})', () {
@@ -293,6 +522,71 @@ void main() {
       await repository.editTask('7', title: 'Test', board: 'ops');
 
       expect(requests.single.uri.queryParameters['board'], 'ops');
+    });
+
+    test('sends the execution overrides', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, <String, Object?>{
+          'task': <String, Object?>{'id': '7', 'title': 'Updated'},
+        });
+      });
+
+      await repository.editTask(
+        '7',
+        modelOverride: 'claude-opus-5',
+        providerOverride: 'anthropic',
+        reasoningEffort: 'high',
+      );
+
+      expect(requests.single.data, <String, dynamic>{
+        'model_override': 'claude-opus-5',
+        'provider_override': 'anthropic',
+        'reasoning_effort': 'high',
+      });
+      expect(requests.single.data, isNot(contains('clear_model_override')));
+      expect(requests.single.data, isNot(contains('clear_reasoning_effort')));
+    });
+
+    test(
+      'clearing needs the flags — an omitted field means unchanged',
+      () async {
+        final requests = <RequestOptions>[];
+        final repository = _repositoryWith((options) async {
+          requests.add(options);
+          return _jsonResponse(200, <String, Object?>{
+            'task': <String, Object?>{'id': '7', 'title': 'Updated'},
+          });
+        });
+
+        await repository.editTask(
+          '7',
+          clearModelOverride: true,
+          clearReasoningEffort: true,
+        );
+
+        expect(requests.single.data, <String, dynamic>{
+          'clear_model_override': true,
+          'clear_reasoning_effort': true,
+        });
+      },
+    );
+
+    test('reasoning_effort "none" is a value, not a clear', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, <String, Object?>{
+          'task': <String, Object?>{'id': '7', 'title': 'Updated'},
+        });
+      });
+
+      await repository.editTask('7', reasoningEffort: 'none');
+
+      expect(requests.single.data, <String, dynamic>{
+        'reasoning_effort': 'none',
+      });
     });
   });
 
@@ -454,6 +748,84 @@ void main() {
       expect(result.fanout, isTrue);
       expect(result.childIds, <String>['8', '9', '10']);
       expect(result.newTitle, 'Parent task');
+    });
+  });
+
+  group('estimateTask (POST /api/plugins/kanban/tasks/{id}/estimate)', () {
+    test('parses an ok estimate', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, <String, Object?>{
+          'ok': true,
+          'est_tokens': 48000,
+          'complexity': 'M',
+          'rationale': 'Multi-file change with tests.',
+          'model': 'hermes-4-405b',
+        });
+      });
+
+      final estimate = await repository.estimateTask('7');
+
+      expect(requests.single.method, 'POST');
+      expect(requests.single.path, '/api/plugins/kanban/tasks/7/estimate');
+      expect(requests.single.uri.query, isEmpty);
+      expect(estimate.ok, isTrue);
+      expect(estimate.estTokens, 48000);
+      expect(estimate.complexity, 'M');
+      expect(estimate.rationale, 'Multi-file change with tests.');
+      expect(estimate.model, 'hermes-4-405b');
+      expect(estimate.reason, isNull);
+    });
+
+    test('a refusal is a 200 with ok:false, not a throw', () async {
+      final repository = _repositoryWith((options) async {
+        return _jsonResponse(200, <String, Object?>{
+          'ok': false,
+          'reason': 'auxiliary client unavailable',
+        });
+      });
+
+      final estimate = await repository.estimateTask('7');
+
+      expect(estimate.ok, isFalse);
+      expect(estimate.reason, 'auxiliary client unavailable');
+      expect(estimate.estTokens, isNull);
+      expect(estimate.complexity, isNull);
+    });
+
+    test('tolerates a null complexity / rationale / model on an ok', () async {
+      // The server nulls a complexity band it doesn't recognise, and only
+      // knows the model when the provider echoed one back.
+      final repository = _repositoryWith((options) async {
+        return _jsonResponse(200, <String, Object?>{
+          'ok': true,
+          'est_tokens': 12000,
+          'complexity': null,
+          'rationale': null,
+          'model': null,
+        });
+      });
+
+      final estimate = await repository.estimateTask('7');
+
+      expect(estimate.ok, isTrue);
+      expect(estimate.estTokens, 12000);
+      expect(estimate.complexity, isNull);
+      expect(estimate.rationale, isNull);
+      expect(estimate.model, isNull);
+    });
+
+    test('sends the board as a query param', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, <String, Object?>{'ok': true});
+      });
+
+      await repository.estimateTask('7', board: 'infra');
+
+      expect(requests.single.uri.queryParameters['board'], 'infra');
     });
   });
 

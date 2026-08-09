@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Backdrop for the adaptive launcher icon. Sampled from the master artwork's
+     navy->blue gradient (see packaging/generate_app_icons.py); update both
+     together if the artwork changes. -->
+<resources>
+    <color name="ic_launcher_background">#2A32A6</color>
+</resources>

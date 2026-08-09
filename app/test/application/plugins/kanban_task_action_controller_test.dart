@@ -242,6 +242,97 @@ void main() {
     });
   });
 
+  group('kanbanEstimateProvider', () {
+    test('is idle until asked — build never calls the gateway', () async {
+      final container = _containerWith(_FakeKanbanRepository());
+
+      final state = container.read(kanbanEstimateProvider('7'));
+
+      expect(state.busy, isFalse);
+      expect(state.estimate, isNull);
+      expect(state.error, isNull);
+    });
+
+    test('sets busy during the call, then the estimate', () async {
+      final container = _containerWith(_FakeKanbanRepository());
+
+      final future = container.read(kanbanEstimateProvider('7').notifier).run();
+
+      expect(container.read(kanbanEstimateProvider('7')).busy, isTrue);
+
+      await future;
+
+      final state = container.read(kanbanEstimateProvider('7'));
+      expect(state.busy, isFalse);
+      expect(state.error, isNull);
+      expect(state.estimate?.estTokens, 48000);
+      expect(state.estimate?.complexity, 'M');
+    });
+
+    test('a declined estimate is a result, not an error', () async {
+      final container = _containerWith(
+        _FakeKanbanRepository(
+          estimateResult: const KanbanEstimate(
+            ok: false,
+            reason: 'a title is required to estimate',
+          ),
+        ),
+      );
+
+      await container.read(kanbanEstimateProvider('7').notifier).run();
+
+      final state = container.read(kanbanEstimateProvider('7'));
+      expect(state.error, isNull);
+      expect(state.estimate?.ok, isFalse);
+      expect(state.estimate?.reason, 'a title is required to estimate');
+    });
+
+    test('sets error on GatewayException (never throws)', () async {
+      final container = _containerWith(
+        _FakeKanbanRepository(
+          estimateError: const GatewayNetworkException(
+            'Gateway returned HTTP 500',
+          ),
+        ),
+      );
+
+      await container.read(kanbanEstimateProvider('7').notifier).run();
+
+      final state = container.read(kanbanEstimateProvider('7'));
+      expect(state.busy, isFalse);
+      expect(state.error, 'Gateway returned HTTP 500');
+    });
+
+    test('keeps the previous estimate visible on a re-run failure', () async {
+      // The call takes seconds; blanking the old numbers mid-flight (or on a
+      // failed refresh) reads as if the task lost its estimate.
+      final repository = _FakeKanbanRepository();
+      final container = _containerWith(repository);
+
+      await container.read(kanbanEstimateProvider('7').notifier).run();
+      expect(
+        container.read(kanbanEstimateProvider('7')).estimate?.estTokens,
+        48000,
+      );
+
+      repository.estimateError = const GatewayNetworkException('Down');
+      await container.read(kanbanEstimateProvider('7').notifier).run();
+
+      final state = container.read(kanbanEstimateProvider('7'));
+      expect(state.error, 'Down');
+      expect(state.estimate?.estTokens, 48000);
+    });
+
+    test('estimates are per task id', () async {
+      final container = _containerWith(_FakeKanbanRepository());
+
+      await container.read(kanbanEstimateProvider('7').notifier).run();
+
+      expect(container.read(kanbanEstimateProvider('7')).estimate, isNotNull);
+      expect(container.read(kanbanEstimateProvider('8')).estimate, isNull);
+    });
+  });
+
   group('clearError', () {
     test('clears error but preserves busy and lastMessage', () async {
       final container = _containerWith(
@@ -282,15 +373,32 @@ final class _FakeKanbanRepository implements KanbanRepository {
       taskId: '',
       fanout: false,
     ),
+    this.estimateResult = const KanbanEstimate(
+      ok: true,
+      estTokens: 48000,
+      complexity: 'M',
+      rationale: 'Multi-file change with tests.',
+      model: 'hermes-4-405b',
+    ),
+    this.estimateError,
   });
 
   final Exception? createTaskError;
   final KanbanBulkResult bulkResult;
   final KanbanSpecifyResult specifyResult;
   final KanbanDecomposeResult decomposeResult;
+  final KanbanEstimate estimateResult;
+
+  /// Mutable so one fake can succeed and then fail — the re-run behaviour is
+  /// about what survives the second call.
+  Exception? estimateError;
 
   @override
-  Future<KanbanBoard> board({String? board}) async {
+  Future<KanbanBoard> board({
+    String? board,
+    String? workflowTemplateId,
+    String? currentStepKey,
+  }) async {
     return const KanbanBoard();
   }
 
@@ -315,6 +423,13 @@ final class _FakeKanbanRepository implements KanbanRepository {
     List<String>? parents,
     bool? triage,
     List<String>? skills,
+    String? modelOverride,
+    String? providerOverride,
+    String? reasoningEffort,
+    bool? goalMode,
+    int? goalMaxTurns,
+    int? maxRuntimeSeconds,
+    String? projectId,
     String? board,
   }) async {
     if (createTaskError != null) {
@@ -334,6 +449,11 @@ final class _FakeKanbanRepository implements KanbanRepository {
     String? result,
     String? blockReason,
     String? summary,
+    String? modelOverride,
+    String? providerOverride,
+    bool clearModelOverride = false,
+    String? reasoningEffort,
+    bool clearReasoningEffort = false,
     String? board,
   }) async {
     return KanbanTask(id: id, title: title ?? 'Test');
@@ -379,6 +499,14 @@ final class _FakeKanbanRepository implements KanbanRepository {
     String? board,
   }) async {
     return decomposeResult;
+  }
+
+  @override
+  Future<KanbanEstimate> estimateTask(String id, {String? board}) async {
+    if (estimateError != null) {
+      throw estimateError!;
+    }
+    return estimateResult;
   }
 
   @override

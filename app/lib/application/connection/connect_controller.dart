@@ -4,6 +4,7 @@
 library;
 
 import 'package:flit/application/connection/connection_providers.dart';
+import 'package:flit/application/sessions/desktop_contract.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/data/transport/connection_config.dart';
 import 'package:flit/domain/models/auth_provider.dart';
@@ -22,6 +23,7 @@ final class ConnectUiState {
     this.errorMessage,
     this.authMode,
     this.providers,
+    this.passwordFallbackProviders,
   });
 
   final ConnectPhase phase;
@@ -35,8 +37,14 @@ final class ConnectUiState {
   /// The auth shape detected at probe time (drives which form renders).
   final AuthMode? authMode;
 
-  /// Gated mode: the interactive providers from `GET /api/auth/providers`.
+  /// Gated mode: the interactive providers from `GET /api/auth/providers`,
+  /// filtered to the ones that serve [authMode].
   final List<AuthProviderInfo>? providers;
+
+  /// Password providers set aside when the gateway advertised `native_pkce`
+  /// and [authMode] was resolved to OAuth anyway. Non-empty only in that mixed
+  /// case; the UI offers them as "sign in with a password instead".
+  final List<AuthProviderInfo>? passwordFallbackProviders;
 
   bool get busy =>
       phase == ConnectPhase.probing || phase == ConnectPhase.connecting;
@@ -113,13 +121,28 @@ class ConnectController extends Notifier<ConnectUiState> {
     final passwordProviders = providers
         .where((p) => p.supportsPassword)
         .toList();
-    if (passwordProviders.isEmpty) {
-      // OAuth-only gateway: the UI renders "Sign in with <provider>" buttons.
+    final oauthProviders = providers.where((p) => !p.supportsPassword).toList();
+
+    // Which flow? `auth_flows` (gateway 0.20) is the explicit capability
+    // contract: `native_pkce` means the gateway can broker the RFC 8252
+    // system-browser + loopback + PKCE round trip, so prefer it even when a
+    // password provider is also registered. Older gateways omit the field —
+    // fall back to inferring from `supports_password`, i.e. OAuth only when no
+    // password provider exists.
+    final preferNative = status.supportsNativePkce && oauthProviders.isNotEmpty;
+    if (preferNative || passwordProviders.isEmpty) {
+      // The UI renders "Sign in with <provider>" buttons. Only the brokerable
+      // providers can serve the native flow, so a password provider is not an
+      // OAuth button — unless there are no OAuth providers at all, in which
+      // case an OAuth-only gateway with none of either has nothing to show.
       state = ConnectUiState(
         phase: ConnectPhase.probed,
         status: status,
         authMode: AuthMode.oauth,
-        providers: providers,
+        providers: preferNative ? oauthProviders : providers,
+        passwordFallbackProviders: preferNative && passwordProviders.isNotEmpty
+            ? passwordProviders
+            : null,
       );
       return;
     }
@@ -128,6 +151,22 @@ class ConnectController extends Notifier<ConnectUiState> {
       status: status,
       authMode: AuthMode.password,
       providers: passwordProviders,
+    );
+  }
+
+  /// Mixed-provider gateway: leave the native-PKCE buttons for the
+  /// username/password form. No-op unless the probe set aside password
+  /// providers (see [ConnectUiState.passwordFallbackProviders]).
+  void usePasswordFallback() {
+    final fallback = state.passwordFallbackProviders;
+    if (fallback == null || fallback.isEmpty) {
+      return;
+    }
+    state = ConnectUiState(
+      phase: ConnectPhase.probed,
+      status: state.status,
+      authMode: AuthMode.password,
+      providers: fallback,
     );
   }
 
@@ -274,10 +313,12 @@ class ConnectController extends Notifier<ConnectUiState> {
     required String provider,
   }) async {
     final status = state.status;
+    final fallback = state.passwordFallbackProviders;
     state = ConnectUiState(
       phase: ConnectPhase.connecting,
       status: status,
       authMode: AuthMode.oauth,
+      passwordFallbackProviders: fallback,
     );
     final config = ConnectionConfig(
       baseUrl: url,
@@ -297,6 +338,7 @@ class ConnectController extends Notifier<ConnectUiState> {
         status: status,
         authMode: AuthMode.oauth,
         providers: state.providers,
+        passwordFallbackProviders: fallback,
         errorMessage: error.message,
       );
       return;
@@ -377,6 +419,9 @@ class ConnectController extends Notifier<ConnectUiState> {
     await ref.read(oauthSessionProvider.notifier).clear();
     await ref.read(connectionConfigProvider.notifier).clear();
     ref.read(gatewayStatusProvider.notifier).clear();
+    // The next gateway may speak a different contract — a stale version would
+    // warn (or fail to warn) about the wrong host.
+    ref.read(desktopContractProvider.notifier).clear();
     state = const ConnectUiState();
   }
 

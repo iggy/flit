@@ -56,6 +56,11 @@ final class FakeSessionRepository implements SessionRepository {
     String? profile,
     String? cwd,
     String? model,
+    String? provider,
+    String? reasoningEffort,
+    bool? fast,
+    String? parentSessionId,
+    String? source,
   }) async {
     createCalls++;
     final error = createError;
@@ -81,7 +86,11 @@ final class FakeSessionRepository implements SessionRepository {
   }
 
   @override
-  Future<SessionResumeResult> resume(String durableId) async {
+  Future<SessionResumeResult> resume(
+    String durableId, {
+    bool omitMessages = false,
+    bool lazy = false,
+  }) async {
     resumed.add(durableId);
     return resumeResult;
   }

@@ -145,6 +145,10 @@ void main() {
       expect(SessionStatus.parse('working'), SessionStatus.working);
     });
 
+    test('lazy resume "streaming" → working', () {
+      expect(SessionStatus.parse('streaming'), SessionStatus.working);
+    });
+
     test('unknown → working; null → working (open question #4)', () {
       expect(SessionStatus.parse('quantum-entangled'), SessionStatus.working);
       expect(SessionStatus.parse(''), SessionStatus.working);

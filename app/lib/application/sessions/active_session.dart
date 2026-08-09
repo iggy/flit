@@ -14,6 +14,8 @@ library;
 
 import 'package:flit/application/chat/message_list_notifier.dart';
 import 'package:flit/application/providers.dart';
+import 'package:flit/application/sessions/desktop_contract.dart';
+import 'package:flit/application/sessions/session_overrides.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -70,9 +72,12 @@ class ActiveSessionNotifier extends Notifier<ActiveSessionState> {
   @override
   ActiveSessionState build() => const ActiveSessionState();
 
-  /// Create a session and make it active. No-op when a session is already
-  /// active or a bootstrap is in flight (idempotent — safe to call from
-  /// both a post-frame hook and a connection-state listener).
+  /// Create a session and make it active, carrying the sticky model/effort/
+  /// fast picks ([sessionCreateOverridesProvider]) so they survive the new
+  /// session instead of resetting to the profile defaults. No-op when a
+  /// session is already active or a bootstrap is in flight (idempotent —
+  /// safe to call from both a post-frame hook and a connection-state
+  /// listener).
   ///
   /// NEVER throws: failures are recorded in [ActiveSessionState.error] so
   /// the caller can show a retry affordance.
@@ -86,9 +91,17 @@ class ActiveSessionNotifier extends Notifier<ActiveSessionState> {
       state = const ActiveSessionState(error: 'Not connected to a gateway.');
       return;
     }
+    final overrides = ref.read(sessionCreateOverridesProvider);
     state = const ActiveSessionState(bootstrapping: true);
     try {
-      final result = await repository.create();
+      final result = await repository.create(
+        model: overrides.model,
+        provider: overrides.provider,
+        reasoningEffort: overrides.reasoningEffort,
+        fast: overrides.fast,
+      );
+      // First place the gateway tells us which desktop contract it speaks.
+      ref.read(desktopContractProvider.notifier).recordInfo(result.info);
       state = ActiveSessionState(
         liveId: result.liveId,
         durableId: result.durableId,
@@ -136,6 +149,7 @@ class ActiveSessionNotifier extends Notifier<ActiveSessionState> {
       );
       try {
         final result = await repository.resume(durableId);
+        ref.read(desktopContractProvider.notifier).recordInfo(result.info);
         switchTo(liveId: result.liveId, durableId: result.durableId);
         ref
             .read(messageListProvider(result.liveId).notifier)

@@ -10,6 +10,10 @@
 /// P3-03: slash dispatch — text starting with `/` is routed to command.dispatch
 /// instead of submitPrompt; dispatch results fan out to prefill/send/exec/skill.
 ///
+/// A send the gateway acknowledges as `queued` is tracked in
+/// [promptQueueProvider] and shown above the field, because Stop DISCARDS the
+/// queue rather than just stopping the turn (see prompt_queue.dart).
+///
 /// Key handling: Enter submits (when the field is effectively used
 /// single-line, the common chat case); Shift+Enter inserts a newline.
 library;
@@ -21,13 +25,16 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flit/application/attachments/attachment_providers.dart';
 import 'package:flit/application/chat/composer_prefill.dart';
 import 'package:flit/application/chat/message_list_notifier.dart';
+import 'package:flit/application/chat/prompt_queue.dart';
 import 'package:flit/application/providers.dart';
 import 'package:flit/application/sessions/active_session.dart';
+import 'package:flit/application/sessions/desktop_contract.dart';
 import 'package:flit/application/slash/slash_providers.dart';
 import 'package:flit/application/voice/voice_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/domain/models/attachment.dart';
 import 'package:flit/domain/models/command_dispatch.dart';
+import 'package:flit/domain/models/prompt_submit_status.dart';
 import 'package:flit/domain/models/slash_completion.dart';
 import 'package:flit/domain/models/steer_result.dart';
 import 'package:flutter/material.dart';
@@ -46,6 +53,10 @@ const Key composerStopKey = Key('composer_stop');
 
 /// Key of the steer button (shown while a turn is in flight).
 const Key composerSteerKey = Key('composer_steer');
+
+/// Key of the queued-prompts notice (shown while the gateway holds queued
+/// submissions for the active session).
+const Key composerQueuedNoticeKey = Key('composer_queued_notice');
 
 class Composer extends ConsumerStatefulWidget {
   const Composer({super.key});
@@ -192,20 +203,48 @@ class _ComposerState extends ConsumerState<Composer> {
 
   Future<void> _send(String liveId, String text) async {
     try {
-      await ref.read(chatRepositoryProvider)?.submitPrompt(liveId, text);
+      final result = await ref
+          .read(chatRepositoryProvider)
+          ?.submitPrompt(liveId, text);
       // P7: clear staged attachments after successful send (gateway auto-consumes).
       ref.read(stagedAttachmentsProvider.notifier).clear();
       _localThumbs.clear();
+      // The session was busy when the prompt landed (gateway 0.20
+      // `_handle_busy_submit`): surface how it was disposed instead of
+      // letting it look like a failed send or a phantom stream.
+      if (result != null && mounted) {
+        switch (result.status) {
+          case PromptSubmitStatus.queued:
+            // Remember it: the gateway drops the whole queue on interrupt
+            // (see prompt_queue.dart), and nothing on the wire reports it.
+            ref.read(promptQueueProvider(liveId).notifier).enqueue(text);
+            _showSnackBar('Queued — will run after the current turn');
+          case PromptSubmitStatus.steered:
+            _showSnackBar('Steered into the current turn');
+          case PromptSubmitStatus.redirected:
+            _showSnackBar('Current turn redirected to your message');
+          case PromptSubmitStatus.streaming:
+            break;
+        }
+      }
     } on Object catch (error) {
       _showError('Failed to send', error);
     }
   }
 
   Future<void> _stop(String liveId) async {
+    // Interrupt DISCARDS the gateway's queued prompts (prompt_queue.dart), and
+    // the turn's terminal frame can beat the response back — bracket the call
+    // so whichever arrives first reports the loss.
+    final queue = ref.read(promptQueueProvider(liveId).notifier);
+    queue.beginInterrupt();
     try {
       await ref.read(sessionRepositoryProvider)?.interrupt(liveId);
+      queue.dropAll();
     } on Object catch (error) {
       _showError('Failed to stop', error);
+    } finally {
+      queue.endInterrupt();
     }
   }
 
@@ -228,7 +267,18 @@ class _ComposerState extends ConsumerState<Composer> {
     if (!mounted) {
       return;
     }
-    final detail = error is GatewayException ? error.message : '$error';
+    final detail = switch (error) {
+      // Gateway 0.20: truncation refused without the confirm flags (4028/4029),
+      // disk full on persist (5070), and unclassifiable storage write failure
+      // (5071) — surface the actionable part rather than the raw RPC message.
+      GatewayRpcException(code: 4028 || 4029) =>
+        'refused: resubmit with truncation confirmed',
+      GatewayRpcException(code: 5070) =>
+        'disk full — free some space and try again',
+      GatewayRpcException(code: 5071) => 'session storage could not be written',
+      GatewayException() => error.message,
+      _ => '$error',
+    };
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text('$prefix: $detail')));
@@ -352,6 +402,27 @@ class _ComposerState extends ConsumerState<Composer> {
     );
   }
 
+  /// Refuse a base64 payload the connected gateway cannot receive, and say
+  /// why (optional-doc §3). Below desktop contract v5 the gateway's WS frame
+  /// cap is 16 MiB, and an oversized frame doesn't error — it drops the
+  /// socket, which looks like a random disconnect. Returns true when the
+  /// attach may proceed (including whenever the contract is unknown).
+  bool _contractAllowsAttachment(int base64Length) {
+    final contract = ref.read(desktopContractProvider);
+    if (contract.allowsAttachment(base64Length)) {
+      return true;
+    }
+    _showSnackBar(
+      'Too large for this gateway (max '
+      '${_formatBytes(contract.attachmentLimitBytes!)} encoded) — '
+      'update your Hermes gateway to attach files this big.',
+    );
+    return false;
+  }
+
+  /// Bytes as whole MiB — the only magnitude the frame cap is expressed in.
+  String _formatBytes(int bytes) => '${bytes ~/ (1024 * 1024)} MiB';
+
   /// P7: pick an image from the gallery and attach it.
   Future<void> _pickImage(String liveId) async {
     final repo = ref.read(attachmentRepositoryProvider);
@@ -367,6 +438,9 @@ class _ComposerState extends ConsumerState<Composer> {
       }
       final bytes = await xFile.readAsBytes();
       final b64 = base64Encode(bytes);
+      if (!_contractAllowsAttachment(b64.length)) {
+        return;
+      }
       final result = await repo.attachImageBytes(
         liveId,
         contentBase64: b64,
@@ -399,6 +473,9 @@ class _ComposerState extends ConsumerState<Composer> {
       }
       final pdfBytes = await pickedFile.readAsBytes();
       final b64 = base64Encode(pdfBytes);
+      if (!_contractAllowsAttachment(b64.length)) {
+        return;
+      }
       final pdfResult = await repo.attachPdf(
         liveId,
         contentBase64: b64,
@@ -432,6 +509,9 @@ class _ComposerState extends ConsumerState<Composer> {
       }
       final dataUrl =
           'data:application/octet-stream;base64,${base64Encode(await pickedFile.readAsBytes())}';
+      if (!_contractAllowsAttachment(dataUrl.length)) {
+        return;
+      }
       final fileResult = await repo.attachFile(
         liveId,
         dataUrl: dataUrl,
@@ -502,6 +582,22 @@ class _ComposerState extends ConsumerState<Composer> {
       }
     });
 
+    // A dropped queue is reported wherever the interrupt came from — the Stop
+    // button here or the drawer's — because the queued messages are gone for
+    // good and only the user can resend them.
+    if (liveId != null) {
+      ref.listen(promptQueueProvider(liveId), (previous, next) {
+        if (next.dropped == 0) {
+          return;
+        }
+        _showSnackBar(
+          'Stopped — ${next.dropped} queued '
+          '${next.dropped == 1 ? 'message' : 'messages'} discarded',
+        );
+        ref.read(promptQueueProvider(liveId).notifier).acknowledgeDropped();
+      });
+    }
+
     // P7: watch staged attachments.
     final stagedAttachments = ref.watch(stagedAttachmentsProvider);
 
@@ -530,6 +626,10 @@ class _ComposerState extends ConsumerState<Composer> {
       });
     }
 
+    final queued = liveId == null
+        ? const PromptQueue()
+        : ref.watch(promptQueueProvider(liveId));
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
       child: Column(
@@ -538,6 +638,7 @@ class _ComposerState extends ConsumerState<Composer> {
           // P3-02: suggestion overlay (shown above the field when non-empty).
           if (_suggestions != null && _suggestions!.isNotEmpty)
             _buildSuggestionOverlay(),
+          if (!queued.isEmpty) _buildQueuedNotice(queued),
           // P7: attachment chips row (shown above the field when non-empty).
           if (stagedAttachments.images.isNotEmpty ||
               stagedAttachments.files.isNotEmpty)
@@ -620,6 +721,38 @@ class _ComposerState extends ConsumerState<Composer> {
                   icon: const Icon(Icons.send),
                 ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// The "waiting behind this turn" line: what a `queued` ack left pending,
+  /// and a warning that Stop throws it away rather than just stopping.
+  Widget _buildQueuedNotice(PromptQueue queue) {
+    final theme = Theme.of(context);
+    final count = queue.texts.length;
+    return Padding(
+      key: composerQueuedNoticeKey,
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: <Widget>[
+          Icon(
+            Icons.schedule,
+            size: 14,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              '$count ${count == 1 ? 'message' : 'messages'} queued behind '
+              'this turn — Stop discards them',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),

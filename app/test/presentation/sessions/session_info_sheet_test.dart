@@ -216,6 +216,33 @@ void main() {
     expect(fakeActions.compressCalls, <String>['a1b2c3d4']);
   });
 
+  testWidgets('aborted compression surfaces a distinct banner message', (
+    tester,
+  ) async {
+    const usage = SessionUsageStats(
+      model: 'm',
+      input: 10,
+      output: 10,
+      total: 20,
+      calls: 1,
+    );
+    fakeActions.errors['compress'] =
+        'Compression was not applied — a tool was mid-flight.';
+    await pumpSheet(
+      tester,
+      sheetHarness(usage: usage, activeLiveId: 'a1b2c3d4'),
+    );
+
+    await tester.tap(find.byKey(sessionInfoCompressKey));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100)); // async handler
+
+    expect(
+      find.text('Compression was not applied — a tool was mid-flight.'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets(
     'tapping undo shows confirm dialog, calls actions.undo on confirm',
     (tester) async {

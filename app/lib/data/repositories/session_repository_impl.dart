@@ -23,12 +23,24 @@ final class SessionRepositoryImpl implements SessionRepository {
     String? profile,
     String? cwd,
     String? model,
+    String? provider,
+    String? reasoningEffort,
+    bool? fast,
+    String? parentSessionId,
+    String? source,
   }) async {
-    // Wire §2: send only the non-null optionals (null-aware map elements).
+    // Wire §2: send only the non-null optionals (null-aware map elements) —
+    // an omitted per-session override means "inherit the profile", and for
+    // `fast` that is distinct from an explicit `false` (contract v4).
     final params = <String, dynamic>{
       'profile': ?profile,
       'cwd': ?cwd,
       'model': ?model,
+      'provider': ?provider,
+      'reasoning_effort': ?reasoningEffort,
+      'fast': ?fast,
+      'parent_session_id': ?parentSessionId,
+      'source': ?source,
     };
     final result = await _client.request('session.create', params);
     return SessionCreateResultDto.fromJson(result).toDomain();
@@ -50,12 +62,20 @@ final class SessionRepositoryImpl implements SessionRepository {
   }
 
   @override
-  Future<SessionResumeResult> resume(String durableId) async {
+  Future<SessionResumeResult> resume(
+    String durableId, {
+    bool omitMessages = false,
+    bool lazy = false,
+  }) async {
     // Wire §5: the DURABLE id goes in as `session_id`; a NEW short live id
-    // comes back.
-    final result = await _client.request('session.resume', <String, dynamic>{
+    // comes back. `omit_messages` / `lazy` are only sent when set — the
+    // gateway defaults both to false and older ones ignore them anyway.
+    final params = <String, dynamic>{
       'session_id': durableId,
-    });
+      if (omitMessages) 'omit_messages': true,
+      if (lazy) 'lazy': true,
+    };
+    final result = await _client.request('session.resume', params);
     return SessionResumeResultDto.fromJson(result).toDomain();
   }
 

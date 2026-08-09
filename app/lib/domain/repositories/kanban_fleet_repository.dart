@@ -15,6 +15,10 @@ abstract interface class KanbanFleetRepository {
   });
 
   /// POST /boards — create a board.
+  ///
+  /// [projectId] scopes the board to a first-class project (id or slug):
+  /// the project's primary repo becomes the default workdir unless
+  /// [defaultWorkdir] is given, and the board's tasks inherit the project.
   Future<KanbanBoardMeta?> createBoard({
     required String slug,
     String? name,
@@ -22,11 +26,15 @@ abstract interface class KanbanFleetRepository {
     String? icon,
     String? color,
     String? defaultWorkdir,
+    String? projectId,
     bool switchTo = false,
     String? board,
   });
 
   /// PATCH /boards/{slug} — update board metadata (slug immutable).
+  ///
+  /// [projectId] follows the same convention as [defaultWorkdir]: null
+  /// leaves the scope alone, `''` clears it, a value resolves and sets it.
   Future<KanbanBoardMeta?> updateBoard(
     String slug, {
     String? name,
@@ -34,6 +42,7 @@ abstract interface class KanbanFleetRepository {
     String? icon,
     String? color,
     String? defaultWorkdir,
+    String? projectId,
     String? board,
   });
 

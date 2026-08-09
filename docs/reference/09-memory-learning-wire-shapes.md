@@ -2,9 +2,13 @@
 
 Concrete JSON-RPC frames for the learning journey, insights, project facts,
 and git rollback/checkpoints. Grounded in the gateway handlers
-(`hermes-agent/tui_gateway/server.py`, `agent/learning_graph.py`,
+(`hermes-agent/tui_gateway/methods_tools.py`, `methods_session.py`,
+`agent/learning_graph.py`,
 `agent/learning_graph_render.py`, `agent/learning_mutations.py`,
 `agent/coding_context.py`, `tools/checkpoint_manager.py`). **Python wins.**
+Re-verified against **v0.20.0** — the `learning.*` / `insights.*` /
+`rollback.*` handlers moved from `server.py` into `methods_tools.py`, and
+`project.facts` into `methods_session.py`.
 
 Envelope reminders:
 - request: `{"jsonrpc":"2.0","id":"<str>","method":"<str>","params":{...}}`
@@ -22,7 +26,7 @@ TUI. **The Flutter client ignores the `frames` grid entirely** and renders from
 the structured fields instead. Request `frames: 2` to minimize payload (the
 field is required; 2 is the minimum the renderer accepts).
 
-Result (`render_frames`, server.py:17154):
+Result (`render_frames`, methods_tools.py:1656):
 ```jsonc
 {
   "frames": [ ... ],          // ANSI grid animation — IGNORE in Flutter
@@ -73,7 +77,7 @@ Empty state: `buckets: []`, `count: 0`.
 Params: `{"id": "<node id>"}`. The id is a bucket node id (skill name, or
 `memory:<source>:<idx>`).
 
-Result (`node_detail`, server.py:17178):
+Result (`node_detail`, methods_tools.py:1680):
 ```jsonc
 // success:
 {"ok": true, "kind": "skill", "id": "refactor-helper",
@@ -85,7 +89,7 @@ Result (`node_detail`, server.py:17178):
 
 ### `learning.edit` (P6-02)
 Params: `{"id": "<node id>", "content": "<new full text>"}`.
-Result (`edit_node`, server.py:17200):
+Result (`edit_node`, methods_tools.py:1702):
 ```jsonc
 {"ok": true,  "message": "updated 'refactor-helper'"}
 {"ok": false, "message": "edit failed"}
@@ -94,7 +98,7 @@ Result (`edit_node`, server.py:17200):
 ### `learning.delete` (P6-02)
 Params: `{"id": "<node id>"}`. Skills are ARCHIVED (restorable via CLI),
 memories are removed.
-Result (`delete_node`, server.py:17189):
+Result (`delete_node`, methods_tools.py:1691):
 ```jsonc
 {"ok": true,  "message": "archived 'x' — restore with: hermes curator restore x"}
 {"ok": false, "message": "'x' is pinned — unpin it first (…)"}
@@ -106,7 +110,7 @@ Result (`delete_node`, server.py:17189):
 
 ### `insights.get` (P6-03)
 Params: `{"days": int=30}` (rolling window).
-Result (`insights.get`, server.py:16465):
+Result (`insights.get`, methods_tools.py:1217):
 ```jsonc
 {"days": 30, "sessions": 42, "messages": 318}
 ```
@@ -120,7 +124,7 @@ Error code `5017` when the analytics DB is unavailable — surface as an error.
 Params: `{"cwd": "<path>"}` (optional; server resolves a default when omitted).
 In Flutter, pass the selected project's `primary_path`.
 
-Result (`project.facts`, server.py:6521 → `project_facts_for`):
+Result (`project.facts`, methods_session.py:263 → `project_facts_for`):
 ```jsonc
 {
   "facts": {                       // null when cwd is NOT a code workspace
@@ -144,7 +148,7 @@ from the session.
 
 ### `rollback.list` (P6-05)
 Params: `{"session_id": "<live id>"}`.
-Result (`rollback.list`, server.py:16493):
+Result (`rollback.list`, methods_tools.py:1242):
 ```jsonc
 {
   "enabled": true,               // false → checkpointing off; checkpoints: []
@@ -159,7 +163,7 @@ the manager's `short_hash`/`reason`/stat fields). Do not expect those.
 
 ### `rollback.diff` (P6-05)
 Params: `{"session_id": "<live id>", "hash": "<hash>"}`.
-Result (`rollback.diff`, server.py:16570):
+Result (`rollback.diff`, methods_tools.py:1329):
 ```jsonc
 {
   "stat": "<git --stat summary>",
@@ -177,7 +181,7 @@ Full restore is REJECTED (error `4009`) while a turn is running — the UI shoul
 require an idle session before offering full restore. File-scoped restore is
 always allowed.
 
-Result (`rollback.restore`, server.py:16523):
+Result (`rollback.restore`, methods_tools.py:1272):
 ```jsonc
 // full restore:
 {"success": true, "restored_to": "<8-char hash>", "reason": "<checkpoint reason>",

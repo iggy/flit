@@ -1,3 +1,4 @@
+import 'package:flit/application/connection/connection_providers.dart';
 import 'package:flit/application/profiles/profile_providers.dart';
 import 'package:flit/domain/models/profile.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +17,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Degrade rule: when [profilesUnavailableProvider] is true (disconnected,
 /// or `/api/profiles` failed — older gateways 404 it) the button renders
 /// DISABLED with a tooltip; it never crashes and never spins forever.
+///
+/// The gateway-topology annotations ('live' tags, the multiplex note) come
+/// from `/api/status` and are purely additive: the fields behind them are null
+/// on pre-0.20 gateways and `gateways` is withheld in gated mode, so an
+/// un-annotated row means "not told", never "not running".
 class ProfileMenuButton extends ConsumerWidget {
   const ProfileMenuButton({super.key});
 
@@ -31,20 +37,33 @@ class ProfileMenuButton extends ConsumerWidget {
 
     final profiles = ref.watch(profilesProvider);
     final activeName = ref.watch(activeProfileProvider).value;
+    // Gateway topology (0.20): which profiles a gateway is actually serving,
+    // and whether one gateway multiplexes them. Both stay null on older
+    // gateways, and `gateways` is withheld in gated mode — so this only ever
+    // ADDS a note, never gates the menu.
+    final status = ref.watch(gatewayStatusProvider);
 
     return PopupMenuButton<String>(
       tooltip: 'Profiles',
       icon: const Icon(Icons.person_outline),
       onSelected: (name) => _onProfileSelected(context, ref, name),
-      itemBuilder: (context) => _buildItems(context, profiles, activeName),
+      itemBuilder: (context) => _buildItems(
+        context,
+        profiles,
+        activeName,
+        liveProfiles: status?.liveGatewayProfiles ?? const <String>{},
+        multiplexed: status?.gatewayMode == 'multiplex',
+      ),
     );
   }
 
   List<PopupMenuEntry<String>> _buildItems(
     BuildContext context,
     AsyncValue<List<Profile>> profiles,
-    String? activeName,
-  ) {
+    String? activeName, {
+    required Set<String> liveProfiles,
+    required bool multiplexed,
+  }) {
     final captionStyle = Theme.of(
       context,
     ).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic);
@@ -57,6 +76,14 @@ class ProfileMenuButton extends ConsumerWidget {
           style: captionStyle,
         ),
       ),
+      if (multiplexed)
+        PopupMenuItem<String>(
+          enabled: false,
+          child: Text(
+            'One gateway is serving several profiles',
+            style: captionStyle,
+          ),
+        ),
       const PopupMenuDivider(),
     ];
 
@@ -90,6 +117,7 @@ class ProfileMenuButton extends ConsumerWidget {
           child: _ProfileMenuEntry(
             profile: profile,
             isActive: profile.name == activeName,
+            isLive: liveProfiles.contains(profile.name),
           ),
         ),
       );
@@ -128,15 +156,26 @@ class ProfileMenuButton extends ConsumerWidget {
 }
 
 /// One profile row: a check mark on the active profile, the name with a
-/// '(default)' tag when [Profile.isDefault], and the model when known.
+/// '(default)' tag when [Profile.isDefault], the model when known, and a
+/// 'live' tag when a gateway is currently serving the profile.
 class _ProfileMenuEntry extends StatelessWidget {
-  const _ProfileMenuEntry({required this.profile, required this.isActive});
+  const _ProfileMenuEntry({
+    required this.profile,
+    required this.isActive,
+    this.isLive = false,
+  });
 
   final Profile profile;
   final bool isActive;
 
+  /// Whether `/api/status` reported a live gateway serving this profile. Only
+  /// ever true when the gateway told us (loopback mode, 0.20+): absence is
+  /// "not told", so a false NEVER renders as 'not running'.
+  final bool isLive;
+
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final theme = Theme.of(context).textTheme;
     return Row(
       children: <Widget>[
@@ -154,6 +193,11 @@ class _ProfileMenuEntry extends StatelessWidget {
                   Flexible(child: Text(profile.name)),
                   if (profile.isDefault)
                     Text(' (default)', style: theme.bodySmall),
+                  if (isLive)
+                    Text(
+                      ' · live',
+                      style: theme.bodySmall?.copyWith(color: scheme.primary),
+                    ),
                 ],
               ),
               if (profile.model != null)

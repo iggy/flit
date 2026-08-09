@@ -236,5 +236,66 @@ void main() {
 
       expect(result.inflight, isNull);
     });
+
+    test('messages_omitted keeps message_count from the raw history', () {
+      final result = SessionResumeResultDto.fromJson(const {
+        'session_id': 'e5f6a7b8',
+        'session_key': '2026..-uuid',
+        'messages': <Map<String, dynamic>>[],
+        'message_count': 12,
+        'messages_omitted': true,
+      }).toDomain();
+
+      // The empty list is deliberate; the count is NOT derived from it.
+      expect(result.messagesOmitted, isTrue);
+      expect(result.messages, isEmpty);
+      expect(result.messageCount, 12);
+    });
+
+    test('missing messages_omitted is false', () {
+      final result = SessionResumeResultDto.fromJson(const {
+        'session_id': 'e5f6a7b8',
+        'session_key': '2026..-uuid',
+      }).toDomain();
+
+      expect(result.messagesOmitted, isFalse);
+    });
+
+    test('lazy resume status "streaming" folds into working', () {
+      final result = SessionResumeResultDto.fromJson(const {
+        'session_id': 'e5f6a7b8',
+        'session_key': '2026..-uuid',
+        'info': {'lazy': true},
+        'running': true,
+        'status': 'streaming',
+      }).toDomain();
+
+      expect(result.status, SessionStatus.working);
+      expect(result.running, isTrue);
+      expect(result.info!['lazy'], isTrue);
+    });
+
+    test('auto_continue maps attempt + fractional interrupted_at', () {
+      final result = SessionResumeResultDto.fromJson(const {
+        'session_id': 'e5f6a7b8',
+        'session_key': '2026..-uuid',
+        'auto_continue': {'attempt': 1, 'interrupted_at': 1783200500.75},
+      }).toDomain();
+
+      expect(result.autoContinue!.attempt, 1);
+      expect(
+        result.autoContinue!.interruptedAt,
+        DateTime.fromMillisecondsSinceEpoch(1783200500750, isUtc: true),
+      );
+    });
+
+    test('missing auto_continue is null', () {
+      final result = SessionResumeResultDto.fromJson(const {
+        'session_id': 'e5f6a7b8',
+        'session_key': '2026..-uuid',
+      }).toDomain();
+
+      expect(result.autoContinue, isNull);
+    });
   });
 }

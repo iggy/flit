@@ -179,6 +179,76 @@ void main() {
     expect(controller.switchBoardCalled, isTrue);
     expect(controller.lastSlug, 'ops');
   });
+
+  testWidgets('shows the project a board is scoped to', (tester) async {
+    final boards = KanbanBoardList(
+      boards: <KanbanBoardMeta>[
+        KanbanBoardMeta(
+          slug: 'main',
+          name: 'Main Board',
+          description: '',
+          icon: '',
+          color: '',
+          archived: false,
+          dbPath: '/data/main.db',
+          isCurrent: true,
+          counts: const <String, int>{},
+          total: 0,
+          defaultWorkspaceKind: 'scratch',
+          projectId: 'proj-1',
+          projectName: 'Hermes',
+        ),
+      ],
+      current: 'main',
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          kanbanBoardsProvider.overrideWith((ref) => Future.value(boards)),
+          kanbanFleetActionControllerProvider.overrideWith(
+            _FakeActionController.new,
+          ),
+        ],
+        child: const MaterialApp(home: KanbanBoardsScreen()),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Project: Hermes'), findsOneWidget);
+  });
+
+  testWidgets('create dialog passes the project scope through', (tester) async {
+    final controller = _FakeActionController();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          kanbanBoardsProvider.overrideWith(
+            (ref) => Future.value(
+              const KanbanBoardList(boards: <KanbanBoardMeta>[], current: ''),
+            ),
+          ),
+          kanbanFleetActionControllerProvider.overrideWith(() => controller),
+        ],
+        child: const MaterialApp(home: KanbanBoardsScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.widgetWithText(TextField, 'Slug'), 'scoped');
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Project (optional)'),
+      'proj-1',
+    );
+    await tester.tap(find.widgetWithText(TextButton, 'Create'));
+    await tester.pumpAndSettle();
+
+    expect(controller.lastCreateProjectId, 'proj-1');
+  });
 }
 
 final class _FakeActionController extends KanbanFleetActionController {
@@ -188,6 +258,7 @@ final class _FakeActionController extends KanbanFleetActionController {
   final String? lastMessage;
   bool switchBoardCalled = false;
   String? lastSlug;
+  String? lastCreateProjectId;
 
   @override
   KanbanFleetActionState build() {
@@ -202,9 +273,12 @@ final class _FakeActionController extends KanbanFleetActionController {
     String? icon,
     String? color,
     String? defaultWorkdir,
+    String? projectId,
     bool switchTo = false,
     String? board,
-  }) async {}
+  }) async {
+    lastCreateProjectId = projectId;
+  }
 
   @override
   Future<void> switchBoard(String slug) async {

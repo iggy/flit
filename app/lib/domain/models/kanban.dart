@@ -25,6 +25,22 @@ import 'package:flit/domain/models/deep_equals.dart';
 /// (`diagnostics` / `warnings` are documented as optional; the MVP UI never
 /// renders them, so they are not modelled.) Anything else the server sends
 /// is ignored for board tasks and preserved raw in [KanbanTaskDetail.extras].
+///
+/// ## Execution fields (gateway 0.20)
+///
+/// The `Task` dataclass grew a per-task execution/orchestration block
+/// (`hermes_cli/kanban_db.py` `Task`), all of it optional and all of it
+/// serialized by `asdict(task)` on every task endpoint: the dispatch
+/// overrides (`model_override`, `provider_override`, `reasoning_effort`),
+/// the goal loop (`goal_mode`, `goal_max_turns`), scoping (`project_id`,
+/// `session_id`), block/failure bookkeeping (`block_kind`,
+/// `block_recurrences`, `consecutive_failures`, `max_retries`,
+/// `last_failure_error`), the workflow step pointer
+/// (`workflow_template_id`, `current_step_key`), forced `skills`, and the
+/// claim/run fields (`current_run_id`, `claim_lock`, `claim_expires`,
+/// `worker_pid`, `last_heartbeat_at`, `max_runtime_seconds`). Same
+/// tolerant parsing as the identity fields — an older gateway omits them
+/// and every one reads as null.
 
 /// One column of the board (06-kanban-rest.md: fixed server order —
 /// triage/todo/scheduled/ready/running/blocked/review/done — rendered as
@@ -217,6 +233,27 @@ final class KanbanTask {
     this.linkCounts,
     this.commentCount,
     this.progress,
+    this.projectId,
+    this.sessionId,
+    this.blockKind,
+    this.blockRecurrences = 0,
+    this.consecutiveFailures = 0,
+    this.modelOverride,
+    this.providerOverride,
+    this.reasoningEffort,
+    this.goalMode = false,
+    this.goalMaxTurns,
+    this.skills,
+    this.workflowTemplateId,
+    this.currentStepKey,
+    this.maxRetries,
+    this.maxRuntimeSeconds,
+    this.currentRunId,
+    this.claimLock,
+    this.claimExpires,
+    this.lastFailureError,
+    this.lastHeartbeatAt,
+    this.workerPid,
   });
 
   /// Task id (stringified from string-or-num; `''` when absent).
@@ -255,6 +292,78 @@ final class KanbanTask {
   /// Derived `progress {done, total}` (null when the task has no steps).
   final KanbanProgress? progress;
 
+  /// Linked first-class project id — a project-scoped board anchors every
+  /// task it creates to its project.
+  final String? projectId;
+
+  /// Originating chat/agent session id, when the task was created from
+  /// inside an agent loop that propagated `HERMES_SESSION_ID`. Null for
+  /// CLI/dashboard-created tasks.
+  final String? sessionId;
+
+  /// Typed block reason (`dependency` / `needs_input` / `capability` /
+  /// `transient`), or null for an un-typed block.
+  final String? blockKind;
+
+  /// Unblock↔re-block loop counter; reset only on a successful completion.
+  final int blockRecurrences;
+
+  /// Non-success counter (spawn failure, timeout, crash) feeding the
+  /// circuit breaker; reset only on a successful completion.
+  final int consecutiveFailures;
+
+  /// Per-task model override for the dispatched worker.
+  final String? modelOverride;
+
+  /// Provider [modelOverride] belongs to; null resolves the model against
+  /// the worker profile's own provider.
+  final String? providerOverride;
+
+  /// Per-task thinking depth for the worker (`"none"` means thinking off,
+  /// which is a VALUE, not "unset"); null inherits the profile's level.
+  final String? reasoningEffort;
+
+  /// When true the worker runs a goal loop instead of a single shot.
+  final bool goalMode;
+
+  /// Turn budget for a [goalMode] worker; null uses the engine default.
+  final int? goalMaxTurns;
+
+  /// Force-loaded skills for the worker. Null = defaults only; empty =
+  /// explicitly no extra skills (the distinction is on the wire).
+  final List<String>? skills;
+
+  /// Workflow template driving this task, when it came from one.
+  final String? workflowTemplateId;
+
+  /// Current step key within [workflowTemplateId].
+  final String? currentStepKey;
+
+  /// Per-task failure count at which the circuit breaker trips; null falls
+  /// through to the dispatcher's own limit.
+  final int? maxRetries;
+
+  /// Worker runtime cap in seconds.
+  final int? maxRuntimeSeconds;
+
+  /// Run id of the in-flight run, when the task is claimed.
+  final int? currentRunId;
+
+  /// Claim token held by the running worker.
+  final String? claimLock;
+
+  /// When the current claim expires.
+  final DateTime? claimExpires;
+
+  /// Short excerpt of the last failure's error text.
+  final String? lastFailureError;
+
+  /// Last heartbeat from the running worker.
+  final DateTime? lastHeartbeatAt;
+
+  /// PID of the running worker.
+  final int? workerPid;
+
   KanbanTask copyWith({
     String? id,
     String? title,
@@ -268,6 +377,27 @@ final class KanbanTask {
     KanbanLinkCounts? linkCounts,
     int? commentCount,
     KanbanProgress? progress,
+    String? projectId,
+    String? sessionId,
+    String? blockKind,
+    int? blockRecurrences,
+    int? consecutiveFailures,
+    String? modelOverride,
+    String? providerOverride,
+    String? reasoningEffort,
+    bool? goalMode,
+    int? goalMaxTurns,
+    List<String>? skills,
+    String? workflowTemplateId,
+    String? currentStepKey,
+    int? maxRetries,
+    int? maxRuntimeSeconds,
+    int? currentRunId,
+    String? claimLock,
+    DateTime? claimExpires,
+    String? lastFailureError,
+    DateTime? lastHeartbeatAt,
+    int? workerPid,
   }) {
     return KanbanTask(
       id: id ?? this.id,
@@ -282,6 +412,27 @@ final class KanbanTask {
       linkCounts: linkCounts ?? this.linkCounts,
       commentCount: commentCount ?? this.commentCount,
       progress: progress ?? this.progress,
+      projectId: projectId ?? this.projectId,
+      sessionId: sessionId ?? this.sessionId,
+      blockKind: blockKind ?? this.blockKind,
+      blockRecurrences: blockRecurrences ?? this.blockRecurrences,
+      consecutiveFailures: consecutiveFailures ?? this.consecutiveFailures,
+      modelOverride: modelOverride ?? this.modelOverride,
+      providerOverride: providerOverride ?? this.providerOverride,
+      reasoningEffort: reasoningEffort ?? this.reasoningEffort,
+      goalMode: goalMode ?? this.goalMode,
+      goalMaxTurns: goalMaxTurns ?? this.goalMaxTurns,
+      skills: skills ?? this.skills,
+      workflowTemplateId: workflowTemplateId ?? this.workflowTemplateId,
+      currentStepKey: currentStepKey ?? this.currentStepKey,
+      maxRetries: maxRetries ?? this.maxRetries,
+      maxRuntimeSeconds: maxRuntimeSeconds ?? this.maxRuntimeSeconds,
+      currentRunId: currentRunId ?? this.currentRunId,
+      claimLock: claimLock ?? this.claimLock,
+      claimExpires: claimExpires ?? this.claimExpires,
+      lastFailureError: lastFailureError ?? this.lastFailureError,
+      lastHeartbeatAt: lastHeartbeatAt ?? this.lastHeartbeatAt,
+      workerPid: workerPid ?? this.workerPid,
     );
   }
 
@@ -299,11 +450,32 @@ final class KanbanTask {
         other.latestSummary == latestSummary &&
         other.linkCounts == linkCounts &&
         other.commentCount == commentCount &&
-        other.progress == progress;
+        other.progress == progress &&
+        other.projectId == projectId &&
+        other.sessionId == sessionId &&
+        other.blockKind == blockKind &&
+        other.blockRecurrences == blockRecurrences &&
+        other.consecutiveFailures == consecutiveFailures &&
+        other.modelOverride == modelOverride &&
+        other.providerOverride == providerOverride &&
+        other.reasoningEffort == reasoningEffort &&
+        other.goalMode == goalMode &&
+        other.goalMaxTurns == goalMaxTurns &&
+        _nullableListEquals(other.skills, skills) &&
+        other.workflowTemplateId == workflowTemplateId &&
+        other.currentStepKey == currentStepKey &&
+        other.maxRetries == maxRetries &&
+        other.maxRuntimeSeconds == maxRuntimeSeconds &&
+        other.currentRunId == currentRunId &&
+        other.claimLock == claimLock &&
+        other.claimExpires == claimExpires &&
+        other.lastFailureError == lastFailureError &&
+        other.lastHeartbeatAt == lastHeartbeatAt &&
+        other.workerPid == workerPid;
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll(<Object?>[
     id,
     title,
     status,
@@ -316,7 +488,37 @@ final class KanbanTask {
     linkCounts,
     commentCount,
     progress,
-  );
+    projectId,
+    sessionId,
+    blockKind,
+    blockRecurrences,
+    consecutiveFailures,
+    modelOverride,
+    providerOverride,
+    reasoningEffort,
+    goalMode,
+    goalMaxTurns,
+    if (skills != null) Object.hashAll(skills!) else null,
+    workflowTemplateId,
+    currentStepKey,
+    maxRetries,
+    maxRuntimeSeconds,
+    currentRunId,
+    claimLock,
+    claimExpires,
+    lastFailureError,
+    lastHeartbeatAt,
+    workerPid,
+  ]);
+
+  /// `null` and `[]` are different values for [skills] on the wire, so the
+  /// list compare has to keep them apart.
+  static bool _nullableListEquals(List<String>? a, List<String>? b) {
+    if (a == null || b == null) {
+      return a == null && b == null;
+    }
+    return deepListEquals(a, b);
+  }
 
   @override
   String toString() => 'KanbanTask(id: $id, title: $title, status: $status)';
@@ -434,6 +636,69 @@ final class KanbanSpecifyResult {
   @override
   String toString() =>
       'KanbanSpecifyResult(ok: $ok, taskId: $taskId${reason != null ? ', reason: $reason' : ''}${newTitle != null ? ', newTitle: $newTitle' : ''})';
+}
+
+/// Result from `POST /tasks/{id}/estimate` — a rough token + complexity read
+/// on a task from the gateway's auxiliary model.
+///
+/// Two wire details: a refusal is a **200** with `{ok: false, reason}`, not an
+/// HTTP error (`plugin_api.py` `_run_estimate` never raises), and on an `ok`
+/// result [complexity] / [rationale] / [model] are each independently
+/// nullable — the gateway drops a complexity band it doesn't recognise and
+/// only knows the model name when the provider echoed one back.
+///
+/// [estTokens] is tokens for a whole multi-turn agent run, deliberately NOT a
+/// dollar cost: providers don't report cost reliably.
+final class KanbanEstimate {
+  const KanbanEstimate({
+    required this.ok,
+    this.reason,
+    this.estTokens,
+    this.complexity,
+    this.rationale,
+    this.model,
+  });
+
+  /// False when the gateway declined to estimate (no title, auxiliary client
+  /// unavailable, LLM error, unparseable reply) — see [reason].
+  final bool ok;
+
+  /// Why the estimate failed; null when [ok].
+  final String? reason;
+
+  /// Estimated total tokens across the whole run.
+  final int? estTokens;
+
+  /// Complexity band — `S` / `M` / `L`, or null when the model returned
+  /// something else.
+  final String? complexity;
+
+  /// One-sentence why behind the numbers.
+  final String? rationale;
+
+  /// Model that produced the estimate, when the provider reported it.
+  final String? model;
+
+  @override
+  bool operator ==(Object other) {
+    return other is KanbanEstimate &&
+        other.ok == ok &&
+        other.reason == reason &&
+        other.estTokens == estTokens &&
+        other.complexity == complexity &&
+        other.rationale == rationale &&
+        other.model == model;
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(ok, reason, estTokens, complexity, rationale, model);
+
+  @override
+  String toString() =>
+      'KanbanEstimate(ok: $ok, estTokens: $estTokens, '
+      'complexity: $complexity, model: $model'
+      '${reason != null ? ', reason: $reason' : ''})';
 }
 
 /// Result from `POST /tasks/{id}/decompose` (P5-05).

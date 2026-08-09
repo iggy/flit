@@ -49,6 +49,29 @@ sealed class TypedGatewayEvent with _$TypedGatewayEvent {
     required MessageTerminalStatus status,
   }) = MessageComplete;
 
+  /// `reasoning.delta` (§6): a chunk of the model's extended-thinking stream,
+  /// interleaved with `message.delta` while the turn runs (coalesced ~30fps
+  /// like the text deltas — §5). The full reasoning also arrives on
+  /// `message.complete.reasoning`, so this is the LIVE view of the same text.
+  ///
+  /// [verbose] is the gateway's "the user asked for unclamped reasoning" hint
+  /// (`/reasoning full`); flit renders the stream either way.
+  const factory TypedGatewayEvent.reasoningDelta({
+    required String? sessionId,
+    required String text,
+    required bool verbose,
+  }) = ReasoningDelta;
+
+  /// `reasoning.available` (§6): the NON-streaming sibling of
+  /// `reasoning.delta` — providers that hand reasoning back in one block emit
+  /// this once instead of a delta stream, so it is a fallback: ignore it when
+  /// deltas already arrived (mirroring the TUI's `recordReasoningAvailable`).
+  const factory TypedGatewayEvent.reasoningAvailable({
+    required String? sessionId,
+    required String text,
+    required bool verbose,
+  }) = ReasoningAvailable;
+
   /// `error` (§6): the OTHER turn-terminal frame, sent instead of
   /// `message.complete` on a fatal turn error.
   const factory TypedGatewayEvent.turnError({
@@ -275,6 +298,18 @@ TypedGatewayEvent parseGatewayEvent(GatewayEvent raw) {
           reasoning: _asString(payload['reasoning']),
           usage: _parseUsage(payload),
           status: _parseTerminalStatus(payload['status']),
+        );
+      case 'reasoning.delta':
+        return TypedGatewayEvent.reasoningDelta(
+          sessionId: sessionId,
+          text: _asString(payload['text']) ?? '',
+          verbose: _asBool(payload['verbose']) ?? false,
+        );
+      case 'reasoning.available':
+        return TypedGatewayEvent.reasoningAvailable(
+          sessionId: sessionId,
+          text: _asString(payload['text']) ?? '',
+          verbose: _asBool(payload['verbose']) ?? false,
         );
       case 'error':
         return TypedGatewayEvent.turnError(

@@ -17,9 +17,12 @@
 library;
 
 import 'package:flit/application/chat/message_list_notifier.dart';
+import 'package:flit/application/chat/prompt_queue.dart';
 import 'package:flit/application/connection/connection_providers.dart';
 import 'package:flit/application/providers.dart';
 import 'package:flit/application/sessions/active_session.dart';
+import 'package:flit/application/sessions/desktop_contract.dart';
+import 'package:flit/application/sessions/session_overrides.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/data/dto/events/gateway_event_parser.dart';
 import 'package:flit/domain/models/active_session.dart';
@@ -113,7 +116,9 @@ class SessionActions {
   static const String _notConnected = 'Not connected to a gateway.';
 
   /// `session.create` (wire §2) → make the fresh session active with BOTH
-  /// ids (protocol §9).
+  /// ids (protocol §9). Carries the sticky model/effort/fast picks
+  /// ([sessionCreateOverridesProvider]) so a new chat doesn't fall back to
+  /// the profile defaults.
   Future<String?> newSession() async {
     final repository = _ref.read(sessionRepositoryProvider);
     if (repository == null) {
@@ -122,8 +127,15 @@ class SessionActions {
     // Build the id map BEFORE the switch so its build seed captures the
     // outgoing session (the listener records the new one).
     _ref.read(sessionIdMapProvider);
+    final overrides = _ref.read(sessionCreateOverridesProvider);
     try {
-      final result = await repository.create();
+      final result = await repository.create(
+        model: overrides.model,
+        provider: overrides.provider,
+        reasoningEffort: overrides.reasoningEffort,
+        fast: overrides.fast,
+      );
+      _ref.read(desktopContractProvider.notifier).recordInfo(result.info);
       _ref
           .read(activeSessionProvider.notifier)
           .switchTo(liveId: result.liveId, durableId: result.durableId);
@@ -156,6 +168,7 @@ class SessionActions {
     }
     try {
       final result = await repository.resume(summary.durableId);
+      _ref.read(desktopContractProvider.notifier).recordInfo(result.info);
       _ref
           .read(activeSessionProvider.notifier)
           .switchTo(liveId: result.liveId, durableId: result.durableId);
@@ -188,14 +201,22 @@ class SessionActions {
   }
 
   /// `session.interrupt` (wire §12) on the ACTIVE session (live id).
+  ///
+  /// Interrupt stops the turn AND discards every prompt queued behind it
+  /// (gateway 0.20 clears `queued_prompt`/`queued_prompts` and bumps the queue
+  /// generation — methods_session.py:2916), so the client's own view of the
+  /// queue is dropped in step; the composer reports what was lost.
   Future<String?> interruptActive() async {
     final repository = _ref.read(sessionRepositoryProvider);
     final liveId = _ref.read(activeSessionProvider).liveId;
     if (repository == null || liveId == null) {
       return null; // Nothing to interrupt.
     }
+    final queue = _ref.read(promptQueueProvider(liveId).notifier);
+    queue.beginInterrupt();
     try {
       await repository.interrupt(liveId);
+      queue.dropAll();
       // Refresh the live badges (working → idle once the turn settles).
       _ref.invalidate(activeSessionListProvider);
       return null;
@@ -203,6 +224,8 @@ class SessionActions {
       return error.message;
     } on Object catch (error) {
       return error.toString();
+    } finally {
+      queue.endInterrupt();
     }
   }
 
@@ -313,6 +336,11 @@ class SessionActions {
 
   /// `session.compress` (wire §session.compress, protocol §9 LIVE id).
   /// Compress conversation context. LONG handler.
+  ///
+  /// Returns null on success, a distinct "aborted" message when the gateway
+  /// refused compression (`summary.aborted` — tool mid-flight or the model
+  /// declined), and the lock-held message when another operation holds the
+  /// session lock.
   Future<String?> compress(String liveId, {String? focusTopic}) async {
     final repository = _ref.read(sessionRepositoryProvider);
     if (repository == null) {
@@ -325,6 +353,10 @@ class SessionActions {
       );
       if (result.lockHeld) {
         return result.message ?? 'Compression is already in progress.';
+      }
+      if (result.aborted) {
+        return 'Compression was not applied — '
+            '${result.message ?? 'a tool was mid-flight or the model declined.'}';
       }
       _ref.invalidate(activeSessionListProvider);
       return null;

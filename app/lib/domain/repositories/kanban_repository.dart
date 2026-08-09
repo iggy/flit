@@ -7,7 +7,18 @@ import 'package:flit/domain/models/kanban.dart';
 abstract interface class KanbanRepository {
   /// `GET /api/plugins/kanban/board` (optional `?board=<slug>`) → the whole
   /// board envelope in one call.
-  Future<KanbanBoard> board({String? board});
+  ///
+  /// [workflowTemplateId] and [currentStepKey] are the server's own board
+  /// filters (`plugin_api.py` `get_board`): two INDEPENDENT equality
+  /// predicates AND-ed into the task query, so a step key can be filtered
+  /// without naming a template. Both are omitted from the request when null,
+  /// and an empty string is a filter for "tasks whose value is empty" — not
+  /// an absence — so callers must pass null to mean "no filter".
+  Future<KanbanBoard> board({
+    String? board,
+    String? workflowTemplateId,
+    String? currentStepKey,
+  });
 
   /// `GET /api/plugins/kanban/tasks/{id}` → task + comments (+ raw extras).
   Future<KanbanTaskDetail> task(String id);
@@ -19,6 +30,11 @@ abstract interface class KanbanRepository {
 
   /// `POST /api/plugins/kanban/tasks` — create a task (P5-05).
   /// Returns the created task or null on failure.
+  ///
+  /// [modelOverride] / [providerOverride] / [reasoningEffort] pin the
+  /// dispatched worker's model and thinking depth; [goalMode] runs it as a
+  /// goal loop bounded by [goalMaxTurns]; [projectId] anchors the task to a
+  /// project (a project-scoped board supplies one when this is omitted).
   Future<KanbanTask?> createTask({
     required String title,
     String? body,
@@ -29,11 +45,24 @@ abstract interface class KanbanRepository {
     List<String>? parents,
     bool? triage,
     List<String>? skills,
+    String? modelOverride,
+    String? providerOverride,
+    String? reasoningEffort,
+    bool? goalMode,
+    int? goalMaxTurns,
+    int? maxRuntimeSeconds,
+    String? projectId,
     String? board,
   });
 
   /// `PATCH /api/plugins/kanban/tasks/{id}` — general update (P5-05).
   /// Returns the updated task or null.
+  ///
+  /// The two clear flags exist because a PATCH can't say "set to NULL" with
+  /// an omitted field: [clearModelOverride] drops the model AND provider
+  /// override, [clearReasoningEffort] falls the depth back to the profile.
+  /// They are separate so dropping a model doesn't reset a chosen depth,
+  /// and `reasoningEffort: 'none'` is a VALUE (thinking off), not a clear.
   Future<KanbanTask?> editTask(
     String id, {
     String? status,
@@ -44,6 +73,11 @@ abstract interface class KanbanRepository {
     String? result,
     String? blockReason,
     String? summary,
+    String? modelOverride,
+    String? providerOverride,
+    bool clearModelOverride = false,
+    String? reasoningEffort,
+    bool clearReasoningEffort = false,
     String? board,
   });
 
@@ -82,6 +116,14 @@ abstract interface class KanbanRepository {
     String? author,
     String? board,
   });
+
+  /// `POST /api/plugins/kanban/tasks/{id}/estimate` — rough token +
+  /// complexity estimate for a stored task via the gateway's auxiliary model.
+  ///
+  /// Runs several seconds (an LLM call). A refusal comes back as
+  /// `KanbanEstimate.ok == false` with a reason, NOT as an exception — only
+  /// transport/auth failures throw.
+  Future<KanbanEstimate> estimateTask(String id, {String? board});
 
   /// `POST /api/plugins/kanban/tasks/{id}/reassign` — reassign task (P5-05).
   Future<void> reassign(

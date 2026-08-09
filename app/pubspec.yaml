@@ -73,7 +73,7 @@ dev_dependencies:
   # rules and activating additional ones.
   # Pinned exact versions (Phase 0 / P0-03). Bump deliberately.
   # Deviation from docs: custom_lint + riverpod_lint omitted — no release
-  # compatible with riverpod 3.3 / freezed 3.1 exists yet (version solve fails).
+  # compatible with the pinned riverpod 3.4 / freezed 4.0-dev exists yet.
   flutter_lints: 6.0.0
   build_runner: 2.15.3
   riverpod_generator: 4.0.8

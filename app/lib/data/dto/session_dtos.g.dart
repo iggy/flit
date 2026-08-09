@@ -100,10 +100,15 @@ ResumeMessageDto _$ResumeMessageDtoFromJson(Map<String, dynamic> json) =>
     ResumeMessageDto(
       role: json['role'] as String?,
       text: json['text'] as String?,
+      reasoning: json['reasoning'] as String?,
     );
 
 Map<String, dynamic> _$ResumeMessageDtoToJson(ResumeMessageDto instance) =>
-    <String, dynamic>{'role': instance.role, 'text': instance.text};
+    <String, dynamic>{
+      'role': instance.role,
+      'text': instance.text,
+      'reasoning': instance.reasoning,
+    };
 
 InflightTurnDto _$InflightTurnDtoFromJson(Map<String, dynamic> json) =>
     InflightTurnDto(
@@ -119,6 +124,18 @@ Map<String, dynamic> _$InflightTurnDtoToJson(InflightTurnDto instance) =>
       'streaming': instance.streaming,
     };
 
+AutoContinueDto _$AutoContinueDtoFromJson(Map<String, dynamic> json) =>
+    AutoContinueDto(
+      attempt: (json['attempt'] as num?)?.toInt(),
+      interruptedAt: (json['interrupted_at'] as num?)?.toDouble(),
+    );
+
+Map<String, dynamic> _$AutoContinueDtoToJson(AutoContinueDto instance) =>
+    <String, dynamic>{
+      'attempt': instance.attempt,
+      'interrupted_at': instance.interruptedAt,
+    };
+
 SessionResumeResultDto _$SessionResumeResultDtoFromJson(
   Map<String, dynamic> json,
 ) => SessionResumeResultDto(
@@ -131,12 +148,16 @@ SessionResumeResultDto _$SessionResumeResultDtoFromJson(
           .toList() ??
       const <ResumeMessageDto>[],
   messageCount: (json['message_count'] as num?)?.toInt(),
+  messagesOmitted: json['messages_omitted'] as bool?,
   running: json['running'] as bool?,
   status: json['status'] as String?,
   info: json['info'] as Map<String, dynamic>?,
   inflight: json['inflight'] == null
       ? null
       : InflightTurnDto.fromJson(json['inflight'] as Map<String, dynamic>),
+  autoContinue: json['auto_continue'] == null
+      ? null
+      : AutoContinueDto.fromJson(json['auto_continue'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$SessionResumeResultDtoToJson(
@@ -147,10 +168,12 @@ Map<String, dynamic> _$SessionResumeResultDtoToJson(
   'session_key': instance.sessionKey,
   'messages': instance.messages,
   'message_count': instance.messageCount,
+  'messages_omitted': instance.messagesOmitted,
   'running': instance.running,
   'status': instance.status,
   'info': instance.info,
   'inflight': instance.inflight,
+  'auto_continue': instance.autoContinue,
 };
 
 SessionUsageDto _$SessionUsageDtoFromJson(Map<String, dynamic> json) =>
@@ -235,6 +258,14 @@ CompressResultDto _$CompressResultDtoFromJson(Map<String, dynamic> json) =>
       compressed: json['compressed'] as bool?,
       lockHeld: json['lock_held'] as bool?,
       message: json['message'] as String?,
+      summary: json['summary'] as Map<String, dynamic>?,
+      usage: json['usage'] as Map<String, dynamic>?,
+      info: json['info'] as Map<String, dynamic>?,
+      messages:
+          (json['messages'] as List<dynamic>?)
+              ?.map((e) => ResumeMessageDto.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <ResumeMessageDto>[],
     );
 
 Map<String, dynamic> _$CompressResultDtoToJson(CompressResultDto instance) =>
@@ -248,6 +279,10 @@ Map<String, dynamic> _$CompressResultDtoToJson(CompressResultDto instance) =>
       'compressed': instance.compressed,
       'lock_held': instance.lockHeld,
       'message': instance.message,
+      'summary': instance.summary,
+      'usage': instance.usage,
+      'info': instance.info,
+      'messages': instance.messages,
     };
 
 BranchResultDto _$BranchResultDtoFromJson(Map<String, dynamic> json) =>

@@ -93,6 +93,58 @@ void main() {
       expect(status.envPath, isNull);
       expect(status.gatewayPid, isNull);
       expect(status.gatewayHealthUrl, isNull);
+      // Pre-0.20 body: the capability fields are absent, not empty.
+      expect(status.authFlows, isNull);
+      expect(status.supportsNativePkce, isFalse);
+      expect(status.profiles, isNull);
+      expect(status.gatewayMode, isNull);
+    });
+
+    test('parses auth_flows / profiles / gateway_mode (0.20)', () async {
+      final client = _clientWith((options) async {
+        return _jsonResponse(200, <String, Object?>{
+          'version': '0.20.0',
+          'release_date': '2026.8.3',
+          'gateway_running': true,
+          'gateway_state': 'ready',
+          'gateway_busy': false,
+          'active_sessions': 2,
+          'active_agents': 1,
+          'auth_required': true,
+          'auth_providers': <String>['nous'],
+          'auth_flows': <String>['cookie', 'native_pkce'],
+          'profiles': <String>['default', 'work'],
+          'gateway_mode': 'multiplex',
+        });
+      });
+
+      final status = await client.status();
+
+      expect(status.authFlows, <String>['cookie', 'native_pkce']);
+      expect(status.supportsNativePkce, isTrue);
+      expect(status.profiles, <String>['default', 'work']);
+      expect(status.gatewayMode, 'multiplex');
+    });
+
+    test('cookie-only auth_flows does not claim native PKCE', () async {
+      final client = _clientWith((options) async {
+        return _jsonResponse(200, <String, Object?>{
+          'version': '0.20.0',
+          'gateway_running': true,
+          'gateway_state': 'ready',
+          'gateway_busy': false,
+          'active_sessions': 0,
+          'active_agents': 0,
+          'auth_required': true,
+          'auth_providers': <String>['local'],
+          'auth_flows': <String>['cookie'],
+        });
+      });
+
+      final status = await client.status();
+
+      expect(status.authFlows, <String>['cookie']);
+      expect(status.supportsNativePkce, isFalse);
     });
 
     test('tolerates a null gateway_state', () async {

@@ -75,6 +75,11 @@ final class FakeSessionRepository implements SessionRepository {
     String? profile,
     String? cwd,
     String? model,
+    String? provider,
+    String? reasoningEffort,
+    bool? fast,
+    String? parentSessionId,
+    String? source,
   }) => throw UnimplementedError();
 
   @override
@@ -85,8 +90,11 @@ final class FakeSessionRepository implements SessionRepository {
       throw UnimplementedError();
 
   @override
-  Future<SessionResumeResult> resume(String durableId) =>
-      throw UnimplementedError();
+  Future<SessionResumeResult> resume(
+    String durableId, {
+    bool omitMessages = false,
+    bool lazy = false,
+  }) => throw UnimplementedError();
 
   @override
   Future<void> interrupt(String liveId) => throw UnimplementedError();

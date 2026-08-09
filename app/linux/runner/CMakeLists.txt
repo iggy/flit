@@ -19,6 +19,11 @@ apply_standard_settings(${BINARY_NAME})
 # Add preprocessor definitions for the application ID.
 add_definitions(-DAPPLICATION_ID="${APPLICATION_ID}")
 
+# Source location of the app icons, so `flutter run` (which launches the
+# unbundled executable) can still find them. Bundled builds use the copy
+# installed next to the executable and never fall back to this path.
+add_definitions(-DLINUX_RUNNER_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+
 # Add dependency libraries. Add any application-specific dependencies here.
 target_link_libraries(${BINARY_NAME} PRIVATE flutter)
 target_link_libraries(${BINARY_NAME} PRIVATE PkgConfig::GTK)

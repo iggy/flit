@@ -60,22 +60,68 @@ final class FakePluginRepository implements PluginRepository {
   }
 }
 
+/// One recorded `editTask` call — enough to assert the model/effort clear
+/// flags, which an omitted field cannot express.
+typedef EditTaskCall = ({
+  String id,
+  String? modelOverride,
+  String? providerOverride,
+  bool clearModelOverride,
+  String? reasoningEffort,
+  bool clearReasoningEffort,
+});
+
+/// One recorded `board` call — the slug plus the two workflow filters.
+typedef BoardCall = ({
+  String? board,
+  String? workflowTemplateId,
+  String? currentStepKey,
+});
+
 /// Fake kanban repository with a settable board and recorded PATCHes.
 final class FakeKanbanRepository implements KanbanRepository {
-  FakeKanbanRepository({required this.boardResult});
+  FakeKanbanRepository({required this.boardResult, this.taskDetail});
 
   KanbanBoard boardResult;
+
+  /// Detail answered by [task]; null falls back to a bare `Task <id>`.
+  KanbanTaskDetail? taskDetail;
   Exception? updateError;
+
+  /// Answered by [estimateTask]; settable so a test can flip the outcome.
+  KanbanEstimate estimateResult = const KanbanEstimate(
+    ok: true,
+    estTokens: 48000,
+    complexity: 'M',
+  );
   final List<({String id, String status})> statusUpdates =
       <({String id, String status})>[];
+  final List<EditTaskCall> editCalls = <EditTaskCall>[];
+
+  /// Every `board()` call's filter args — the workflow filters are applied
+  /// server-side, so the only thing to assert is what was sent.
+  final List<BoardCall> boardCalls = <BoardCall>[];
 
   @override
-  Future<KanbanBoard> board({String? board}) async => boardResult;
+  Future<KanbanBoard> board({
+    String? board,
+    String? workflowTemplateId,
+    String? currentStepKey,
+  }) async {
+    boardCalls.add((
+      board: board,
+      workflowTemplateId: workflowTemplateId,
+      currentStepKey: currentStepKey,
+    ));
+    return boardResult;
+  }
 
   @override
-  Future<KanbanTaskDetail> task(String id) async => KanbanTaskDetail(
-    task: KanbanTask(id: id, title: 'Task $id'),
-  );
+  Future<KanbanTaskDetail> task(String id) async =>
+      taskDetail ??
+      KanbanTaskDetail(
+        task: KanbanTask(id: id, title: 'Task $id'),
+      );
 
   @override
   Future<void> updateTaskStatus(String id, String status) async {
@@ -97,6 +143,13 @@ final class FakeKanbanRepository implements KanbanRepository {
     List<String>? parents,
     bool? triage,
     List<String>? skills,
+    String? modelOverride,
+    String? providerOverride,
+    String? reasoningEffort,
+    bool? goalMode,
+    int? goalMaxTurns,
+    int? maxRuntimeSeconds,
+    String? projectId,
     String? board,
   }) async => null;
 
@@ -111,8 +164,23 @@ final class FakeKanbanRepository implements KanbanRepository {
     String? result,
     String? blockReason,
     String? summary,
+    String? modelOverride,
+    String? providerOverride,
+    bool clearModelOverride = false,
+    String? reasoningEffort,
+    bool clearReasoningEffort = false,
     String? board,
-  }) async => null;
+  }) async {
+    editCalls.add((
+      id: id,
+      modelOverride: modelOverride,
+      providerOverride: providerOverride,
+      clearModelOverride: clearModelOverride,
+      reasoningEffort: reasoningEffort,
+      clearReasoningEffort: clearReasoningEffort,
+    ));
+    return null;
+  }
 
   @override
   Future<void> deleteTask(String id, {String? board}) async {}
@@ -149,6 +217,10 @@ final class FakeKanbanRepository implements KanbanRepository {
     String? author,
     String? board,
   }) async => const KanbanDecomposeResult(ok: true, taskId: '', fanout: false);
+
+  @override
+  Future<KanbanEstimate> estimateTask(String id, {String? board}) async =>
+      estimateResult;
 
   @override
   Future<void> reassign(
@@ -292,6 +364,235 @@ void main() {
 
       // Rolled back to the pre-move board.
       expect(container.read(kanbanBoardProvider).value, _board);
+    });
+  });
+
+  group('kanbanBoardFilterProvider (workflow board filters)', () {
+    const workflowBoard = KanbanBoard(
+      columns: <KanbanColumn>[
+        KanbanColumn(
+          name: 'todo',
+          tasks: <KanbanTask>[
+            KanbanTask(
+              id: '1',
+              title: 'Spec it',
+              workflowTemplateId: 'wf-release',
+              currentStepKey: 'specify',
+            ),
+            // No template, but a step key — the server filters the two
+            // independently, so this step still belongs in the options.
+            KanbanTask(id: '2', title: 'Loose step', currentStepKey: 'triage'),
+          ],
+        ),
+        KanbanColumn(
+          name: 'running',
+          tasks: <KanbanTask>[
+            KanbanTask(
+              id: '3',
+              title: 'Build it',
+              workflowTemplateId: 'wf-audit',
+              currentStepKey: 'implement',
+            ),
+          ],
+        ),
+      ],
+    );
+
+    test('an unfiltered board sends neither param', () async {
+      final repository = FakeKanbanRepository(boardResult: _board);
+      final container = ProviderContainer(
+        overrides: [kanbanRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(kanbanBoardProvider.future);
+
+      expect(repository.boardCalls, <BoardCall>[
+        (board: null, workflowTemplateId: null, currentStepKey: null),
+      ]);
+    });
+
+    test('applying a filter re-fetches with both predicates', () async {
+      final repository = FakeKanbanRepository(boardResult: workflowBoard);
+      final container = ProviderContainer(
+        overrides: [kanbanRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      await container.read(kanbanBoardProvider.future);
+
+      container
+          .read(kanbanBoardFilterProvider.notifier)
+          .apply(workflowTemplateId: 'wf-release', currentStepKey: 'specify');
+      await container.read(kanbanBoardProvider.future);
+
+      expect(repository.boardCalls.last, (
+        board: null,
+        workflowTemplateId: 'wf-release',
+        currentStepKey: 'specify',
+      ));
+      expect(container.read(kanbanBoardFilterProvider).isActive, isTrue);
+    });
+
+    test('a step key alone is a valid filter', () async {
+      final repository = FakeKanbanRepository(boardResult: workflowBoard);
+      final container = ProviderContainer(
+        overrides: [kanbanRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      await container.read(kanbanBoardProvider.future);
+
+      container
+          .read(kanbanBoardFilterProvider.notifier)
+          .apply(currentStepKey: 'implement');
+      await container.read(kanbanBoardProvider.future);
+
+      expect(repository.boardCalls.last, (
+        board: null,
+        workflowTemplateId: null,
+        currentStepKey: 'implement',
+      ));
+    });
+
+    test('clear() goes back to the whole board', () async {
+      final repository = FakeKanbanRepository(boardResult: workflowBoard);
+      final container = ProviderContainer(
+        overrides: [kanbanRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      await container.read(kanbanBoardProvider.future);
+      container
+          .read(kanbanBoardFilterProvider.notifier)
+          .apply(workflowTemplateId: 'wf-release');
+      await container.read(kanbanBoardProvider.future);
+
+      container.read(kanbanBoardFilterProvider.notifier).clear();
+      await container.read(kanbanBoardProvider.future);
+
+      expect(repository.boardCalls.last, (
+        board: null,
+        workflowTemplateId: null,
+        currentStepKey: null,
+      ));
+      expect(container.read(kanbanBoardFilterProvider).isActive, isFalse);
+    });
+
+    test('refresh() keeps the active filter', () async {
+      final repository = FakeKanbanRepository(boardResult: workflowBoard);
+      final container = ProviderContainer(
+        overrides: [kanbanRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      await container.read(kanbanBoardProvider.future);
+      container
+          .read(kanbanBoardFilterProvider.notifier)
+          .apply(workflowTemplateId: 'wf-audit');
+      await container.read(kanbanBoardProvider.future);
+
+      await container.read(kanbanBoardProvider.notifier).refresh();
+
+      expect(repository.boardCalls.last, (
+        board: null,
+        workflowTemplateId: 'wf-audit',
+        currentStepKey: null,
+      ));
+    });
+
+    test('switching boards drops the filter', () async {
+      final repository = FakeKanbanRepository(boardResult: workflowBoard);
+      final container = ProviderContainer(
+        overrides: [kanbanRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      await container.read(kanbanBoardProvider.future);
+      container
+          .read(kanbanBoardFilterProvider.notifier)
+          .apply(workflowTemplateId: 'wf-audit');
+      await container.read(kanbanBoardProvider.future);
+
+      // A template id belongs to one board's tasks; carrying it over would
+      // fetch an empty board on the new one.
+      container.read(selectedKanbanBoardProvider.notifier).selectBoard('ops');
+      await container.read(kanbanBoardProvider.future);
+
+      expect(container.read(kanbanBoardFilterProvider).isActive, isFalse);
+      expect(repository.boardCalls.last, (
+        board: 'ops',
+        workflowTemplateId: null,
+        currentStepKey: null,
+      ));
+    });
+
+    group('kanbanWorkflowOptionsProvider', () {
+      test('harvests templates and steps from the loaded board', () async {
+        final container = ProviderContainer(
+          overrides: [
+            kanbanRepositoryProvider.overrideWithValue(
+              FakeKanbanRepository(boardResult: workflowBoard),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+        await container.read(kanbanBoardProvider.future);
+
+        final options = container.read(kanbanWorkflowOptionsProvider);
+        expect(options.templateIds, <String>['wf-audit', 'wf-release']);
+        // Sorted, and the template-less task's step is included.
+        expect(options.stepKeys, <String>['implement', 'specify', 'triage']);
+        // Per-template steps only list that template's own.
+        expect(options.stepKeysFor('wf-release'), <String>['specify']);
+        expect(options.stepKeysFor('wf-audit'), <String>['implement']);
+        // No template chosen → every step is offerable.
+        expect(options.stepKeysFor(null), options.stepKeys);
+        expect(options.isEmpty, isFalse);
+      });
+
+      test('a board with no workflow tasks offers nothing', () async {
+        final container = ProviderContainer(
+          overrides: [
+            kanbanRepositoryProvider.overrideWithValue(
+              FakeKanbanRepository(boardResult: _board),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+        await container.read(kanbanBoardProvider.future);
+
+        expect(container.read(kanbanWorkflowOptionsProvider).isEmpty, isTrue);
+      });
+
+      test('a FILTERED board does not shrink the options', () async {
+        final repository = FakeKanbanRepository(boardResult: workflowBoard);
+        final container = ProviderContainer(
+          overrides: [kanbanRepositoryProvider.overrideWithValue(repository)],
+        );
+        addTearDown(container.dispose);
+        await container.read(kanbanBoardProvider.future);
+        final before = container.read(kanbanWorkflowOptionsProvider);
+
+        // The filtered fetch only contains wf-release tasks; harvesting off
+        // it would strand the user with no way back to wf-audit.
+        repository.boardResult = const KanbanBoard(
+          columns: <KanbanColumn>[
+            KanbanColumn(
+              name: 'todo',
+              tasks: <KanbanTask>[
+                KanbanTask(
+                  id: '1',
+                  title: 'Spec it',
+                  workflowTemplateId: 'wf-release',
+                  currentStepKey: 'specify',
+                ),
+              ],
+            ),
+          ],
+        );
+        container
+            .read(kanbanBoardFilterProvider.notifier)
+            .apply(workflowTemplateId: 'wf-release');
+        await container.read(kanbanBoardProvider.future);
+
+        expect(container.read(kanbanWorkflowOptionsProvider), before);
+      });
     });
   });
 

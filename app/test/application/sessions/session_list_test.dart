@@ -15,7 +15,10 @@
 import 'dart:async';
 
 import 'package:flit/application/chat/message_list_notifier.dart';
+import 'package:flit/application/chat/prompt_queue.dart';
+import 'package:flit/application/config/config_providers.dart';
 import 'package:flit/application/connection/connection_providers.dart';
+import 'package:flit/application/models/model_providers.dart';
 import 'package:flit/application/providers.dart';
 import 'package:flit/application/sessions/active_session.dart';
 import 'package:flit/application/sessions/session_list.dart';
@@ -24,10 +27,13 @@ import 'package:flit/data/dto/events/gateway_event_parser.dart';
 import 'package:flit/data/transport/gateway_rpc_client.dart';
 import 'package:flit/domain/models/active_session.dart';
 import 'package:flit/domain/models/chat_message.dart';
+import 'package:flit/domain/models/model_option.dart';
+import 'package:flit/domain/models/prompt_submit_status.dart';
 import 'package:flit/domain/models/session_bootstrap.dart';
 import 'package:flit/domain/models/session_detail.dart';
 import 'package:flit/domain/models/session_summary.dart';
 import 'package:flit/domain/models/steer_result.dart';
+import 'package:flit/domain/models/submit_prompt_result.dart';
 import 'package:flit/domain/repositories/chat_repository.dart';
 import 'package:flit/domain/repositories/session_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -64,6 +70,7 @@ final class FakeSessionRepository implements SessionRepository {
   );
 
   final List<String> interrupted = <String>[];
+  Exception? interruptError;
 
   // Phase 2 mutation action support
   final List<({String liveId, String title})> renamed =
@@ -110,13 +117,28 @@ final class FakeSessionRepository implements SessionRepository {
     return SteerOutcome.queued;
   }
 
+  /// Per-session overrides of the LAST create call (contract v4).
+  ({String? model, String? provider, String? reasoningEffort, bool? fast})?
+  createOverrides;
+
   @override
   Future<SessionCreateResult> create({
     String? profile,
     String? cwd,
     String? model,
+    String? provider,
+    String? reasoningEffort,
+    bool? fast,
+    String? parentSessionId,
+    String? source,
   }) async {
     createCalls++;
+    createOverrides = (
+      model: model,
+      provider: provider,
+      reasoningEffort: reasoningEffort,
+      fast: fast,
+    );
     final error = createError;
     if (error != null) {
       throw error;
@@ -141,7 +163,11 @@ final class FakeSessionRepository implements SessionRepository {
   }
 
   @override
-  Future<SessionResumeResult> resume(String durableId) async {
+  Future<SessionResumeResult> resume(
+    String durableId, {
+    bool omitMessages = false,
+    bool lazy = false,
+  }) async {
     resumed.add(durableId);
     final error = resumeError;
     if (error != null) {
@@ -153,6 +179,10 @@ final class FakeSessionRepository implements SessionRepository {
   @override
   Future<void> interrupt(String liveId) async {
     interrupted.add(liveId);
+    final error = interruptError;
+    if (error != null) {
+      throw error;
+    }
   }
 
   @override
@@ -248,7 +278,15 @@ final class FakeChatRepository implements ChatRepository {
   Stream<TypedGatewayEvent> turnEvents(String liveId) => _events.stream;
 
   @override
-  Future<void> submitPrompt(String liveId, String text) async {}
+  Future<SubmitPromptResult> submitPrompt(
+    String liveId,
+    String text, {
+    int? truncateBeforeUserOrdinal,
+    bool confirmTruncate = false,
+    bool confirmEmptyTruncate = false,
+  }) async {
+    return const SubmitPromptResult(PromptSubmitStatus.streaming);
+  }
 
   @override
   Future<void> respondApproval(String liveId, String choice) async {}
@@ -349,6 +387,23 @@ void main() {
     final active = readActive();
     expect(active.liveId, 'a1b2c3d4');
     expect(active.durableId, 'durable-1');
+  });
+
+  test('newSession carries the sticky model/effort/fast picks', () async {
+    container
+        .read(currentModelProvider.notifier)
+        .set(const CurrentModel(model: 'hermes-4-70b', provider: 'nous'));
+    container.read(currentReasoningProvider.notifier).set('low');
+    container.read(currentFastProvider.notifier).set(true);
+
+    await readActions().newSession();
+
+    expect(repository.createOverrides, (
+      model: 'hermes-4-70b',
+      provider: 'nous',
+      reasoningEffort: 'low',
+      fast: true,
+    ));
   });
 
   test('newSession failure returns a message and does not switch', () async {
@@ -541,6 +596,35 @@ void main() {
     expect(repository.interrupted, <String>['live-1']);
   });
 
+  test('interruptActive drops the queued prompts it discarded', () async {
+    container
+        .read(activeSessionProvider.notifier)
+        .switchTo(liveId: 'live-1', durableId: 'durable-1');
+    container.read(promptQueueProvider('live-1').notifier).enqueue('queued');
+
+    await readActions().interruptActive();
+
+    // Gateway 0.20 clears queued_prompt(s) on interrupt — the client's view
+    // goes with it, flagged so the UI can report the loss.
+    final queue = container.read(promptQueueProvider('live-1'));
+    expect(queue.texts, isEmpty);
+    expect(queue.dropped, 1);
+  });
+
+  test('a failed interrupt leaves the queue intact', () async {
+    container
+        .read(activeSessionProvider.notifier)
+        .switchTo(liveId: 'live-1', durableId: 'durable-1');
+    container.read(promptQueueProvider('live-1').notifier).enqueue('queued');
+    repository.interruptError = const GatewayRpcException(5019, 'nope');
+
+    expect(await readActions().interruptActive(), 'nope');
+
+    final queue = container.read(promptQueueProvider('live-1'));
+    expect(queue.texts, <String>['queued']);
+    expect(queue.dropped, 0);
+  });
+
   test('interruptActive with no active session is a no-op', () async {
     final error = await readActions().interruptActive();
 
@@ -719,6 +803,19 @@ void main() {
       expect(repository.compressed, <({String liveId, String? focusTopic})>[
         (liveId: 'live-1', focusTopic: 'auth'),
       ]);
+    });
+
+    test('compress with aborted result returns a distinct message', () async {
+      repository.compressResult = const CompressResult(
+        status: 'aborted',
+        aborted: true,
+        message: 'tool mid-flight',
+      );
+
+      final error = await readActions().compress('live-1');
+
+      expect(error, contains('Compression was not applied'));
+      expect(error, contains('tool mid-flight'));
     });
 
     test('compress returns error message on GatewayException', () async {

@@ -1,6 +1,8 @@
 import 'package:flit/data/dto/events/gateway_event_parser.dart';
 import 'package:flit/data/dto/status_result_dto.dart';
 import 'package:flit/data/transport/gateway_rpc_client.dart';
+import 'package:flit/domain/models/prompt_submit_status.dart';
+import 'package:flit/domain/models/submit_prompt_result.dart';
 import 'package:flit/domain/repositories/chat_repository.dart';
 
 /// [ChatRepository] over [GatewayRpcClient] (ticket P1-05).
@@ -14,15 +16,40 @@ final class ChatRepositoryImpl implements ChatRepository {
   final GatewayRpcClient _client;
 
   @override
-  Future<void> submitPrompt(String liveId, String text) async {
-    // Wire §6: the result is `{"status":"streaming"}` — NOT `{ok:true}`.
-    // Defensive: a missing/unexpected status still succeeds; the reply
-    // arrives as turn events regardless, and those are the source of truth.
+  Future<SubmitPromptResult> submitPrompt(
+    String liveId,
+    String text, {
+    int? truncateBeforeUserOrdinal,
+    bool confirmTruncate = false,
+    bool confirmEmptyTruncate = false,
+  }) async {
+    // Wire §6: the result is `{"status":"streaming"}` — NOT `{ok:true}` —
+    // and, when the session is mid-turn (gateway 0.20 `_handle_busy_submit`),
+    // one of `steered` / `redirected` / `queued`. Defensive: a missing or
+    // unexpected status still succeeds; the reply arrives as turn events
+    // regardless, and those are the source of truth. `truncate_before_user_ordinal`
+    // is sent only when non-null; the gateway refuses a cut without the
+    // matching confirm flags (4028/4029), which are only included when true.
     final result = await _client.request('prompt.submit', <String, dynamic>{
       'session_id': liveId,
       'text': text,
+      'truncate_before_user_ordinal': ?truncateBeforeUserOrdinal,
+      if (confirmTruncate) 'confirm_truncate': true,
+      if (confirmEmptyTruncate) 'confirm_empty_truncate': true,
     });
-    _expectStatus(result, 'streaming');
+    return SubmitPromptResult(_parseStatus(result));
+  }
+
+  /// Maps the ack status string; unknown/missing values fall back to
+  /// [PromptSubmitStatus.streaming] so a wire shape we don't know about still
+  /// behaves like the pre-0.20 client (turn events are the source of truth).
+  static PromptSubmitStatus _parseStatus(Map<String, dynamic> result) {
+    return switch (StatusResultDto.fromJson(result).status) {
+      'steered' => PromptSubmitStatus.steered,
+      'redirected' => PromptSubmitStatus.redirected,
+      'queued' => PromptSubmitStatus.queued,
+      _ => PromptSubmitStatus.streaming,
+    };
   }
 
   @override

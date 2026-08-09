@@ -77,6 +77,38 @@ void main() {
       });
     });
 
+    test('sends the contract v4 per-session overrides', () async {
+      await repository.create(
+        model: 'hermes-4-70b',
+        provider: 'nous',
+        reasoningEffort: 'high',
+        fast: true,
+        parentSessionId: 'parent-uuid',
+        source: 'flit',
+      );
+
+      expect(client.calls.single.params, <String, dynamic>{
+        'model': 'hermes-4-70b',
+        'provider': 'nous',
+        'reasoning_effort': 'high',
+        'fast': true,
+        'parent_session_id': 'parent-uuid',
+        'source': 'flit',
+      });
+    });
+
+    test('fast: false is SENT — presence is the contract', () async {
+      await repository.create(fast: false);
+
+      expect(client.calls.single.params, <String, dynamic>{'fast': false});
+    });
+
+    test('fast: null is omitted so the profile is inherited', () async {
+      await repository.create(model: 'hermes-4-70b');
+
+      expect(client.calls.single.params.containsKey('fast'), isFalse);
+    });
+
     test(
       'durableId falls back to session_key without stored_session_id',
       () async {
@@ -229,6 +261,158 @@ void main() {
       expect(result.durableId, '2026-uuid');
       expect(result.status, SessionStatus.working);
       expect(result.messages, isEmpty);
+    });
+
+    test('omits omit_messages/lazy unless asked for', () async {
+      client = FakeGatewayRpcClient(
+        handler: (_, _) => const <String, dynamic>{
+          'session_id': 'e5f6a7b8',
+          'session_key': '2026-uuid',
+        },
+      );
+      repository = SessionRepositoryImpl(client);
+
+      await repository.resume('2026-uuid');
+
+      expect(client.calls.single.params, <String, dynamic>{
+        'session_id': '2026-uuid',
+      });
+    });
+
+    test('omitMessages sends the flag; result reports the omission', () async {
+      client = FakeGatewayRpcClient(
+        handler: (_, _) => const <String, dynamic>{
+          'session_id': 'e5f6a7b8',
+          'resumed': '2026-uuid',
+          'session_key': '2026-uuid',
+          'messages': <Map<String, dynamic>>[],
+          // Counted from the RAW history, so it still describes the session.
+          'message_count': 12,
+          'messages_omitted': true,
+          'running': false,
+          'status': 'idle',
+        },
+      );
+      repository = SessionRepositoryImpl(client);
+
+      final result = await repository.resume('2026-uuid', omitMessages: true);
+
+      expect(client.calls.single.params, <String, dynamic>{
+        'session_id': '2026-uuid',
+        'omit_messages': true,
+      });
+      expect(result.messagesOmitted, isTrue);
+      expect(result.messages, isEmpty);
+      expect(result.messageCount, 12);
+    });
+
+    test('a replayed assistant message keeps its reasoning', () async {
+      client = FakeGatewayRpcClient(
+        handler: (_, _) => const <String, dynamic>{
+          'session_id': 'e5f6a7b8',
+          'session_key': '2026-uuid',
+          'messages': <Map<String, dynamic>>[
+            <String, dynamic>{
+              'role': 'assistant',
+              'text': 'hello',
+              'reasoning': 'I weighed the greeting.',
+            },
+            // A thinking-only turn: the gateway keeps it precisely so the
+            // disclosure has something to show (server.py:7086).
+            <String, dynamic>{
+              'role': 'assistant',
+              'text': '',
+              'reasoning': 'thought, said nothing',
+            },
+            // An empty string is not a reasoning worth a disclosure.
+            <String, dynamic>{
+              'role': 'assistant',
+              'text': 'plain',
+              'reasoning': '',
+            },
+          ],
+        },
+      );
+      repository = SessionRepositoryImpl(client);
+
+      final result = await repository.resume('2026-uuid');
+
+      expect(result.messages[0].reasoning, 'I weighed the greeting.');
+      expect(result.messages[1].text, isEmpty);
+      expect(result.messages[1].reasoning, 'thought, said nothing');
+      expect(result.messages[2].reasoning, isNull);
+    });
+
+    test('lazy sends the flag; a mid-run child reads as working', () async {
+      client = FakeGatewayRpcClient(
+        handler: (_, _) => const <String, dynamic>{
+          'session_id': 'e5f6a7b8',
+          'resumed': '2026-uuid',
+          'session_key': '2026-uuid',
+          'messages': <Map<String, dynamic>>[
+            <String, dynamic>{'role': 'user', 'text': 'delegate this'},
+          ],
+          'message_count': 1,
+          'messages_omitted': false,
+          'info': <String, dynamic>{'lazy': true},
+          'inflight': null,
+          // From the child-run registry, not a run loop of its own.
+          'running': true,
+          'status': 'streaming',
+        },
+      );
+      repository = SessionRepositoryImpl(client);
+
+      final result = await repository.resume('2026-uuid', lazy: true);
+
+      expect(client.calls.single.params, <String, dynamic>{
+        'session_id': '2026-uuid',
+        'lazy': true,
+      });
+      expect(result.running, isTrue);
+      expect(result.status, SessionStatus.working);
+      expect(result.info!['lazy'], isTrue);
+      expect(result.messages, hasLength(1));
+    });
+
+    test('maps auto_continue when the gateway scheduled one', () async {
+      client = FakeGatewayRpcClient(
+        handler: (_, _) => const <String, dynamic>{
+          'session_id': 'e5f6a7b8',
+          'session_key': '2026-uuid',
+          'status': 'idle',
+          'auto_continue': <String, dynamic>{
+            'attempt': 2,
+            'interrupted_at': 1783200500.5,
+          },
+        },
+      );
+      repository = SessionRepositoryImpl(client);
+
+      final result = await repository.resume('2026-uuid');
+
+      expect(result.autoContinue, isNotNull);
+      expect(result.autoContinue!.attempt, 2);
+      expect(
+        result.autoContinue!.interruptedAt,
+        DateTime.fromMillisecondsSinceEpoch(1783200500500, isUtc: true),
+      );
+    });
+
+    test('no auto_continue on an ordinary resume', () async {
+      client = FakeGatewayRpcClient(
+        handler: (_, _) => const <String, dynamic>{
+          'session_id': 'e5f6a7b8',
+          'session_key': '2026-uuid',
+          'status': 'idle',
+        },
+      );
+      repository = SessionRepositoryImpl(client);
+
+      final result = await repository.resume('2026-uuid');
+
+      expect(result.autoContinue, isNull);
+      expect(result.messagesOmitted, isFalse);
     });
   });
 
@@ -501,6 +685,66 @@ void main() {
 
       expect(result.lockHeld, isTrue);
       expect(result.message, 'session busy');
+      expect(result.aborted, isFalse);
+    });
+
+    test('maps aborted outcome from summary.aborted', () async {
+      client = FakeGatewayRpcClient(
+        handler: (_, _) => const <String, dynamic>{
+          'status': 'aborted',
+          'removed': 0,
+          'before_messages': 24,
+          'after_messages': 24,
+          'before_tokens': 90000,
+          'after_tokens': 90000,
+          'summary': <String, dynamic>{'aborted': true, 'reason': 'tool busy'},
+          'usage': <String, dynamic>{'total': 42},
+          'info': <String, dynamic>{'model': 'hermes-4-405b'},
+          'messages': <Map<String, dynamic>>[
+            <String, dynamic>{'role': 'user', 'text': 'hi'},
+          ],
+        },
+      );
+      repository = SessionRepositoryImpl(client);
+
+      final result = await repository.compress('a1b2c3d4');
+
+      expect(result.aborted, isTrue);
+      expect(result.status, 'aborted');
+      expect(result.summary, <String, dynamic>{
+        'aborted': true,
+        'reason': 'tool busy',
+      });
+      expect(result.usage, <String, dynamic>{'total': 42});
+      expect(result.info, <String, dynamic>{'model': 'hermes-4-405b'});
+      expect(result.messages, hasLength(1));
+      expect(result.messages.single.text, 'hi');
+      expect(result.messages.single.role, MessageRole.user);
+    });
+
+    test('derives aborted from status == aborted without summary', () async {
+      client = FakeGatewayRpcClient(
+        handler: (_, _) => const <String, dynamic>{'status': 'aborted'},
+      );
+      repository = SessionRepositoryImpl(client);
+
+      final result = await repository.compress('a1b2c3d4');
+
+      expect(result.aborted, isTrue);
+    });
+
+    test('aborted is false when summary.aborted is false', () async {
+      client = FakeGatewayRpcClient(
+        handler: (_, _) => const <String, dynamic>{
+          'status': 'compressed',
+          'summary': <String, dynamic>{'aborted': false},
+        },
+      );
+      repository = SessionRepositoryImpl(client);
+
+      final result = await repository.compress('a1b2c3d4');
+
+      expect(result.aborted, isFalse);
     });
   });
 

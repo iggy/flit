@@ -12,10 +12,21 @@ import 'package:flit/domain/models/steer_result.dart';
 abstract interface class SessionRepository {
   /// `session.create` (wire §2) → a fresh live id + durable id.
   /// Only non-null optionals are sent.
+  ///
+  /// [model] / [provider] / [reasoningEffort] / [fast] are the per-session
+  /// overrides of desktop contract v4: whatever is omitted is inherited from
+  /// the profile. For [fast] the PRESENCE is the contract — `true` pins the
+  /// priority tier, `false` pins normal, null inherits — so it must stay
+  /// nullable.
   Future<SessionCreateResult> create({
     String? profile,
     String? cwd,
     String? model,
+    String? provider,
+    String? reasoningEffort,
+    bool? fast,
+    String? parentSessionId,
+    String? source,
   });
 
   /// `session.list` (wire §3) → stored conversations (durable ids).
@@ -28,7 +39,22 @@ abstract interface class SessionRepository {
 
   /// `session.resume` (wire §5): [durableId] in, a NEW live id + replayed
   /// history out.
-  Future<SessionResumeResult> resume(String durableId);
+  ///
+  /// [omitMessages] asks the gateway to skip the transcript — the result then
+  /// carries `messagesOmitted: true` with an empty message list and a
+  /// `messageCount` from the raw history, and the caller is responsible for
+  /// hydrating the history itself.
+  ///
+  /// [lazy] registers the live session WITHOUT building an agent — for a
+  /// subagent watch window, which only needs the child's stored history plus
+  /// the live event stream. `running`/`status` then come from the child-run
+  /// registry, and `info.lazy` is true. A later prompt upgrades the session to
+  /// a real one.
+  Future<SessionResumeResult> resume(
+    String durableId, {
+    bool omitMessages = false,
+    bool lazy = false,
+  });
 
   /// `session.interrupt` (wire §12) — [liveId], not the durable id.
   Future<void> interrupt(String liveId);

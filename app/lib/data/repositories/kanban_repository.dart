@@ -11,6 +11,9 @@ import 'package:flit/domain/repositories/kanban_repository.dart';
 ///
 /// ## Parsing (sanctioned defensive field list)
 ///
+/// The board fetch also forwards the server's `workflow_template_id` /
+/// `current_step_key` filters; see [board].
+///
 /// The docs pin the board ENVELOPE exactly (`columns[{name, tasks[]}]`,
 /// `tenants`, `assignees`, `latest_event_id`, `now`) and the derived task
 /// fields (`age`, `latest_summary`, `link_counts {parents, children}`,
@@ -19,7 +22,9 @@ import 'package:flit/domain/repositories/kanban_repository.dart';
 /// defensively — string-or-num coerced to string, missing → null/empty:
 /// `id`, `title`, `status`, `body`, `assignee`, `priority`, `tenant`.
 /// Rendering tolerates any of them being absent; parsing never throws on a
-/// missing task key.
+/// missing task key. The 0.20 execution block (`model_override`,
+/// `reasoning_effort`, `goal_mode`, `project_id`, the block/failure counters,
+/// the claim fields — see [KanbanTask]) is parsed the same way.
 final class KanbanRepositoryImpl implements KanbanRepository {
   const KanbanRepositoryImpl(this._client);
 
@@ -28,10 +33,22 @@ final class KanbanRepositoryImpl implements KanbanRepository {
   static const _base = '/api/plugins/kanban';
 
   @override
-  Future<KanbanBoard> board({String? board}) async {
+  Future<KanbanBoard> board({
+    String? board,
+    String? workflowTemplateId,
+    String? currentStepKey,
+  }) async {
+    // Every filter is omitted when null — the server treats a PRESENT param
+    // as an equality predicate, so sending an empty string would filter for
+    // empty values rather than clear the filter.
+    final queryParameters = <String, String>{
+      'board': ?board,
+      'workflow_template_id': ?workflowTemplateId,
+      'current_step_key': ?currentStepKey,
+    };
     final data = await _client.getJson(
       '$_base/board',
-      queryParameters: board == null ? null : <String, String>{'board': board},
+      queryParameters: queryParameters.isEmpty ? null : queryParameters,
     );
     return _parseBoard(_expectMap(data, 'GET $_base/board'));
   }
@@ -63,6 +80,13 @@ final class KanbanRepositoryImpl implements KanbanRepository {
     List<String>? parents,
     bool? triage,
     List<String>? skills,
+    String? modelOverride,
+    String? providerOverride,
+    String? reasoningEffort,
+    bool? goalMode,
+    int? goalMaxTurns,
+    int? maxRuntimeSeconds,
+    String? projectId,
     String? board,
   }) async {
     final requestBody = <String, dynamic>{'title': title};
@@ -90,6 +114,27 @@ final class KanbanRepositoryImpl implements KanbanRepository {
     if (skills != null) {
       requestBody['skills'] = skills;
     }
+    if (modelOverride != null) {
+      requestBody['model_override'] = modelOverride;
+    }
+    if (providerOverride != null) {
+      requestBody['provider_override'] = providerOverride;
+    }
+    if (reasoningEffort != null) {
+      requestBody['reasoning_effort'] = reasoningEffort;
+    }
+    if (goalMode != null) {
+      requestBody['goal_mode'] = goalMode;
+    }
+    if (goalMaxTurns != null) {
+      requestBody['goal_max_turns'] = goalMaxTurns;
+    }
+    if (maxRuntimeSeconds != null) {
+      requestBody['max_runtime_seconds'] = maxRuntimeSeconds;
+    }
+    if (projectId != null) {
+      requestBody['project_id'] = projectId;
+    }
 
     final data = await _client.postJson(
       '$_base/tasks',
@@ -116,6 +161,11 @@ final class KanbanRepositoryImpl implements KanbanRepository {
     String? result,
     String? blockReason,
     String? summary,
+    String? modelOverride,
+    String? providerOverride,
+    bool clearModelOverride = false,
+    String? reasoningEffort,
+    bool clearReasoningEffort = false,
     String? board,
   }) async {
     final requestBody = <String, dynamic>{};
@@ -142,6 +192,23 @@ final class KanbanRepositoryImpl implements KanbanRepository {
     }
     if (summary != null) {
       requestBody['summary'] = summary;
+    }
+    if (modelOverride != null) {
+      requestBody['model_override'] = modelOverride;
+    }
+    if (providerOverride != null) {
+      requestBody['provider_override'] = providerOverride;
+    }
+    // An omitted field means "unchanged" in a PATCH, so clearing needs its
+    // own flag; the model clear takes both overrides with it.
+    if (clearModelOverride) {
+      requestBody['clear_model_override'] = true;
+    }
+    if (reasoningEffort != null) {
+      requestBody['reasoning_effort'] = reasoningEffort;
+    }
+    if (clearReasoningEffort) {
+      requestBody['clear_reasoning_effort'] = true;
     }
 
     final data = await _client.patchJson(
@@ -265,6 +332,19 @@ final class KanbanRepositoryImpl implements KanbanRepository {
   }
 
   @override
+  Future<KanbanEstimate> estimateTask(String id, {String? board}) async {
+    // No body — the task id in the path is the whole input; the board is a
+    // query param like every other task route.
+    final data = await _client.postJson(
+      '$_base/tasks/$id/estimate',
+      queryParameters: board == null ? null : <String, String>{'board': board},
+    );
+
+    final map = _expectMap(data, 'POST $_base/tasks/$id/estimate');
+    return _parseEstimate(map);
+  }
+
+  @override
   Future<void> reassign(
     String id, {
     String? profile,
@@ -375,6 +455,32 @@ final class KanbanRepositoryImpl implements KanbanRepository {
       linkCounts: _parseLinkCounts(json['link_counts']),
       commentCount: _intOrNull(json['comment_count']),
       progress: _parseProgress(json['progress']),
+      // Execution/orchestration block (gateway 0.20). Absent on an older
+      // gateway, so every one is optional; the counters default to 0/false
+      // the way the Task dataclass does.
+      projectId: _stringOrNull(json['project_id']),
+      sessionId: _stringOrNull(json['session_id']),
+      blockKind: _stringOrNull(json['block_kind']),
+      blockRecurrences: _intOrNull(json['block_recurrences']) ?? 0,
+      consecutiveFailures: _intOrNull(json['consecutive_failures']) ?? 0,
+      modelOverride: _stringOrNull(json['model_override']),
+      providerOverride: _stringOrNull(json['provider_override']),
+      reasoningEffort: _stringOrNull(json['reasoning_effort']),
+      goalMode: json['goal_mode'] == true,
+      goalMaxTurns: _intOrNull(json['goal_max_turns']),
+      // `skills` distinguishes null (profile defaults) from [] (explicitly
+      // no extra skills), so a missing key must NOT become an empty list.
+      skills: json['skills'] is List ? _stringList(json['skills']) : null,
+      workflowTemplateId: _stringOrNull(json['workflow_template_id']),
+      currentStepKey: _stringOrNull(json['current_step_key']),
+      maxRetries: _intOrNull(json['max_retries']),
+      maxRuntimeSeconds: _intOrNull(json['max_runtime_seconds']),
+      currentRunId: _intOrNull(json['current_run_id']),
+      claimLock: _stringOrNull(json['claim_lock']),
+      claimExpires: _epochSeconds(json['claim_expires']),
+      lastFailureError: _stringOrNull(json['last_failure_error']),
+      lastHeartbeatAt: _epochSeconds(json['last_heartbeat_at']),
+      workerPid: _intOrNull(json['worker_pid']),
     );
   }
 
@@ -477,6 +583,20 @@ final class KanbanRepositoryImpl implements KanbanRepository {
       taskId: _stringOrNull(json['task_id']) ?? '',
       reason: _stringOrNull(json['reason']),
       newTitle: _stringOrNull(json['new_title']),
+    );
+  }
+
+  /// A declined estimate arrives as a 200 with `{ok: false, reason}` (the
+  /// server's `_run_estimate` never raises), so failure is parsed, not thrown.
+  /// On an ok result the three descriptive fields are independently optional.
+  static KanbanEstimate _parseEstimate(Map<String, dynamic> json) {
+    return KanbanEstimate(
+      ok: json['ok'] == true,
+      reason: _stringOrNull(json['reason']),
+      estTokens: _intOrNull(json['est_tokens']),
+      complexity: _stringOrNull(json['complexity']),
+      rationale: _stringOrNull(json['rationale']),
+      model: _stringOrNull(json['model']),
     );
   }
 

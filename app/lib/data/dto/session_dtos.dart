@@ -202,9 +202,13 @@ class ActiveSessionListResultDto {
 }
 
 /// One replayed message of the `session.resume` result (§5): `{role, text}`.
+///
+/// An assistant entry may ALSO carry `reasoning` (07-session-depth-wire-shapes
+/// "canonical message shape") — a thinking-only turn is persisted with no text
+/// at all, so dropping the field would replay it as a blank bubble.
 @JsonSerializable()
 class ResumeMessageDto {
-  const ResumeMessageDto({this.role, this.text});
+  const ResumeMessageDto({this.role, this.text, this.reasoning});
 
   factory ResumeMessageDto.fromJson(Map<String, dynamic> json) =>
       _$ResumeMessageDtoFromJson(json);
@@ -215,10 +219,18 @@ class ResumeMessageDto {
   @JsonKey(name: 'text')
   final String? text;
 
+  @JsonKey(name: 'reasoning')
+  final String? reasoning;
+
   Map<String, dynamic> toJson() => _$ResumeMessageDtoToJson(this);
 
   ChatMessage toDomain() {
-    return ChatMessage(role: _parseRole(role), text: text ?? '');
+    return ChatMessage(
+      role: _parseRole(role),
+      text: text ?? '',
+      // Empty string is not "no reasoning" worth a disclosure.
+      reasoning: (reasoning?.isNotEmpty ?? false) ? reasoning : null,
+    );
   }
 }
 
@@ -250,6 +262,36 @@ class InflightTurnDto {
   }
 }
 
+/// `auto_continue` descriptor of the `session.resume` result — present ONLY
+/// when the gateway scheduled a continuation turn for a session whose turn
+/// was killed by a process death (`_maybe_schedule_auto_continue`,
+/// server.py:7347).
+@JsonSerializable()
+class AutoContinueDto {
+  const AutoContinueDto({this.attempt, this.interruptedAt});
+
+  factory AutoContinueDto.fromJson(Map<String, dynamic> json) =>
+      _$AutoContinueDtoFromJson(json);
+
+  /// 1-based attempt counter (bounded by the gateway's crash breaker).
+  @JsonKey(name: 'attempt')
+  final int? attempt;
+
+  /// When the interrupted turn started — epoch SECONDS, FRACTIONAL on the
+  /// wire (`time.time()`), unlike the integer epochs elsewhere in §2–§5.
+  @JsonKey(name: 'interrupted_at')
+  final double? interruptedAt;
+
+  Map<String, dynamic> toJson() => _$AutoContinueDtoToJson(this);
+
+  AutoContinue toDomain() {
+    return AutoContinue(
+      attempt: attempt ?? 0,
+      interruptedAt: _epochSecondsToDateTime(interruptedAt),
+    );
+  }
+}
+
 /// `session.resume` result (§5).
 @JsonSerializable()
 class SessionResumeResultDto {
@@ -259,10 +301,12 @@ class SessionResumeResultDto {
     this.sessionKey,
     this.messages = const <ResumeMessageDto>[],
     this.messageCount,
+    this.messagesOmitted,
     this.running,
     this.status,
     this.info,
     this.inflight,
+    this.autoContinue,
   });
 
   factory SessionResumeResultDto.fromJson(Map<String, dynamic> json) =>
@@ -283,8 +327,15 @@ class SessionResumeResultDto {
   @JsonKey(name: 'messages')
   final List<ResumeMessageDto> messages;
 
+  /// Counts the RAW history when [messagesOmitted] — so it stays meaningful
+  /// even though [messages] is empty.
   @JsonKey(name: 'message_count')
   final int? messageCount;
+
+  /// Echoes the `omit_messages` param: the transcript was deliberately left
+  /// out of this response and must be hydrated another way.
+  @JsonKey(name: 'messages_omitted')
+  final bool? messagesOmitted;
 
   @JsonKey(name: 'running')
   final bool? running;
@@ -299,6 +350,11 @@ class SessionResumeResultDto {
   @JsonKey(name: 'inflight')
   final InflightTurnDto? inflight;
 
+  /// Continuation turn the gateway scheduled for a crash-interrupted session
+  /// — omitted on every ordinary resume.
+  @JsonKey(name: 'auto_continue')
+  final AutoContinueDto? autoContinue;
+
   Map<String, dynamic> toJson() => _$SessionResumeResultDtoToJson(this);
 
   SessionResumeResult toDomain() {
@@ -307,20 +363,27 @@ class SessionResumeResultDto {
       durableId: sessionKey ?? resumed ?? '',
       messages: messages.map((dto) => dto.toDomain()).toList(),
       messageCount: messageCount ?? messages.length,
+      messagesOmitted: messagesOmitted ?? false,
       running: running ?? false,
       status: SessionStatus.parse(status),
       info: info,
       inflight: inflight?.toDomain(),
+      autoContinue: autoContinue?.toDomain(),
     );
   }
 }
 
 /// Epoch seconds (wire) → [DateTime] (domain). UTC by definition of epoch.
-DateTime? _epochSecondsToDateTime(int? epochSeconds) {
+/// Takes [num] because a few payloads (`auto_continue.interrupted_at`) carry a
+/// fractional `time.time()` rather than an integer epoch.
+DateTime? _epochSecondsToDateTime(num? epochSeconds) {
   if (epochSeconds == null) {
     return null;
   }
-  return DateTime.fromMillisecondsSinceEpoch(epochSeconds * 1000, isUtc: true);
+  return DateTime.fromMillisecondsSinceEpoch(
+    (epochSeconds * 1000).round(),
+    isUtc: true,
+  );
 }
 
 /// Wire role string → [MessageRole]. Unknown roles fall back to
@@ -480,6 +543,12 @@ class ContextBreakdownDto {
 }
 
 /// `session.compress` result (Phase 2, §session.compress LOCAL success path).
+///
+/// Gateway 0.18→0.20 (docs/updates/gateway-0.18-to-0.20-required.md #1): the
+/// result now carries `summary` (incl. its `aborted` flag — compression was
+/// refused because a tool was mid-flight or the model declined), opaque
+/// `usage` / `info` dicts, and the post-compression canonical `messages`
+/// list (same shape `session.resume` returns).
 @JsonSerializable()
 class CompressResultDto {
   const CompressResultDto({
@@ -492,6 +561,10 @@ class CompressResultDto {
     this.compressed,
     this.lockHeld,
     this.message,
+    this.summary,
+    this.usage,
+    this.info,
+    this.messages = const <ResumeMessageDto>[],
   });
 
   factory CompressResultDto.fromJson(Map<String, dynamic> json) =>
@@ -525,6 +598,22 @@ class CompressResultDto {
   @JsonKey(name: 'message')
   final String? message;
 
+  /// Opaque compress summary dict (`{"aborted": bool, …}` — the other keys
+  /// are not pinned by the docs).
+  final Map<String, dynamic>? summary;
+
+  /// Opaque session usage dict (same shape as `session.usage`).
+  final Map<String, dynamic>? usage;
+
+  /// Full `_session_info` dict — see `session.info` event payload
+  /// (docs/reference/07-session-depth-wire-shapes.md).
+  final Map<String, dynamic>? info;
+
+  /// Canonical message list, post-compression (same shape `session.resume`
+  /// returns — `_history_to_messages`).
+  @JsonKey(name: 'messages')
+  final List<ResumeMessageDto> messages;
+
   Map<String, dynamic> toJson() => _$CompressResultDtoToJson(this);
 
   CompressResult toDomain() {
@@ -537,6 +626,11 @@ class CompressResultDto {
       afterTokens: afterTokens,
       lockHeld: lockHeld ?? false,
       message: message,
+      summary: summary,
+      usage: usage,
+      info: info,
+      messages: messages.map((dto) => dto.toDomain()).toList(),
+      aborted: summary?['aborted'] == true || status == 'aborted',
     );
   }
 }

@@ -3,7 +3,8 @@
 The kanban plugin is the **reference plugin integration** — it shows how a
 plugin surfaces to a client. It exposes **no JSON-RPC**; its entire surface is a
 FastAPI router mounted by the dashboard web server under the prefix
-`/api/plugins/kanban/` (`hermes_cli/web_server.py:13881`, router in
+`/api/plugins/kanban/` (`_mount_plugin_api_routes`,
+`hermes_cli/web_server.py:17281`, include at `:17389`; router in
 `plugins/kanban/dashboard/plugin_api.py`). Same origin and same token as
 `/api/ws`, so one connection config covers both.
 
@@ -40,8 +41,24 @@ current board.
 Each task dict = the `Task` dataclass plus derived fields: `age`,
 `latest_summary` (200-char preview), `link_counts {parents,children}`,
 `comment_count`, `progress {done,total}|null`, optional `diagnostics`/
-`warnings`. Query params on `/board`: `tenant`, `include_archived`, `board`,
-`workflow_template_id`, `current_step_key`.
+`warnings`. Query params on `/board` (`plugin_api.py:379-408`): `tenant`,
+`include_archived`, `board`, `workflow_template_id`, `current_step_key`. The
+last two are independent equality predicates AND-ed into the task query
+(`kanban_db.list_tasks`, `hermes_cli/kanban_db.py:3385-3390`) — a step key with
+no template matches that step across every workflow. flit sends both from its
+board filter; `tenant` / `include_archived` are still unsent.
+
+The task dict is a plain `asdict(task)` (`_task_dict`,
+`plugin_api.py:158-176`), so every `Task` field ships on every task endpoint —
+including the execution block: `model_override`, `provider_override`,
+`reasoning_effort`, `goal_mode`, `goal_max_turns`, `project_id`, `session_id`,
+`block_kind`, `block_recurrences`, `consecutive_failures`, `max_retries`,
+`last_failure_error`, `skills`, `workflow_template_id`, `current_step_key`,
+`current_run_id`, `claim_lock`, `claim_expires`, `worker_pid`,
+`last_heartbeat_at`, `max_runtime_seconds`. Two traps: `skills` is `null` for
+"profile defaults" and `[]` for "explicitly none", and
+`reasoning_effort: "none"` is a value (thinking off), not an absence.
+There is no `project_name` on a task — that's a board-level annotation.
 
 ## Live updates
 
@@ -57,8 +74,8 @@ platforms — not a client feed.)
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/tasks/{id}` | Detail drawer: task + comments + events + attachments + links + runs |
-| POST | `/tasks` | Create. Body `CreateTaskBody {title*, body?, assignee?, tenant?, priority, workspace_kind, parents[], triage, skills?, ...}` |
-| PATCH | `/tasks/{id}` | Update status/assignee/priority/title/body/result/block_reason (+ handoff summary) |
+| POST | `/tasks` | Create. Body `CreateTaskBody {title*, body?, assignee?, tenant?, priority, workspace_kind, parents[], triage, skills?, model_override?, provider_override?, reasoning_effort?, goal_mode, goal_max_turns?, max_runtime_seconds?, project_id?, ...}` |
+| PATCH | `/tasks/{id}` | Update status/assignee/priority/title/body/result/block_reason (+ handoff summary), plus `model_override`/`provider_override`/`reasoning_effort` and their `clear_*` flags (an omitted field means "unchanged", so NULLing needs the flag) |
 | DELETE | `/tasks/{id}` | Delete |
 | POST | `/tasks/bulk` | One patch → many ids. Body `{ids[]*, status?, assignee?, priority?, archive?, ...}`; returns per-id `{id, ok, error?}` |
 | POST | `/tasks/{id}/comments` | Add comment `{body*, author}` |
@@ -67,6 +84,8 @@ platforms — not a client feed.)
 | POST | `/tasks/{id}/reassign` | Reassign to a profile (409 if running without `reclaim_first`) |
 | POST | `/tasks/{id}/reclaim` | Release a stuck claim |
 | GET | `/tasks/{id}/log` | Worker stdout/stderr log (`?tail=<bytes>`) |
+| POST | `/tasks/{id}/estimate` | Token/complexity estimate + one-line why for a stored task (`plugin_api.py:1811`). `{ok, est_tokens, complexity: "S"\|"M"\|"L"\|null, rationale?, model?}`; a refusal is a **200** with `{ok: false, reason}`, NOT an HTTP error. Several seconds (auxiliary LLM call) |
+| POST | `/estimate` | Same estimate for ad-hoc text, before the task exists (`plugin_api.py:1804`); no client yet |
 
 ### Links & attachments
 | Method | Path | Purpose |
@@ -78,9 +97,9 @@ platforms — not a client feed.)
 ### Boards
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/boards` | List boards (+ current, counts) |
-| POST | `/boards` | Create board (idempotent) `{slug*, name?, ...}` |
-| PATCH | `/boards/{slug}` | Update display metadata (slug immutable) |
+| GET | `/boards` | List boards (+ current, counts, `project_id`/`project_name`) |
+| POST | `/boards` | Create board (idempotent) `{slug*, name?, project_id?, ...}` |
+| PATCH | `/boards/{slug}` | Update display metadata + `project_id` (slug immutable) |
 | DELETE | `/boards/{slug}` | Archive (or `?delete=true`) |
 | POST | `/boards/{slug}/switch` | Set active board pointer |
 

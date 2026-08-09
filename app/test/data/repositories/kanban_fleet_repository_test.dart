@@ -33,6 +33,11 @@ void main() {
       expect(boardList.boards[0].isCurrent, isTrue);
       expect(boardList.boards[0].total, 42);
       expect(boardList.boards[0].archived, isFalse);
+      // Project scoping (gateway 0.20); an unscoped board omits both.
+      expect(boardList.boards[0].projectId, 'proj-1');
+      expect(boardList.boards[0].projectName, 'Hermes');
+      expect(boardList.boards[1].projectId, isNull);
+      expect(boardList.boards[1].projectName, isNull);
     });
 
     test('forwards includeArchived query param', () async {
@@ -81,6 +86,40 @@ void main() {
         'switch': true,
       });
       expect(requests.single.data, isNot(contains('description')));
+      expect(requests.single.data, isNot(contains('project_id')));
+    });
+
+    test('sends project_id to scope the board', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, <String, Object?>{
+          'board': <String, Object?>{
+            'slug': 'scoped',
+            'name': 'Scoped',
+            'total': 0,
+            'is_current': false,
+            'archived': false,
+            'db_path': '/path',
+            'default_workspace_kind': 'scratch',
+            'counts': <String, Object?>{},
+            'project_id': 'proj-1',
+            'project_name': 'Hermes',
+          },
+        });
+      });
+
+      final board = await repository.createBoard(
+        slug: 'scoped',
+        projectId: 'proj-1',
+      );
+
+      expect(requests.single.data, <String, dynamic>{
+        'slug': 'scoped',
+        'project_id': 'proj-1',
+      });
+      expect(board?.projectId, 'proj-1');
+      expect(board?.projectName, 'Hermes');
     });
   });
 
@@ -108,6 +147,29 @@ void main() {
       expect(requests.single.method, 'PATCH');
       expect(requests.single.path, '/api/plugins/kanban/boards/main');
       expect(requests.single.data, <String, dynamic>{'name': 'Updated'});
+      expect(requests.single.data, isNot(contains('project_id')));
+    });
+
+    test('empty project_id clears the scope; null leaves it alone', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, <String, Object?>{
+          'board': <String, Object?>{
+            'slug': 'main',
+            'total': 0,
+            'is_current': true,
+            'archived': false,
+            'db_path': '/path',
+            'default_workspace_kind': 'scratch',
+            'counts': <String, Object?>{},
+          },
+        });
+      });
+
+      await repository.updateBoard('main', projectId: '');
+
+      expect(requests.single.data, <String, dynamic>{'project_id': ''});
     });
   });
 
@@ -486,6 +548,8 @@ const _cannedBoards = <String, Object?>{
       'total': 42,
       'default_workspace_kind': 'scratch',
       'created_at': 1700000000,
+      'project_id': 'proj-1',
+      'project_name': 'Hermes',
     },
     <String, Object?>{
       'slug': 'ops',

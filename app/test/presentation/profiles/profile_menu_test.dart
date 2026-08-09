@@ -6,11 +6,16 @@
 //   NEW gateway launches only — the running gateway is unchanged.
 // - The unavailable state (older gateway 404) disables the app-bar button
 //   with the 'Profiles unavailable on this gateway' tooltip.
+// - Gateway topology from `/api/status` (0.20) annotates the rows a live
+//   gateway is serving, and degrades to no annotation at all when the gateway
+//   withheld it (gated mode) or never sent it (pre-0.20).
 
 import 'dart:async';
 
+import 'package:flit/application/connection/connection_providers.dart';
 import 'package:flit/application/profiles/profile_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
+import 'package:flit/domain/models/gateway_status.dart';
 import 'package:flit/domain/models/profile.dart';
 import 'package:flit/domain/repositories/profile_repository.dart';
 import 'package:flit/presentation/profiles/profile_menu.dart';
@@ -62,14 +67,49 @@ const cannedProfiles = <Profile>[
   Profile(name: 'research', model: 'hermes-4-70b', description: 'Research'),
 ];
 
+/// Seeds [gatewayStatusProvider] with a probed status (gateway topology).
+final class _SeededStatusNotifier extends GatewayStatusNotifier {
+  _SeededStatusNotifier(this._status);
+
+  final GatewayStatus _status;
+
+  @override
+  GatewayStatus? build() => _status;
+}
+
+/// Base status fields, so each case only states the topology it cares about.
+GatewayStatus statusWith({
+  String? gatewayMode,
+  List<GatewayTopologyEntry>? gateways,
+}) {
+  return GatewayStatus(
+    version: '0.20.0',
+    gatewayRunning: true,
+    gatewayState: 'ready',
+    gatewayBusy: false,
+    activeSessions: 0,
+    activeAgents: 0,
+    authRequired: false,
+    authProviders: const <String>[],
+    gatewayMode: gatewayMode,
+    gateways: gateways,
+  );
+}
+
 void main() {
   late FakeProfileRepository repository;
 
   setUp(() => repository = FakeProfileRepository());
 
-  Widget harness() {
+  Widget harness({GatewayStatus? status}) {
     return ProviderScope(
-      overrides: [profileRepositoryProvider.overrideWithValue(repository)],
+      overrides: [
+        profileRepositoryProvider.overrideWithValue(repository),
+        if (status != null)
+          gatewayStatusProvider.overrideWith(
+            () => _SeededStatusNotifier(status),
+          ),
+      ],
       child: const MaterialApp(home: Scaffold(body: ProfileMenuButton())),
     );
   }
@@ -171,5 +211,69 @@ void main() {
     // Unblock the fake so no future dangles past the test.
     repository.listGate!.complete(cannedProfiles);
     await tester.pump();
+  });
+
+  testWidgets('marks the profiles a live gateway is serving', (tester) async {
+    repository.listResult = cannedProfiles;
+    repository.activeResult = 'default';
+
+    await tester.pumpWidget(
+      harness(
+        status: statusWith(
+          gatewayMode: 'multiplex',
+          // `research` has no gateway entry of its own; the default gateway
+          // serves it, so it is live too.
+          gateways: const <GatewayTopologyEntry>[
+            GatewayTopologyEntry(
+              profile: 'default',
+              servedProfiles: <String>['default', 'research'],
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(menuButton());
+    await tester.pumpAndSettle();
+
+    expect(find.text(' · live'), findsNWidgets(2));
+    expect(
+      find.text('One gateway is serving several profiles'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('annotates nothing when the gateway withheld the topology', (
+    tester,
+  ) async {
+    repository.listResult = cannedProfiles;
+    repository.activeResult = 'default';
+
+    // Gated mode: `gateways` is recon, so it is absent while `gateway_mode`
+    // still arrives. An un-annotated row must not read as 'not running'.
+    await tester.pumpWidget(harness(status: statusWith(gatewayMode: 'single')));
+    await tester.pumpAndSettle();
+    await tester.tap(menuButton());
+    await tester.pumpAndSettle();
+
+    expect(find.text(' · live'), findsNothing);
+    expect(find.text('One gateway is serving several profiles'), findsNothing);
+    // The menu is otherwise intact.
+    expect(find.text('default'), findsOneWidget);
+    expect(find.text('research'), findsOneWidget);
+  });
+
+  testWidgets('annotates nothing on a pre-0.20 gateway', (tester) async {
+    repository.listResult = cannedProfiles;
+    repository.activeResult = 'default';
+
+    // No status at all (never probed / older gateway) — same degrade.
+    await tester.pumpWidget(harness());
+    await tester.pumpAndSettle();
+    await tester.tap(menuButton());
+    await tester.pumpAndSettle();
+
+    expect(find.text(' · live'), findsNothing);
+    expect(find.text('default'), findsOneWidget);
   });
 }

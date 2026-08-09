@@ -12,6 +12,8 @@ import 'dart:async';
 import 'package:flit/application/chat/message_list_notifier.dart';
 import 'package:flit/application/providers.dart';
 import 'package:flit/application/sessions/active_session.dart';
+import 'package:flit/application/sessions/desktop_contract.dart';
+import 'package:flit/application/sessions/session_overrides.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/domain/models/active_session.dart';
 import 'package:flit/domain/models/chat_message.dart';
@@ -50,13 +52,28 @@ final class FakeSessionRepository implements SessionRepository {
     status: SessionStatus.idle,
   );
 
+  /// Per-session overrides of the LAST create call (contract v4).
+  ({String? model, String? provider, String? reasoningEffort, bool? fast})?
+  createOverrides;
+
   @override
   Future<SessionCreateResult> create({
     String? profile,
     String? cwd,
     String? model,
+    String? provider,
+    String? reasoningEffort,
+    bool? fast,
+    String? parentSessionId,
+    String? source,
   }) async {
     createCalls++;
+    createOverrides = (
+      model: model,
+      provider: provider,
+      reasoningEffort: reasoningEffort,
+      fast: fast,
+    );
     final error = createError;
     if (error != null) {
       throw error;
@@ -72,7 +89,11 @@ final class FakeSessionRepository implements SessionRepository {
       throw UnimplementedError();
 
   @override
-  Future<SessionResumeResult> resume(String durableId) {
+  Future<SessionResumeResult> resume(
+    String durableId, {
+    bool omitMessages = false,
+    bool lazy = false,
+  }) {
     resumed.add(durableId);
     final gate = resumeGate;
     if (gate != null) {
@@ -162,6 +183,45 @@ void main() {
     expect(repository.createCalls, 1);
   });
 
+  test('bootstrap inherits the profile when nothing is picked yet', () async {
+    await readNotifier().bootstrap();
+
+    // Nothing sent = inherit the profile (contract v4).
+    expect(repository.createOverrides, (
+      model: null,
+      provider: null,
+      reasoningEffort: null,
+      fast: null,
+    ));
+  });
+
+  test('bootstrap carries the sticky model/effort/fast picks', () async {
+    final picked = ProviderContainer(
+      overrides: [
+        sessionRepositoryProvider.overrideWithValue(repository),
+        sessionCreateOverridesProvider.overrideWithValue(
+          const SessionOverrides(
+            model: 'hermes-4-70b',
+            provider: 'nous',
+            reasoningEffort: 'high',
+            fast: false,
+          ),
+        ),
+      ],
+    );
+    addTearDown(picked.dispose);
+
+    await picked.read(activeSessionProvider.notifier).bootstrap();
+
+    expect(repository.createOverrides, (
+      model: 'hermes-4-70b',
+      provider: 'nous',
+      reasoningEffort: 'high',
+      // Explicitly pinned to normal — NOT the same as omitting it.
+      fast: false,
+    ));
+  });
+
   test('bootstrap is idempotent once a session is active', () async {
     await readNotifier().bootstrap();
     await readNotifier().bootstrap();
@@ -222,6 +282,50 @@ void main() {
     await readNotifier().bootstrap();
     expect(readState().liveId, 'a1b2c3d4');
     expect(repository.createCalls, 2);
+  });
+
+  group('desktop contract (optional-doc §3)', () {
+    test('bootstrap records info.desktop_contract', () async {
+      repository.createResult = const SessionCreateResult(
+        liveId: 'a1b2c3d4',
+        durableId: '2026-uuid',
+        info: <String, dynamic>{'desktop_contract': 5},
+      );
+
+      await readNotifier().bootstrap();
+
+      expect(container.read(desktopContractProvider).version, 5);
+    });
+
+    test('an older gateway that never reports one leaves it unknown', () async {
+      repository.createResult = const SessionCreateResult(
+        liveId: 'a1b2c3d4',
+        durableId: '2026-uuid',
+        info: <String, dynamic>{'model': 'hermes-4-405b'},
+      );
+
+      await readNotifier().bootstrap();
+
+      expect(container.read(desktopContractProvider).isKnown, isFalse);
+    });
+
+    test('rebind records the resumed session\'s contract', () async {
+      await readNotifier().bootstrap();
+      repository.resumeResult = const SessionResumeResult(
+        liveId: 'e5f6a7b8',
+        durableId: '2026-uuid',
+        messages: <ChatMessage>[],
+        messageCount: 0,
+        running: false,
+        status: SessionStatus.idle,
+        info: <String, dynamic>{'desktop_contract': 4},
+      );
+
+      await readNotifier().rebind();
+
+      expect(container.read(desktopContractProvider).version, 4);
+      expect(container.read(desktopContractProvider).isBehind, isTrue);
+    });
   });
 
   group('rebind (reconnect path, P1-16)', () {
