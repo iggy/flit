@@ -711,7 +711,10 @@ void main() {
 
       expect(result.aborted, isTrue);
       expect(result.status, 'aborted');
-      expect(result.summary, <String, dynamic>{'aborted': true, 'reason': 'tool busy'});
+      expect(result.summary, <String, dynamic>{
+        'aborted': true,
+        'reason': 'tool busy',
+      });
       expect(result.usage, <String, dynamic>{'total': 42});
       expect(result.info, <String, dynamic>{'model': 'hermes-4-405b'});
       expect(result.messages, hasLength(1));
@@ -721,9 +724,7 @@ void main() {
 
     test('derives aborted from status == aborted without summary', () async {
       client = FakeGatewayRpcClient(
-        handler: (_, _) => const <String, dynamic>{
-          'status': 'aborted',
-        },
+        handler: (_, _) => const <String, dynamic>{'status': 'aborted'},
       );
       repository = SessionRepositoryImpl(client);
 

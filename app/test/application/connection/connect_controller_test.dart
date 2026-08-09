@@ -177,10 +177,9 @@ void main() {
     // Only the brokerable provider serves the native flow — a password
     // provider has no IDP round trip to broker.
     expect(state.providers, <AuthProviderInfo>[_oauthProvider]);
-    expect(
-      state.passwordFallbackProviders,
-      <AuthProviderInfo>[_passwordProvider],
-    );
+    expect(state.passwordFallbackProviders, <AuthProviderInfo>[
+      _passwordProvider,
+    ]);
 
     // The user can still opt into the password form.
     controller.usePasswordFallback();

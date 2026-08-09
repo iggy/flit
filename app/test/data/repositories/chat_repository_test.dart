@@ -100,10 +100,11 @@ void main() {
     });
 
     test('unknown/missing status falls back to streaming', () async {
-      for (final handler in <Map<String, dynamic> Function(String, Map<String, dynamic>)>[
-        (_, _) => const <String, dynamic>{'status': 'something-new'},
-        (_, _) => const <String, dynamic>{},
-      ]) {
+      for (final handler
+          in <Map<String, dynamic> Function(String, Map<String, dynamic>)>[
+            (_, _) => const <String, dynamic>{'status': 'something-new'},
+            (_, _) => const <String, dynamic>{},
+          ]) {
         client = FakeGatewayRpcClient(handler: handler);
         repository = ChatRepositoryImpl(client);
 

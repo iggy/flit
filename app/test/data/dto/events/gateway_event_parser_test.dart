@@ -189,9 +189,10 @@ void main() {
     });
 
     test('the §7 fixture parses verbatim, frame by frame', () {
-      final lines = File(
-        'test/fixtures/turn_basic.jsonl',
-      ).readAsLinesSync().where((line) => line.trim().isNotEmpty).toList();
+      final lines = File('test/fixtures/turn_basic.jsonl')
+          .readAsLinesSync()
+          .where((line) => line.trim().isNotEmpty)
+          .toList();
 
       expect(lines, hasLength(9)); // gateway.ready + the 8 §7 frames
 
@@ -527,20 +528,23 @@ void main() {
       expect((event as ReasoningDelta).verbose, isTrue);
     });
 
-    test('reasoning.available → ReasoningAvailable (non-streaming sibling)', () {
-      final event = parseGatewayEvent(
-        const GatewayEvent(
-          type: 'reasoning.available',
-          sessionId: 'a1b2c3d4',
-          payload: {'text': 'The whole thought at once.'},
-        ),
-      );
+    test(
+      'reasoning.available → ReasoningAvailable (non-streaming sibling)',
+      () {
+        final event = parseGatewayEvent(
+          const GatewayEvent(
+            type: 'reasoning.available',
+            sessionId: 'a1b2c3d4',
+            payload: {'text': 'The whole thought at once.'},
+          ),
+        );
 
-      expect(event, isA<ReasoningAvailable>());
-      final available = event as ReasoningAvailable;
-      expect(available.text, 'The whole thought at once.');
-      expect(available.verbose, isFalse);
-    });
+        expect(event, isA<ReasoningAvailable>());
+        final available = event as ReasoningAvailable;
+        expect(available.text, 'The whole thought at once.');
+        expect(available.verbose, isFalse);
+      },
+    );
 
     test('reasoning.delta with a malformed text falls back to empty', () {
       final event = parseGatewayEvent(

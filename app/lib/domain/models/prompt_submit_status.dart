@@ -12,5 +12,5 @@ enum PromptSubmitStatus {
   redirected,
 
   /// The prompt was queued to run after the current turn.
-  queued;
+  queued,
 }

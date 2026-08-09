@@ -509,7 +509,10 @@ void main() {
       await tester.tap(find.byKey(composerSendKey));
       await tester.pumpAndSettle();
 
-      expect(find.text('Queued — will run after the current turn'), findsOneWidget);
+      expect(
+        find.text('Queued — will run after the current turn'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('steered ack shows steer notice; streaming shows none', (
@@ -540,7 +543,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Steered into the current turn'), findsNothing);
-      expect(find.text('Queued — will run after the current turn'), findsNothing);
+      expect(
+        find.text('Queued — will run after the current turn'),
+        findsNothing,
+      );
     });
 
     testWidgets('redirected ack shows redirect notice', (tester) async {
@@ -574,10 +580,7 @@ void main() {
       await tester.tap(find.byKey(composerSendKey));
       await tester.pumpAndSettle();
 
-      expect(
-        find.textContaining('disk full'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('disk full'), findsOneWidget);
     });
 
     testWidgets('4029 unconfirmed truncation surfaces refusal message', (

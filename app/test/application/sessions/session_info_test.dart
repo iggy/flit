@@ -94,8 +94,7 @@ final class FakeSessionRepository implements SessionRepository {
     String durableId, {
     bool omitMessages = false,
     bool lazy = false,
-  }) =>
-      throw UnimplementedError();
+  }) => throw UnimplementedError();
 
   @override
   Future<void> interrupt(String liveId) => throw UnimplementedError();
