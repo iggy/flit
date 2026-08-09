@@ -89,9 +89,13 @@ jobs:
       - name: Run code generation
         run: dart run build_runner build --delete-conflicting-outputs
 
-      - name: Build Linux
+      - name: Build & package Linux binary
         if: matrix.target == 'linux'
-        run: flutter build linux --release
+        run: ./packaging/linux_binary.sh
+
+      - name: Build Linux AppImage
+        if: matrix.target == 'linux'
+        run: ./packaging/linux_appimage.sh
 
       - name: Build Web
         if: matrix.target == 'web'
@@ -118,7 +122,14 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: linux-build
-          path: app/build/linux/x64/release/bundle/
+          path: app/build/linux/flit-linux-x64/
+
+      - name: Upload Linux AppImage artifact
+        if: matrix.target == 'linux'
+        uses: actions/upload-artifact@v7
+        with:
+          name: linux-appimage
+          path: app/build/linux/flit-x86_64.AppImage
 
       - name: Upload Web artifact
         if: matrix.target == 'web'
