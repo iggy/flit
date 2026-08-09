@@ -62,12 +62,20 @@ final class SessionRepositoryImpl implements SessionRepository {
   }
 
   @override
-  Future<SessionResumeResult> resume(String durableId) async {
+  Future<SessionResumeResult> resume(
+    String durableId, {
+    bool omitMessages = false,
+    bool lazy = false,
+  }) async {
     // Wire §5: the DURABLE id goes in as `session_id`; a NEW short live id
-    // comes back.
-    final result = await _client.request('session.resume', <String, dynamic>{
+    // comes back. `omit_messages` / `lazy` are only sent when set — the
+    // gateway defaults both to false and older ones ignore them anyway.
+    final params = <String, dynamic>{
       'session_id': durableId,
-    });
+      if (omitMessages) 'omit_messages': true,
+      if (lazy) 'lazy': true,
+    };
+    final result = await _client.request('session.resume', params);
     return SessionResumeResultDto.fromJson(result).toDomain();
   }
 

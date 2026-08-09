@@ -140,12 +140,32 @@ own it.
     "session_key":"2026..-uuid",
     "messages":[ {"role":"user","text":"…"}, {"role":"assistant","text":"…"} ],
     "message_count":12,
+    "messages_omitted":false,
+    "started_at":1783200500.5,        // fractional epoch seconds
     "running":false,
     "status":"idle",
     "info":{ ... }
+    // "auto_continue":{"attempt":1,"interrupted_at":1783200500.5}  — only when
+    //   the gateway scheduled a continuation turn (see below)
   }
 }
 ```
+
+Optional params (`methods_session.py:306-600`):
+- `omit_messages: true` — skip the transcript. `messages` comes back empty and
+  `messages_omitted: true`, but `message_count` still counts the RAW history, so
+  the caller must hydrate the transcript another way (the desktop uses the
+  authenticated REST route).
+- `lazy: true` — subagent watch window: register the live session with NO agent
+  build. `info.lazy` stays true, and `running` / `status` come from the child-run
+  registry rather than a run loop of the session's own — which is why `status` can
+  be `"streaming"` here, a value the §4 `idle|starting|waiting|working` set does
+  not contain. A later `prompt.submit` upgrades the session to a real one.
+
+`auto_continue` (`server.py:7347` `_maybe_schedule_auto_continue`) appears when
+the session's last turn died with the process (a durable turn marker survived).
+The continuation turn is ALREADY running when the result lands, and streams to
+the resuming client like any other turn; `attempt` is the bounded retry count.
 
 ## 6. `prompt.submit` (fire-and-forget for content)
 

@@ -250,6 +250,36 @@ class InflightTurnDto {
   }
 }
 
+/// `auto_continue` descriptor of the `session.resume` result — present ONLY
+/// when the gateway scheduled a continuation turn for a session whose turn
+/// was killed by a process death (`_maybe_schedule_auto_continue`,
+/// server.py:7347).
+@JsonSerializable()
+class AutoContinueDto {
+  const AutoContinueDto({this.attempt, this.interruptedAt});
+
+  factory AutoContinueDto.fromJson(Map<String, dynamic> json) =>
+      _$AutoContinueDtoFromJson(json);
+
+  /// 1-based attempt counter (bounded by the gateway's crash breaker).
+  @JsonKey(name: 'attempt')
+  final int? attempt;
+
+  /// When the interrupted turn started — epoch SECONDS, FRACTIONAL on the
+  /// wire (`time.time()`), unlike the integer epochs elsewhere in §2–§5.
+  @JsonKey(name: 'interrupted_at')
+  final double? interruptedAt;
+
+  Map<String, dynamic> toJson() => _$AutoContinueDtoToJson(this);
+
+  AutoContinue toDomain() {
+    return AutoContinue(
+      attempt: attempt ?? 0,
+      interruptedAt: _epochSecondsToDateTime(interruptedAt),
+    );
+  }
+}
+
 /// `session.resume` result (§5).
 @JsonSerializable()
 class SessionResumeResultDto {
@@ -259,10 +289,12 @@ class SessionResumeResultDto {
     this.sessionKey,
     this.messages = const <ResumeMessageDto>[],
     this.messageCount,
+    this.messagesOmitted,
     this.running,
     this.status,
     this.info,
     this.inflight,
+    this.autoContinue,
   });
 
   factory SessionResumeResultDto.fromJson(Map<String, dynamic> json) =>
@@ -283,8 +315,15 @@ class SessionResumeResultDto {
   @JsonKey(name: 'messages')
   final List<ResumeMessageDto> messages;
 
+  /// Counts the RAW history when [messagesOmitted] — so it stays meaningful
+  /// even though [messages] is empty.
   @JsonKey(name: 'message_count')
   final int? messageCount;
+
+  /// Echoes the `omit_messages` param: the transcript was deliberately left
+  /// out of this response and must be hydrated another way.
+  @JsonKey(name: 'messages_omitted')
+  final bool? messagesOmitted;
 
   @JsonKey(name: 'running')
   final bool? running;
@@ -299,6 +338,11 @@ class SessionResumeResultDto {
   @JsonKey(name: 'inflight')
   final InflightTurnDto? inflight;
 
+  /// Continuation turn the gateway scheduled for a crash-interrupted session
+  /// — omitted on every ordinary resume.
+  @JsonKey(name: 'auto_continue')
+  final AutoContinueDto? autoContinue;
+
   Map<String, dynamic> toJson() => _$SessionResumeResultDtoToJson(this);
 
   SessionResumeResult toDomain() {
@@ -307,20 +351,27 @@ class SessionResumeResultDto {
       durableId: sessionKey ?? resumed ?? '',
       messages: messages.map((dto) => dto.toDomain()).toList(),
       messageCount: messageCount ?? messages.length,
+      messagesOmitted: messagesOmitted ?? false,
       running: running ?? false,
       status: SessionStatus.parse(status),
       info: info,
       inflight: inflight?.toDomain(),
+      autoContinue: autoContinue?.toDomain(),
     );
   }
 }
 
 /// Epoch seconds (wire) → [DateTime] (domain). UTC by definition of epoch.
-DateTime? _epochSecondsToDateTime(int? epochSeconds) {
+/// Takes [num] because a few payloads (`auto_continue.interrupted_at`) carry a
+/// fractional `time.time()` rather than an integer epoch.
+DateTime? _epochSecondsToDateTime(num? epochSeconds) {
   if (epochSeconds == null) {
     return null;
   }
-  return DateTime.fromMillisecondsSinceEpoch(epochSeconds * 1000, isUtc: true);
+  return DateTime.fromMillisecondsSinceEpoch(
+    (epochSeconds * 1000).round(),
+    isUtc: true,
+  );
 }
 
 /// Wire role string → [MessageRole]. Unknown roles fall back to

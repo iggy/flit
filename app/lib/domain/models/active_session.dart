@@ -9,12 +9,16 @@ enum SessionStatus {
   /// Tolerates unknown/missing strings: unknown or null →
   /// [SessionStatus.working] (roadmap open question #4 — optimistically
   /// assume the session is busy rather than idle).
+  ///
+  /// `streaming` is not a §4 status — a lazy `session.resume` reports it for a
+  /// watch window whose subagent is mid-run — and folds into
+  /// [SessionStatus.working], which is what it means for the UI.
   static SessionStatus parse(String? value) {
     return switch (value) {
       'idle' => SessionStatus.idle,
       'starting' => SessionStatus.starting,
       'waiting' => SessionStatus.waiting,
-      'working' => SessionStatus.working,
+      'working' || 'streaming' => SessionStatus.working,
       _ => SessionStatus.working,
     };
   }

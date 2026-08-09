@@ -86,7 +86,11 @@ final class FakeSessionRepository implements SessionRepository {
   }
 
   @override
-  Future<SessionResumeResult> resume(String durableId) async {
+  Future<SessionResumeResult> resume(
+    String durableId, {
+    bool omitMessages = false,
+    bool lazy = false,
+  }) async {
     resumed.add(durableId);
     return resumeResult;
   }

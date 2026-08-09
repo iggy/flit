@@ -137,14 +137,12 @@ resume now supports:
   `messages_omitted`, `auto_continue` (optional), and for lazy resumes
   `status: "streaming" | "idle"`.
 
-**flit gap**: `resume()` sends only `session_id` and the resume DTO
-(`session_dtos.dart:252-316`) already tolerates the extra fields. Not breaking
-today, but flit cannot open subagent watch windows or offload transcript
-hydration.
-
-**Work to do** (only if these features are wanted):
-- Add `omitMessages` and `lazy` params to the resume call.
-- Parse `messages_omitted` and `auto_continue` in `SessionResumeResultDto`.
+**flit gap**: none — DONE. `resume()` takes `omitMessages` / `lazy` (sent only
+when set), `SessionResumeResultDto` parses `messages_omitted` and
+`auto_continue`, and `SessionStatus.parse` folds the lazy-only `"streaming"`
+status into `working`. Nothing calls the new params yet: they are the transport
+half of subagent watch windows / REST transcript hydration, and no UI exists for
+either.
 
 ---
 

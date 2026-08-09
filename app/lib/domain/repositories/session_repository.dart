@@ -39,7 +39,22 @@ abstract interface class SessionRepository {
 
   /// `session.resume` (wire §5): [durableId] in, a NEW live id + replayed
   /// history out.
-  Future<SessionResumeResult> resume(String durableId);
+  ///
+  /// [omitMessages] asks the gateway to skip the transcript — the result then
+  /// carries `messagesOmitted: true` with an empty message list and a
+  /// `messageCount` from the raw history, and the caller is responsible for
+  /// hydrating the history itself.
+  ///
+  /// [lazy] registers the live session WITHOUT building an agent — for a
+  /// subagent watch window, which only needs the child's stored history plus
+  /// the live event stream. `running`/`status` then come from the child-run
+  /// registry, and `info.lazy` is true. A later prompt upgrades the session to
+  /// a real one.
+  Future<SessionResumeResult> resume(
+    String durableId, {
+    bool omitMessages = false,
+    bool lazy = false,
+  });
 
   /// `session.interrupt` (wire §12) — [liveId], not the durable id.
   Future<void> interrupt(String liveId);

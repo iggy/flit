@@ -262,6 +262,121 @@ void main() {
       expect(result.status, SessionStatus.working);
       expect(result.messages, isEmpty);
     });
+
+    test('omits omit_messages/lazy unless asked for', () async {
+      client = FakeGatewayRpcClient(
+        handler: (_, _) => const <String, dynamic>{
+          'session_id': 'e5f6a7b8',
+          'session_key': '2026-uuid',
+        },
+      );
+      repository = SessionRepositoryImpl(client);
+
+      await repository.resume('2026-uuid');
+
+      expect(client.calls.single.params, <String, dynamic>{
+        'session_id': '2026-uuid',
+      });
+    });
+
+    test('omitMessages sends the flag; result reports the omission', () async {
+      client = FakeGatewayRpcClient(
+        handler: (_, _) => const <String, dynamic>{
+          'session_id': 'e5f6a7b8',
+          'resumed': '2026-uuid',
+          'session_key': '2026-uuid',
+          'messages': <Map<String, dynamic>>[],
+          // Counted from the RAW history, so it still describes the session.
+          'message_count': 12,
+          'messages_omitted': true,
+          'running': false,
+          'status': 'idle',
+        },
+      );
+      repository = SessionRepositoryImpl(client);
+
+      final result = await repository.resume('2026-uuid', omitMessages: true);
+
+      expect(client.calls.single.params, <String, dynamic>{
+        'session_id': '2026-uuid',
+        'omit_messages': true,
+      });
+      expect(result.messagesOmitted, isTrue);
+      expect(result.messages, isEmpty);
+      expect(result.messageCount, 12);
+    });
+
+    test('lazy sends the flag; a mid-run child reads as working', () async {
+      client = FakeGatewayRpcClient(
+        handler: (_, _) => const <String, dynamic>{
+          'session_id': 'e5f6a7b8',
+          'resumed': '2026-uuid',
+          'session_key': '2026-uuid',
+          'messages': <Map<String, dynamic>>[
+            <String, dynamic>{'role': 'user', 'text': 'delegate this'},
+          ],
+          'message_count': 1,
+          'messages_omitted': false,
+          'info': <String, dynamic>{'lazy': true},
+          'inflight': null,
+          // From the child-run registry, not a run loop of its own.
+          'running': true,
+          'status': 'streaming',
+        },
+      );
+      repository = SessionRepositoryImpl(client);
+
+      final result = await repository.resume('2026-uuid', lazy: true);
+
+      expect(client.calls.single.params, <String, dynamic>{
+        'session_id': '2026-uuid',
+        'lazy': true,
+      });
+      expect(result.running, isTrue);
+      expect(result.status, SessionStatus.working);
+      expect(result.info!['lazy'], isTrue);
+      expect(result.messages, hasLength(1));
+    });
+
+    test('maps auto_continue when the gateway scheduled one', () async {
+      client = FakeGatewayRpcClient(
+        handler: (_, _) => const <String, dynamic>{
+          'session_id': 'e5f6a7b8',
+          'session_key': '2026-uuid',
+          'status': 'idle',
+          'auto_continue': <String, dynamic>{
+            'attempt': 2,
+            'interrupted_at': 1783200500.5,
+          },
+        },
+      );
+      repository = SessionRepositoryImpl(client);
+
+      final result = await repository.resume('2026-uuid');
+
+      expect(result.autoContinue, isNotNull);
+      expect(result.autoContinue!.attempt, 2);
+      expect(
+        result.autoContinue!.interruptedAt,
+        DateTime.fromMillisecondsSinceEpoch(1783200500500, isUtc: true),
+      );
+    });
+
+    test('no auto_continue on an ordinary resume', () async {
+      client = FakeGatewayRpcClient(
+        handler: (_, _) => const <String, dynamic>{
+          'session_id': 'e5f6a7b8',
+          'session_key': '2026-uuid',
+          'status': 'idle',
+        },
+      );
+      repository = SessionRepositoryImpl(client);
+
+      final result = await repository.resume('2026-uuid');
+
+      expect(result.autoContinue, isNull);
+      expect(result.messagesOmitted, isFalse);
+    });
   });
 
   group('interrupt (wire §12)', () {
