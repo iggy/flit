@@ -18,6 +18,17 @@ const Key sessionInfoUndoKey = Key('session_info_undo');
 const Key sessionInfoSaveKey = Key('session_info_save');
 const Key sessionInfoCwdKey = Key('session_info_cwd');
 
+/// Opens [SessionInfoSheet]. Used by the app-bar button and, on narrow
+/// layouts, by the app-bar overflow menu.
+Future<void> showSessionInfoSheet(BuildContext context) {
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (context) => const SessionInfoSheet(),
+  );
+}
+
 /// App-bar action for session info: an info icon opening
 /// [SessionInfoSheet].
 class SessionInfoButton extends ConsumerWidget {
@@ -29,14 +40,7 @@ class SessionInfoButton extends ConsumerWidget {
       key: sessionInfoButtonKey,
       tooltip: 'Session info',
       icon: const Icon(Icons.info_outline),
-      onPressed: () {
-        showModalBottomSheet<void>(
-          context: context,
-          isScrollControlled: true,
-          showDragHandle: true,
-          builder: (context) => const SessionInfoSheet(),
-        );
-      },
+      onPressed: () => showSessionInfoSheet(context),
     );
   }
 }

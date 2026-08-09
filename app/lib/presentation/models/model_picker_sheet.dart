@@ -15,7 +15,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// App-bar action for model selection: the smart-toy icon plus the current
 /// model name as a compact label (when known), opening [ModelPickerSheet].
 class ModelPickerButton extends ConsumerWidget {
-  const ModelPickerButton({super.key});
+  const ModelPickerButton({super.key, this.maxLabelWidth = 140});
+
+  /// Room the model name may take before it ellipsizes. Narrow layouts pass a
+  /// width derived from the screen so this button cannot push the rest of the
+  /// app bar off-screen.
+  final double maxLabelWidth;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -30,7 +35,7 @@ class ModelPickerButton extends ConsumerWidget {
         ),
         icon: const Icon(Icons.smart_toy_outlined, size: 20),
         label: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 140),
+          constraints: BoxConstraints(maxWidth: maxLabelWidth),
           child: Text(
             known ? current.model : 'Model',
             overflow: TextOverflow.ellipsis,
