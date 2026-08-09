@@ -3,6 +3,8 @@
 // render as readouts, and a pre-0.20 gateway shows none of them.
 
 import 'package:flit/application/connection/connection_providers.dart';
+import 'package:flit/application/sessions/desktop_contract.dart';
+import 'package:flit/domain/models/desktop_contract.dart';
 import 'package:flit/domain/models/gateway_status.dart';
 import 'package:flit/presentation/settings/about_screen.dart';
 import 'package:flutter/material.dart';
@@ -50,6 +52,16 @@ const _currentGateway = GatewayStatus(
   ftsRebuild: FtsRebuild(total: 5000, indexed: 1250, percent: 25),
 );
 
+/// Seeds [desktopContractProvider] with a version the gateway "reported".
+final class _SeededContractNotifier extends DesktopContractNotifier {
+  _SeededContractNotifier(this._version);
+
+  final int? _version;
+
+  @override
+  DesktopContract build() => DesktopContract(version: _version);
+}
+
 /// Seeds [gatewayStatusProvider] and counts refresh calls.
 final class _SeededStatusNotifier extends GatewayStatusNotifier {
   _SeededStatusNotifier(this._status, {this.refreshResult = true});
@@ -69,11 +81,16 @@ final class _SeededStatusNotifier extends GatewayStatusNotifier {
 }
 
 void main() {
-  Widget wrap(_SeededStatusNotifier notifier) {
+  Widget wrap(_SeededStatusNotifier notifier, {int? contract}) {
     return ProviderScope(
       // Deterministic: no backoff retries left pending on a failing provider.
       retry: (retryCount, error) => null,
-      overrides: [gatewayStatusProvider.overrideWith(() => notifier)],
+      overrides: [
+        gatewayStatusProvider.overrideWith(() => notifier),
+        desktopContractProvider.overrideWith(
+          () => _SeededContractNotifier(contract),
+        ),
+      ],
       child: const MaterialApp(home: AboutScreen()),
     );
   }
@@ -83,13 +100,14 @@ void main() {
   /// (and `findsNothing` would pass for the wrong reason).
   Future<void> pumpAbout(
     WidgetTester tester,
-    _SeededStatusNotifier notifier,
-  ) async {
+    _SeededStatusNotifier notifier, {
+    int? contract,
+  }) async {
     tester.view.physicalSize = const Size(1200, 3000);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(wrap(notifier));
+    await tester.pumpWidget(wrap(notifier, contract: contract));
     await tester.pump();
   }
 
@@ -206,5 +224,52 @@ void main() {
     final button = tester.widget<IconButton>(find.byKey(aboutRefreshStatusKey));
     expect(button.onPressed, isNull);
     expect(find.text('Not connected'), findsOneWidget);
+  });
+
+  group('desktop contract (optional-doc §3)', () {
+    testWidgets('states the version when the gateway is current', (
+      tester,
+    ) async {
+      await pumpAbout(
+        tester,
+        _SeededStatusNotifier(_currentGateway),
+        contract: DesktopContract.minimum,
+      );
+
+      expect(find.byKey(aboutDesktopContractKey), findsOneWidget);
+      expect(find.text('v${DesktopContract.minimum}'), findsOneWidget);
+      expect(find.textContaining('Update your Hermes gateway'), findsNothing);
+    });
+
+    testWidgets('tells the user to update when the gateway is behind', (
+      tester,
+    ) async {
+      await pumpAbout(
+        tester,
+        _SeededStatusNotifier(_olderGateway),
+        contract: DesktopContract.minimum - 1,
+      );
+
+      expect(find.textContaining('Update your Hermes gateway'), findsOneWidget);
+      expect(
+        find.textContaining('flit expects v${DesktopContract.minimum}'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('large attachments will fail'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('renders nothing before a session has reported one', (
+      tester,
+    ) async {
+      // Unknown is "not told", not "old" — no row, and above all no warning.
+      await pumpAbout(tester, _SeededStatusNotifier(_currentGateway));
+
+      expect(find.byKey(aboutDesktopContractKey), findsNothing);
+      expect(find.text('Client Contract'), findsNothing);
+      expect(find.textContaining('Update your Hermes gateway'), findsNothing);
+    });
   });
 }

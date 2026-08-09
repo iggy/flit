@@ -47,7 +47,7 @@ system.
 
 ---
 
-## 3. `desktop_contract` version handshake
+## 3. `desktop_contract` version handshake — ✅ DONE
 
 **Gateway** (`hermes-agent/tui_gateway/server.py:5067`): every
 `session.create`/`session.resume`/`session.info` carries
@@ -56,14 +56,41 @@ system.
 file.attach, v3 approvals.mode + session.info reconciliation, v4 create
 `fast=false` explicit-normal, v5 ws_max_size.
 
-**flit**: never checks it. `file.attach` already speaks the v5 wire shape, so
-today it works against v0.20, but there's no guard: against an older gateway a
-large attach silently dies on the 16 MiB frame cap.
+**flit**: never checked it. `file.attach` already speaks the v5 wire shape, so
+it worked against v0.20, but there was no guard: against an older gateway a
+large attach silently died on the 16 MiB frame cap.
 
-**TODO**: read `desktop_contract` from the session bootstrap payload; when
-below a pinned minimum, show "update your Hermes gateway" instead of failing
-mysteriously. Keep the pin aligned with whatever contract version flit
-actually requires.
+**Done**: `DesktopContract` (domain) holds the reported version and pins the
+minimum flit needs at **5** — v4 for the explicit `fast: false` in
+`session.create`, v5 because attachments go out as base64 in a single WS frame
+with no size negotiation. `desktopContractProvider` learns the version from
+`info.desktop_contract` on every `session.create` / `session.resume` result and
+keeps it current from `session.info` events, and forgets it on sign-out.
+
+Two visible consequences:
+- The About screen grew a **Client Contract** row: the version alone when
+  current, and when behind, "update your Hermes gateway" naming what will
+  actually break (large attachments) — the remedy is host-side, so there's no
+  in-app button to offer.
+- The composer refuses an attachment that cannot fit a pre-v5 frame *before*
+  sending it, naming the limit. This is the failure the item is about: an
+  oversized frame doesn't error, uvicorn drops the socket, and the user sees a
+  random disconnect.
+
+The traps here are all about *unknown*:
+- **`desktop_contract` is not queryable.** It only rides on session payloads,
+  so the version is unknown until a session is bootstrapped — and unknown must
+  read as "not told", never as "old". Nothing warns and nothing is blocked
+  while the version is null; the About row hides entirely.
+- **A minimal info dict must not un-learn a version.** A lazy resume answers
+  with `{cwd, branch, project, lazy}` and no contract key, so `recordInfo`
+  ignores an absent key rather than clearing state — otherwise the warning
+  would flicker off mid-connection.
+- **A NEWER contract than the pin is fine**, not a mismatch: the comparison is
+  `version < minimum`, so flit keeps working against a gateway ahead of it.
+- **The frame budget isn't the whole 16 MiB.** The JSON-RPC envelope shares the
+  frame, so the client-side cap subtracts an allowance. Erring generous is
+  right: a refusal names a real limit, a blown frame kills the socket silently.
 
 ---
 

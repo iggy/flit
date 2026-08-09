@@ -12,6 +12,7 @@ import 'dart:async';
 import 'package:flit/application/chat/message_list_notifier.dart';
 import 'package:flit/application/providers.dart';
 import 'package:flit/application/sessions/active_session.dart';
+import 'package:flit/application/sessions/desktop_contract.dart';
 import 'package:flit/application/sessions/session_overrides.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/domain/models/active_session.dart';
@@ -281,6 +282,50 @@ void main() {
     await readNotifier().bootstrap();
     expect(readState().liveId, 'a1b2c3d4');
     expect(repository.createCalls, 2);
+  });
+
+  group('desktop contract (optional-doc §3)', () {
+    test('bootstrap records info.desktop_contract', () async {
+      repository.createResult = const SessionCreateResult(
+        liveId: 'a1b2c3d4',
+        durableId: '2026-uuid',
+        info: <String, dynamic>{'desktop_contract': 5},
+      );
+
+      await readNotifier().bootstrap();
+
+      expect(container.read(desktopContractProvider).version, 5);
+    });
+
+    test('an older gateway that never reports one leaves it unknown', () async {
+      repository.createResult = const SessionCreateResult(
+        liveId: 'a1b2c3d4',
+        durableId: '2026-uuid',
+        info: <String, dynamic>{'model': 'hermes-4-405b'},
+      );
+
+      await readNotifier().bootstrap();
+
+      expect(container.read(desktopContractProvider).isKnown, isFalse);
+    });
+
+    test('rebind records the resumed session\'s contract', () async {
+      await readNotifier().bootstrap();
+      repository.resumeResult = const SessionResumeResult(
+        liveId: 'e5f6a7b8',
+        durableId: '2026-uuid',
+        messages: <ChatMessage>[],
+        messageCount: 0,
+        running: false,
+        status: SessionStatus.idle,
+        info: <String, dynamic>{'desktop_contract': 4},
+      );
+
+      await readNotifier().rebind();
+
+      expect(container.read(desktopContractProvider).version, 4);
+      expect(container.read(desktopContractProvider).isBehind, isTrue);
+    });
   });
 
   group('rebind (reconnect path, P1-16)', () {

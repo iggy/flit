@@ -21,6 +21,7 @@ import 'package:flit/application/chat/prompt_queue.dart';
 import 'package:flit/application/connection/connection_providers.dart';
 import 'package:flit/application/providers.dart';
 import 'package:flit/application/sessions/active_session.dart';
+import 'package:flit/application/sessions/desktop_contract.dart';
 import 'package:flit/application/sessions/session_overrides.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/data/dto/events/gateway_event_parser.dart';
@@ -134,6 +135,7 @@ class SessionActions {
         reasoningEffort: overrides.reasoningEffort,
         fast: overrides.fast,
       );
+      _ref.read(desktopContractProvider.notifier).recordInfo(result.info);
       _ref
           .read(activeSessionProvider.notifier)
           .switchTo(liveId: result.liveId, durableId: result.durableId);
@@ -166,6 +168,7 @@ class SessionActions {
     }
     try {
       final result = await repository.resume(summary.durableId);
+      _ref.read(desktopContractProvider.notifier).recordInfo(result.info);
       _ref
           .read(activeSessionProvider.notifier)
           .switchTo(liveId: result.liveId, durableId: result.durableId);

@@ -267,7 +267,10 @@ For Phase 2 the client reads `usage`, `cwd`, `title`, `model`, `provider`,
 (was 4 when this doc was written): v1 baseline, v2 `file.attach`, v3
 `approvals.mode` + `session.info` reconciliation, v4 create `fast=false`
 explicit-normal, v5 raised the uvicorn WS frame cap so `file.attach` base64
-frames >16 MiB survive. flit doesn't check it — see
+frames >16 MiB survive. flit pins a minimum of 5 and reads the version off
+every create/resume result and `session.info` event
+(`application/sessions/desktop_contract.dart`); the key is ABSENT from a
+minimal (lazy) info dict, and absent means "not told", not "old" — see
 `../updates/gateway-0.18-to-0.20-optional.md` §3.
 
 ---

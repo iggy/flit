@@ -4,6 +4,7 @@
 library;
 
 import 'package:flit/application/connection/connection_providers.dart';
+import 'package:flit/application/sessions/desktop_contract.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/data/transport/connection_config.dart';
 import 'package:flit/domain/models/auth_provider.dart';
@@ -418,6 +419,9 @@ class ConnectController extends Notifier<ConnectUiState> {
     await ref.read(oauthSessionProvider.notifier).clear();
     await ref.read(connectionConfigProvider.notifier).clear();
     ref.read(gatewayStatusProvider.notifier).clear();
+    // The next gateway may speak a different contract — a stale version would
+    // warn (or fail to warn) about the wrong host.
+    ref.read(desktopContractProvider.notifier).clear();
     state = const ConnectUiState();
   }
 

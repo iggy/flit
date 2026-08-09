@@ -9,6 +9,7 @@ library;
 import 'package:flit/application/chat/message_list_notifier.dart';
 import 'package:flit/application/providers.dart';
 import 'package:flit/application/sessions/active_session.dart';
+import 'package:flit/application/sessions/desktop_contract.dart';
 import 'package:flit/application/sessions/session_list.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -99,6 +100,7 @@ class DeepLinkResolver extends Notifier<DeepLinkResolveState> {
 
     try {
       final result = await repository.resume(durableId);
+      ref.read(desktopContractProvider.notifier).recordInfo(result.info);
       ref
           .read(activeSessionProvider.notifier)
           .switchTo(liveId: result.liveId, durableId: result.durableId);

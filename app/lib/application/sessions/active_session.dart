@@ -14,6 +14,7 @@ library;
 
 import 'package:flit/application/chat/message_list_notifier.dart';
 import 'package:flit/application/providers.dart';
+import 'package:flit/application/sessions/desktop_contract.dart';
 import 'package:flit/application/sessions/session_overrides.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -99,6 +100,8 @@ class ActiveSessionNotifier extends Notifier<ActiveSessionState> {
         reasoningEffort: overrides.reasoningEffort,
         fast: overrides.fast,
       );
+      // First place the gateway tells us which desktop contract it speaks.
+      ref.read(desktopContractProvider.notifier).recordInfo(result.info);
       state = ActiveSessionState(
         liveId: result.liveId,
         durableId: result.durableId,
@@ -146,6 +149,7 @@ class ActiveSessionNotifier extends Notifier<ActiveSessionState> {
       );
       try {
         final result = await repository.resume(durableId);
+        ref.read(desktopContractProvider.notifier).recordInfo(result.info);
         switchTo(liveId: result.liveId, durableId: result.durableId);
         ref
             .read(messageListProvider(result.liveId).notifier)

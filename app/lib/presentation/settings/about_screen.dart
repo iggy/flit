@@ -1,5 +1,7 @@
 import 'package:flit/application/config/version_providers.dart';
 import 'package:flit/application/connection/connection_providers.dart';
+import 'package:flit/application/sessions/desktop_contract.dart';
+import 'package:flit/domain/models/desktop_contract.dart';
 import 'package:flit/domain/models/gateway_status.dart';
 import 'package:flit/domain/models/update_check.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +9,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Key of the app-bar action that re-probes `/api/status`.
 const Key aboutRefreshStatusKey = Key('about_refresh_status');
+
+/// Key of the desktop-contract row (shown once a session has reported one).
+const Key aboutDesktopContractKey = Key('about_desktop_contract');
 
 /// About screen showing app version, gateway version, and update check
 /// (ticket P9-08), plus the gateway's own housekeeping readout from
@@ -52,6 +57,7 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
     final appVersionAsync = ref.watch(appVersionProvider);
     final gatewayStatus = ref.watch(gatewayStatusProvider);
     final updateCheckAsync = ref.watch(updateCheckProvider);
+    final contract = ref.watch(desktopContractProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -158,10 +164,45 @@ class _AboutScreenState extends ConsumerState<AboutScreen> {
             ),
           ),
 
+          ..._contractRows(theme, contract),
+
           if (gatewayStatus != null) ..._gatewaySection(theme, gatewayStatus),
         ],
       ),
     );
+  }
+
+  /// Desktop-contract version (optional-doc §3). Unlike everything else here
+  /// this comes from the session bootstrap rather than `/api/status`, so it is
+  /// unknown until a session exists — and unknown renders nothing, because
+  /// "not told" is not the same as "old".
+  List<Widget> _contractRows(ThemeData theme, DesktopContract contract) {
+    final version = contract.version;
+    if (version == null) {
+      return const <Widget>[];
+    }
+    final behind = contract.isBehind;
+    return <Widget>[
+      const Divider(),
+      ListTile(
+        key: aboutDesktopContractKey,
+        leading: Icon(
+          behind ? Icons.warning_amber : Icons.handshake_outlined,
+          color: behind
+              ? theme.colorScheme.tertiary
+              : theme.colorScheme.primary,
+        ),
+        title: const Text('Client Contract'),
+        subtitle: Text(
+          behind
+              // Host-side remedy again: flit can't update the gateway.
+              ? 'This gateway speaks v$version; flit expects '
+                    'v${DesktopContract.minimum}. Update your Hermes gateway — '
+                    'large attachments will fail until you do.'
+              : 'v$version',
+        ),
+      ),
+    ];
   }
 
   /// The gateway's own housekeeping readout. Each row appears only when the

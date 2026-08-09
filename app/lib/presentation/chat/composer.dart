@@ -28,6 +28,7 @@ import 'package:flit/application/chat/message_list_notifier.dart';
 import 'package:flit/application/chat/prompt_queue.dart';
 import 'package:flit/application/providers.dart';
 import 'package:flit/application/sessions/active_session.dart';
+import 'package:flit/application/sessions/desktop_contract.dart';
 import 'package:flit/application/slash/slash_providers.dart';
 import 'package:flit/application/voice/voice_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
@@ -272,7 +273,8 @@ class _ComposerState extends ConsumerState<Composer> {
       // (5071) — surface the actionable part rather than the raw RPC message.
       GatewayRpcException(code: 4028 || 4029) =>
         'refused: resubmit with truncation confirmed',
-      GatewayRpcException(code: 5070) => 'disk full — free some space and try again',
+      GatewayRpcException(code: 5070) =>
+        'disk full — free some space and try again',
       GatewayRpcException(code: 5071) => 'session storage could not be written',
       GatewayException() => error.message,
       _ => '$error',
@@ -400,6 +402,27 @@ class _ComposerState extends ConsumerState<Composer> {
     );
   }
 
+  /// Refuse a base64 payload the connected gateway cannot receive, and say
+  /// why (optional-doc §3). Below desktop contract v5 the gateway's WS frame
+  /// cap is 16 MiB, and an oversized frame doesn't error — it drops the
+  /// socket, which looks like a random disconnect. Returns true when the
+  /// attach may proceed (including whenever the contract is unknown).
+  bool _contractAllowsAttachment(int base64Length) {
+    final contract = ref.read(desktopContractProvider);
+    if (contract.allowsAttachment(base64Length)) {
+      return true;
+    }
+    _showSnackBar(
+      'Too large for this gateway (max '
+      '${_formatBytes(contract.attachmentLimitBytes!)} encoded) — '
+      'update your Hermes gateway to attach files this big.',
+    );
+    return false;
+  }
+
+  /// Bytes as whole MiB — the only magnitude the frame cap is expressed in.
+  String _formatBytes(int bytes) => '${bytes ~/ (1024 * 1024)} MiB';
+
   /// P7: pick an image from the gallery and attach it.
   Future<void> _pickImage(String liveId) async {
     final repo = ref.read(attachmentRepositoryProvider);
@@ -415,6 +438,9 @@ class _ComposerState extends ConsumerState<Composer> {
       }
       final bytes = await xFile.readAsBytes();
       final b64 = base64Encode(bytes);
+      if (!_contractAllowsAttachment(b64.length)) {
+        return;
+      }
       final result = await repo.attachImageBytes(
         liveId,
         contentBase64: b64,
@@ -447,6 +473,9 @@ class _ComposerState extends ConsumerState<Composer> {
       }
       final pdfBytes = await pickedFile.readAsBytes();
       final b64 = base64Encode(pdfBytes);
+      if (!_contractAllowsAttachment(b64.length)) {
+        return;
+      }
       final pdfResult = await repo.attachPdf(
         liveId,
         contentBase64: b64,
@@ -480,6 +509,9 @@ class _ComposerState extends ConsumerState<Composer> {
       }
       final dataUrl =
           'data:application/octet-stream;base64,${base64Encode(await pickedFile.readAsBytes())}';
+      if (!_contractAllowsAttachment(dataUrl.length)) {
+        return;
+      }
       final fileResult = await repo.attachFile(
         liveId,
         dataUrl: dataUrl,
