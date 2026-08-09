@@ -6,7 +6,9 @@ plugins {
 
 android {
     namespace = "com.nousresearch.hermes"
-    compileSdk = flutter.compileSdkVersion
+    // flutter_secure_storage 11.x compiles against Android SDK 37, so the
+    // AAR metadata check fails unless we exceed Flutter's default (36).
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

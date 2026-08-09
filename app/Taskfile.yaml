@@ -219,6 +219,13 @@ tasks:
     deps:
       - pub-get
 
+  package-linux-packages:
+    desc: 'Build Linux .deb and .rpm packages'
+    cmds:
+      - ./packaging/linux_packages.sh
+    deps:
+      - pub-get
+
   package-macos:
     desc: 'Package macOS build as DMG'
     cmds:
