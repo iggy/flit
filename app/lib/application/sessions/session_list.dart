@@ -17,6 +17,7 @@
 library;
 
 import 'package:flit/application/chat/message_list_notifier.dart';
+import 'package:flit/application/chat/prompt_queue.dart';
 import 'package:flit/application/connection/connection_providers.dart';
 import 'package:flit/application/providers.dart';
 import 'package:flit/application/sessions/active_session.dart';
@@ -197,14 +198,22 @@ class SessionActions {
   }
 
   /// `session.interrupt` (wire §12) on the ACTIVE session (live id).
+  ///
+  /// Interrupt stops the turn AND discards every prompt queued behind it
+  /// (gateway 0.20 clears `queued_prompt`/`queued_prompts` and bumps the queue
+  /// generation — methods_session.py:2916), so the client's own view of the
+  /// queue is dropped in step; the composer reports what was lost.
   Future<String?> interruptActive() async {
     final repository = _ref.read(sessionRepositoryProvider);
     final liveId = _ref.read(activeSessionProvider).liveId;
     if (repository == null || liveId == null) {
       return null; // Nothing to interrupt.
     }
+    final queue = _ref.read(promptQueueProvider(liveId).notifier);
+    queue.beginInterrupt();
     try {
       await repository.interrupt(liveId);
+      queue.dropAll();
       // Refresh the live badges (working → idle once the turn settles).
       _ref.invalidate(activeSessionListProvider);
       return null;
@@ -212,6 +221,8 @@ class SessionActions {
       return error.message;
     } on Object catch (error) {
       return error.toString();
+    } finally {
+      queue.endInterrupt();
     }
   }
 

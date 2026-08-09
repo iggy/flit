@@ -19,6 +19,7 @@ import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/data/dto/events/gateway_event_parser.dart';
 import 'package:flit/data/transport/gateway_rpc_client.dart';
 import 'package:flit/domain/models/attachment.dart';
+import 'package:flit/domain/models/chat_message.dart';
 import 'package:flit/domain/models/command_dispatch.dart';
 import 'package:flit/domain/models/prompt_submit_status.dart';
 import 'package:flit/domain/models/session_bootstrap.dart';
@@ -98,6 +99,8 @@ final class FakeChatRepository implements ChatRepository {
   final List<({String liveId, String text})> submitted =
       <({String liveId, String text})>[];
 
+  void emit(TypedGatewayEvent event) => _events.add(event);
+
   /// Canned ack status for submitPrompt (defaults to streaming).
   SubmitPromptResult submitResult = const SubmitPromptResult(
     PromptSubmitStatus.streaming,
@@ -134,6 +137,20 @@ final class FakeChatRepository implements ChatRepository {
 
 /// Fake session repository for bootstrap.
 final class FakeSessionRepository implements SessionRepository {
+  final List<String> interrupted = <String>[];
+
+  /// When set, interrupt throws this error instead of succeeding.
+  Exception? interruptError;
+
+  @override
+  Future<void> interrupt(String liveId) async {
+    interrupted.add(liveId);
+    final error = interruptError;
+    if (error != null) {
+      throw error;
+    }
+  }
+
   @override
   Future<SessionCreateResult> create({
     String? profile,
@@ -578,6 +595,109 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('truncation confirmed'), findsOneWidget);
+    });
+  });
+
+  group('gateway 0.20 item #5: interrupt drops the queue', () {
+    /// Queue [count] messages by sending with a `queued` ack. Each send's own
+    /// "Queued — …" snackbar is left to expire (4s), so a later assertion sees
+    /// the snackbar it is actually about rather than one still in the queue.
+    Future<void> queueMessages(WidgetTester tester, int count) async {
+      chatRepository.submitResult = const SubmitPromptResult(
+        PromptSubmitStatus.queued,
+      );
+      for (var i = 0; i < count; i++) {
+        await tester.enterText(find.byKey(composerFieldKey), 'queued $i');
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(composerSendKey));
+        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 5));
+        await tester.pumpAndSettle();
+      }
+    }
+
+    testWidgets('a queued ack shows the pending count above the field', (
+      tester,
+    ) async {
+      await pumpComposer(tester);
+      expect(find.byKey(composerQueuedNoticeKey), findsNothing);
+
+      await queueMessages(tester, 1);
+
+      expect(find.byKey(composerQueuedNoticeKey), findsOneWidget);
+      expect(
+        find.textContaining('1 message queued behind this turn'),
+        findsOneWidget,
+      );
+
+      await queueMessages(tester, 1);
+
+      expect(
+        find.textContaining('2 messages queued behind this turn'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('stop reports how many queued messages were discarded', (
+      tester,
+    ) async {
+      await pumpComposer(tester);
+      await queueMessages(tester, 2);
+
+      // The Stop button only exists while a turn is in flight.
+      chatRepository.emit(
+        const TypedGatewayEvent.messageStart(sessionId: liveId),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(composerStopKey));
+      await tester.pumpAndSettle();
+
+      expect(sessionRepository.interrupted, <String>[liveId]);
+      expect(
+        find.text('Stopped — 2 queued messages discarded'),
+        findsOneWidget,
+      );
+      // The queue is gone, so the notice goes with it.
+      expect(find.byKey(composerQueuedNoticeKey), findsNothing);
+    });
+
+    testWidgets('a failed interrupt leaves the queue alone', (tester) async {
+      await pumpComposer(tester);
+      await queueMessages(tester, 1);
+
+      sessionRepository.interruptError = const GatewayRpcException(
+        5019,
+        'compute-host interrupt failed',
+      );
+      chatRepository.emit(
+        const TypedGatewayEvent.messageStart(sessionId: liveId),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(composerStopKey));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Failed to stop'), findsOneWidget);
+      expect(find.byKey(composerQueuedNoticeKey), findsOneWidget);
+      expect(find.textContaining('discarded'), findsNothing);
+    });
+
+    testWidgets('a turn that ends on its own drains the queue silently', (
+      tester,
+    ) async {
+      await pumpComposer(tester);
+      await queueMessages(tester, 1);
+
+      chatRepository.emit(
+        const TypedGatewayEvent.messageComplete(
+          sessionId: liveId,
+          text: 'all done',
+          status: MessageTerminalStatus.complete,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(composerQueuedNoticeKey), findsNothing);
+      expect(find.textContaining('discarded'), findsNothing);
     });
   });
 

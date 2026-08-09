@@ -178,7 +178,9 @@ the resuming client like any other turn; `attempt` is the bounded retry count.
 The reply arrives as events (next section). `{"status":"streaming"}` — NOT
 `{ok:true}` (`methods_prompt.py:367`). Submitting into a **busy** turn returns a
 different status instead (`steered` / `redirected` / `queued`); see
-`../updates/gateway-0.18-to-0.20-required.md` §2.
+`../updates/gateway-0.18-to-0.20-required.md` §2. A `queued` prompt runs as the
+next turn — unless `session.interrupt` lands first, which throws the whole queue
+away (§12).
 
 ## 7. One streaming turn (sequence of event frames)
 
@@ -277,6 +279,13 @@ The event payload may also carry `multi_select: true`.
 and can fail with `5019`.) Also denies pending approvals and clears pending
 clarify/sudo/secret for the session. The turn's `message.complete` then carries
 `payload.status:"interrupted"`.
+
+Interrupt also DISCARDS the session's queued prompts — `queued_prompt` /
+`queued_prompts` are cleared and `_queued_prompt_generation` is bumped
+(`methods_session.py:2916`, `2942`), so anything a busy `prompt.submit` parked
+as `{"status":"queued"}` (§6) never runs and must be resent. The clears are
+session-scoped: a global `_clear_pending()` would cancel clarify/sudo/secret
+prompts on unrelated sessions sharing the gateway process.
 
 ## 13. `plugins.list`
 

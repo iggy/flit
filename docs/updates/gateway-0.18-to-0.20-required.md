@@ -146,7 +146,7 @@ either.
 
 ---
 
-## 5. `session.interrupt` queue semantics — LOW (but related to #2)
+## 5. `session.interrupt` queue semantics — LOW (but related to #2) — DONE
 
 **Gateway change** (`hermes-agent/tui_gateway/methods_session.py:2899-2970`):
 interrupt now explicitly clears `queued_prompt` / `queued_prompts` and bumps
@@ -154,10 +154,32 @@ the queue generation, and `_clear_pending` is session-scoped (a global clear
 would cancel clarify/sudo/secret prompts on unrelated sessions). Response shape
 unchanged (`{"status":"interrupted"}`).
 
-**flit gap**: none functionally — flit's interrupt call (`session_repository_impl.dart:68`)
-is already correct (live id as `session_id`). **But** if flit gains queued
-submits (item #2), it must know the queue is dropped on interrupt. Document
-this in the submit/queue notifier when #2 lands.
+**flit gap**: none on the wire — flit's interrupt call
+(`session_repository_impl.dart:83`) was already correct (live id as
+`session_id`). But #2 landed, so `queued` acks are now real client state, and
+Stop silently threw them away.
+
+**Done**: `application/chat/prompt_queue.dart` remembers what the gateway
+acknowledged as `queued`, per LIVE session id (nothing on the wire reports the
+queue back). A turn-terminal frame retires the entries as a DRAIN; an interrupt
+retires them as a DROP with the count, which the composer reports
+("Stopped — 2 queued messages discarded") and shows pending above the field
+("2 messages queued behind this turn — Stop discards them").
+
+Two things that look like details and are not:
+- A drain and a drop are the same frame. `message.complete{status:
+  "interrupted"}` is indistinguishable from any other terminal frame, and it can
+  arrive BEFORE the interrupt response, so the interrupt is bracketed
+  (`beginInterrupt`/`endInterrupt`) and a terminal frame inside the bracket
+  counts as a drop. `dropAll` is idempotent — response and frame race, first one
+  reports.
+- The count is of MESSAGES, not gateway queue slots: `_enqueue_prompt`
+  (`server.py:7427`) merges consecutive text-only submissions into one slot, so
+  one drained turn can carry several entries.
+
+Both interrupt paths drop the queue: the composer's Stop button and
+`SessionActions.interruptActive` (the drawer's). A FAILED interrupt does not —
+the gateway's queue is still intact.
 
 ---
 

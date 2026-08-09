@@ -15,6 +15,7 @@
 import 'dart:async';
 
 import 'package:flit/application/chat/message_list_notifier.dart';
+import 'package:flit/application/chat/prompt_queue.dart';
 import 'package:flit/application/config/config_providers.dart';
 import 'package:flit/application/connection/connection_providers.dart';
 import 'package:flit/application/models/model_providers.dart';
@@ -69,6 +70,7 @@ final class FakeSessionRepository implements SessionRepository {
   );
 
   final List<String> interrupted = <String>[];
+  Exception? interruptError;
 
   // Phase 2 mutation action support
   final List<({String liveId, String title})> renamed =
@@ -177,6 +179,10 @@ final class FakeSessionRepository implements SessionRepository {
   @override
   Future<void> interrupt(String liveId) async {
     interrupted.add(liveId);
+    final error = interruptError;
+    if (error != null) {
+      throw error;
+    }
   }
 
   @override
@@ -588,6 +594,35 @@ void main() {
 
     expect(error, isNull);
     expect(repository.interrupted, <String>['live-1']);
+  });
+
+  test('interruptActive drops the queued prompts it discarded', () async {
+    container
+        .read(activeSessionProvider.notifier)
+        .switchTo(liveId: 'live-1', durableId: 'durable-1');
+    container.read(promptQueueProvider('live-1').notifier).enqueue('queued');
+
+    await readActions().interruptActive();
+
+    // Gateway 0.20 clears queued_prompt(s) on interrupt — the client's view
+    // goes with it, flagged so the UI can report the loss.
+    final queue = container.read(promptQueueProvider('live-1'));
+    expect(queue.texts, isEmpty);
+    expect(queue.dropped, 1);
+  });
+
+  test('a failed interrupt leaves the queue intact', () async {
+    container
+        .read(activeSessionProvider.notifier)
+        .switchTo(liveId: 'live-1', durableId: 'durable-1');
+    container.read(promptQueueProvider('live-1').notifier).enqueue('queued');
+    repository.interruptError = const GatewayRpcException(5019, 'nope');
+
+    expect(await readActions().interruptActive(), 'nope');
+
+    final queue = container.read(promptQueueProvider('live-1'));
+    expect(queue.texts, <String>['queued']);
+    expect(queue.dropped, 0);
   });
 
   test('interruptActive with no active session is a no-op', () async {

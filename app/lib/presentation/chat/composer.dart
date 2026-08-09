@@ -10,6 +10,10 @@
 /// P3-03: slash dispatch — text starting with `/` is routed to command.dispatch
 /// instead of submitPrompt; dispatch results fan out to prefill/send/exec/skill.
 ///
+/// A send the gateway acknowledges as `queued` is tracked in
+/// [promptQueueProvider] and shown above the field, because Stop DISCARDS the
+/// queue rather than just stopping the turn (see prompt_queue.dart).
+///
 /// Key handling: Enter submits (when the field is effectively used
 /// single-line, the common chat case); Shift+Enter inserts a newline.
 library;
@@ -21,6 +25,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flit/application/attachments/attachment_providers.dart';
 import 'package:flit/application/chat/composer_prefill.dart';
 import 'package:flit/application/chat/message_list_notifier.dart';
+import 'package:flit/application/chat/prompt_queue.dart';
 import 'package:flit/application/providers.dart';
 import 'package:flit/application/sessions/active_session.dart';
 import 'package:flit/application/slash/slash_providers.dart';
@@ -47,6 +52,10 @@ const Key composerStopKey = Key('composer_stop');
 
 /// Key of the steer button (shown while a turn is in flight).
 const Key composerSteerKey = Key('composer_steer');
+
+/// Key of the queued-prompts notice (shown while the gateway holds queued
+/// submissions for the active session).
+const Key composerQueuedNoticeKey = Key('composer_queued_notice');
 
 class Composer extends ConsumerStatefulWidget {
   const Composer({super.key});
@@ -205,6 +214,9 @@ class _ComposerState extends ConsumerState<Composer> {
       if (result != null && mounted) {
         switch (result.status) {
           case PromptSubmitStatus.queued:
+            // Remember it: the gateway drops the whole queue on interrupt
+            // (see prompt_queue.dart), and nothing on the wire reports it.
+            ref.read(promptQueueProvider(liveId).notifier).enqueue(text);
             _showSnackBar('Queued — will run after the current turn');
           case PromptSubmitStatus.steered:
             _showSnackBar('Steered into the current turn');
@@ -220,10 +232,18 @@ class _ComposerState extends ConsumerState<Composer> {
   }
 
   Future<void> _stop(String liveId) async {
+    // Interrupt DISCARDS the gateway's queued prompts (prompt_queue.dart), and
+    // the turn's terminal frame can beat the response back — bracket the call
+    // so whichever arrives first reports the loss.
+    final queue = ref.read(promptQueueProvider(liveId).notifier);
+    queue.beginInterrupt();
     try {
       await ref.read(sessionRepositoryProvider)?.interrupt(liveId);
+      queue.dropAll();
     } on Object catch (error) {
       _showError('Failed to stop', error);
+    } finally {
+      queue.endInterrupt();
     }
   }
 
@@ -530,6 +550,22 @@ class _ComposerState extends ConsumerState<Composer> {
       }
     });
 
+    // A dropped queue is reported wherever the interrupt came from — the Stop
+    // button here or the drawer's — because the queued messages are gone for
+    // good and only the user can resend them.
+    if (liveId != null) {
+      ref.listen(promptQueueProvider(liveId), (previous, next) {
+        if (next.dropped == 0) {
+          return;
+        }
+        _showSnackBar(
+          'Stopped — ${next.dropped} queued '
+          '${next.dropped == 1 ? 'message' : 'messages'} discarded',
+        );
+        ref.read(promptQueueProvider(liveId).notifier).acknowledgeDropped();
+      });
+    }
+
     // P7: watch staged attachments.
     final stagedAttachments = ref.watch(stagedAttachmentsProvider);
 
@@ -558,6 +594,10 @@ class _ComposerState extends ConsumerState<Composer> {
       });
     }
 
+    final queued = liveId == null
+        ? const PromptQueue()
+        : ref.watch(promptQueueProvider(liveId));
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
       child: Column(
@@ -566,6 +606,7 @@ class _ComposerState extends ConsumerState<Composer> {
           // P3-02: suggestion overlay (shown above the field when non-empty).
           if (_suggestions != null && _suggestions!.isNotEmpty)
             _buildSuggestionOverlay(),
+          if (!queued.isEmpty) _buildQueuedNotice(queued),
           // P7: attachment chips row (shown above the field when non-empty).
           if (stagedAttachments.images.isNotEmpty ||
               stagedAttachments.files.isNotEmpty)
@@ -648,6 +689,38 @@ class _ComposerState extends ConsumerState<Composer> {
                   icon: const Icon(Icons.send),
                 ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// The "waiting behind this turn" line: what a `queued` ack left pending,
+  /// and a warning that Stop throws it away rather than just stopping.
+  Widget _buildQueuedNotice(PromptQueue queue) {
+    final theme = Theme.of(context);
+    final count = queue.texts.length;
+    return Padding(
+      key: composerQueuedNoticeKey,
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: <Widget>[
+          Icon(
+            Icons.schedule,
+            size: 14,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              '$count ${count == 1 ? 'message' : 'messages'} queued behind '
+              'this turn — Stop discards them',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
