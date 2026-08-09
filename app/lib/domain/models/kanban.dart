@@ -638,6 +638,69 @@ final class KanbanSpecifyResult {
       'KanbanSpecifyResult(ok: $ok, taskId: $taskId${reason != null ? ', reason: $reason' : ''}${newTitle != null ? ', newTitle: $newTitle' : ''})';
 }
 
+/// Result from `POST /tasks/{id}/estimate` — a rough token + complexity read
+/// on a task from the gateway's auxiliary model.
+///
+/// Two wire details: a refusal is a **200** with `{ok: false, reason}`, not an
+/// HTTP error (`plugin_api.py` `_run_estimate` never raises), and on an `ok`
+/// result [complexity] / [rationale] / [model] are each independently
+/// nullable — the gateway drops a complexity band it doesn't recognise and
+/// only knows the model name when the provider echoed one back.
+///
+/// [estTokens] is tokens for a whole multi-turn agent run, deliberately NOT a
+/// dollar cost: providers don't report cost reliably.
+final class KanbanEstimate {
+  const KanbanEstimate({
+    required this.ok,
+    this.reason,
+    this.estTokens,
+    this.complexity,
+    this.rationale,
+    this.model,
+  });
+
+  /// False when the gateway declined to estimate (no title, auxiliary client
+  /// unavailable, LLM error, unparseable reply) — see [reason].
+  final bool ok;
+
+  /// Why the estimate failed; null when [ok].
+  final String? reason;
+
+  /// Estimated total tokens across the whole run.
+  final int? estTokens;
+
+  /// Complexity band — `S` / `M` / `L`, or null when the model returned
+  /// something else.
+  final String? complexity;
+
+  /// One-sentence why behind the numbers.
+  final String? rationale;
+
+  /// Model that produced the estimate, when the provider reported it.
+  final String? model;
+
+  @override
+  bool operator ==(Object other) {
+    return other is KanbanEstimate &&
+        other.ok == ok &&
+        other.reason == reason &&
+        other.estTokens == estTokens &&
+        other.complexity == complexity &&
+        other.rationale == rationale &&
+        other.model == model;
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(ok, reason, estTokens, complexity, rationale, model);
+
+  @override
+  String toString() =>
+      'KanbanEstimate(ok: $ok, estTokens: $estTokens, '
+      'complexity: $complexity, model: $model'
+      '${reason != null ? ', reason: $reason' : ''})';
+}
+
 /// Result from `POST /tasks/{id}/decompose` (P5-05).
 final class KanbanDecomposeResult {
   const KanbanDecomposeResult({

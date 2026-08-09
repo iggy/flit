@@ -317,6 +317,19 @@ final class KanbanRepositoryImpl implements KanbanRepository {
   }
 
   @override
+  Future<KanbanEstimate> estimateTask(String id, {String? board}) async {
+    // No body — the task id in the path is the whole input; the board is a
+    // query param like every other task route.
+    final data = await _client.postJson(
+      '$_base/tasks/$id/estimate',
+      queryParameters: board == null ? null : <String, String>{'board': board},
+    );
+
+    final map = _expectMap(data, 'POST $_base/tasks/$id/estimate');
+    return _parseEstimate(map);
+  }
+
+  @override
   Future<void> reassign(
     String id, {
     String? profile,
@@ -555,6 +568,20 @@ final class KanbanRepositoryImpl implements KanbanRepository {
       taskId: _stringOrNull(json['task_id']) ?? '',
       reason: _stringOrNull(json['reason']),
       newTitle: _stringOrNull(json['new_title']),
+    );
+  }
+
+  /// A declined estimate arrives as a 200 with `{ok: false, reason}` (the
+  /// server's `_run_estimate` never raises), so failure is parsed, not thrown.
+  /// On an ok result the three descriptive fields are independently optional.
+  static KanbanEstimate _parseEstimate(Map<String, dynamic> json) {
+    return KanbanEstimate(
+      ok: json['ok'] == true,
+      reason: _stringOrNull(json['reason']),
+      estTokens: _intOrNull(json['est_tokens']),
+      complexity: _stringOrNull(json['complexity']),
+      rationale: _stringOrNull(json['rationale']),
+      model: _stringOrNull(json['model']),
     );
   }
 

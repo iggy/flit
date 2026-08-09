@@ -106,6 +106,14 @@ abstract interface class KanbanRepository {
     String? board,
   });
 
+  /// `POST /api/plugins/kanban/tasks/{id}/estimate` — rough token +
+  /// complexity estimate for a stored task via the gateway's auxiliary model.
+  ///
+  /// Runs several seconds (an LLM call). A refusal comes back as
+  /// `KanbanEstimate.ok == false` with a reason, NOT as an exception — only
+  /// transport/auth failures throw.
+  Future<KanbanEstimate> estimateTask(String id, {String? board});
+
   /// `POST /api/plugins/kanban/tasks/{id}/reassign` — reassign task (P5-05).
   Future<void> reassign(
     String id, {

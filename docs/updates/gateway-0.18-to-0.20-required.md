@@ -286,7 +286,7 @@ Three wire details that are easy to get wrong:
 
 ---
 
-## 8. Kanban `/tasks/{id}/estimate` — new endpoint, no client — LOW
+## 8. Kanban `/tasks/{id}/estimate` — new endpoint, no client — LOW — DONE
 
 **Gateway change** (`hermes-agent/plugins/kanban/dashboard/plugin_api.py:1812-1850`):
 `POST /tasks/{id}/estimate` returns
@@ -296,9 +296,28 @@ with `ok: false` + `reason`, not an HTTP error). Runs several seconds
 
 **flit gap**: no client method.
 
-**Work to do**: add a `estimateTask(taskId, {board})` call to the kanban
-repository and a domain model for the result. New capability — wire into the
-task drawer only if desired.
+**Done**: `estimateTask(id, {board})` on the kanban repository returns a
+`KanbanEstimate` domain model, and the task drawer has an Estimate button that
+renders the readout inline (tokens, complexity band, the model's one-line why,
+and which model said it).
+
+Three things the shape makes easy to get wrong:
+- A refusal (no title, auxiliary client unavailable, LLM error, unparseable
+  reply) is a **200** with `{ok: false, reason}` — `_run_estimate` never
+  raises. So `ok: false` is a RESULT to render, not an exception:
+  `KanbanEstimateState.estimate` holds both outcomes and `.error` is reserved
+  for transport/auth failures.
+- On an `ok` result `complexity` / `rationale` / `model` are each
+  independently nullable — the server nulls a band it doesn't recognise, and
+  only knows the model name when the provider echoed one back.
+- The call spends an auxiliary-model round-trip, so `kanbanEstimateProvider`
+  is a `NotifierProvider.family` that runs only when asked — deliberately not
+  a `FutureProvider` that would estimate on every drawer open. A re-run keeps
+  the previous numbers on screen, since blanking them mid-flight reads as a
+  failure.
+
+Not wired: `POST /estimate` (the same estimate for ad-hoc text, before a task
+exists) — that belongs to the create dialog, which is out of this item's scope.
 
 ---
 

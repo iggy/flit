@@ -377,6 +377,7 @@ class _DetailBodyState extends ConsumerState<_DetailBody> {
     final task = widget.detail.task;
     final linkCounts = task.linkCounts;
     final actionState = ref.watch(kanbanTaskActionControllerProvider);
+    final estimateState = ref.watch(kanbanEstimateProvider(task.id));
 
     return ListView(
       children: <Widget>[
@@ -497,6 +498,24 @@ class _DetailBodyState extends ConsumerState<_DetailBody> {
               icon: const Icon(Icons.person_outline, size: 16),
               label: const Text('Reassign'),
             ),
+            // Estimate has its OWN busy flag (it doesn't mutate the task, so
+            // it isn't gated on the shared action state) and renders inline
+            // below rather than as a snackbar.
+            FilledButton.tonalIcon(
+              onPressed: estimateState.busy
+                  ? null
+                  : () => ref
+                        .read(kanbanEstimateProvider(task.id).notifier)
+                        .run(),
+              icon: estimateState.busy
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.calculate_outlined, size: 16),
+              label: const Text('Estimate'),
+            ),
             FilledButton.tonalIcon(
               onPressed: actionState.busy ? null : () => _reclaim(task.id),
               icon: const Icon(Icons.lock_open, size: 16),
@@ -511,6 +530,10 @@ class _DetailBodyState extends ConsumerState<_DetailBody> {
             ),
           ],
         ),
+        if (estimateState.estimate != null || estimateState.error != null) ...[
+          const SizedBox(height: 12),
+          _EstimateCard(state: estimateState, theme: widget.theme),
+        ],
         if (task.latestSummary != null &&
             task.latestSummary!.isNotEmpty) ...<Widget>[
           const SizedBox(height: 12),
@@ -678,6 +701,99 @@ class _DetailBodyState extends ConsumerState<_DetailBody> {
       context: context,
       builder: (context) => _ReassignDialog(taskId: task.id),
     );
+  }
+}
+
+/// The inline estimate readout in the detail drawer: token figure, complexity
+/// band, the model's one-line why, and which model said so.
+///
+/// Three outcomes share this box — a transport failure, a declined estimate
+/// (`ok: false` + reason, which arrives as a 200), and a real estimate.
+class _EstimateCard extends StatelessWidget {
+  const _EstimateCard({required this.state, required this.theme});
+
+  final KanbanEstimateState state;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    final estimate = state.estimate;
+    final failed = state.error != null || (estimate != null && !estimate.ok);
+    final scheme = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: failed ? scheme.errorContainer : scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            'Estimated effort',
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: failed ? scheme.onErrorContainer : null,
+            ),
+          ),
+          const SizedBox(height: 4),
+          if (state.error != null)
+            Text(
+              state.error!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: scheme.onErrorContainer,
+              ),
+            )
+          else if (estimate != null && !estimate.ok)
+            Text(
+              estimate.reason ?? 'The gateway could not estimate this task.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: scheme.onErrorContainer,
+              ),
+            )
+          else if (estimate != null) ...<Widget>[
+            Wrap(
+              spacing: 12,
+              runSpacing: 4,
+              children: <Widget>[
+                if (estimate.estTokens != null)
+                  Text('~${_thousands(estimate.estTokens!)} tokens'),
+                if (estimate.complexity != null)
+                  Text('Complexity: ${estimate.complexity}'),
+              ],
+            ),
+            if (estimate.rationale != null) ...<Widget>[
+              const SizedBox(height: 4),
+              Text(estimate.rationale!, style: theme.textTheme.bodySmall),
+            ],
+            const SizedBox(height: 4),
+            Text(
+              // A rough guess from an auxiliary model, and NOT a cost —
+              // providers don't report cost reliably.
+              estimate.model == null
+                  ? 'A rough guess for a whole agent run, not a cost.'
+                  : 'A rough guess from ${estimate.model}, not a cost.',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: scheme.outline,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// `48000` → `48,000`. Big token figures are unreadable without separators
+  /// and the app has no i18n/number-format dependency.
+  static String _thousands(int value) {
+    final digits = value.abs().toString();
+    final buffer = StringBuffer(value < 0 ? '-' : '');
+    for (var i = 0; i < digits.length; i++) {
+      if (i > 0 && (digits.length - i) % 3 == 0) {
+        buffer.write(',');
+      }
+      buffer.write(digits[i]);
+    }
+    return buffer.toString();
   }
 }
 

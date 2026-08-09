@@ -82,8 +82,8 @@ platforms — not a client feed.)
 | POST | `/tasks/{id}/reassign` | Reassign to a profile (409 if running without `reclaim_first`) |
 | POST | `/tasks/{id}/reclaim` | Release a stuck claim |
 | GET | `/tasks/{id}/log` | Worker stdout/stderr log (`?tail=<bytes>`) |
-| POST | `/tasks/{id}/estimate` | Token/complexity estimate + one-line why for a stored task (`plugin_api.py:1811`); no client yet — see required-doc §8 |
-| POST | `/estimate` | Same estimate for ad-hoc text, before the task exists (`plugin_api.py:1804`) |
+| POST | `/tasks/{id}/estimate` | Token/complexity estimate + one-line why for a stored task (`plugin_api.py:1811`). `{ok, est_tokens, complexity: "S"\|"M"\|"L"\|null, rationale?, model?}`; a refusal is a **200** with `{ok: false, reason}`, NOT an HTTP error. Several seconds (auxiliary LLM call) |
+| POST | `/estimate` | Same estimate for ad-hoc text, before the task exists (`plugin_api.py:1804`); no client yet |
 
 ### Links & attachments
 | Method | Path | Purpose |

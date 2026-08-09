@@ -279,6 +279,10 @@ final class _FakeKanbanRepository implements KanbanRepository {
   }) async => const KanbanDecomposeResult(ok: true, taskId: '', fanout: false);
 
   @override
+  Future<KanbanEstimate> estimateTask(String id, {String? board}) async =>
+      const KanbanEstimate(ok: true, estTokens: 48000, complexity: 'M');
+
+  @override
   Future<void> reassign(
     String id, {
     String? profile,

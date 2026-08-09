@@ -244,7 +244,10 @@ void main() {
 
     // Wipe the model field and drop the depth back to "Inherit profile".
     // The dialog scrolls, so the depth dropdown needs bringing into view.
-    await tester.enterText(find.widgetWithText(TextField, 'Model override'), '');
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Model override'),
+      '',
+    );
     final depthDropdown = find.byType(DropdownButtonFormField<String>);
     await tester.ensureVisible(depthDropdown);
     await tester.pumpAndSettle();
@@ -279,6 +282,63 @@ void main() {
     final call = repository.editCalls.single;
     expect(call.clearModelOverride, isFalse);
     expect(call.clearReasoningEffort, isFalse);
+  });
+
+  testWidgets('the drawer estimates only when asked, then renders it', (
+    tester,
+  ) async {
+    final repository = FakeKanbanRepository(boardResult: _board);
+    repository.estimateResult = const KanbanEstimate(
+      ok: true,
+      estTokens: 48000,
+      complexity: 'M',
+      rationale: 'Multi-file change with tests.',
+      model: 'hermes-4-405b',
+    );
+    await tester.pumpWidget(_wrap(repository));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Task one'));
+    await tester.pumpAndSettle();
+
+    // Nothing until the button is pressed — the call spends an LLM round-trip.
+    expect(find.text('Estimated effort'), findsNothing);
+
+    await tester.ensureVisible(find.text('Estimate'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Estimate'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Estimated effort'), findsOneWidget);
+    expect(find.text('~48,000 tokens'), findsOneWidget);
+    expect(find.text('Complexity: M'), findsOneWidget);
+    expect(find.text('Multi-file change with tests.'), findsOneWidget);
+    expect(
+      find.text('A rough guess from hermes-4-405b, not a cost.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('a declined estimate shows the gateway reason', (tester) async {
+    final repository = FakeKanbanRepository(boardResult: _board);
+    // `ok: false` arrives as a 200, so this is a result to render, not an
+    // error to swallow.
+    repository.estimateResult = const KanbanEstimate(
+      ok: false,
+      reason: 'auxiliary client unavailable',
+    );
+    await tester.pumpWidget(_wrap(repository));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Task one'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Estimate'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Estimate'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('auxiliary client unavailable'), findsOneWidget);
+    expect(find.textContaining('tokens'), findsNothing);
   });
 
   testWidgets('refresh button re-fetches the board', (tester) async {

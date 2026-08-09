@@ -209,6 +209,92 @@ class PluginToggleController extends Notifier<PluginToggleState> {
   }
 }
 
+/// One task's estimate: idle until asked, then in flight, then a result.
+///
+/// [estimate] holds BOTH outcomes of the call — a declined estimate is an
+/// `ok: false` [KanbanEstimate] with a reason, not an [error]; [error] is only
+/// for transport/auth failures.
+final class KanbanEstimateState {
+  const KanbanEstimateState({this.busy = false, this.estimate, this.error});
+
+  /// The estimate call is in flight (several seconds — an LLM round-trip).
+  final bool busy;
+
+  /// The last result, ok or declined; null before the first run.
+  final KanbanEstimate? estimate;
+
+  /// Human-readable transport failure, or null.
+  final String? error;
+
+  @override
+  bool operator ==(Object other) {
+    return other is KanbanEstimateState &&
+        other.busy == busy &&
+        other.estimate == estimate &&
+        other.error == error;
+  }
+
+  @override
+  int get hashCode => Object.hash(busy, estimate, error);
+
+  @override
+  String toString() =>
+      'KanbanEstimateState(busy: $busy, estimate: $estimate, error: $error)';
+}
+
+/// A task's token/complexity estimate, keyed by task id.
+///
+/// Deliberately NOT a [FutureProvider]: `POST /tasks/{id}/estimate` spends an
+/// auxiliary-model call, so it runs only when the user asks
+/// ([KanbanEstimateNotifier.run]), never on build.
+final kanbanEstimateProvider =
+    NotifierProvider.family<
+      KanbanEstimateNotifier,
+      KanbanEstimateState,
+      String
+    >(KanbanEstimateNotifier.new);
+
+class KanbanEstimateNotifier extends Notifier<KanbanEstimateState> {
+  KanbanEstimateNotifier(this.taskId);
+
+  /// The task being estimated — the family argument.
+  final String taskId;
+
+  @override
+  KanbanEstimateState build() => const KanbanEstimateState();
+
+  /// Ask the gateway to estimate [taskId]. NEVER throws — a refusal lands in
+  /// [KanbanEstimateState.estimate] with `ok: false`, a transport failure in
+  /// [KanbanEstimateState.error].
+  Future<void> run({String? board}) async {
+    if (state.busy) {
+      return;
+    }
+    final repository = ref.read(kanbanRepositoryProvider);
+    if (repository == null) {
+      state = const KanbanEstimateState(error: 'Not connected to a gateway.');
+      return;
+    }
+    // Keep the previous estimate on screen while the next one is computed —
+    // the call is slow enough that blanking it reads as a failure.
+    state = KanbanEstimateState(busy: true, estimate: state.estimate);
+    try {
+      final estimate = await repository.estimateTask(taskId, board: board);
+      state = KanbanEstimateState(estimate: estimate);
+    } on GatewayException catch (error) {
+      state = KanbanEstimateState(
+        estimate: state.estimate,
+        error: error.message,
+      );
+    } on Object catch (error) {
+      state = KanbanEstimateState(
+        estimate: state.estimate,
+        error: error.toString(),
+      );
+    }
+  }
+}
+
 /// Interaction state for kanban task actions (P5-05).
 final class KanbanTaskActionState {
   const KanbanTaskActionState({

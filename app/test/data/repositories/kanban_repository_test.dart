@@ -186,24 +186,27 @@ void main() {
       expect(task.workerPid, 4242);
     });
 
-    test('an older gateway omitting the execution block reads as unset', () async {
-      final repository = _repositoryWith((options) async {
-        return _jsonResponse(200, _cannedBoard);
-      });
+    test(
+      'an older gateway omitting the execution block reads as unset',
+      () async {
+        final repository = _repositoryWith((options) async {
+          return _jsonResponse(200, _cannedBoard);
+        });
 
-      final task = (await repository.board()).columns.first.tasks.single;
+        final task = (await repository.board()).columns.first.tasks.single;
 
-      expect(task.projectId, isNull);
-      expect(task.modelOverride, isNull);
-      expect(task.reasoningEffort, isNull);
-      expect(task.goalMode, isFalse);
-      expect(task.blockKind, isNull);
-      expect(task.blockRecurrences, 0);
-      expect(task.consecutiveFailures, 0);
-      // `null` (profile defaults) and `[]` (no extra skills) are different
-      // values, so a missing key must NOT become an empty list.
-      expect(task.skills, isNull);
-    });
+        expect(task.projectId, isNull);
+        expect(task.modelOverride, isNull);
+        expect(task.reasoningEffort, isNull);
+        expect(task.goalMode, isFalse);
+        expect(task.blockKind, isNull);
+        expect(task.blockRecurrences, 0);
+        expect(task.consecutiveFailures, 0);
+        // `null` (profile defaults) and `[]` (no extra skills) are different
+        // values, so a missing key must NOT become an empty list.
+        expect(task.skills, isNull);
+      },
+    );
 
     test('an explicitly empty skills list stays empty, not null', () async {
       final repository = _repositoryWith((options) async {
@@ -478,26 +481,29 @@ void main() {
       expect(requests.single.data, isNot(contains('clear_reasoning_effort')));
     });
 
-    test('clearing needs the flags — an omitted field means unchanged', () async {
-      final requests = <RequestOptions>[];
-      final repository = _repositoryWith((options) async {
-        requests.add(options);
-        return _jsonResponse(200, <String, Object?>{
-          'task': <String, Object?>{'id': '7', 'title': 'Updated'},
+    test(
+      'clearing needs the flags — an omitted field means unchanged',
+      () async {
+        final requests = <RequestOptions>[];
+        final repository = _repositoryWith((options) async {
+          requests.add(options);
+          return _jsonResponse(200, <String, Object?>{
+            'task': <String, Object?>{'id': '7', 'title': 'Updated'},
+          });
         });
-      });
 
-      await repository.editTask(
-        '7',
-        clearModelOverride: true,
-        clearReasoningEffort: true,
-      );
+        await repository.editTask(
+          '7',
+          clearModelOverride: true,
+          clearReasoningEffort: true,
+        );
 
-      expect(requests.single.data, <String, dynamic>{
-        'clear_model_override': true,
-        'clear_reasoning_effort': true,
-      });
-    });
+        expect(requests.single.data, <String, dynamic>{
+          'clear_model_override': true,
+          'clear_reasoning_effort': true,
+        });
+      },
+    );
 
     test('reasoning_effort "none" is a value, not a clear', () async {
       final requests = <RequestOptions>[];
@@ -674,6 +680,84 @@ void main() {
       expect(result.fanout, isTrue);
       expect(result.childIds, <String>['8', '9', '10']);
       expect(result.newTitle, 'Parent task');
+    });
+  });
+
+  group('estimateTask (POST /api/plugins/kanban/tasks/{id}/estimate)', () {
+    test('parses an ok estimate', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, <String, Object?>{
+          'ok': true,
+          'est_tokens': 48000,
+          'complexity': 'M',
+          'rationale': 'Multi-file change with tests.',
+          'model': 'hermes-4-405b',
+        });
+      });
+
+      final estimate = await repository.estimateTask('7');
+
+      expect(requests.single.method, 'POST');
+      expect(requests.single.path, '/api/plugins/kanban/tasks/7/estimate');
+      expect(requests.single.uri.query, isEmpty);
+      expect(estimate.ok, isTrue);
+      expect(estimate.estTokens, 48000);
+      expect(estimate.complexity, 'M');
+      expect(estimate.rationale, 'Multi-file change with tests.');
+      expect(estimate.model, 'hermes-4-405b');
+      expect(estimate.reason, isNull);
+    });
+
+    test('a refusal is a 200 with ok:false, not a throw', () async {
+      final repository = _repositoryWith((options) async {
+        return _jsonResponse(200, <String, Object?>{
+          'ok': false,
+          'reason': 'auxiliary client unavailable',
+        });
+      });
+
+      final estimate = await repository.estimateTask('7');
+
+      expect(estimate.ok, isFalse);
+      expect(estimate.reason, 'auxiliary client unavailable');
+      expect(estimate.estTokens, isNull);
+      expect(estimate.complexity, isNull);
+    });
+
+    test('tolerates a null complexity / rationale / model on an ok', () async {
+      // The server nulls a complexity band it doesn't recognise, and only
+      // knows the model when the provider echoed one back.
+      final repository = _repositoryWith((options) async {
+        return _jsonResponse(200, <String, Object?>{
+          'ok': true,
+          'est_tokens': 12000,
+          'complexity': null,
+          'rationale': null,
+          'model': null,
+        });
+      });
+
+      final estimate = await repository.estimateTask('7');
+
+      expect(estimate.ok, isTrue);
+      expect(estimate.estTokens, 12000);
+      expect(estimate.complexity, isNull);
+      expect(estimate.rationale, isNull);
+      expect(estimate.model, isNull);
+    });
+
+    test('sends the board as a query param', () async {
+      final requests = <RequestOptions>[];
+      final repository = _repositoryWith((options) async {
+        requests.add(options);
+        return _jsonResponse(200, <String, Object?>{'ok': true});
+      });
+
+      await repository.estimateTask('7', board: 'infra');
+
+      expect(requests.single.uri.queryParameters['board'], 'infra');
     });
   });
 

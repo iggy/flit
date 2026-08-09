@@ -80,6 +80,13 @@ final class FakeKanbanRepository implements KanbanRepository {
   /// Detail answered by [task]; null falls back to a bare `Task <id>`.
   KanbanTaskDetail? taskDetail;
   Exception? updateError;
+
+  /// Answered by [estimateTask]; settable so a test can flip the outcome.
+  KanbanEstimate estimateResult = const KanbanEstimate(
+    ok: true,
+    estTokens: 48000,
+    complexity: 'M',
+  );
   final List<({String id, String status})> statusUpdates =
       <({String id, String status})>[];
   final List<EditTaskCall> editCalls = <EditTaskCall>[];
@@ -90,7 +97,9 @@ final class FakeKanbanRepository implements KanbanRepository {
   @override
   Future<KanbanTaskDetail> task(String id) async =>
       taskDetail ??
-      KanbanTaskDetail(task: KanbanTask(id: id, title: 'Task $id'));
+      KanbanTaskDetail(
+        task: KanbanTask(id: id, title: 'Task $id'),
+      );
 
   @override
   Future<void> updateTaskStatus(String id, String status) async {
@@ -186,6 +195,10 @@ final class FakeKanbanRepository implements KanbanRepository {
     String? author,
     String? board,
   }) async => const KanbanDecomposeResult(ok: true, taskId: '', fanout: false);
+
+  @override
+  Future<KanbanEstimate> estimateTask(String id, {String? board}) async =>
+      estimateResult;
 
   @override
   Future<void> reassign(
