@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adaptive launcher icon (Android 8.0+). The launcher masks these layers to
+     whatever shape the device theme uses, so the foreground bitmap keeps the
+     badge inside the guaranteed-visible central 66/108dp safe zone. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+    <!-- No <monochrome> layer: themed icons key off the foreground's alpha, and
+         this badge is a solid opaque square, so it would theme to a featureless
+         blob. Android falls back to the normal adaptive icon instead. -->
+</adaptive-icon>
