@@ -11,6 +11,7 @@
 #   task build-windows         # Windows
 #   task build-linux           # Linux
 #   task build-linux-rpm       # Linux via RPM (Fedora/RHEL)
+#   task build-linux-binary    # Linux, raw executable (no packaging)
 #   task watch                 # flutter run on default target
 #   task test                  # run flutter tests
 #   task analyze               # flutter analyze
@@ -182,6 +183,16 @@ tasks:
       - pub-get
 
   # ---------------------------------------------------------------------------
+  # Linux — raw executable, no packaging (self-contained bundle dir)
+  # ---------------------------------------------------------------------------
+  build-linux-binary:
+    desc: 'Build the Linux executable (raw bundle, no AppImage)'
+    cmds:
+      - flutter build linux --{{ .BUILD_MODE }}{{ if .FLAVOR }} --flavor {{.FLAVOR}}{{ end }}
+    deps:
+      - pub-get
+
+  # ---------------------------------------------------------------------------
   # Linux — RPM packaging (Fedora / RHEL / openSUSE)
   # ---------------------------------------------------------------------------
   build-linux-rpm:
@@ -198,6 +209,13 @@ tasks:
     desc: 'Package Linux build as AppImage'
     cmds:
       - ./packaging/linux_appimage.sh
+    deps:
+      - pub-get
+
+  package-linux-binary:
+    desc: 'Stage the raw Linux executable bundle (no AppImage)'
+    cmds:
+      - ./packaging/linux_binary.sh
     deps:
       - pub-get
 

@@ -55,6 +55,7 @@ Each platform requires its own packaging tools:
   chmod +x appimagetool-x86_64.AppImage
   sudo mv appimagetool-x86_64.AppImage /usr/local/bin/appimagetool
   ```
+  Only needed for `package-linux`. The raw executable bundle (`package-linux-binary`) has no prerequisites.
 
 ### macOS (DMG)
 
@@ -75,6 +76,10 @@ cd app
 # Linux AppImage
 task package-linux
 # or: ./packaging/linux_appimage.sh
+
+# Linux raw executable (self-contained bundle, no AppImage)
+task package-linux-binary
+# or: ./packaging/linux_binary.sh
 
 # macOS DMG
 task package-macos
@@ -100,7 +105,7 @@ task package
 
 Packages are written to `build/<platform>/`:
 
-- Linux: `build/linux/flit-x86_64.AppImage`
+- Linux: `build/linux/flit-x86_64.AppImage` (AppImage), or `build/linux/flit-linux-x64/` (raw executable bundle)
 - macOS: `build/macos/flit.dmg`
 - Windows: `build/windows/flit-windows-x64.zip`
 
