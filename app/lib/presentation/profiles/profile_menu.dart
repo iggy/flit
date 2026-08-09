@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flit/application/connection/connection_providers.dart';
 import 'package:flit/application/profiles/profile_providers.dart';
 import 'package:flit/domain/models/profile.dart';
@@ -46,7 +48,7 @@ class ProfileMenuButton extends ConsumerWidget {
     return PopupMenuButton<String>(
       tooltip: 'Profiles',
       icon: const Icon(Icons.person_outline),
-      onSelected: (name) => _onProfileSelected(context, ref, name),
+      onSelected: (name) => _setActiveProfile(context, ref, name),
       itemBuilder: (context) => _buildItems(
         context,
         profiles,
@@ -124,34 +126,105 @@ class ProfileMenuButton extends ConsumerWidget {
     }
     return items;
   }
+}
 
-  Future<void> _onProfileSelected(
-    BuildContext context,
-    WidgetRef ref,
-    String name,
-  ) async {
-    // Capture before the async gap — the menu has popped by the time the
-    // POST completes.
-    final messenger = ScaffoldMessenger.of(context);
-    final ok = await ref.read(profileActionsProvider).setActive(name);
-    if (ok) {
-      // The honest note (P1-13 acceptance): NEW launches only — the
-      // running gateway is unchanged.
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            'Profile "$name" will be used for NEW gateway launches — '
-            'the running gateway is unchanged.',
+Future<void> _setActiveProfile(
+  BuildContext context,
+  WidgetRef ref,
+  String name,
+) async {
+  // Capture before the async gap — the menu has popped by the time the
+  // POST completes.
+  final messenger = ScaffoldMessenger.of(context);
+  final ok = await ref.read(profileActionsProvider).setActive(name);
+  if (ok) {
+    // The honest note (P1-13 acceptance): NEW launches only — the
+    // running gateway is unchanged.
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          'Profile "$name" will be used for NEW gateway launches — '
+          'the running gateway is unchanged.',
+        ),
+      ),
+    );
+  } else {
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Text('Could not update the active profile on this gateway.'),
+      ),
+    );
+  }
+}
+
+/// The same profile choice as [ProfileMenuButton], as a bottom sheet — used
+/// by narrow layouts where the app bar has no room for a dropdown of its own.
+Future<void> showProfileSheet(BuildContext context) {
+  return showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (context) => const _ProfileSheet(),
+  );
+}
+
+class _ProfileSheet extends ConsumerWidget {
+  const _ProfileSheet();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profiles = ref.watch(profilesProvider);
+    final activeName = ref.watch(activeProfileProvider).value;
+    final status = ref.watch(gatewayStatusProvider);
+    final liveProfiles = status?.liveGatewayProfiles ?? const <String>{};
+    final theme = Theme.of(context).textTheme;
+    final list = profiles.value;
+
+    return SafeArea(
+      child: ListView(
+        shrinkWrap: true,
+        padding: const EdgeInsets.only(bottom: 12),
+        children: <Widget>[
+          ListTile(
+            title: const Text('Profiles'),
+            subtitle: Text(
+              'Active profile for new gateway launches',
+              style: theme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
+            ),
           ),
-        ),
-      );
-    } else {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Could not update the active profile on this gateway.'),
-        ),
-      );
-    }
+          if (status?.gatewayMode == 'multiplex')
+            ListTile(
+              dense: true,
+              title: Text(
+                'One gateway is serving several profiles',
+                style: theme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
+              ),
+            ),
+          const Divider(height: 1),
+          if (profiles.isLoading || list == null)
+            const ListTile(
+              leading: SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              title: Text('Loading profiles…'),
+            )
+          else
+            for (final profile in list)
+              ListTile(
+                title: _ProfileMenuEntry(
+                  profile: profile,
+                  isActive: profile.name == activeName,
+                  isLive: liveProfiles.contains(profile.name),
+                ),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  unawaited(_setActiveProfile(context, ref, profile.name));
+                },
+              ),
+        ],
+      ),
+    );
   }
 }
 
