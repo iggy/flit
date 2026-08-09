@@ -242,6 +242,22 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
                         ),
                       ),
                   ],
+                  // Mixed gateway: `auth_flows` advertised native_pkce so the
+                  // browser flow is the default, but a password provider is
+                  // registered too — let the user choose it.
+                  if (connectState.passwordFallbackProviders?.isNotEmpty ??
+                      false)
+                    TextButton(
+                      onPressed: () {
+                        // Drop any OAuth pick so the password provider list
+                        // re-defaults below.
+                        setState(() => _selectedProvider = null);
+                        ref
+                            .read(connectControllerProvider.notifier)
+                            .usePasswordFallback();
+                      },
+                      child: const Text('Use a username and password instead'),
+                    ),
                 ],
                 if (connectState.authMode == AuthMode.password &&
                     !connectState.busy) ...<Widget>[

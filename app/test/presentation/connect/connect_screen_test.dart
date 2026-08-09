@@ -13,6 +13,7 @@ import 'package:flit/application/connection/connection_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/data/storage/connection_store.dart';
 import 'package:flit/data/transport/gateway_rpc_client.dart';
+import 'package:flit/domain/models/auth_provider.dart';
 import 'package:flit/domain/models/gateway_status.dart';
 import 'package:flit/presentation/connect/connect_screen.dart';
 import 'package:flutter/material.dart';
@@ -75,8 +76,25 @@ const healthyStatus = GatewayStatus(
   authProviders: <String>[],
 );
 
+/// A 0.20 gateway advertising both the cookie and native-PKCE flows.
+const nativePkceStatus = GatewayStatus(
+  version: '0.20.0',
+  gatewayRunning: true,
+  gatewayState: 'ready',
+  gatewayBusy: false,
+  activeSessions: 1,
+  activeAgents: 1,
+  authRequired: true,
+  authProviders: <String>['local', 'nous'],
+  authFlows: <String>['cookie', 'native_pkce'],
+);
+
 void main() {
-  Widget harness({StatusProbe? probe, FakeRpcClient? rpcClient}) {
+  Widget harness({
+    StatusProbe? probe,
+    FakeRpcClient? rpcClient,
+    ProvidersProbe? providersProbe,
+  }) {
     return ProviderScope(
       // Deterministic tests: Riverpod 3 retries failing providers by
       // default (backoff), which would leave error assertions pending.
@@ -86,6 +104,8 @@ void main() {
           ConnectionStore(InMemoryKeyValueStore()),
         ),
         if (probe != null) statusProbeProvider.overrideWithValue(probe),
+        if (providersProbe != null)
+          providersProbeProvider.overrideWithValue(providersProbe),
         if (rpcClient != null)
           rpcClientProvider.overrideWith(
             () => FakeRpcClientNotifier(rpcClient),
@@ -176,5 +196,41 @@ void main() {
 
     expect(find.textContaining('rejected the token'), findsOneWidget);
     expect(find.textContaining('Check it and retry'), findsOneWidget);
+  });
+
+  testWidgets('a native_pkce gateway offers OAuth with a password fallback', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      harness(
+        probe: (config) async => nativePkceStatus,
+        providersProbe: (config) async => <AuthProviderInfo>[
+          const AuthProviderInfo(
+            name: 'local',
+            displayName: 'Username & password',
+            supportsPassword: true,
+          ),
+          const AuthProviderInfo(
+            name: 'nous',
+            displayName: 'Nous Research',
+            supportsPassword: false,
+          ),
+        ],
+      ),
+    );
+
+    await probe(tester);
+
+    // The browser flow is the default even though a password provider exists.
+    expect(find.text('Sign in with Nous Research'), findsOneWidget);
+    expect(find.widgetWithText(TextFormField, 'Password'), findsNothing);
+
+    await tester.tap(find.text('Use a username and password instead'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Sign in with Nous Research'), findsNothing);
+    expect(find.widgetWithText(TextFormField, 'Username'), findsOneWidget);
+    expect(find.widgetWithText(TextFormField, 'Password'), findsOneWidget);
   });
 }

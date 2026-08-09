@@ -14,6 +14,9 @@ part 'gateway_status_dto.g.dart';
 /// [authProviders]. The host recon fields ([hermesHome], [configPath],
 /// [envPath], [gatewayPid], [gatewayHealthUrl]) are returned **only when
 /// `auth_required == false`** and stay null in OAuth mode.
+///
+/// [authFlows], [profiles], and [gatewayMode] arrived in gateway 0.20 and stay
+/// null against older gateways.
 @JsonSerializable()
 class GatewayStatusDto {
   const GatewayStatusDto({
@@ -26,6 +29,9 @@ class GatewayStatusDto {
     required this.authRequired,
     required this.authProviders,
     this.releaseDate,
+    this.authFlows,
+    this.profiles,
+    this.gatewayMode,
     this.hermesHome,
     this.configPath,
     this.envPath,
@@ -62,6 +68,20 @@ class GatewayStatusDto {
   @JsonKey(name: 'auth_providers')
   final List<String> authProviders;
 
+  /// Auth capability flags, e.g. `["cookie", "native_pkce"]` (gateway 0.20;
+  /// `web_server.py:3190-3204`). Empty in loopback mode, absent on older
+  /// gateways. `native_pkce` means the RFC 8252 loopback flow is brokerable.
+  @JsonKey(name: 'auth_flows')
+  final List<String>? authFlows;
+
+  /// Profile names on the host (gateway 0.20).
+  final List<String>? profiles;
+
+  /// Gateway topology: `multiplex` | `single` | `multiple` | `none` |
+  /// `unknown` (gateway 0.20).
+  @JsonKey(name: 'gateway_mode')
+  final String? gatewayMode;
+
   @JsonKey(name: 'hermes_home')
   final String? hermesHome;
 
@@ -91,6 +111,11 @@ class GatewayStatusDto {
       activeAgents: activeAgents,
       authRequired: authRequired,
       authProviders: List<String>.unmodifiable(authProviders),
+      authFlows: authFlows == null
+          ? null
+          : List<String>.unmodifiable(authFlows!),
+      profiles: profiles == null ? null : List<String>.unmodifiable(profiles!),
+      gatewayMode: gatewayMode,
       hermesHome: hermesHome,
       configPath: configPath,
       envPath: envPath,

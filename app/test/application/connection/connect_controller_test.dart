@@ -67,10 +67,30 @@ const _gatedStatus = GatewayStatus(
   authProviders: <String>['local'],
 );
 
+/// A 0.20 gateway that advertises the RFC 8252 native-app flow alongside the
+/// cookie flow, with both a password and a brokerable OAuth provider.
+const _nativePkceStatus = GatewayStatus(
+  version: '0.20.0',
+  gatewayRunning: true,
+  gatewayState: 'ready',
+  gatewayBusy: false,
+  activeSessions: 1,
+  activeAgents: 1,
+  authRequired: true,
+  authProviders: <String>['local', 'nous'],
+  authFlows: <String>['cookie', 'native_pkce'],
+);
+
 const _passwordProvider = AuthProviderInfo(
   name: 'local',
   displayName: 'Username & password',
   supportsPassword: true,
+);
+
+const _oauthProvider = AuthProviderInfo(
+  name: 'nous',
+  displayName: 'Nous Research',
+  supportsPassword: false,
 );
 
 void main() {
@@ -129,6 +149,81 @@ void main() {
       expect(state.providers, <AuthProviderInfo>[_passwordProvider]);
     },
   );
+
+  test('auth_flows native_pkce wins over a registered password provider '
+      'and keeps the password providers as a fallback', () async {
+    container.dispose();
+    container = ProviderContainer(
+      retry: (retryCount, error) => null,
+      overrides: [
+        connectionStoreProvider.overrideWithValue(ConnectionStore(kv)),
+        statusProbeProvider.overrideWithValue(
+          (config) async => _nativePkceStatus,
+        ),
+        providersProbeProvider.overrideWithValue(
+          (config) async => <AuthProviderInfo>[
+            _passwordProvider,
+            _oauthProvider,
+          ],
+        ),
+      ],
+    );
+
+    final controller = container.read(connectControllerProvider.notifier);
+    await controller.probe(url: 'https://gw.example.com');
+
+    var state = container.read(connectControllerProvider);
+    expect(state.authMode, AuthMode.oauth);
+    // Only the brokerable provider serves the native flow — a password
+    // provider has no IDP round trip to broker.
+    expect(state.providers, <AuthProviderInfo>[_oauthProvider]);
+    expect(
+      state.passwordFallbackProviders,
+      <AuthProviderInfo>[_passwordProvider],
+    );
+
+    // The user can still opt into the password form.
+    controller.usePasswordFallback();
+    state = container.read(connectControllerProvider);
+    expect(state.phase, ConnectPhase.probed);
+    expect(state.authMode, AuthMode.password);
+    expect(state.providers, <AuthProviderInfo>[_passwordProvider]);
+    expect(state.passwordFallbackProviders, isNull);
+  });
+
+  test('native_pkce with no brokerable provider stays on password', () async {
+    container.dispose();
+    container = ProviderContainer(
+      retry: (retryCount, error) => null,
+      overrides: [
+        connectionStoreProvider.overrideWithValue(ConnectionStore(kv)),
+        statusProbeProvider.overrideWithValue(
+          (config) async => _nativePkceStatus,
+        ),
+        providersProbeProvider.overrideWithValue(
+          (config) async => <AuthProviderInfo>[_passwordProvider],
+        ),
+      ],
+    );
+
+    final controller = container.read(connectControllerProvider.notifier);
+    await controller.probe(url: 'https://gw.example.com');
+
+    final state = container.read(connectControllerProvider);
+    expect(state.authMode, AuthMode.password);
+    expect(state.providers, <AuthProviderInfo>[_passwordProvider]);
+    expect(state.passwordFallbackProviders, isNull);
+  });
+
+  test('usePasswordFallback is a no-op with nothing set aside', () async {
+    final controller = container.read(connectControllerProvider.notifier);
+    await controller.probe(url: 'https://gw.example.com');
+    final before = container.read(connectControllerProvider);
+
+    controller.usePasswordFallback();
+
+    expect(container.read(connectControllerProvider), same(before));
+  });
 
   test('an OAuth-only gateway is probed with oauth mode', () async {
     container.dispose();

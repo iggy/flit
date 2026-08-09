@@ -19,6 +19,13 @@ GatewayStatusDto _$GatewayStatusDtoFromJson(Map<String, dynamic> json) =>
           .map((e) => e as String)
           .toList(),
       releaseDate: json['release_date'] as String?,
+      authFlows: (json['auth_flows'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      profiles: (json['profiles'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      gatewayMode: json['gateway_mode'] as String?,
       hermesHome: json['hermes_home'] as String?,
       configPath: json['config_path'] as String?,
       envPath: json['env_path'] as String?,
@@ -37,6 +44,9 @@ Map<String, dynamic> _$GatewayStatusDtoToJson(GatewayStatusDto instance) =>
       'active_agents': instance.activeAgents,
       'auth_required': instance.authRequired,
       'auth_providers': instance.authProviders,
+      'auth_flows': instance.authFlows,
+      'profiles': instance.profiles,
+      'gateway_mode': instance.gatewayMode,
       'hermes_home': instance.hermesHome,
       'config_path': instance.configPath,
       'env_path': instance.envPath,

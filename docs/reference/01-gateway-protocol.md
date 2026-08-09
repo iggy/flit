@@ -44,6 +44,26 @@ v0.20 also adds these always-present informational fields (see the gap notes in
 (gateway/dashboard/storage/platforms health rollup), `profiles`, `gateway_mode`,
 and — only while a search-index rebuild is pending — `fts_rebuild`.
 
+v0.20 also adds **`auth_flows`** (`web_server.py:3190-3204`), the auth
+capability advertisement the client must use to pick a login flow:
+
+```jsonc
+"auth_flows": ["cookie", "native_pkce"]
+```
+
+- `[]` in loopback mode (`auth_required == false`).
+- `"cookie"` is always present in gated mode.
+- `"native_pkce"` is present only when at least one registered **session**
+  provider is a brokerable OAuth provider (`supports_password` false) — i.e.
+  when `/auth/native/authorize` has an IDP round trip to broker. A password
+  provider is rejected there with 400 (`dashboard_auth/routes.py:330-338`).
+- **Absent** on gateways older than 0.20 — treat missing ≠ empty and fall back
+  to inferring the flow from `/api/auth/providers` `supports_password`.
+
+flit reads it in `ConnectController.probe`: `native_pkce` + at least one
+brokerable provider → OAuth mode, even when a password provider is registered
+too (the password providers are offered as an explicit fallback).
+
 - `auth_required == false` → **token mode** ("plaintext auth"): connect the WS
   with `?token=<session token>`.
 - `auth_required == true` → **gated mode**: log in (user/pass, §2.2; OAuth,

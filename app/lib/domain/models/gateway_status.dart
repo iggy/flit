@@ -21,6 +21,9 @@ final class GatewayStatus {
     required this.authRequired,
     required this.authProviders,
     this.releaseDate,
+    this.authFlows,
+    this.profiles,
+    this.gatewayMode,
     this.hermesHome,
     this.configPath,
     this.envPath,
@@ -56,6 +59,19 @@ final class GatewayStatus {
   /// OAuth providers, e.g. `["nous"]`; empty in token mode.
   final List<String> authProviders;
 
+  /// Auth capability flags the gateway advertises, e.g.
+  /// `["cookie", "native_pkce"]`. Empty in token mode; **null on gateways
+  /// older than 0.20**, which never send the field — the difference matters,
+  /// see [supportsNativePkce].
+  final List<String>? authFlows;
+
+  /// Profile names on the host (gateway 0.20+), or null.
+  final List<String>? profiles;
+
+  /// Gateway topology: `multiplex` (one gateway serves several profiles),
+  /// `single`, `multiple`, `none`, `unknown`. Null on gateways older than 0.20.
+  final String? gatewayMode;
+
   /// Host recon fields — only present when [authRequired] is false
   /// (loopback/insecure); omitted in OAuth mode (protocol §1).
   final String? hermesHome;
@@ -70,6 +86,12 @@ final class GatewayStatus {
   AuthMode get inferredAuthMode =>
       authRequired ? AuthMode.password : AuthMode.token;
 
+  /// Whether the gateway advertises the RFC 8252 native-app flow
+  /// (system browser + loopback redirect + PKCE). Null [authFlows] means an
+  /// older gateway that never advertised it — the caller falls back to
+  /// inferring from `supports_password`, so this is false, not unknown.
+  bool get supportsNativePkce => authFlows?.contains('native_pkce') ?? false;
+
   @override
   bool operator ==(Object other) {
     return other is GatewayStatus &&
@@ -82,6 +104,9 @@ final class GatewayStatus {
         other.activeAgents == activeAgents &&
         other.authRequired == authRequired &&
         _stringListEquals(other.authProviders, authProviders) &&
+        _nullableStringListEquals(other.authFlows, authFlows) &&
+        _nullableStringListEquals(other.profiles, profiles) &&
+        other.gatewayMode == gatewayMode &&
         other.hermesHome == hermesHome &&
         other.configPath == configPath &&
         other.envPath == envPath &&
@@ -100,6 +125,9 @@ final class GatewayStatus {
     activeAgents,
     authRequired,
     Object.hashAll(authProviders),
+    authFlows == null ? null : Object.hashAll(authFlows!),
+    profiles == null ? null : Object.hashAll(profiles!),
+    gatewayMode,
     hermesHome,
     configPath,
     envPath,
@@ -113,10 +141,18 @@ final class GatewayStatus {
         'gatewayRunning: $gatewayRunning, gatewayState: $gatewayState, '
         'gatewayBusy: $gatewayBusy, activeSessions: $activeSessions, '
         'activeAgents: $activeAgents, authRequired: $authRequired, '
-        'authProviders: $authProviders, hermesHome: $hermesHome, '
-        'configPath: $configPath, envPath: $envPath, '
+        'authProviders: $authProviders, authFlows: $authFlows, '
+        'profiles: $profiles, gatewayMode: $gatewayMode, '
+        'hermesHome: $hermesHome, configPath: $configPath, envPath: $envPath, '
         'gatewayPid: $gatewayPid, gatewayHealthUrl: $gatewayHealthUrl)';
   }
+}
+
+bool _nullableStringListEquals(List<String>? a, List<String>? b) {
+  if (a == null || b == null) {
+    return a == null && b == null;
+  }
+  return _stringListEquals(a, b);
 }
 
 bool _stringListEquals(List<String> a, List<String> b) {

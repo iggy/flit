@@ -183,7 +183,7 @@ the gateway's queue is still intact.
 
 ---
 
-## 6. `/api/status` new fields: `auth_flows` (native PKCE signal) — MEDIUM
+## 6. `/api/status` new fields: `auth_flows` (native PKCE signal) — MEDIUM — DONE
 
 **Gateway change** (`hermes-agent/hermes_cli/web_server.py:3023-3360`): the
 status payload gained:
@@ -215,13 +215,24 @@ ignored by JSON parsing, so nothing breaks today.
 gateway with only brokerable OAuth providers advertises it via `auth_flows`,
 not by the absence of password providers.
 
-**Work to do**:
-- Add `auth_flows` (`List<String>?`), `profiles`, `gateway_mode` to
-  `GatewayStatusDto` + `GatewayStatus` domain model.
-- When `auth_flows` contains `native_pkce`, prefer the native PKCE loopback
-  flow (`OAuthClient`) even if a password provider is also registered; fall
-  back to the current `supports_password` inference when `auth_flows` is
-  absent (older gateways).
+**Done**: `auth_flows`, `profiles`, and `gateway_mode` are on
+`GatewayStatusDto` + `GatewayStatus`, all three **nullable** — an older gateway
+omits them, and for `auth_flows` "absent" is not "empty" (empty is a live
+loopback gateway). `GatewayStatus.supportsNativePkce` reads the flag;
+`ConnectController.probe` picks OAuth when it is set AND at least one probed
+provider is brokerable, otherwise falls back to the old
+`supports_password`-is-empty inference.
+
+Two things worth knowing:
+- `native_pkce` describes the GATEWAY, not a provider. The gateway sets it when
+  *any* registered session provider is brokerable, so on a mixed gateway the
+  flag is true while `/auth/native/authorize` still 400s for the password
+  provider (`dashboard_auth/routes.py:330-338`). Only the non-password
+  providers become OAuth buttons.
+- Preferring the browser flow on a mixed gateway would otherwise strand
+  password users, so the probe stashes the password providers in
+  `passwordFallbackProviders` and the connect screen offers "Use a username and
+  password instead" (`ConnectController.usePasswordFallback`).
 
 ---
 
