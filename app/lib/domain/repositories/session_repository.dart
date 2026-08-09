@@ -12,10 +12,21 @@ import 'package:flit/domain/models/steer_result.dart';
 abstract interface class SessionRepository {
   /// `session.create` (wire §2) → a fresh live id + durable id.
   /// Only non-null optionals are sent.
+  ///
+  /// [model] / [provider] / [reasoningEffort] / [fast] are the per-session
+  /// overrides of desktop contract v4: whatever is omitted is inherited from
+  /// the profile. For [fast] the PRESENCE is the contract — `true` pins the
+  /// priority tier, `false` pins normal, null inherits — so it must stay
+  /// nullable.
   Future<SessionCreateResult> create({
     String? profile,
     String? cwd,
     String? model,
+    String? provider,
+    String? reasoningEffort,
+    bool? fast,
+    String? parentSessionId,
+    String? source,
   });
 
   /// `session.list` (wire §3) → stored conversations (durable ids).

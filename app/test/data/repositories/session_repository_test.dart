@@ -77,6 +77,38 @@ void main() {
       });
     });
 
+    test('sends the contract v4 per-session overrides', () async {
+      await repository.create(
+        model: 'hermes-4-70b',
+        provider: 'nous',
+        reasoningEffort: 'high',
+        fast: true,
+        parentSessionId: 'parent-uuid',
+        source: 'flit',
+      );
+
+      expect(client.calls.single.params, <String, dynamic>{
+        'model': 'hermes-4-70b',
+        'provider': 'nous',
+        'reasoning_effort': 'high',
+        'fast': true,
+        'parent_session_id': 'parent-uuid',
+        'source': 'flit',
+      });
+    });
+
+    test('fast: false is SENT — presence is the contract', () async {
+      await repository.create(fast: false);
+
+      expect(client.calls.single.params, <String, dynamic>{'fast': false});
+    });
+
+    test('fast: null is omitted so the profile is inherited', () async {
+      await repository.create(model: 'hermes-4-70b');
+
+      expect(client.calls.single.params.containsKey('fast'), isFalse);
+    });
+
     test(
       'durableId falls back to session_key without stored_session_id',
       () async {

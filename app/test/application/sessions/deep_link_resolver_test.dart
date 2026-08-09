@@ -74,6 +74,11 @@ final class FakeSessionRepository implements SessionRepository {
     String? profile,
     String? cwd,
     String? model,
+    String? provider,
+    String? reasoningEffort,
+    bool? fast,
+    String? parentSessionId,
+    String? source,
   }) => throw UnimplementedError();
 
   @override

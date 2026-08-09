@@ -15,7 +15,9 @@
 import 'dart:async';
 
 import 'package:flit/application/chat/message_list_notifier.dart';
+import 'package:flit/application/config/config_providers.dart';
 import 'package:flit/application/connection/connection_providers.dart';
+import 'package:flit/application/models/model_providers.dart';
 import 'package:flit/application/providers.dart';
 import 'package:flit/application/sessions/active_session.dart';
 import 'package:flit/application/sessions/session_list.dart';
@@ -24,6 +26,7 @@ import 'package:flit/data/dto/events/gateway_event_parser.dart';
 import 'package:flit/data/transport/gateway_rpc_client.dart';
 import 'package:flit/domain/models/active_session.dart';
 import 'package:flit/domain/models/chat_message.dart';
+import 'package:flit/domain/models/model_option.dart';
 import 'package:flit/domain/models/prompt_submit_status.dart';
 import 'package:flit/domain/models/session_bootstrap.dart';
 import 'package:flit/domain/models/session_detail.dart';
@@ -112,13 +115,28 @@ final class FakeSessionRepository implements SessionRepository {
     return SteerOutcome.queued;
   }
 
+  /// Per-session overrides of the LAST create call (contract v4).
+  ({String? model, String? provider, String? reasoningEffort, bool? fast})?
+  createOverrides;
+
   @override
   Future<SessionCreateResult> create({
     String? profile,
     String? cwd,
     String? model,
+    String? provider,
+    String? reasoningEffort,
+    bool? fast,
+    String? parentSessionId,
+    String? source,
   }) async {
     createCalls++;
+    createOverrides = (
+      model: model,
+      provider: provider,
+      reasoningEffort: reasoningEffort,
+      fast: fast,
+    );
     final error = createError;
     if (error != null) {
       throw error;
@@ -359,6 +377,23 @@ void main() {
     final active = readActive();
     expect(active.liveId, 'a1b2c3d4');
     expect(active.durableId, 'durable-1');
+  });
+
+  test('newSession carries the sticky model/effort/fast picks', () async {
+    container
+        .read(currentModelProvider.notifier)
+        .set(const CurrentModel(model: 'hermes-4-70b', provider: 'nous'));
+    container.read(currentReasoningProvider.notifier).set('low');
+    container.read(currentFastProvider.notifier).set(true);
+
+    await readActions().newSession();
+
+    expect(repository.createOverrides, (
+      model: 'hermes-4-70b',
+      provider: 'nous',
+      reasoningEffort: 'low',
+      fast: true,
+    ));
   });
 
   test('newSession failure returns a message and does not switch', () async {

@@ -23,12 +23,24 @@ final class SessionRepositoryImpl implements SessionRepository {
     String? profile,
     String? cwd,
     String? model,
+    String? provider,
+    String? reasoningEffort,
+    bool? fast,
+    String? parentSessionId,
+    String? source,
   }) async {
-    // Wire §2: send only the non-null optionals (null-aware map elements).
+    // Wire §2: send only the non-null optionals (null-aware map elements) —
+    // an omitted per-session override means "inherit the profile", and for
+    // `fast` that is distinct from an explicit `false` (contract v4).
     final params = <String, dynamic>{
       'profile': ?profile,
       'cwd': ?cwd,
       'model': ?model,
+      'provider': ?provider,
+      'reasoning_effort': ?reasoningEffort,
+      'fast': ?fast,
+      'parent_session_id': ?parentSessionId,
+      'source': ?source,
     };
     final result = await _client.request('session.create', params);
     return SessionCreateResultDto.fromJson(result).toDomain();

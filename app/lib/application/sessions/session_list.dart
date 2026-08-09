@@ -20,6 +20,7 @@ import 'package:flit/application/chat/message_list_notifier.dart';
 import 'package:flit/application/connection/connection_providers.dart';
 import 'package:flit/application/providers.dart';
 import 'package:flit/application/sessions/active_session.dart';
+import 'package:flit/application/sessions/session_overrides.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/data/dto/events/gateway_event_parser.dart';
 import 'package:flit/domain/models/active_session.dart';
@@ -113,7 +114,9 @@ class SessionActions {
   static const String _notConnected = 'Not connected to a gateway.';
 
   /// `session.create` (wire §2) → make the fresh session active with BOTH
-  /// ids (protocol §9).
+  /// ids (protocol §9). Carries the sticky model/effort/fast picks
+  /// ([sessionCreateOverridesProvider]) so a new chat doesn't fall back to
+  /// the profile defaults.
   Future<String?> newSession() async {
     final repository = _ref.read(sessionRepositoryProvider);
     if (repository == null) {
@@ -122,8 +125,14 @@ class SessionActions {
     // Build the id map BEFORE the switch so its build seed captures the
     // outgoing session (the listener records the new one).
     _ref.read(sessionIdMapProvider);
+    final overrides = _ref.read(sessionCreateOverridesProvider);
     try {
-      final result = await repository.create();
+      final result = await repository.create(
+        model: overrides.model,
+        provider: overrides.provider,
+        reasoningEffort: overrides.reasoningEffort,
+        fast: overrides.fast,
+      );
       _ref
           .read(activeSessionProvider.notifier)
           .switchTo(liveId: result.liveId, durableId: result.durableId);
