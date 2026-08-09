@@ -1,7 +1,11 @@
 # Reference: The gateway protocol
 
 Everything a client must know to talk to the gateway correctly. Grounded in
-`hermes-agent` source; citations are `file:line` in that repo.
+`hermes-agent` source; citations are `file:line` in that repo, **re-verified
+against v0.20.0 (release date `2026.8.3`)**. Note that the `tui_gateway`
+refactor split the RPC handlers out of `server.py` into `methods_session.py`,
+`methods_tools.py`, `methods_prompt.py`, `methods_config.py`, and
+`methods_complete.py` — citations name the file explicitly.
 
 ---
 
@@ -11,14 +15,14 @@ Before connecting, hit the **public, unauthenticated** status endpoint to learn
 whether the gateway is up and which auth mode it uses.
 
 `GET <base>/api/status` (optional `?profile=<name>`). It's in
-`PUBLIC_API_PATHS` (`hermes_cli/dashboard_auth/public_paths.py:39`), so no auth.
+`PUBLIC_API_PATHS` (`hermes_cli/dashboard_auth/public_paths.py:44`), so no auth.
 
-Always-present fields (`web_server.py:2077-2264`):
+Always-present fields (`web_server.py:3022-3356`, handler `get_status`):
 
 ```jsonc
 {
-  "version": "0.17.0",
-  "release_date": "2026-06-30",
+  "version": "0.20.0",
+  "release_date": "2026.8.3",
   "gateway_running": true,
   "gateway_state": "ready",          // or null
   "gateway_busy": false,
@@ -31,7 +35,14 @@ Always-present fields (`web_server.py:2077-2264`):
 
 **Only when `auth_required == false`** (loopback/insecure) it also returns host
 recon fields — `hermes_home`, `config_path`, `env_path`, `gateway_pid`,
-`gateway_health_url`. In OAuth mode those are omitted.
+`gateway_health_url`, `gateways` (per-gateway host ports). In OAuth mode those
+are omitted (`web_server.py:3343`).
+
+v0.20 also adds these always-present informational fields (see the gap notes in
+`../updates/gateway-0.18-to-0.20-optional.md` §8 for which the app may want):
+`gateway_drainable`, `restart_drain_timeout`, `components` + `overall`
+(gateway/dashboard/storage/platforms health rollup), `profiles`, `gateway_mode`,
+and — only while a search-index rebuild is pending — `fts_rebuild`.
 
 - `auth_required == false` → **token mode** ("plaintext auth"): connect the WS
   with `?token=<session token>`.
@@ -85,34 +96,36 @@ The flow, grounded in `dashboard_auth/routes.py` + `middleware.py` +
 
 1. **Discover providers** (public): `GET <base>/api/auth/providers` →
    `{"providers":[{"name","display_name","supports_password"}]}`
-   (`routes.py:152`; 503 when none registered).
+   (`routes.py:153`; 503 when none registered).
 2. **Log in:** `POST <base>/auth/password-login` with JSON body
-   `{provider, username, password, next}` (`routes.py:466`,
-   `_PasswordLoginBody`). Success → `200 {"ok":true,"next":<path>}` and the
-   response **sets the session cookies**. Failures are deliberately generic:
-   401 invalid credentials, 404 unknown/password-less provider, 429 rate
-   limited, 503 provider unreachable (`routes.py:468-533`).
+   `{provider, username, password, next}` (`routes.py:651`,
+   `_PasswordLoginBody` at `routes.py:643`). Success → `200
+   {"ok":true,"next":<path>}` and the response **sets the session cookies**.
+   Failures are deliberately generic: 401 invalid credentials, 404
+   unknown/password-less provider, 429 rate limited, 500 provider
+   misconfigured, 503 provider unreachable (`routes.py:675-717`).
 3. **Session cookies** (`cookies.py`): `hermes_session_at` (access token),
    `hermes_session_rt` (refresh token, when the provider issues one),
    `hermes_session_provider`. The exact cookie **names vary by deploy** —
    `__Host-`/`__Secure-`/bare prefixes depending on HTTPS + path prefix
-   (`cookies.py:107` `_resolved_name`) — so a client must capture them
-   **verbatim from `Set-Cookie`**, never reconstruct names.
+   (`cookies.py:107` `_resolved_name`, variants at `cookies.py:87`) — so a
+   client must capture them **verbatim from `Set-Cookie`**, never reconstruct
+   names.
 4. **REST auth:** send the captured cookies as a `Cookie` header on every
    gated request. The gate middleware verifies the access token and, when
    expired, **refreshes it via the refresh token and re-sets rotated cookies
    on the response** (`middleware.py`) — the client must update its cookie
    store from `Set-Cookie` on **every** response.
 5. **WS auth — single-use ticket:** `POST <base>/api/auth/ws-ticket`
-   (cookie-authed, `routes.py:615`) → `{ticket, ttl_seconds: 30}`. Connect
+   (cookie-authed, `routes.py:799`) → `{ticket, ttl_seconds: 30}`. Connect
    `/api/ws?ticket=<ticket>`; the ticket is **consumed** on the upgrade
-   (`web_server.py` `_ws_auth_reason` → `consume_ticket`). **Mint a fresh
+   (`web_server.py:14756` `_ws_auth_reason` → `consume_ticket`). **Mint a fresh
    ticket for every connect and every reconnect attempt.**
 6. **Identity (optional):** `GET <base>/api/auth/me` (cookie-authed) →
    `{user_id, email, display_name, org_id, provider, expires_at}`
-   (`routes.py:594`).
+   (`routes.py:778`).
 7. **Logout:** `POST <base>/auth/logout` (cookie-authed) revokes the
-   refresh token best-effort and clears cookies (`routes.py:558`).
+   refresh token best-effort and clears cookies (`routes.py:742`).
 
 ### 2.3 Gated mode: OAuth (Phase 8)
 
@@ -126,7 +139,7 @@ signal "not supported yet" rather than failing mysteriously.
 ### 2.4 WS upgrade rejection close codes
 
 Rejected upgrades close with app-specific codes (`web_server.py` `gateway_ws`
-@12711, checks in order):
+@15924, checks in order):
 
 | Code | Meaning |
 |------|---------|
@@ -159,13 +172,13 @@ the stdio transport (`tui_gateway/ws.py:8-12`). Three frame kinds:
 ```json
 {"jsonrpc":"2.0","id":"r1","error":{"code":5001,"message":"..."}}
 ```
-(`server.py:1052` for `_ok`, `1056` for `_err`.)
+(`server.py:1890` for `_ok`, `1894` for `_err`.)
 
 **c) Server → client: event** (unsolicited, **no `id`**)
 ```json
 {"jsonrpc":"2.0","method":"event","params":{"type":"message.delta","session_id":"a1b2c3d4","payload":{"text":"Hel"}}}
 ```
-Built by `_emit` at `server.py:988-992`.
+Built by `_event_frame` / `_emit` at `server.py:1566-1575`.
 
 ### Routing rule for the client
 
@@ -181,27 +194,41 @@ For every inbound frame:
   on `\n` and parse each line. Do **not** assume one message == one frame.
 - **Parse errors** get a JSON-RPC error reply
   `{error:{code:-32700,message:"parse error"},id:null}` and the connection stays
-  open (`ws.py:366-378`).
-- **Unknown method** → `-32601` (`server.py:1094`).
+  open (`ws.py:360-382`).
+- **Unknown method** → `-32601` (`handle_request`, `server.py:1933`).
 - **Handler crash** → `-32603` "internal error", connection stays open
-  (`ws.py:397-403`).
+  (`ws.py:392-410`; the reply echoes the request's `id` when it had one).
 
 ---
 
 ## 4. Connect handshake
 
 1. Client opens the WS (`/api/ws?token=…`).
-2. Server calls `ws.accept()`, disables Nagle (`ws.py:298`), starts background
-   MCP discovery, then pushes exactly one unsolicited event:
+2. Server calls `ws.accept()`, disables Nagle (`ws.py:299`), resolves the skin
+   off-loop, then pushes exactly one unsolicited event:
    ```json
-   {"jsonrpc":"2.0","method":"event","params":{"type":"gateway.ready","payload":{ /* skin dict */ }}}
+   {"jsonrpc":"2.0","method":"event","params":{"type":"gateway.ready","payload":{"skin":{ /* skin dict */ },"change_events":true}}}
    ```
-   (`ws.py:319-328`.) **`params.payload` IS the skin dict** (keys: `name`,
-   `colors`, `branding`, `banner_logo`, `banner_hero`, `tool_prefix`,
-   `help_header`; `{}` on failure) — despite the TS type nesting it under
-   `payload.skin`. There is **no `session_id`** on this frame.
+   (`ws.py:313-327`.) There is **no `session_id`** on this frame.
 3. Client treats receipt of `gateway.ready` as **connected/ready** and only then
    starts sending requests (`gatewayClient.ts:161`).
+
+> **⚠️ Changed since 0.18 — flit is behind here.** The payload used to *be* the
+> skin dict; as of v0.20 it is `{"skin": <skin dict>, "change_events": true}`.
+> `resolve_skin()` (`server.py:3263`) supplies the inner dict: keys `name`,
+> `colors`, `light_colors`, `dark_colors`, `branding`, `banner_logo`,
+> `banner_hero`, `tool_prefix`, `help_header`; `{}` on failure.
+> `change_events: true` advertises that this backend broadcasts
+> `pet.changed` / `cron.changed` / `sessions.changed`, so a client can demote
+> its polling to a slow backstop.
+>
+> The `skin.changed` broadcast payload is **still the bare skin dict**
+> (`_broadcast_global_event("skin.changed", resolve_skin())`,
+> `server.py:3333`) — the two frames no longer carry the same shape.
+> `gateway_event_parser.dart` currently treats `gateway.ready`'s payload as the
+> skin, so the skin is silently dropped on connect and only picked up on the
+> next `skin.changed`. Not tracked in the required/optional gap docs — fix
+> alongside them.
 
 There is no separate login RPC — auth already happened on the upgrade query
 string. After `gateway.ready`, immediately do `session.create` (or
@@ -213,13 +240,13 @@ string. After `gateway.ready`, immediately do `session.create` (or
 
 High-frequency delta frames — `message.delta`, `reasoning.delta`,
 `thinking.delta` — are **buffered and flushed as a batch on a ~33ms timer
-(~30fps)** by the WS transport, not sent one-per-token (`ws.py:53-60`,
-`_TOKEN_COALESCE_S=0.033`). Consequences for the client:
+(~30fps)** by the WS transport, not sent one-per-token (`_STREAMING_EVENT_TYPES`
++ `_TOKEN_COALESCE_S=0.033`, `ws.py:53-60`). Consequences for the client:
 
 - You receive **bursts** of deltas, possibly several in one WS message.
 - **Ordering is preserved**: any non-streaming frame (RPC responses, `tool.*`,
   `message.complete`, `status.update`) **flushes the pending delta buffer ahead
-  of itself** (`ws.py:130-159`), so a `tool.start` can never overtake the text
+  of itself** (`ws.py:129-160`), so a `tool.start` can never overtake the text
   that preceded it. You can rely on arrival order.
 - Accumulate `message.delta.text` into the current bubble; the terminal
   `message.complete.text` carries the full final text (you may render from the
@@ -230,59 +257,83 @@ High-frequency delta frames — `message.delta`, `reasoning.delta`,
 ## 6. The assistant turn lifecycle (events)
 
 You **send** `prompt.submit` (returns `{status:"streaming"}` immediately —
-fire-and-forget for content; `server.py:8091`). The reply arrives entirely as
-**events** keyed by `session_id`. Canonical order for one turn
-(`server.py` `_run_prompt_submit` @8419 and `_emit` call sites):
+fire-and-forget for content; `methods_prompt.py:67` handler, ack at
+`methods_prompt.py:367`). The reply arrives entirely as **events** keyed by
+`session_id`. Canonical order for one turn (`server.py` `_run_prompt_submit`
+@9482 and `_emit` call sites):
 
 ```
-message.start                         (no payload)                server.py:8433
+message.start                         (no payload)                server.py:9516
   ↕ interleaved, zero or more of:
-    thinking.delta      {text}                                    server.py:3400
-    reasoning.delta     {text, verbose?}                          server.py:3540
-    reasoning.available {text, verbose?}                          server.py:3588
-    message.delta       {text, rendered?}                         server.py:8553
-    status.update       {kind, text}                              server.py:1023
-    moa.reference       {index, count, label, text}   (mixture-of-agents)
-    moa.aggregating     {aggregator}
-    notification.show / notification.clear
-    tool.start / tool.progress / tool.generating / tool.complete  (see §7)
+    thinking.delta      {text}                                    server.py:5727
+    reasoning.delta     {text, verbose?}                          server.py:5732
+    reasoning.available {text, verbose?}                          server.py:5504
+    message.delta       {text, rendered?}                         server.py:9758
+    message.interim     {text, already_streamed}                  server.py:9767
+    status.update       {kind, text}                              server.py:1861
+    moa.reference       {label, text, index?, count?} (mixture-of-agents) server.py:5519
+    moa.aggregating     {aggregator}                              server.py:5522
+    moa.progress / moa.phase                                      server.py:5532,5559
+    reaction            {kind}   (ily/<3/good bot → hearts)       server.py:5730
+    notification.show   {text, level, kind, ttl_ms, key, id}      server.py:5743
+    notification.clear  {key}                                     server.py:5755
+    tool.start / tool.generating / tool.complete / tool.output_risk (see §7)
     approval.request / clarify.request / sudo.request / secret.request (see §8)
-message.complete  {text, rendered?, reasoning?, usage, status}    server.py:8674
+message.complete  {text, rendered?, reasoning?, usage, status}    server.py:10006
                   status ∈ {complete, interrupted, error}
-session.info      {model, provider, usage, tools, ...}            server.py:8838
+                  status=="error" adds {error, recoverable:true}
+session.info      {model, provider, usage, tools, ...}            server.py:10248
+                  (via _emit_settled_session_info, server.py:2644)
 ```
 
-- On a fatal turn error, the terminal frame may be `error` (`{message?}`,
-  `server.py:8149`) **instead of** `message.complete`. Treat **both**
-  `message.complete` (any status) and `error` as **turn-terminal**.
+- On a fatal turn error, the terminal frame may be `error` (`{message}`,
+  `server.py:10186`) **instead of** `message.complete`. Treat **both**
+  `message.complete` (any status) and `error` as **turn-terminal**. A turn
+  cancelled before the agent was ready also lands on a bare `error`
+  (`methods_prompt.py:350`).
 - After every turn the session emits a fresh `session.info` event as it releases
   the `running` flag — use it to refresh model/usage/tools display.
 
 ### `prompt.submit` while a turn is running
 
 Not rejected — it is **queued** and may interrupt the live turn
-(`_handle_busy_submit`, `server.py:8109`). The client should still reflect a
-"working" state and let the user queue/steer.
+(`_handle_busy_submit`, `server.py:7501`, called from `methods_prompt.py:142`).
+The busy ack carries its own status (`steered` / `redirected` / `queued`) —
+see `../updates/gateway-0.18-to-0.20-required.md` §2. The client should still
+reflect a "working" state and let the user queue/steer.
 
 ---
 
 ## 7. Tool calls (display-only events)
 
 The agent's tool activity streams as events with **no client reply required**
-(`server.py:3307-3482`, gated by `_tool_progress_enabled(sid)`, default on):
+(`_on_tool_start` @`server.py:5398`, `_on_tool_complete` @`server.py:5425`,
+`_on_tool_progress` @`server.py:5472`; gated by `_tool_progress_enabled(sid)`
+@`server.py:4321`, default on — a `tool.*` frame is also forced through when the
+tool is UI-required or the payload carries an `inline_diff`):
 
 | Event | Payload (key fields) | Notes |
 |-------|----------------------|-------|
 | `tool.start` | `{tool_id, name, context, args_text?, todos?}` | `args_text` only in verbose mode |
-| `tool.progress` | `{name, preview}` | incremental progress line |
 | `tool.generating` | `{name}` | args being generated |
 | `tool.complete` | `{tool_id, name, args, result, duration_s?, summary?, result_text?, inline_diff?, todos?, error?}` | correlate to `tool.start` by `tool_id` |
+| `tool.output_risk` | `{tool_id, name, risk, findings[], redacted}` | dangerous-output warning; `risk` defaults `"low"` |
 
 - **`tool.complete.result` is polymorphic**: it is parsed JSON (a `dict`/`list`)
-  when the tool result was valid JSON, else a raw string (`server.py:3345-3348`).
+  when the tool result was valid JSON, else a raw string (`server.py:5437-5439`).
   Handle both.
 - `inline_diff` (when present) is a unified diff for file-edit tools — render
   monospace.
+
+> **`tool.progress` is not emitted by this gateway.** `_on_tool_progress` is a
+> multiplexer on an internal `event_type`, and none of its branches emit a
+> literal `tool.progress` — a `tool.started` progress row is deliberately
+> suppressed (`server.py:5482`) because `_on_tool_start` already sent the
+> authoritative `tool.start`. `tool.progress` survives only in
+> `ui-tui/src/gatewayTypes.ts:674` and the messaging `api_server.py` path.
+> Don't build UI that waits for it. flit parses it
+> (`gateway_event_parser.dart:293`) and folds it in `message_fold.dart:179` —
+> harmless dead code, but don't rely on that branch for progress display.
 
 ---
 
@@ -293,43 +344,64 @@ models** — get this right or answers won't match.
 
 ### 8.1 Correlated by `request_id` (clarify / sudo / secret / terminal.read)
 
-A generic `_block()` factory (`server.py:1859`) mints an 8-hex `request_id`,
+A generic `_block()` factory (`server.py:3186`) mints an 8-hex `request_id`,
 emits an event carrying it, and **blocks the agent thread** (default 300s) until
-a matching `*.respond` RPC arrives (shared `_respond` helper, `server.py:9682`).
+a matching `*.respond` RPC arrives (shared `_respond` helper, `server.py:10606`).
 
 | Event (server→client) | Payload | Answer RPC (client→server) | Answer key |
 |---|---|---|---|
-| `clarify.request` | `{question, choices: string[]\|null, request_id}` | `clarify.respond` | `answer` |
+| `clarify.request` | `{question, choices: string[]\|null, multi_select?, request_id}` | `clarify.respond` | `answer` |
 | `sudo.request` | `{request_id}` | `sudo.respond` | `password` |
 | `secret.request` | `{env_var, prompt, request_id}` | `secret.respond` | `value` |
-| (terminal read) | `{request_id, ...}` | `terminal.read.respond` | `text` |
+| `terminal.read.request` | `{request_id, start?, count?}` | `terminal.read.respond` | `text` |
+| `preview.read.request` | `{request_id, start?, count?}` | `preview.read.respond` | `text` |
+
+`multi_select` is present only when `true` (`server.py:5758`) — a pass-through
+hint that the renderer may offer checkboxes; a single answer still parses.
 
 Response example:
 ```json
 {"jsonrpc":"2.0","id":"r9","method":"clarify.respond","params":{"request_id":"<the id>","answer":"option A"}}
 ```
 Result is `{status:"ok"}`. If no pending request matches, you get an error
-(`code 4009`, "no pending answer request"). If the client never answers, the
-answer defaults to empty after the timeout.
+(`code 4009`, "no pending `<answer key>` request" — e.g. "no pending answer
+request" for clarify, "no pending value request" for secret). If the client never answers, the
+answer defaults to empty after the timeout **and the gateway emits a
+`<name>.expire` `{request_id}`** event (`server.py:3216-3226`) for all five
+blocking bridges; a late `*.respond` then returns `{status:"expired"}` rather
+than erroring (`server.py:10611`). See `08-agent-transparency-wire-shapes.md`
+for per-prompt timeouts.
 
 ### 8.2 Correlated by `session` (approvals — DIFFERENT)
 
 `approval.request` carries **NO `request_id`**. It is correlated by
-`session_id`/`session_key` against a FIFO queue (`tools/approval.py`,
-`_gateway_queues`). Answer resolves the oldest (or all) pending entries for that
-session via `approval.respond` (`server.py:9715`).
+`session_id`/`session_key` against a FIFO queue (`tools/approval.py:2461`,
+`_gateway_queues`; enqueued in `_await_gateway_decision`, `approval.py:3630`).
+Answer resolves the oldest (or all) pending entries for that session via
+`approval.respond` (`methods_prompt.py:949`).
 
 - Event `approval.request` payload:
-  `{command, description, pattern_key, pattern_keys[], allow_permanent}`
-  (command is credential-redacted). `server.py:1007`, `approval.py:1803`.
+  `{command, description, pattern_key, pattern_keys[], allow_permanent,
+  choices[]}` (command is credential-redacted).
+  `_emit_approval_request`, `server.py:1826`.
+- `choices` is **derived server-side when the emitter omits it**
+  (`server.py:1834-1840`): `["once","session","always","deny"]` normally,
+  `["once","session","deny"]` when `allow_permanent` is false, and
+  `["once","deny"]` for a smart-denied command. Prefer rendering `choices`
+  verbatim over inferring buttons from `allow_permanent`.
 - Answer:
   ```json
   {"jsonrpc":"2.0","id":"r8","method":"approval.respond","params":{"session_id":"a1b2c3d4","choice":"approve"}}
   ```
-  `choice` ∈ approve / deny / (approve-and-remember when `allow_permanent`).
+  `choice` ∈ approve / deny / (approve-and-remember when `allow_permanent`);
+  it defaults to `"deny"` when omitted. Optional `all: true` resolves every
+  queued approval for the session instead of just the oldest.
+- Result is `{"resolved": <int>}` — the **count** of queue entries unblocked,
+  `0` when nothing was pending (`resolve_gateway_approval`, `approval.py:2490`).
+  Not `{status:"ok"}`, and `0` is not an error. Errors: `5004`.
 
-> `input.request` is **not** a real emitted event — it's only a label string in
-> `_session_pending_kind` (`server.py:5625`). Don't wait for it.
+> `input.request` is **not** a real emitted event — it's only a fallback label
+> string in `_session_pending_kind` (`server.py:7884`). Don't wait for it.
 > `approvals.mode` and `approvals.mcp_reload_confirm` are **not** RPCs — yolo /
 > global-approval toggling goes through `config.set{key:"yolo"}`; the MCP-reload
 > confirm is a `status:"confirm_required"` result of the `reload.mcp` RPC.
@@ -338,7 +410,8 @@ session via `approval.respond` (`server.py:9715`).
 
 ## 9. Two kinds of session id
 
-This trips up every client. `server.py` (session slice) tracks:
+This trips up every client. The session slice (now `methods_session.py`, with
+the registry + helpers still in `server.py`) tracks:
 
 - **Live `session_id`** — `uuid4().hex[:8]` (8 hex chars). Keys the in-memory
   `_sessions` map. **This is what you pass to `prompt.submit`, `session.interrupt`,
@@ -367,10 +440,17 @@ passes `current_session_id` into `session.active_list`).
 There is **no protocol-level auto-replay**. Reconnect is client-driven:
 
 - On WS disconnect the server reaps `close_on_disconnect` sessions and
-  **grace-detaches** the rest to an orphan reaper (`ws.py:425-450`).
+  **grace-detaches** the rest to an orphan reaper (`ws.py:441-458` →
+  `_close_sessions_for_transport`, `server.py:1074`). The grace window is
+  `_WS_ORPHAN_REAP_GRACE_S`, default 20s (`server.py:175-180`).
+- **`close_on_disconnect` now defaults to `False`** (`methods_session.py:83`) —
+  sessions survive a client disconnect and are reclaimed later by the
+  idle/session-cap reaper. Send `close_on_disconnect: true` on create/resume if
+  you want the old die-with-the-socket behavior.
 - A quick reconnect + `session.resume` re-binds a detached live session before
-  the reaper finalizes it (`session.resume` cancels the reap under
-  `_session_resume_lock`, `server.py:5238`).
+  the reaper finalizes it (the fast path re-checks the live registry under
+  `_session_resume_lock`, `methods_session.py:404`, with double-checked locking
+  after a build at `methods_session.py:644`).
 - Practical client policy (see architecture doc): exponential-backoff reconnect;
   on reconnect, wait for `gateway.ready`, then `session.resume` the durable id
   of the session the user was in. Any turn that was streaming when the socket
@@ -381,10 +461,10 @@ There is **no protocol-level auto-replay**. Reconnect is client-driven:
 
 ## 11. Long handlers
 
-Some methods are "long" (`_LONG_HANDLERS` frozenset, `server.py:178-223`) — e.g.
+Some methods are "long" (`_LONG_HANDLERS` frozenset, `server.py:193-284`) — e.g.
 `prompt.submit`, `slash.exec`, `session.compress`, most `pool-run` methods.
-`dispatch()` schedules them on a thread pool and the worker writes its own
-response later (`server.py:1099-1135`); the WS layer still preserves frame
-ordering. **Client impact: none beyond honoring your per-request timeout** —
-just don't assume a fast round-trip for these. Use a generous RPC timeout
-(the TUI uses ≥120s, `gatewayClient.ts:18`).
+`dispatch()` (`server.py:1962`) schedules them on a thread pool and the worker
+writes its own response later (`server.py:1982-1998`, returning `None` inline);
+the WS layer still preserves frame ordering. **Client impact: none beyond
+honoring your per-request timeout** — just don't assume a fast round-trip for
+these. Use a generous RPC timeout (the TUI uses ≥120s, `gatewayClient.ts:18`).

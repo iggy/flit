@@ -1,9 +1,14 @@
 # Reference: Phase 2 session-depth wire shapes
 
 Concrete JSON-RPC frames for the Phase 2 session methods, grounded in
-`hermes-agent/tui_gateway/server.py` (verified against source 2026-07). Same
-rules as `03-mvp-wire-shapes.md`: field **names/types** are from source, example
+`hermes-agent/tui_gateway/` (re-verified against **v0.20.0**). Same rules as
+`03-mvp-wire-shapes.md`: field **names/types** are from source, example
 **values** are illustrative. Where Python and TS disagree, Python wins.
+
+**Where the handlers live now:** the `tui_gateway` refactor moved every
+`session.*` handler out of `server.py` into **`methods_session.py`**; shared
+helpers (`_session_info`, `_history_to_messages`, `_sess`, `_sess_nowait`,
+`_inflight_snapshot`) stayed in `server.py`. Citations below name the file.
 
 Envelope reminders: request `{jsonrpc,id,method,params}`; response
 `{jsonrpc,id,result}` or `{...,error:{code,message}}`; event (no id)
@@ -29,7 +34,7 @@ Envelope reminders: request `{jsonrpc,id,method,params}`; response
 
 ---
 
-## Canonical message shape (`_history_to_messages`, server.py:5909)
+## Canonical message shape (`_history_to_messages`, server.py:7045)
 
 Used by `session.history`, `session.compress`, and `session.resume` — identical
 per-entry shape:
@@ -47,7 +52,7 @@ Empty/hidden entries and text-less assistant tool-call turns are dropped.
 
 ---
 
-## `session.most_recent` (server.py:6472) — the "continue" entry point
+## `session.most_recent` (methods_session.py:214) — the "continue" entry point
 
 ```json
 {"jsonrpc":"2.0","id":"r1","method":"session.most_recent","params":{}}
@@ -66,7 +71,7 @@ None found / DB unavailable / any error → `{"session_id":null}`. **Never error
 
 ---
 
-## `session.status` (server.py:9298)
+## `session.status` (methods_session.py:2335)
 
 Params: `session_id` (LIVE, required), `profile` (optional). Result is a single
 pre-formatted human block — NOT structured:
@@ -77,7 +82,7 @@ Errors: `4001` session not found.
 
 ---
 
-## `session.history` (server.py:9374)
+## `session.history` (methods_session.py:2411)
 
 Params: `session_id` (LIVE, required). Result:
 ```jsonc
@@ -90,7 +95,7 @@ Errors: `4001`.
 
 ---
 
-## `session.title` (server.py:7418) — rename OR read
+## `session.title` (methods_session.py:991) — rename OR read
 
 `session_id` (LIVE, required). The presence of the `title` key selects mode.
 
@@ -114,7 +119,7 @@ Errors: `4001` not found; `5007` DB unavailable / generic; `4021` title required
 
 ---
 
-## `session.usage` (server.py:7720) — LONG handler
+## `session.usage` (methods_session.py:1326) — LONG handler
 
 `session_id` (LIVE, required). Result IS the usage dict directly:
 ```jsonc
@@ -135,7 +140,7 @@ Lazy session with no usage mirror → `{calls:0,input:0,output:0,total:0}`.
 
 ---
 
-## `session.context_breakdown` (server.py:7744)
+## `session.context_breakdown` (methods_session.py:1350)
 
 `session_id` (LIVE, required). Result:
 ```jsonc
@@ -155,7 +160,7 @@ Lazy session → same top-level keys, `categories:[]`. Errors: `4001`;
 
 ---
 
-## `session.compress` (server.py:9426) — LONG handler
+## `session.compress` (methods_session.py:2473) — LONG handler
 
 Params: `session_id` (LIVE, required), `focus_topic` (optional str, default "").
 Local-path success result (the shape the client should target):
@@ -177,7 +182,7 @@ Errors: `4009` session busy; `5005` compression failed; `5019` compute-host fail
 
 ---
 
-## `session.undo` (server.py:9398)
+## `session.undo` (methods_session.py:2435)
 
 `session_id` (LIVE, required — builds agent). Result:
 ```jsonc
@@ -187,7 +192,7 @@ Errors: `4009` "session busy — /interrupt the current turn before /undo"; `400
 
 ---
 
-## `session.save` (server.py:9598)
+## `session.save` (methods_session.py:2645)
 
 `session_id` (LIVE, required). Local-path result:
 ```jsonc
@@ -198,7 +203,7 @@ save failures); `4001`.
 
 ---
 
-## `session.branch` (server.py:9682) — LONG handler
+## `session.branch` (methods_session.py:2729) — LONG handler
 
 Params: `session_id` (LIVE parent, required), `name` (optional str; empty →
 auto-derived title). Result:
@@ -216,7 +221,7 @@ Errors: `4008` "nothing to branch — send a message first" (empty history);
 
 ---
 
-## `session.cwd.set` (server.py:7064)
+## `session.cwd.set` (methods_session.py:779)
 
 Params: `session_id` (LIVE, required), `cwd` (required non-empty str). Result is
 `info` — the full `_session_info` dict when a live agent exists, else a minimal
@@ -225,14 +230,14 @@ required; `4017` invalid path.
 
 ---
 
-## `session.close` (server.py:9670)
+## `session.close` (methods_session.py:2717)
 
 `session_id` (LIVE, default ""). Result `{"closed":true|false}`. Unknown id →
 `closed:false` (no error). Never errors.
 
 ---
 
-## The `session.info` event payload (`_session_info`, server.py:4121)
+## The `session.info` event payload (`_session_info`, server.py:5109)
 
 Emitted after every turn (protocol §6) and returned inline by `cwd.set` /
 `compress`. Payload IS the info dict. Keys the client consumes:
@@ -249,18 +254,25 @@ Emitted after every turn (protocol §6) and returned inline by `cwd.set` /
   "title":"Fix the parser","stored_session_id":"2026-uuid",
   "usage":{ /* same shape as session.usage */ },
   "profile_name":"default",
-  "version":"0.17.0","release_date":"2026-06-30",
+  "version":"0.20.0","release_date":"2026.8.3",   // "" until hermes_cli imports
   "mcp_servers":[…],"system_prompt":"…",
-  "desktop_contract":4,"update_behind":null,"update_command":""
+  "desktop_contract":5,"update_behind":null,"update_command":""
   // "credential_warning":str  — only when a live agent has a missing key
 }
 ```
 For Phase 2 the client reads `usage`, `cwd`, `title`, `model`, `provider`,
 `running` from this event to live-update the session-info surface after a turn.
 
+`desktop_contract` is `DESKTOP_BACKEND_CONTRACT` (`server.py:5067`), now **5**
+(was 4 when this doc was written): v1 baseline, v2 `file.attach`, v3
+`approvals.mode` + `session.info` reconciliation, v4 create `fast=false`
+explicit-normal, v5 raised the uvicorn WS frame cap so `file.attach` base64
+frames >16 MiB survive. flit doesn't check it — see
+`../updates/gateway-0.18-to-0.20-optional.md` §3.
+
 ---
 
-## `session.resume` `inflight` field (P2-02, server.py `_inflight_snapshot`:6235)
+## `session.resume` `inflight` field (P2-02, server.py `_inflight_snapshot`:7669)
 
 `session.resume` (wire §5) returns an `inflight` field for reconciling a turn
 that was streaming when the socket dropped:
@@ -271,5 +283,3 @@ that was streaming when the socket dropped:
 In the fast-path (already-live) reuse branch the key is present ONLY when a turn
 is active; otherwise it is **omitted** (not null). Treat both `null` and missing
 as "no inflight turn." `session.history` does NOT return `inflight`.
-</content>
-</invoke>

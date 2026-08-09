@@ -3,7 +3,8 @@
 The kanban plugin is the **reference plugin integration** — it shows how a
 plugin surfaces to a client. It exposes **no JSON-RPC**; its entire surface is a
 FastAPI router mounted by the dashboard web server under the prefix
-`/api/plugins/kanban/` (`hermes_cli/web_server.py:13881`, router in
+`/api/plugins/kanban/` (`_mount_plugin_api_routes`,
+`hermes_cli/web_server.py:17281`, include at `:17389`; router in
 `plugins/kanban/dashboard/plugin_api.py`). Same origin and same token as
 `/api/ws`, so one connection config covers both.
 
@@ -40,8 +41,10 @@ current board.
 Each task dict = the `Task` dataclass plus derived fields: `age`,
 `latest_summary` (200-char preview), `link_counts {parents,children}`,
 `comment_count`, `progress {done,total}|null`, optional `diagnostics`/
-`warnings`. Query params on `/board`: `tenant`, `include_archived`, `board`,
-`workflow_template_id`, `current_step_key`.
+`warnings`. Query params on `/board` (`plugin_api.py:378-407`): `tenant`,
+`include_archived`, `board`, `workflow_template_id`, `current_step_key` — flit
+sends none of the last two yet
+(`../updates/gateway-0.18-to-0.20-optional.md` §6).
 
 ## Live updates
 
@@ -67,6 +70,8 @@ platforms — not a client feed.)
 | POST | `/tasks/{id}/reassign` | Reassign to a profile (409 if running without `reclaim_first`) |
 | POST | `/tasks/{id}/reclaim` | Release a stuck claim |
 | GET | `/tasks/{id}/log` | Worker stdout/stderr log (`?tail=<bytes>`) |
+| POST | `/tasks/{id}/estimate` | Token/complexity estimate + one-line why for a stored task (`plugin_api.py:1811`); no client yet — see required-doc §8 |
+| POST | `/estimate` | Same estimate for ad-hoc text, before the task exists (`plugin_api.py:1804`) |
 
 ### Links & attachments
 | Method | Path | Purpose |
