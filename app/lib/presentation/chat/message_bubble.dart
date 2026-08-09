@@ -16,6 +16,9 @@ import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 /// widget tests find it by key while a turn is in flight.
 const Key typingIndicatorKey = Key('typing_indicator');
 
+/// Key of the reasoning ("Thinking…") disclosure above an assistant bubble.
+const Key reasoningDisclosureKey = Key('reasoning_disclosure');
+
 /// One message in the chat list. User messages render as plain-text
 /// bubbles; assistant/system messages render markdown plus their tool
 /// calls, a typing indicator while streaming, and a terminal status
@@ -76,6 +79,7 @@ class _AssistantMessage extends StatelessWidget {
     final scheme = theme.colorScheme;
     // `rendered` supersedes `text` when the gateway provides it (§6).
     final content = message.rendered ?? message.text;
+    final reasoning = message.reasoning;
     return Align(
       alignment: Alignment.centerLeft,
       child: ConstrainedBox(
@@ -85,6 +89,14 @@ class _AssistantMessage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
+            // Thinking comes BEFORE the reply, both on the wire (§6) and on
+            // screen. Absent reasoning renders nothing at all.
+            if (reasoning != null && reasoning.trim().isNotEmpty)
+              _ReasoningDisclosure(
+                key: reasoningDisclosureKey,
+                reasoning: reasoning,
+                streaming: message.reasoningStreaming,
+              ),
             if (content.isNotEmpty)
               Container(
                 margin: const EdgeInsets.symmetric(vertical: 4),
@@ -119,6 +131,104 @@ class _AssistantMessage extends StatelessWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// The model's extended thinking, as a collapsed-by-default disclosure above
+/// the reply (`reasoning.delta` live, `message.complete.reasoning` after).
+///
+/// While [streaming] it reads "Thinking…" and shows the tail of the text
+/// even collapsed, so a long silent thinking phase still looks alive; once
+/// the turn ends the header settles to "Thought" and the text stays behind
+/// the disclosure rather than disappearing. Expanding is sticky: a user who
+/// opens it mid-turn keeps it open through the terminal frame.
+class _ReasoningDisclosure extends StatefulWidget {
+  const _ReasoningDisclosure({
+    required this.reasoning,
+    required this.streaming,
+    super.key,
+  });
+
+  final String reasoning;
+  final bool streaming;
+
+  @override
+  State<_ReasoningDisclosure> createState() => _ReasoningDisclosureState();
+}
+
+class _ReasoningDisclosureState extends State<_ReasoningDisclosure> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final text = widget.reasoning.trim();
+    final caption = theme.textTheme.bodySmall?.copyWith(color: scheme.outline);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        border: Border.all(color: scheme.outlineVariant),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => setState(() => _expanded = !_expanded),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              child: Row(
+                children: <Widget>[
+                  Icon(
+                    Icons.psychology_outlined,
+                    size: 18,
+                    color: scheme.outline,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    widget.streaming ? 'Thinking…' : 'Thought',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: scheme.outline,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Collapsed + still thinking: trail the latest line so the
+                  // user sees movement without opening anything.
+                  if (!_expanded && widget.streaming)
+                    Expanded(
+                      child: Text(
+                        text,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: caption,
+                      ),
+                    )
+                  else
+                    const Spacer(),
+                  Icon(
+                    _expanded ? Icons.expand_less : Icons.expand_more,
+                    size: 18,
+                    color: scheme.outline,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_expanded) ...<Widget>[
+            Divider(height: 1, color: scheme.outlineVariant),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+              // Reasoning is prose, not markdown — the gateway ships it raw
+              // (and half-streamed markdown renders as noise).
+              child: SelectableText(text, style: caption),
+            ),
+          ],
+        ],
       ),
     );
   }

@@ -202,9 +202,13 @@ class ActiveSessionListResultDto {
 }
 
 /// One replayed message of the `session.resume` result (§5): `{role, text}`.
+///
+/// An assistant entry may ALSO carry `reasoning` (07-session-depth-wire-shapes
+/// "canonical message shape") — a thinking-only turn is persisted with no text
+/// at all, so dropping the field would replay it as a blank bubble.
 @JsonSerializable()
 class ResumeMessageDto {
-  const ResumeMessageDto({this.role, this.text});
+  const ResumeMessageDto({this.role, this.text, this.reasoning});
 
   factory ResumeMessageDto.fromJson(Map<String, dynamic> json) =>
       _$ResumeMessageDtoFromJson(json);
@@ -215,10 +219,18 @@ class ResumeMessageDto {
   @JsonKey(name: 'text')
   final String? text;
 
+  @JsonKey(name: 'reasoning')
+  final String? reasoning;
+
   Map<String, dynamic> toJson() => _$ResumeMessageDtoToJson(this);
 
   ChatMessage toDomain() {
-    return ChatMessage(role: _parseRole(role), text: text ?? '');
+    return ChatMessage(
+      role: _parseRole(role),
+      text: text ?? '',
+      // Empty string is not "no reasoning" worth a disclosure.
+      reasoning: (reasoning?.isNotEmpty ?? false) ? reasoning : null,
+    );
   }
 }
 

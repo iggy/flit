@@ -394,6 +394,59 @@ void main() {
     expect(find.byKey(composerStopKey), findsNothing);
   });
 
+  testWidgets('reasoning.delta streams into a Thinking… disclosure', (
+    tester,
+  ) async {
+    await pumpChat(tester);
+
+    // No reasoning yet → no disclosure at all (absent, not empty).
+    chatRepository.emit(
+      const TypedGatewayEvent.messageStart(sessionId: liveId),
+    );
+    await tester.pump();
+    expect(find.byKey(reasoningDisclosureKey), findsNothing);
+
+    // Thinking streams: header reads "Thinking…", and the tail trails in the
+    // collapsed header so a silent thinking phase still looks alive.
+    chatRepository.emit(
+      const TypedGatewayEvent.reasoningDelta(
+        sessionId: liveId,
+        text: 'Checking the directory first',
+        verbose: false,
+      ),
+    );
+    await tester.pump();
+    expect(find.byKey(reasoningDisclosureKey), findsOneWidget);
+    expect(find.text('Thinking…'), findsOneWidget);
+    expect(find.text('Checking the directory first'), findsOneWidget);
+
+    // Expanding shows the full text.
+    await tester.tap(find.byKey(reasoningDisclosureKey));
+    await tester.pump();
+    expect(
+      find.descendant(
+        of: find.byKey(reasoningDisclosureKey),
+        matching: find.byType(SelectableText),
+      ),
+      findsOneWidget,
+    );
+
+    // Turn ends: the disclosure SURVIVES, but stops claiming to be thinking.
+    chatRepository.emit(
+      const TypedGatewayEvent.messageComplete(
+        sessionId: liveId,
+        text: 'One file.',
+        status: MessageTerminalStatus.complete,
+      ),
+    );
+    await tester.pump();
+    expect(find.byKey(reasoningDisclosureKey), findsOneWidget);
+    expect(find.text('Thinking…'), findsNothing);
+    expect(find.text('Thought'), findsOneWidget);
+    // Still expanded (the user opened it mid-turn).
+    expect(find.text('Checking the directory first'), findsOneWidget);
+  });
+
   testWidgets('stop button interrupts the active session', (tester) async {
     await pumpChat(tester);
 

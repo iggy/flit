@@ -498,6 +498,64 @@ void main() {
       expect(update.kind, 'retrying');
       expect(update.text, 'Retry 1/3');
     });
+
+    test('reasoning.delta → ReasoningDelta with text', () {
+      const frame =
+          '{"jsonrpc":"2.0","method":"event","params":{"type":"reasoning.delta",'
+          '"session_id":"a1b2c3d4","payload":{"text":"Let me check "}}}';
+
+      final event = parseGatewayEvent(_eventFromFrame(frame));
+
+      expect(event, isA<ReasoningDelta>());
+      final delta = event as ReasoningDelta;
+      expect(delta.sessionId, 'a1b2c3d4');
+      expect(delta.text, 'Let me check ');
+      // `verbose` is only sent when the session asked for unclamped
+      // reasoning — absent means false, never null.
+      expect(delta.verbose, isFalse);
+    });
+
+    test('reasoning.delta carries the optional verbose flag', () {
+      final event = parseGatewayEvent(
+        const GatewayEvent(
+          type: 'reasoning.delta',
+          sessionId: 'a1b2c3d4',
+          payload: {'text': 'thinking', 'verbose': true},
+        ),
+      );
+
+      expect((event as ReasoningDelta).verbose, isTrue);
+    });
+
+    test('reasoning.available → ReasoningAvailable (non-streaming sibling)', () {
+      final event = parseGatewayEvent(
+        const GatewayEvent(
+          type: 'reasoning.available',
+          sessionId: 'a1b2c3d4',
+          payload: {'text': 'The whole thought at once.'},
+        ),
+      );
+
+      expect(event, isA<ReasoningAvailable>());
+      final available = event as ReasoningAvailable;
+      expect(available.text, 'The whole thought at once.');
+      expect(available.verbose, isFalse);
+    });
+
+    test('reasoning.delta with a malformed text falls back to empty', () {
+      final event = parseGatewayEvent(
+        const GatewayEvent(
+          type: 'reasoning.delta',
+          sessionId: 'a1b2c3d4',
+          payload: {'text': 42, 'verbose': 'yes'},
+        ),
+      );
+
+      expect(event, isA<ReasoningDelta>());
+      final delta = event as ReasoningDelta;
+      expect(delta.text, '');
+      expect(delta.verbose, isFalse);
+    });
   });
 
   group('never throws (P1-03 acceptance)', () {
@@ -574,6 +632,8 @@ void main() {
         SessionInfo() => 'info',
         MessageStart() => 'start',
         MessageDelta() => 'delta',
+        ReasoningDelta() => 'reasoning.delta',
+        ReasoningAvailable() => 'reasoning.available',
         MessageComplete() => 'complete',
         TurnError() => 'error',
         ToolStart() => 'tool.start',

@@ -100,10 +100,15 @@ ResumeMessageDto _$ResumeMessageDtoFromJson(Map<String, dynamic> json) =>
     ResumeMessageDto(
       role: json['role'] as String?,
       text: json['text'] as String?,
+      reasoning: json['reasoning'] as String?,
     );
 
 Map<String, dynamic> _$ResumeMessageDtoToJson(ResumeMessageDto instance) =>
-    <String, dynamic>{'role': instance.role, 'text': instance.text};
+    <String, dynamic>{
+      'role': instance.role,
+      'text': instance.text,
+      'reasoning': instance.reasoning,
+    };
 
 InflightTurnDto _$InflightTurnDtoFromJson(Map<String, dynamic> json) =>
     InflightTurnDto(

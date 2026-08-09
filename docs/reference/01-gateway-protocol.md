@@ -296,6 +296,15 @@ High-frequency delta frames — `message.delta`, `reasoning.delta`,
 - Accumulate `message.delta.text` into the current bubble; the terminal
   `message.complete.text` carries the full final text (you may render from the
   accumulation and reconcile with `complete`, or just trust `complete`).
+- `reasoning.delta` accumulates SEPARATELY from the reply text — never into it.
+  flit folds it into `ChatMessage.reasoning` and renders a collapsed
+  "Thinking…" disclosure above the bubble. `reasoning.available` `{text}` is
+  the non-streaming sibling for providers that return reasoning whole
+  (`server.py:5500`): treat it as a fallback and ignore it once deltas have
+  arrived. `message.complete.reasoning` is the same text again and can be
+  clamped, so prefer what streamed. `thinking.delta` is a different signal —
+  a spinner caption (`"🤔 pondering..."`), not model reasoning — and flit does
+  not consume it.
 
 ---
 

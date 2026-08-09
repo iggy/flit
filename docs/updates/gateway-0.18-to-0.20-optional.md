@@ -8,21 +8,55 @@ working — but each is a visible gap against a current gateway.
 
 ---
 
-## 1. Streamed reasoning: `reasoning.delta` events treated as `unknown`
+## 1. Streamed reasoning: `reasoning.delta` events treated as `unknown` — ✅ DONE
 
-**Gateway** (`hermes-agent/tui_gateway/server.py:5681`): a child/session with
-extended thinking streams `reasoning.delta` `{text}` frames while the turn is
-in flight; the full reasoning also lands on `message.complete.reasoning` (which
-flit already reads).
+**Gateway** (`hermes-agent/tui_gateway/server.py:5731`, and `:5681` for the
+child-mirror path): a session with extended thinking streams `reasoning.delta`
+`{text, verbose?}` frames while the turn is in flight; the full reasoning also
+lands on `message.complete.reasoning` (which flit already read but never
+rendered).
 
-**flit**: `app/lib/data/dto/events/gateway_event_parser.dart` has no
-`reasoning.delta` case — it falls through to `unknown` and is dropped by the
-fold. Users never see thinking stream in live.
+**flit**: `gateway_event_parser.dart` had no `reasoning.delta` case — it fell
+through to `unknown` and was dropped by the fold. Users never saw thinking
+stream live.
 
-**TODO**: add a `reasoningDelta` event (sessionId, text), accumulate it in the
-streaming bubble next to the text (a "Thinking…" disclosure like the
-`message.complete.reasoning` path already uses), and clear on
-`message.complete`.
+**Done**: `reasoningDelta` and `reasoningAvailable` (its non-streaming sibling,
+`server.py:5500`) are typed events; the fold accumulates them into
+`ChatMessage.reasoning` alongside — never into — the reply text, and flips
+`reasoningStreaming` off at the terminal frame. The assistant bubble grew a
+collapsed-by-default disclosure ABOVE the reply: "Thinking…" while deltas
+arrive (trailing the newest line in the collapsed header so a long silent
+thinking phase still looks alive), settling to "Thought" once the turn ends.
+
+Deliberate divergence from this item's original TODO, which said to *clear* on
+`message.complete`: the reasoning is **kept**, collapsed. Discarding it would
+throw away the only rendered copy of a thought the user may want to read after
+the answer lands, and `message.complete.reasoning` was already going unrendered.
+
+Four shape traps:
+- **Absent ≠ empty.** `reasoning` is nullable and the disclosure is hidden
+  entirely when null, so a non-thinking model grows no empty affordance.
+- **A streamed reasoning beats `message.complete.reasoning`.** The payload copy
+  can arrive clamped (`/reasoning clamp`), so the accumulated stream wins and
+  the payload field only fills in when nothing streamed. Same rule makes
+  `reasoning.available` a fallback: ignored once deltas exist.
+- **Thinking can be a turn's FIRST frame**, before `message.start` — so the
+  delta handler creates the streaming bubble defensively, exactly as
+  `message.delta` does, and never merges into a finalized turn.
+- **The accumulation needs a cap.** Every delta rebuilds the string and a long
+  extended-thinking turn runs to hundreds of KB, so it is trimmed to the newest
+  60k past 80k (the reference TUI's numbers) — the tail is what's being watched.
+
+Resumed history keeps its thinking too: `_history_to_messages` forwards
+`reasoning` on assistant entries (`server.py:7118`) and specifically retains
+text-less thinking-only turns for exactly this disclosure, so `ResumeMessageDto`
+now reads the field instead of replaying such a turn as a blank bubble. The
+three sibling keys it can send instead (`reasoning_content`,
+`reasoning_details`, `codex_reasoning_items`) are still ignored — they are
+documented as opaque pass-through and are not plain strings.
+
+Not done: reasoning renders as prose, not markdown (half-streamed markdown
+renders as noise).
 
 ---
 

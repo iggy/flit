@@ -56,7 +56,7 @@ extension TypedGatewayEventPatterns on TypedGatewayEvent {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( GatewayReady value)?  gatewayReady,TResult Function( SessionInfo value)?  sessionInfo,TResult Function( MessageStart value)?  messageStart,TResult Function( MessageDelta value)?  messageDelta,TResult Function( MessageComplete value)?  messageComplete,TResult Function( TurnError value)?  turnError,TResult Function( ToolStart value)?  toolStart,TResult Function( ToolProgress value)?  toolProgress,TResult Function( ToolComplete value)?  toolComplete,TResult Function( ApprovalRequestEvent value)?  approvalRequest,TResult Function( ClarifyRequestEvent value)?  clarifyRequest,TResult Function( SudoRequestEvent value)?  sudoRequest,TResult Function( SecretRequestEvent value)?  secretRequest,TResult Function( TerminalReadRequestEvent value)?  terminalReadRequest,TResult Function( SubagentEvent value)?  subagentEvent,TResult Function( StatusUpdate value)?  statusUpdate,TResult Function( BackgroundCompleteEvent value)?  backgroundComplete,TResult Function( VoiceStatusEvent value)?  voiceStatus,TResult Function( VoiceTranscriptEvent value)?  voiceTranscript,TResult Function( SkinChanged value)?  skinChanged,TResult Function( BrowserProgressEvent value)?  browserProgress,TResult Function( PreviewRestartProgressEvent value)?  previewRestartProgress,TResult Function( PreviewRestartCompleteEvent value)?  previewRestartComplete,TResult Function( UnknownEvent value)?  unknown,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( GatewayReady value)?  gatewayReady,TResult Function( SessionInfo value)?  sessionInfo,TResult Function( MessageStart value)?  messageStart,TResult Function( MessageDelta value)?  messageDelta,TResult Function( MessageComplete value)?  messageComplete,TResult Function( ReasoningDelta value)?  reasoningDelta,TResult Function( ReasoningAvailable value)?  reasoningAvailable,TResult Function( TurnError value)?  turnError,TResult Function( ToolStart value)?  toolStart,TResult Function( ToolProgress value)?  toolProgress,TResult Function( ToolComplete value)?  toolComplete,TResult Function( ApprovalRequestEvent value)?  approvalRequest,TResult Function( ClarifyRequestEvent value)?  clarifyRequest,TResult Function( SudoRequestEvent value)?  sudoRequest,TResult Function( SecretRequestEvent value)?  secretRequest,TResult Function( TerminalReadRequestEvent value)?  terminalReadRequest,TResult Function( SubagentEvent value)?  subagentEvent,TResult Function( StatusUpdate value)?  statusUpdate,TResult Function( BackgroundCompleteEvent value)?  backgroundComplete,TResult Function( VoiceStatusEvent value)?  voiceStatus,TResult Function( VoiceTranscriptEvent value)?  voiceTranscript,TResult Function( SkinChanged value)?  skinChanged,TResult Function( BrowserProgressEvent value)?  browserProgress,TResult Function( PreviewRestartProgressEvent value)?  previewRestartProgress,TResult Function( PreviewRestartCompleteEvent value)?  previewRestartComplete,TResult Function( UnknownEvent value)?  unknown,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case GatewayReady() when gatewayReady != null:
@@ -64,7 +64,9 @@ return gatewayReady(_that);case SessionInfo() when sessionInfo != null:
 return sessionInfo(_that);case MessageStart() when messageStart != null:
 return messageStart(_that);case MessageDelta() when messageDelta != null:
 return messageDelta(_that);case MessageComplete() when messageComplete != null:
-return messageComplete(_that);case TurnError() when turnError != null:
+return messageComplete(_that);case ReasoningDelta() when reasoningDelta != null:
+return reasoningDelta(_that);case ReasoningAvailable() when reasoningAvailable != null:
+return reasoningAvailable(_that);case TurnError() when turnError != null:
 return turnError(_that);case ToolStart() when toolStart != null:
 return toolStart(_that);case ToolProgress() when toolProgress != null:
 return toolProgress(_that);case ToolComplete() when toolComplete != null:
@@ -101,7 +103,7 @@ return unknown(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( GatewayReady value)  gatewayReady,required TResult Function( SessionInfo value)  sessionInfo,required TResult Function( MessageStart value)  messageStart,required TResult Function( MessageDelta value)  messageDelta,required TResult Function( MessageComplete value)  messageComplete,required TResult Function( TurnError value)  turnError,required TResult Function( ToolStart value)  toolStart,required TResult Function( ToolProgress value)  toolProgress,required TResult Function( ToolComplete value)  toolComplete,required TResult Function( ApprovalRequestEvent value)  approvalRequest,required TResult Function( ClarifyRequestEvent value)  clarifyRequest,required TResult Function( SudoRequestEvent value)  sudoRequest,required TResult Function( SecretRequestEvent value)  secretRequest,required TResult Function( TerminalReadRequestEvent value)  terminalReadRequest,required TResult Function( SubagentEvent value)  subagentEvent,required TResult Function( StatusUpdate value)  statusUpdate,required TResult Function( BackgroundCompleteEvent value)  backgroundComplete,required TResult Function( VoiceStatusEvent value)  voiceStatus,required TResult Function( VoiceTranscriptEvent value)  voiceTranscript,required TResult Function( SkinChanged value)  skinChanged,required TResult Function( BrowserProgressEvent value)  browserProgress,required TResult Function( PreviewRestartProgressEvent value)  previewRestartProgress,required TResult Function( PreviewRestartCompleteEvent value)  previewRestartComplete,required TResult Function( UnknownEvent value)  unknown,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( GatewayReady value)  gatewayReady,required TResult Function( SessionInfo value)  sessionInfo,required TResult Function( MessageStart value)  messageStart,required TResult Function( MessageDelta value)  messageDelta,required TResult Function( MessageComplete value)  messageComplete,required TResult Function( ReasoningDelta value)  reasoningDelta,required TResult Function( ReasoningAvailable value)  reasoningAvailable,required TResult Function( TurnError value)  turnError,required TResult Function( ToolStart value)  toolStart,required TResult Function( ToolProgress value)  toolProgress,required TResult Function( ToolComplete value)  toolComplete,required TResult Function( ApprovalRequestEvent value)  approvalRequest,required TResult Function( ClarifyRequestEvent value)  clarifyRequest,required TResult Function( SudoRequestEvent value)  sudoRequest,required TResult Function( SecretRequestEvent value)  secretRequest,required TResult Function( TerminalReadRequestEvent value)  terminalReadRequest,required TResult Function( SubagentEvent value)  subagentEvent,required TResult Function( StatusUpdate value)  statusUpdate,required TResult Function( BackgroundCompleteEvent value)  backgroundComplete,required TResult Function( VoiceStatusEvent value)  voiceStatus,required TResult Function( VoiceTranscriptEvent value)  voiceTranscript,required TResult Function( SkinChanged value)  skinChanged,required TResult Function( BrowserProgressEvent value)  browserProgress,required TResult Function( PreviewRestartProgressEvent value)  previewRestartProgress,required TResult Function( PreviewRestartCompleteEvent value)  previewRestartComplete,required TResult Function( UnknownEvent value)  unknown,}){
 final _that = this;
 switch (_that) {
 case GatewayReady():
@@ -109,7 +111,9 @@ return gatewayReady(_that);case SessionInfo():
 return sessionInfo(_that);case MessageStart():
 return messageStart(_that);case MessageDelta():
 return messageDelta(_that);case MessageComplete():
-return messageComplete(_that);case TurnError():
+return messageComplete(_that);case ReasoningDelta():
+return reasoningDelta(_that);case ReasoningAvailable():
+return reasoningAvailable(_that);case TurnError():
 return turnError(_that);case ToolStart():
 return toolStart(_that);case ToolProgress():
 return toolProgress(_that);case ToolComplete():
@@ -142,7 +146,7 @@ return unknown(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( GatewayReady value)?  gatewayReady,TResult? Function( SessionInfo value)?  sessionInfo,TResult? Function( MessageStart value)?  messageStart,TResult? Function( MessageDelta value)?  messageDelta,TResult? Function( MessageComplete value)?  messageComplete,TResult? Function( TurnError value)?  turnError,TResult? Function( ToolStart value)?  toolStart,TResult? Function( ToolProgress value)?  toolProgress,TResult? Function( ToolComplete value)?  toolComplete,TResult? Function( ApprovalRequestEvent value)?  approvalRequest,TResult? Function( ClarifyRequestEvent value)?  clarifyRequest,TResult? Function( SudoRequestEvent value)?  sudoRequest,TResult? Function( SecretRequestEvent value)?  secretRequest,TResult? Function( TerminalReadRequestEvent value)?  terminalReadRequest,TResult? Function( SubagentEvent value)?  subagentEvent,TResult? Function( StatusUpdate value)?  statusUpdate,TResult? Function( BackgroundCompleteEvent value)?  backgroundComplete,TResult? Function( VoiceStatusEvent value)?  voiceStatus,TResult? Function( VoiceTranscriptEvent value)?  voiceTranscript,TResult? Function( SkinChanged value)?  skinChanged,TResult? Function( BrowserProgressEvent value)?  browserProgress,TResult? Function( PreviewRestartProgressEvent value)?  previewRestartProgress,TResult? Function( PreviewRestartCompleteEvent value)?  previewRestartComplete,TResult? Function( UnknownEvent value)?  unknown,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( GatewayReady value)?  gatewayReady,TResult? Function( SessionInfo value)?  sessionInfo,TResult? Function( MessageStart value)?  messageStart,TResult? Function( MessageDelta value)?  messageDelta,TResult? Function( MessageComplete value)?  messageComplete,TResult? Function( ReasoningDelta value)?  reasoningDelta,TResult? Function( ReasoningAvailable value)?  reasoningAvailable,TResult? Function( TurnError value)?  turnError,TResult? Function( ToolStart value)?  toolStart,TResult? Function( ToolProgress value)?  toolProgress,TResult? Function( ToolComplete value)?  toolComplete,TResult? Function( ApprovalRequestEvent value)?  approvalRequest,TResult? Function( ClarifyRequestEvent value)?  clarifyRequest,TResult? Function( SudoRequestEvent value)?  sudoRequest,TResult? Function( SecretRequestEvent value)?  secretRequest,TResult? Function( TerminalReadRequestEvent value)?  terminalReadRequest,TResult? Function( SubagentEvent value)?  subagentEvent,TResult? Function( StatusUpdate value)?  statusUpdate,TResult? Function( BackgroundCompleteEvent value)?  backgroundComplete,TResult? Function( VoiceStatusEvent value)?  voiceStatus,TResult? Function( VoiceTranscriptEvent value)?  voiceTranscript,TResult? Function( SkinChanged value)?  skinChanged,TResult? Function( BrowserProgressEvent value)?  browserProgress,TResult? Function( PreviewRestartProgressEvent value)?  previewRestartProgress,TResult? Function( PreviewRestartCompleteEvent value)?  previewRestartComplete,TResult? Function( UnknownEvent value)?  unknown,}){
 final _that = this;
 switch (_that) {
 case GatewayReady() when gatewayReady != null:
@@ -150,7 +154,9 @@ return gatewayReady(_that);case SessionInfo() when sessionInfo != null:
 return sessionInfo(_that);case MessageStart() when messageStart != null:
 return messageStart(_that);case MessageDelta() when messageDelta != null:
 return messageDelta(_that);case MessageComplete() when messageComplete != null:
-return messageComplete(_that);case TurnError() when turnError != null:
+return messageComplete(_that);case ReasoningDelta() when reasoningDelta != null:
+return reasoningDelta(_that);case ReasoningAvailable() when reasoningAvailable != null:
+return reasoningAvailable(_that);case TurnError() when turnError != null:
 return turnError(_that);case ToolStart() when toolStart != null:
 return toolStart(_that);case ToolProgress() when toolProgress != null:
 return toolProgress(_that);case ToolComplete() when toolComplete != null:
@@ -186,14 +192,16 @@ return unknown(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( Map<String, dynamic> skin)?  gatewayReady,TResult Function( String? sessionId,  Map<String, dynamic> info)?  sessionInfo,TResult Function( String? sessionId)?  messageStart,TResult Function( String? sessionId,  String text,  String? rendered)?  messageDelta,TResult Function( String? sessionId,  String text,  String? rendered,  String? reasoning,  Usage? usage,  MessageTerminalStatus status)?  messageComplete,TResult Function( String? sessionId,  String? message)?  turnError,TResult Function( String? sessionId,  String toolId,  String name,  String? context,  String? argsText,  List<dynamic>? todos)?  toolStart,TResult Function( String? sessionId,  String name,  String preview)?  toolProgress,TResult Function( String? sessionId,  String toolId,  String name,  dynamic args,  dynamic result,  double? durationS,  String? summary,  String? resultText,  String? inlineDiff,  List<dynamic>? todos,  String? error)?  toolComplete,TResult Function( String? sessionId,  String command,  String description,  String? patternKey,  List<String> patternKeys,  bool allowPermanent)?  approvalRequest,TResult Function( String? sessionId,  String question,  List<String>? choices,  String requestId)?  clarifyRequest,TResult Function( String? sessionId,  String requestId)?  sudoRequest,TResult Function( String? sessionId,  String envVar,  String prompt,  String requestId)?  secretRequest,TResult Function( String? sessionId,  String requestId,  int? start,  int? count)?  terminalReadRequest,TResult Function( String? sessionId,  String type,  String goal,  int taskCount,  int taskIndex,  String? subagentId,  String? parentId,  String? childSessionId,  int? depth,  String? model,  int? toolCount,  List<String>? toolsets,  int? inputTokens,  int? outputTokens,  int? reasoningTokens,  int? apiCalls,  List<String>? filesRead,  List<String>? filesWritten,  String? toolName,  String? toolPreview,  String? text,  String? status,  String? summary,  double? durationSeconds,  double? costUsd)?  subagentEvent,TResult Function( String? sessionId,  String? kind,  String? text)?  statusUpdate,TResult Function( String? sessionId,  String taskId,  String text)?  backgroundComplete,TResult Function( String? sessionId,  String state)?  voiceStatus,TResult Function( String? sessionId,  String? text,  bool noSpeechLimit)?  voiceTranscript,TResult Function( Map<String, dynamic> skin)?  skinChanged,TResult Function( String? sessionId,  String message,  String level)?  browserProgress,TResult Function( String? sessionId,  String taskId,  String text,  String level)?  previewRestartProgress,TResult Function( String? sessionId,  String taskId,  String text)?  previewRestartComplete,TResult Function( String type,  String? sessionId,  Map<String, dynamic> payload)?  unknown,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( Map<String, dynamic> skin)?  gatewayReady,TResult Function( String? sessionId,  Map<String, dynamic> info)?  sessionInfo,TResult Function( String? sessionId)?  messageStart,TResult Function( String? sessionId,  String text,  String? rendered)?  messageDelta,TResult Function( String? sessionId,  String text,  String? rendered,  String? reasoning,  Usage? usage,  MessageTerminalStatus status)?  messageComplete,TResult Function( String? sessionId,  String text,  bool verbose)?  reasoningDelta,TResult Function( String? sessionId,  String text,  bool verbose)?  reasoningAvailable,TResult Function( String? sessionId,  String? message)?  turnError,TResult Function( String? sessionId,  String toolId,  String name,  String? context,  String? argsText,  List<dynamic>? todos)?  toolStart,TResult Function( String? sessionId,  String name,  String preview)?  toolProgress,TResult Function( String? sessionId,  String toolId,  String name,  dynamic args,  dynamic result,  double? durationS,  String? summary,  String? resultText,  String? inlineDiff,  List<dynamic>? todos,  String? error)?  toolComplete,TResult Function( String? sessionId,  String command,  String description,  String? patternKey,  List<String> patternKeys,  bool allowPermanent)?  approvalRequest,TResult Function( String? sessionId,  String question,  List<String>? choices,  String requestId)?  clarifyRequest,TResult Function( String? sessionId,  String requestId)?  sudoRequest,TResult Function( String? sessionId,  String envVar,  String prompt,  String requestId)?  secretRequest,TResult Function( String? sessionId,  String requestId,  int? start,  int? count)?  terminalReadRequest,TResult Function( String? sessionId,  String type,  String goal,  int taskCount,  int taskIndex,  String? subagentId,  String? parentId,  String? childSessionId,  int? depth,  String? model,  int? toolCount,  List<String>? toolsets,  int? inputTokens,  int? outputTokens,  int? reasoningTokens,  int? apiCalls,  List<String>? filesRead,  List<String>? filesWritten,  String? toolName,  String? toolPreview,  String? text,  String? status,  String? summary,  double? durationSeconds,  double? costUsd)?  subagentEvent,TResult Function( String? sessionId,  String? kind,  String? text)?  statusUpdate,TResult Function( String? sessionId,  String taskId,  String text)?  backgroundComplete,TResult Function( String? sessionId,  String state)?  voiceStatus,TResult Function( String? sessionId,  String? text,  bool noSpeechLimit)?  voiceTranscript,TResult Function( Map<String, dynamic> skin)?  skinChanged,TResult Function( String? sessionId,  String message,  String level)?  browserProgress,TResult Function( String? sessionId,  String taskId,  String text,  String level)?  previewRestartProgress,TResult Function( String? sessionId,  String taskId,  String text)?  previewRestartComplete,TResult Function( String type,  String? sessionId,  Map<String, dynamic> payload)?  unknown,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case GatewayReady() when gatewayReady != null:
 return gatewayReady(_that.skin);case SessionInfo() when sessionInfo != null:
 return sessionInfo(_that.sessionId,_that.info);case MessageStart() when messageStart != null:
 return messageStart(_that.sessionId);case MessageDelta() when messageDelta != null:
 return messageDelta(_that.sessionId,_that.text,_that.rendered);case MessageComplete() when messageComplete != null:
-return messageComplete(_that.sessionId,_that.text,_that.rendered,_that.reasoning,_that.usage,_that.status);case TurnError() when turnError != null:
+return messageComplete(_that.sessionId,_that.text,_that.rendered,_that.reasoning,_that.usage,_that.status);case ReasoningDelta() when reasoningDelta != null:
+return reasoningDelta(_that.sessionId,_that.text,_that.verbose);case ReasoningAvailable() when reasoningAvailable != null:
+return reasoningAvailable(_that.sessionId,_that.text,_that.verbose);case TurnError() when turnError != null:
 return turnError(_that.sessionId,_that.message);case ToolStart() when toolStart != null:
 return toolStart(_that.sessionId,_that.toolId,_that.name,_that.context,_that.argsText,_that.todos);case ToolProgress() when toolProgress != null:
 return toolProgress(_that.sessionId,_that.name,_that.preview);case ToolComplete() when toolComplete != null:
@@ -230,14 +238,16 @@ return unknown(_that.type,_that.sessionId,_that.payload);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( Map<String, dynamic> skin)  gatewayReady,required TResult Function( String? sessionId,  Map<String, dynamic> info)  sessionInfo,required TResult Function( String? sessionId)  messageStart,required TResult Function( String? sessionId,  String text,  String? rendered)  messageDelta,required TResult Function( String? sessionId,  String text,  String? rendered,  String? reasoning,  Usage? usage,  MessageTerminalStatus status)  messageComplete,required TResult Function( String? sessionId,  String? message)  turnError,required TResult Function( String? sessionId,  String toolId,  String name,  String? context,  String? argsText,  List<dynamic>? todos)  toolStart,required TResult Function( String? sessionId,  String name,  String preview)  toolProgress,required TResult Function( String? sessionId,  String toolId,  String name,  dynamic args,  dynamic result,  double? durationS,  String? summary,  String? resultText,  String? inlineDiff,  List<dynamic>? todos,  String? error)  toolComplete,required TResult Function( String? sessionId,  String command,  String description,  String? patternKey,  List<String> patternKeys,  bool allowPermanent)  approvalRequest,required TResult Function( String? sessionId,  String question,  List<String>? choices,  String requestId)  clarifyRequest,required TResult Function( String? sessionId,  String requestId)  sudoRequest,required TResult Function( String? sessionId,  String envVar,  String prompt,  String requestId)  secretRequest,required TResult Function( String? sessionId,  String requestId,  int? start,  int? count)  terminalReadRequest,required TResult Function( String? sessionId,  String type,  String goal,  int taskCount,  int taskIndex,  String? subagentId,  String? parentId,  String? childSessionId,  int? depth,  String? model,  int? toolCount,  List<String>? toolsets,  int? inputTokens,  int? outputTokens,  int? reasoningTokens,  int? apiCalls,  List<String>? filesRead,  List<String>? filesWritten,  String? toolName,  String? toolPreview,  String? text,  String? status,  String? summary,  double? durationSeconds,  double? costUsd)  subagentEvent,required TResult Function( String? sessionId,  String? kind,  String? text)  statusUpdate,required TResult Function( String? sessionId,  String taskId,  String text)  backgroundComplete,required TResult Function( String? sessionId,  String state)  voiceStatus,required TResult Function( String? sessionId,  String? text,  bool noSpeechLimit)  voiceTranscript,required TResult Function( Map<String, dynamic> skin)  skinChanged,required TResult Function( String? sessionId,  String message,  String level)  browserProgress,required TResult Function( String? sessionId,  String taskId,  String text,  String level)  previewRestartProgress,required TResult Function( String? sessionId,  String taskId,  String text)  previewRestartComplete,required TResult Function( String type,  String? sessionId,  Map<String, dynamic> payload)  unknown,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( Map<String, dynamic> skin)  gatewayReady,required TResult Function( String? sessionId,  Map<String, dynamic> info)  sessionInfo,required TResult Function( String? sessionId)  messageStart,required TResult Function( String? sessionId,  String text,  String? rendered)  messageDelta,required TResult Function( String? sessionId,  String text,  String? rendered,  String? reasoning,  Usage? usage,  MessageTerminalStatus status)  messageComplete,required TResult Function( String? sessionId,  String text,  bool verbose)  reasoningDelta,required TResult Function( String? sessionId,  String text,  bool verbose)  reasoningAvailable,required TResult Function( String? sessionId,  String? message)  turnError,required TResult Function( String? sessionId,  String toolId,  String name,  String? context,  String? argsText,  List<dynamic>? todos)  toolStart,required TResult Function( String? sessionId,  String name,  String preview)  toolProgress,required TResult Function( String? sessionId,  String toolId,  String name,  dynamic args,  dynamic result,  double? durationS,  String? summary,  String? resultText,  String? inlineDiff,  List<dynamic>? todos,  String? error)  toolComplete,required TResult Function( String? sessionId,  String command,  String description,  String? patternKey,  List<String> patternKeys,  bool allowPermanent)  approvalRequest,required TResult Function( String? sessionId,  String question,  List<String>? choices,  String requestId)  clarifyRequest,required TResult Function( String? sessionId,  String requestId)  sudoRequest,required TResult Function( String? sessionId,  String envVar,  String prompt,  String requestId)  secretRequest,required TResult Function( String? sessionId,  String requestId,  int? start,  int? count)  terminalReadRequest,required TResult Function( String? sessionId,  String type,  String goal,  int taskCount,  int taskIndex,  String? subagentId,  String? parentId,  String? childSessionId,  int? depth,  String? model,  int? toolCount,  List<String>? toolsets,  int? inputTokens,  int? outputTokens,  int? reasoningTokens,  int? apiCalls,  List<String>? filesRead,  List<String>? filesWritten,  String? toolName,  String? toolPreview,  String? text,  String? status,  String? summary,  double? durationSeconds,  double? costUsd)  subagentEvent,required TResult Function( String? sessionId,  String? kind,  String? text)  statusUpdate,required TResult Function( String? sessionId,  String taskId,  String text)  backgroundComplete,required TResult Function( String? sessionId,  String state)  voiceStatus,required TResult Function( String? sessionId,  String? text,  bool noSpeechLimit)  voiceTranscript,required TResult Function( Map<String, dynamic> skin)  skinChanged,required TResult Function( String? sessionId,  String message,  String level)  browserProgress,required TResult Function( String? sessionId,  String taskId,  String text,  String level)  previewRestartProgress,required TResult Function( String? sessionId,  String taskId,  String text)  previewRestartComplete,required TResult Function( String type,  String? sessionId,  Map<String, dynamic> payload)  unknown,}) {final _that = this;
 switch (_that) {
 case GatewayReady():
 return gatewayReady(_that.skin);case SessionInfo():
 return sessionInfo(_that.sessionId,_that.info);case MessageStart():
 return messageStart(_that.sessionId);case MessageDelta():
 return messageDelta(_that.sessionId,_that.text,_that.rendered);case MessageComplete():
-return messageComplete(_that.sessionId,_that.text,_that.rendered,_that.reasoning,_that.usage,_that.status);case TurnError():
+return messageComplete(_that.sessionId,_that.text,_that.rendered,_that.reasoning,_that.usage,_that.status);case ReasoningDelta():
+return reasoningDelta(_that.sessionId,_that.text,_that.verbose);case ReasoningAvailable():
+return reasoningAvailable(_that.sessionId,_that.text,_that.verbose);case TurnError():
 return turnError(_that.sessionId,_that.message);case ToolStart():
 return toolStart(_that.sessionId,_that.toolId,_that.name,_that.context,_that.argsText,_that.todos);case ToolProgress():
 return toolProgress(_that.sessionId,_that.name,_that.preview);case ToolComplete():
@@ -270,14 +280,16 @@ return unknown(_that.type,_that.sessionId,_that.payload);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( Map<String, dynamic> skin)?  gatewayReady,TResult? Function( String? sessionId,  Map<String, dynamic> info)?  sessionInfo,TResult? Function( String? sessionId)?  messageStart,TResult? Function( String? sessionId,  String text,  String? rendered)?  messageDelta,TResult? Function( String? sessionId,  String text,  String? rendered,  String? reasoning,  Usage? usage,  MessageTerminalStatus status)?  messageComplete,TResult? Function( String? sessionId,  String? message)?  turnError,TResult? Function( String? sessionId,  String toolId,  String name,  String? context,  String? argsText,  List<dynamic>? todos)?  toolStart,TResult? Function( String? sessionId,  String name,  String preview)?  toolProgress,TResult? Function( String? sessionId,  String toolId,  String name,  dynamic args,  dynamic result,  double? durationS,  String? summary,  String? resultText,  String? inlineDiff,  List<dynamic>? todos,  String? error)?  toolComplete,TResult? Function( String? sessionId,  String command,  String description,  String? patternKey,  List<String> patternKeys,  bool allowPermanent)?  approvalRequest,TResult? Function( String? sessionId,  String question,  List<String>? choices,  String requestId)?  clarifyRequest,TResult? Function( String? sessionId,  String requestId)?  sudoRequest,TResult? Function( String? sessionId,  String envVar,  String prompt,  String requestId)?  secretRequest,TResult? Function( String? sessionId,  String requestId,  int? start,  int? count)?  terminalReadRequest,TResult? Function( String? sessionId,  String type,  String goal,  int taskCount,  int taskIndex,  String? subagentId,  String? parentId,  String? childSessionId,  int? depth,  String? model,  int? toolCount,  List<String>? toolsets,  int? inputTokens,  int? outputTokens,  int? reasoningTokens,  int? apiCalls,  List<String>? filesRead,  List<String>? filesWritten,  String? toolName,  String? toolPreview,  String? text,  String? status,  String? summary,  double? durationSeconds,  double? costUsd)?  subagentEvent,TResult? Function( String? sessionId,  String? kind,  String? text)?  statusUpdate,TResult? Function( String? sessionId,  String taskId,  String text)?  backgroundComplete,TResult? Function( String? sessionId,  String state)?  voiceStatus,TResult? Function( String? sessionId,  String? text,  bool noSpeechLimit)?  voiceTranscript,TResult? Function( Map<String, dynamic> skin)?  skinChanged,TResult? Function( String? sessionId,  String message,  String level)?  browserProgress,TResult? Function( String? sessionId,  String taskId,  String text,  String level)?  previewRestartProgress,TResult? Function( String? sessionId,  String taskId,  String text)?  previewRestartComplete,TResult? Function( String type,  String? sessionId,  Map<String, dynamic> payload)?  unknown,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( Map<String, dynamic> skin)?  gatewayReady,TResult? Function( String? sessionId,  Map<String, dynamic> info)?  sessionInfo,TResult? Function( String? sessionId)?  messageStart,TResult? Function( String? sessionId,  String text,  String? rendered)?  messageDelta,TResult? Function( String? sessionId,  String text,  String? rendered,  String? reasoning,  Usage? usage,  MessageTerminalStatus status)?  messageComplete,TResult? Function( String? sessionId,  String text,  bool verbose)?  reasoningDelta,TResult? Function( String? sessionId,  String text,  bool verbose)?  reasoningAvailable,TResult? Function( String? sessionId,  String? message)?  turnError,TResult? Function( String? sessionId,  String toolId,  String name,  String? context,  String? argsText,  List<dynamic>? todos)?  toolStart,TResult? Function( String? sessionId,  String name,  String preview)?  toolProgress,TResult? Function( String? sessionId,  String toolId,  String name,  dynamic args,  dynamic result,  double? durationS,  String? summary,  String? resultText,  String? inlineDiff,  List<dynamic>? todos,  String? error)?  toolComplete,TResult? Function( String? sessionId,  String command,  String description,  String? patternKey,  List<String> patternKeys,  bool allowPermanent)?  approvalRequest,TResult? Function( String? sessionId,  String question,  List<String>? choices,  String requestId)?  clarifyRequest,TResult? Function( String? sessionId,  String requestId)?  sudoRequest,TResult? Function( String? sessionId,  String envVar,  String prompt,  String requestId)?  secretRequest,TResult? Function( String? sessionId,  String requestId,  int? start,  int? count)?  terminalReadRequest,TResult? Function( String? sessionId,  String type,  String goal,  int taskCount,  int taskIndex,  String? subagentId,  String? parentId,  String? childSessionId,  int? depth,  String? model,  int? toolCount,  List<String>? toolsets,  int? inputTokens,  int? outputTokens,  int? reasoningTokens,  int? apiCalls,  List<String>? filesRead,  List<String>? filesWritten,  String? toolName,  String? toolPreview,  String? text,  String? status,  String? summary,  double? durationSeconds,  double? costUsd)?  subagentEvent,TResult? Function( String? sessionId,  String? kind,  String? text)?  statusUpdate,TResult? Function( String? sessionId,  String taskId,  String text)?  backgroundComplete,TResult? Function( String? sessionId,  String state)?  voiceStatus,TResult? Function( String? sessionId,  String? text,  bool noSpeechLimit)?  voiceTranscript,TResult? Function( Map<String, dynamic> skin)?  skinChanged,TResult? Function( String? sessionId,  String message,  String level)?  browserProgress,TResult? Function( String? sessionId,  String taskId,  String text,  String level)?  previewRestartProgress,TResult? Function( String? sessionId,  String taskId,  String text)?  previewRestartComplete,TResult? Function( String type,  String? sessionId,  Map<String, dynamic> payload)?  unknown,}) {final _that = this;
 switch (_that) {
 case GatewayReady() when gatewayReady != null:
 return gatewayReady(_that.skin);case SessionInfo() when sessionInfo != null:
 return sessionInfo(_that.sessionId,_that.info);case MessageStart() when messageStart != null:
 return messageStart(_that.sessionId);case MessageDelta() when messageDelta != null:
 return messageDelta(_that.sessionId,_that.text,_that.rendered);case MessageComplete() when messageComplete != null:
-return messageComplete(_that.sessionId,_that.text,_that.rendered,_that.reasoning,_that.usage,_that.status);case TurnError() when turnError != null:
+return messageComplete(_that.sessionId,_that.text,_that.rendered,_that.reasoning,_that.usage,_that.status);case ReasoningDelta() when reasoningDelta != null:
+return reasoningDelta(_that.sessionId,_that.text,_that.verbose);case ReasoningAvailable() when reasoningAvailable != null:
+return reasoningAvailable(_that.sessionId,_that.text,_that.verbose);case TurnError() when turnError != null:
 return turnError(_that.sessionId,_that.message);case ToolStart() when toolStart != null:
 return toolStart(_that.sessionId,_that.toolId,_that.name,_that.context,_that.argsText,_that.todos);case ToolProgress() when toolProgress != null:
 return toolProgress(_that.sessionId,_that.name,_that.preview);case ToolComplete() when toolComplete != null:
@@ -656,6 +668,146 @@ as String?,reasoning: freezed == reasoning ? _self.reasoning : reasoning // igno
 as String?,usage: freezed == usage ? _self.usage : usage // ignore: cast_nullable_to_non_nullable
 as Usage?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as MessageTerminalStatus,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class ReasoningDelta implements TypedGatewayEvent {
+  const ReasoningDelta({required this.sessionId, required this.text, required this.verbose});
+  
+
+ final  String? sessionId;
+ final  String text;
+ final  bool verbose;
+
+/// Create a copy of TypedGatewayEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ReasoningDeltaCopyWith<ReasoningDelta> get copyWith => _$ReasoningDeltaCopyWithImpl<ReasoningDelta>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReasoningDelta&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.text, text) || other.text == text)&&(identical(other.verbose, verbose) || other.verbose == verbose));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,text,verbose);
+
+@override
+String toString() {
+  return 'TypedGatewayEvent.reasoningDelta(sessionId: $sessionId, text: $text, verbose: $verbose)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ReasoningDeltaCopyWith<$Res> implements $TypedGatewayEventCopyWith<$Res> {
+  factory $ReasoningDeltaCopyWith(ReasoningDelta value, $Res Function(ReasoningDelta) _then) = _$ReasoningDeltaCopyWithImpl;
+@useResult
+$Res call({
+ String? sessionId, String text, bool verbose
+});
+
+
+
+
+}
+/// @nodoc
+class _$ReasoningDeltaCopyWithImpl<$Res>
+    implements $ReasoningDeltaCopyWith<$Res> {
+  _$ReasoningDeltaCopyWithImpl(this._self, this._then);
+
+  final ReasoningDelta _self;
+  final $Res Function(ReasoningDelta) _then;
+
+/// Create a copy of TypedGatewayEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? sessionId = freezed,Object? text = null,Object? verbose = null,}) {
+  return _then(ReasoningDelta(
+sessionId: freezed == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String?,text: null == text ? _self.text : text // ignore: cast_nullable_to_non_nullable
+as String,verbose: null == verbose ? _self.verbose : verbose // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class ReasoningAvailable implements TypedGatewayEvent {
+  const ReasoningAvailable({required this.sessionId, required this.text, required this.verbose});
+  
+
+ final  String? sessionId;
+ final  String text;
+ final  bool verbose;
+
+/// Create a copy of TypedGatewayEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ReasoningAvailableCopyWith<ReasoningAvailable> get copyWith => _$ReasoningAvailableCopyWithImpl<ReasoningAvailable>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReasoningAvailable&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.text, text) || other.text == text)&&(identical(other.verbose, verbose) || other.verbose == verbose));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,sessionId,text,verbose);
+
+@override
+String toString() {
+  return 'TypedGatewayEvent.reasoningAvailable(sessionId: $sessionId, text: $text, verbose: $verbose)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ReasoningAvailableCopyWith<$Res> implements $TypedGatewayEventCopyWith<$Res> {
+  factory $ReasoningAvailableCopyWith(ReasoningAvailable value, $Res Function(ReasoningAvailable) _then) = _$ReasoningAvailableCopyWithImpl;
+@useResult
+$Res call({
+ String? sessionId, String text, bool verbose
+});
+
+
+
+
+}
+/// @nodoc
+class _$ReasoningAvailableCopyWithImpl<$Res>
+    implements $ReasoningAvailableCopyWith<$Res> {
+  _$ReasoningAvailableCopyWithImpl(this._self, this._then);
+
+  final ReasoningAvailable _self;
+  final $Res Function(ReasoningAvailable) _then;
+
+/// Create a copy of TypedGatewayEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? sessionId = freezed,Object? text = null,Object? verbose = null,}) {
+  return _then(ReasoningAvailable(
+sessionId: freezed == sessionId ? _self.sessionId : sessionId // ignore: cast_nullable_to_non_nullable
+as String?,text: null == text ? _self.text : text // ignore: cast_nullable_to_non_nullable
+as String,verbose: null == verbose ? _self.verbose : verbose // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 

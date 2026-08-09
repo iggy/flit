@@ -412,6 +412,218 @@ void main() {
     expect(state, before);
   });
 
+  group('reasoning stream (gateway 0.20 optional #1)', () {
+    test('reasoning.delta accumulates beside the text, not into it', () {
+      final state = _foldAll(empty, const <TypedGatewayEvent>[
+        TypedGatewayEvent.messageStart(sessionId: sid),
+        TypedGatewayEvent.reasoningDelta(
+          sessionId: sid,
+          text: 'First I ',
+          verbose: false,
+        ),
+        TypedGatewayEvent.reasoningDelta(
+          sessionId: sid,
+          text: 'check the files.',
+          verbose: false,
+        ),
+        TypedGatewayEvent.messageDelta(sessionId: sid, text: 'One file.'),
+      ]);
+
+      final message = state.messages.single;
+      expect(message.reasoning, 'First I check the files.');
+      expect(message.reasoningStreaming, isTrue);
+      // The reply text is untouched by the thinking stream.
+      expect(message.text, 'One file.');
+    });
+
+    test('message.complete KEEPS the reasoning and stops the indicator', () {
+      final state = _foldAll(empty, const <TypedGatewayEvent>[
+        TypedGatewayEvent.messageStart(sessionId: sid),
+        TypedGatewayEvent.reasoningDelta(
+          sessionId: sid,
+          text: 'thought hard',
+          verbose: false,
+        ),
+        TypedGatewayEvent.messageComplete(
+          sessionId: sid,
+          text: 'Done.',
+          status: MessageTerminalStatus.complete,
+        ),
+      ]);
+
+      final message = state.messages.single;
+      expect(message.reasoning, 'thought hard');
+      expect(message.reasoningStreaming, isFalse);
+      expect(message.streaming, isFalse);
+    });
+
+    test('message.complete.reasoning fills in when nothing streamed', () {
+      final state = _foldAll(empty, const <TypedGatewayEvent>[
+        TypedGatewayEvent.messageStart(sessionId: sid),
+        TypedGatewayEvent.messageComplete(
+          sessionId: sid,
+          text: 'Done.',
+          reasoning: 'the whole thought',
+          status: MessageTerminalStatus.complete,
+        ),
+      ]);
+
+      expect(state.messages.single.reasoning, 'the whole thought');
+    });
+
+    test('a streamed reasoning wins over message.complete.reasoning', () {
+      // The payload copy can arrive clamped, so the stream is the fuller
+      // record once it has anything in it.
+      final state = _foldAll(empty, const <TypedGatewayEvent>[
+        TypedGatewayEvent.messageStart(sessionId: sid),
+        TypedGatewayEvent.reasoningDelta(
+          sessionId: sid,
+          text: 'the long streamed thought',
+          verbose: false,
+        ),
+        TypedGatewayEvent.messageComplete(
+          sessionId: sid,
+          text: 'Done.',
+          reasoning: 'clamped…',
+          status: MessageTerminalStatus.complete,
+        ),
+      ]);
+
+      expect(state.messages.single.reasoning, 'the long streamed thought');
+    });
+
+    test('a terminal error also stops the thinking indicator', () {
+      final state = _foldAll(empty, const <TypedGatewayEvent>[
+        TypedGatewayEvent.messageStart(sessionId: sid),
+        TypedGatewayEvent.reasoningDelta(
+          sessionId: sid,
+          text: 'mid-thought',
+          verbose: false,
+        ),
+        TypedGatewayEvent.turnError(sessionId: sid, message: 'boom'),
+      ]);
+
+      final message = state.messages.single;
+      expect(message.reasoning, 'mid-thought');
+      expect(message.reasoningStreaming, isFalse);
+      expect(message.terminalStatus, MessageTerminalStatus.error);
+    });
+
+    test('reasoning.delta before message.start creates the bubble', () {
+      // Defensive: thinking can be the first frame of a turn.
+      final state = _foldAll(empty, const <TypedGatewayEvent>[
+        TypedGatewayEvent.reasoningDelta(
+          sessionId: sid,
+          text: 'thinking first',
+          verbose: false,
+        ),
+      ]);
+
+      final message = state.messages.single;
+      expect(message.role, MessageRole.assistant);
+      expect(message.text, isEmpty);
+      expect(message.reasoning, 'thinking first');
+      expect(message.streaming, isTrue);
+      expect(message.reasoningStreaming, isTrue);
+    });
+
+    test('reasoning after a finalized turn APPENDS, never merges', () {
+      final state = _foldAll(empty, const <TypedGatewayEvent>[
+        TypedGatewayEvent.messageStart(sessionId: sid),
+        TypedGatewayEvent.messageComplete(
+          sessionId: sid,
+          text: 'Turn one.',
+          status: MessageTerminalStatus.complete,
+        ),
+        TypedGatewayEvent.reasoningDelta(
+          sessionId: sid,
+          text: 'turn two thinking',
+          verbose: false,
+        ),
+      ]);
+
+      expect(state.messages, hasLength(2));
+      expect(state.messages.first.reasoning, isNull);
+      expect(state.messages.last.reasoning, 'turn two thinking');
+    });
+
+    test('reasoning.available fills in when no delta streamed', () {
+      final state = _foldAll(empty, const <TypedGatewayEvent>[
+        TypedGatewayEvent.messageStart(sessionId: sid),
+        TypedGatewayEvent.reasoningAvailable(
+          sessionId: sid,
+          text: 'whole thought at once',
+          verbose: false,
+        ),
+      ]);
+
+      final message = state.messages.single;
+      expect(message.reasoning, 'whole thought at once');
+      expect(message.reasoningStreaming, isTrue);
+    });
+
+    test('reasoning.available is IGNORED once deltas streamed', () {
+      final state = _foldAll(empty, const <TypedGatewayEvent>[
+        TypedGatewayEvent.messageStart(sessionId: sid),
+        TypedGatewayEvent.reasoningDelta(
+          sessionId: sid,
+          text: 'streamed',
+          verbose: false,
+        ),
+        TypedGatewayEvent.reasoningAvailable(
+          sessionId: sid,
+          text: 'fallback copy',
+          verbose: false,
+        ),
+      ]);
+
+      expect(state.messages.single.reasoning, 'streamed');
+    });
+
+    test('a blank reasoning.available is a no-op', () {
+      const before = FoldState(
+        messages: <ChatMessage>[
+          ChatMessage(
+            role: MessageRole.assistant,
+            text: 'streaming…',
+            streaming: true,
+          ),
+        ],
+      );
+
+      final state = _foldAll(before, const <TypedGatewayEvent>[
+        TypedGatewayEvent.reasoningAvailable(
+          sessionId: sid,
+          text: '   ',
+          verbose: false,
+        ),
+      ]);
+
+      expect(state, before);
+    });
+
+    test('runaway reasoning is capped, keeping the newest text', () {
+      final state = _foldAll(empty, <TypedGatewayEvent>[
+        const TypedGatewayEvent.messageStart(sessionId: sid),
+        // 90k of old thinking, then a marker that must survive.
+        TypedGatewayEvent.reasoningDelta(
+          sessionId: sid,
+          text: 'x' * 90000,
+          verbose: false,
+        ),
+        const TypedGatewayEvent.reasoningDelta(
+          sessionId: sid,
+          text: 'NEWEST',
+          verbose: false,
+        ),
+      ]);
+
+      final reasoning = state.messages.single.reasoning!;
+      expect(reasoning.length, lessThanOrEqualTo(80000));
+      expect(reasoning, endsWith('NEWEST'));
+    });
+  });
+
   test('delta rendered supersedes only when present', () {
     final state = _foldAll(empty, const <TypedGatewayEvent>[
       TypedGatewayEvent.messageStart(sessionId: sid),

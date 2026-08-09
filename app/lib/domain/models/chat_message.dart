@@ -29,6 +29,8 @@ final class ChatMessage {
     required this.role,
     required this.text,
     this.rendered,
+    this.reasoning,
+    this.reasoningStreaming = false,
     this.streaming = false,
     this.toolCalls = const <ToolCall>[],
     this.terminalStatus = MessageTerminalStatus.none,
@@ -46,6 +48,19 @@ final class ChatMessage {
   /// Pre-rendered (markdown/HTML) content when the gateway provides it
   /// (`message.delta.rendered?` / `message.complete.rendered?`, §6).
   final String? rendered;
+
+  /// The model's extended thinking for this turn: accumulated from
+  /// `reasoning.delta` while the turn is live, or handed over whole by
+  /// `reasoning.available` / `message.complete.reasoning`. Null when the model
+  /// did not think (or the gateway is not sharing it) — the disclosure is
+  /// hidden, not empty.
+  final String? reasoning;
+
+  /// True while `reasoning.delta` frames are still arriving — i.e. the model
+  /// is thinking RIGHT NOW, which is what makes the disclosure say "Thinking…"
+  /// and auto-expand. Goes false at the terminal frame even though
+  /// [reasoning] is kept.
+  final bool reasoningStreaming;
 
   /// True while deltas are still arriving (between `message.start` and the
   /// terminal event).
@@ -70,6 +85,8 @@ final class ChatMessage {
     MessageRole? role,
     String? text,
     String? rendered,
+    String? reasoning,
+    bool? reasoningStreaming,
     bool? streaming,
     List<ToolCall>? toolCalls,
     MessageTerminalStatus? terminalStatus,
@@ -80,6 +97,8 @@ final class ChatMessage {
       role: role ?? this.role,
       text: text ?? this.text,
       rendered: rendered ?? this.rendered,
+      reasoning: reasoning ?? this.reasoning,
+      reasoningStreaming: reasoningStreaming ?? this.reasoningStreaming,
       streaming: streaming ?? this.streaming,
       toolCalls: toolCalls ?? this.toolCalls,
       terminalStatus: terminalStatus ?? this.terminalStatus,
@@ -94,6 +113,8 @@ final class ChatMessage {
         other.role == role &&
         other.text == text &&
         other.rendered == rendered &&
+        other.reasoning == reasoning &&
+        other.reasoningStreaming == reasoningStreaming &&
         other.streaming == streaming &&
         deepListEquals(other.toolCalls, toolCalls) &&
         other.terminalStatus == terminalStatus &&
@@ -106,6 +127,8 @@ final class ChatMessage {
     role,
     text,
     rendered,
+    reasoning,
+    reasoningStreaming,
     streaming,
     Object.hashAll(toolCalls),
     terminalStatus,
@@ -116,7 +139,8 @@ final class ChatMessage {
   @override
   String toString() {
     return 'ChatMessage(role: ${role.name}, text: $text, '
-        'rendered: $rendered, streaming: $streaming, '
+        'rendered: $rendered, reasoning: $reasoning, '
+        'reasoningStreaming: $reasoningStreaming, streaming: $streaming, '
         'toolCalls: $toolCalls, terminalStatus: ${terminalStatus.name}, '
         'usage: $usage, timestamp: $timestamp)';
   }

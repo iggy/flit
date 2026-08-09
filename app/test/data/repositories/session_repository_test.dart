@@ -306,6 +306,43 @@ void main() {
       expect(result.messageCount, 12);
     });
 
+    test('a replayed assistant message keeps its reasoning', () async {
+      client = FakeGatewayRpcClient(
+        handler: (_, _) => const <String, dynamic>{
+          'session_id': 'e5f6a7b8',
+          'session_key': '2026-uuid',
+          'messages': <Map<String, dynamic>>[
+            <String, dynamic>{
+              'role': 'assistant',
+              'text': 'hello',
+              'reasoning': 'I weighed the greeting.',
+            },
+            // A thinking-only turn: the gateway keeps it precisely so the
+            // disclosure has something to show (server.py:7086).
+            <String, dynamic>{
+              'role': 'assistant',
+              'text': '',
+              'reasoning': 'thought, said nothing',
+            },
+            // An empty string is not a reasoning worth a disclosure.
+            <String, dynamic>{
+              'role': 'assistant',
+              'text': 'plain',
+              'reasoning': '',
+            },
+          ],
+        },
+      );
+      repository = SessionRepositoryImpl(client);
+
+      final result = await repository.resume('2026-uuid');
+
+      expect(result.messages[0].reasoning, 'I weighed the greeting.');
+      expect(result.messages[1].text, isEmpty);
+      expect(result.messages[1].reasoning, 'thought, said nothing');
+      expect(result.messages[2].reasoning, isNull);
+    });
+
     test('lazy sends the flag; a mid-run child reads as working', () async {
       client = FakeGatewayRpcClient(
         handler: (_, _) => const <String, dynamic>{
