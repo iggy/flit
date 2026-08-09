@@ -189,10 +189,9 @@ void main() {
     });
 
     test('the §7 fixture parses verbatim, frame by frame', () {
-      final lines = File('test/fixtures/turn_basic.jsonl')
-          .readAsLinesSync()
-          .where((line) => line.trim().isNotEmpty)
-          .toList();
+      final lines = File(
+        'test/fixtures/turn_basic.jsonl',
+      ).readAsLinesSync().where((line) => line.trim().isNotEmpty).toList();
 
       expect(lines, hasLength(9)); // gateway.ready + the 8 §7 frames
 
