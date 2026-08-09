@@ -15,8 +15,10 @@ part 'gateway_status_dto.g.dart';
 /// [envPath], [gatewayPid], [gatewayHealthUrl]) are returned **only when
 /// `auth_required == false`** and stay null in OAuth mode.
 ///
-/// [authFlows], [profiles], and [gatewayMode] arrived in gateway 0.20 and stay
-/// null against older gateways.
+/// [authFlows], [profiles], [gatewayMode], [configVersion],
+/// [latestConfigVersion], [canUpdateHermes], [gatewayDrainable],
+/// [restartDrainTimeout], [ftsRebuild], and [gateways] arrived in gateway 0.20
+/// and stay null against older gateways.
 @JsonSerializable()
 class GatewayStatusDto {
   const GatewayStatusDto({
@@ -32,6 +34,13 @@ class GatewayStatusDto {
     this.authFlows,
     this.profiles,
     this.gatewayMode,
+    this.gateways,
+    this.configVersion,
+    this.latestConfigVersion,
+    this.canUpdateHermes,
+    this.gatewayDrainable,
+    this.restartDrainTimeout,
+    this.ftsRebuild,
     this.hermesHome,
     this.configPath,
     this.envPath,
@@ -82,6 +91,43 @@ class GatewayStatusDto {
   @JsonKey(name: 'gateway_mode')
   final String? gatewayMode;
 
+  /// Per-gateway detail — one entry per profile with a LIVE gateway process
+  /// (`web_server.py:2888` `_collect_profile_gateway_topology`). Carries host
+  /// ports, so the gateway sends it **only in loopback mode** alongside the
+  /// other recon fields; null in gated mode AND on older gateways.
+  final List<GatewayTopologyEntryDto>? gateways;
+
+  /// On-disk config schema version (gateway 0.20). `0` means a legacy config
+  /// with no `_config_version` key at all (`config.py:1783`).
+  @JsonKey(name: 'config_version')
+  final int? configVersion;
+
+  /// The schema version this gateway build ships (gateway 0.20). Below
+  /// [configVersion] the user's config wants `hermes config migrate`.
+  @JsonKey(name: 'latest_config_version')
+  final int? latestConfigVersion;
+
+  /// Whether this host's Hermes install can update itself (gateway 0.20);
+  /// false when an outer launcher/image owns updates (`web_server.py:2122`).
+  @JsonKey(name: 'can_update_hermes')
+  final bool? canUpdateHermes;
+
+  /// Whether the gateway can accept a begin-drain right now — live and in the
+  /// `running` state (gateway 0.20; `gateway/status.py:1140`).
+  @JsonKey(name: 'gateway_drainable')
+  final bool? gatewayDrainable;
+
+  /// Seconds a restart waits for in-flight turns to drain (gateway 0.20).
+  /// Wire sends a float, so parse as [num] and narrow in [toDomain].
+  @JsonKey(name: 'restart_drain_timeout')
+  final num? restartDrainTimeout;
+
+  /// Search-index rebuild progress — present **only while a rebuild is
+  /// pending** (gateway 0.20; `hermes_state_search.py:83`). Absence is the
+  /// common case and means "no rebuild", not "unknown".
+  @JsonKey(name: 'fts_rebuild')
+  final FtsRebuildDto? ftsRebuild;
+
   @JsonKey(name: 'hermes_home')
   final String? hermesHome;
 
@@ -116,11 +162,93 @@ class GatewayStatusDto {
           : List<String>.unmodifiable(authFlows!),
       profiles: profiles == null ? null : List<String>.unmodifiable(profiles!),
       gatewayMode: gatewayMode,
+      gateways: gateways == null
+          ? null
+          : List<GatewayTopologyEntry>.unmodifiable(
+              gateways!.map((entry) => entry.toDomain()),
+            ),
+      configVersion: configVersion,
+      latestConfigVersion: latestConfigVersion,
+      canUpdateHermes: canUpdateHermes,
+      gatewayDrainable: gatewayDrainable,
+      restartDrainTimeout: restartDrainTimeout?.toDouble(),
+      ftsRebuild: ftsRebuild?.toDomain(),
       hermesHome: hermesHome,
       configPath: configPath,
       envPath: envPath,
       gatewayPid: gatewayPid,
       gatewayHealthUrl: gatewayHealthUrl,
+    );
+  }
+}
+
+/// Wire DTO for one `gateways[]` entry of `GET /api/status`
+/// (`web_server.py:2888`), loopback mode only.
+@JsonSerializable()
+class GatewayTopologyEntryDto {
+  const GatewayTopologyEntryDto({
+    this.profile,
+    this.ports,
+    this.servedProfiles,
+  });
+
+  factory GatewayTopologyEntryDto.fromJson(Map<String, dynamic> json) =>
+      _$GatewayTopologyEntryDtoFromJson(json);
+
+  /// The profile whose gateway this is, e.g. `default`.
+  final String? profile;
+
+  /// `platform -> host TCP port` for the port-binding platforms this gateway
+  /// has up. Absent platforms simply aren't listed; `{}` is normal.
+  final Map<String, int>? ports;
+
+  /// The profiles this one gateway serves — present only when it multiplexes
+  /// more than its own (`served_profiles`).
+  @JsonKey(name: 'served_profiles')
+  final List<String>? servedProfiles;
+
+  Map<String, dynamic> toJson() => _$GatewayTopologyEntryDtoToJson(this);
+
+  GatewayTopologyEntry toDomain() {
+    return GatewayTopologyEntry(
+      profile: profile ?? '',
+      ports: Map<String, int>.unmodifiable(ports ?? const <String, int>{}),
+      servedProfiles: List<String>.unmodifiable(
+        servedProfiles ?? const <String>[],
+      ),
+    );
+  }
+}
+
+/// Wire DTO for the `fts_rebuild` block of `GET /api/status`
+/// (`hermes_state_search.py:83`).
+@JsonSerializable()
+class FtsRebuildDto {
+  const FtsRebuildDto({this.pending, this.total, this.indexed, this.percent});
+
+  factory FtsRebuildDto.fromJson(Map<String, dynamic> json) =>
+      _$FtsRebuildDtoFromJson(json);
+
+  /// Always `true` on the wire — the gateway omits the whole block when no
+  /// rebuild is pending rather than sending `pending: false`.
+  final bool? pending;
+
+  /// Rows to index (the high-water mark captured when the index was dropped).
+  final int? total;
+
+  /// Rows backfilled so far.
+  final int? indexed;
+
+  /// Server-computed `0..100`.
+  final int? percent;
+
+  Map<String, dynamic> toJson() => _$FtsRebuildDtoToJson(this);
+
+  FtsRebuild toDomain() {
+    return FtsRebuild(
+      total: total ?? 0,
+      indexed: indexed ?? 0,
+      percent: percent ?? 0,
     );
   }
 }

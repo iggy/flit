@@ -6,6 +6,7 @@ library;
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/data/storage/connection_store.dart';
 import 'package:flit/data/transport/connection_config.dart';
 import 'package:flit/data/transport/gateway_rest_client.dart';
@@ -360,7 +361,13 @@ final oauthRefreshProvider = Provider<OAuthRefresh>((ref) {
 
 /// The probed status of the gateway we are connected to — set by the
 /// connect controller on a SUCCESSFUL connect, null before that. Backs the
-/// 'Gateway vX.Y.Z' footer in the session drawer (ticket P1-16).
+/// 'Gateway vX.Y.Z' footer in the session drawer (ticket P1-16) and the
+/// gateway section of the About screen.
+///
+/// The connect-time probe is a SNAPSHOT: the live fields in it (an FTS rebuild's
+/// percent, `gateway_drainable`, the config version after a migration) go stale
+/// the moment the gateway moves on. There is no status event on the WS, so
+/// [GatewayStatusNotifier.refresh] re-probes on demand — nothing polls.
 final gatewayStatusProvider =
     NotifierProvider<GatewayStatusNotifier, GatewayStatus?>(
       GatewayStatusNotifier.new,
@@ -373,6 +380,30 @@ class GatewayStatusNotifier extends Notifier<GatewayStatus?> {
   /// Record the status of a successful connect.
   void set(GatewayStatus status) {
     state = status;
+  }
+
+  /// Re-run the `/api/status` probe against the stored connection config and
+  /// replace the recorded status. Returns false without touching [state] when
+  /// there is nothing to probe or the probe fails — a refresh must never blank
+  /// a readout that was fine a second ago, and it must never throw into a
+  /// widget callback.
+  Future<bool> refresh() async {
+    final config = ref.read(connectionConfigProvider);
+    if (config == null) {
+      return false;
+    }
+    final GatewayStatus probed;
+    try {
+      probed = await ref.read(statusProbeProvider)(config);
+    } on GatewayException {
+      return false;
+    }
+    // The await gave the container time to dispose (disconnect mid-refresh).
+    if (!ref.mounted) {
+      return false;
+    }
+    state = probed;
+    return true;
   }
 
   /// Forget the recorded status (e.g. on disconnect).

@@ -38,11 +38,36 @@ recon fields — `hermes_home`, `config_path`, `env_path`, `gateway_pid`,
 `gateway_health_url`, `gateways` (per-gateway host ports). In OAuth mode those
 are omitted (`web_server.py:3343`).
 
-v0.20 also adds these always-present informational fields (see the gap notes in
-`../updates/gateway-0.18-to-0.20-optional.md` §8 for which the app may want):
-`gateway_drainable`, `restart_drain_timeout`, `components` + `overall`
-(gateway/dashboard/storage/platforms health rollup), `profiles`, `gateway_mode`,
-and — only while a search-index rebuild is pending — `fts_rebuild`.
+v0.20 also adds these informational fields, all modelled on
+`GatewayStatusDto` / `GatewayStatus` except the health rollup (see
+`../updates/gateway-0.18-to-0.20-optional.md` §8):
+
+```jsonc
+{
+  "config_version": 3, "latest_config_version": 3,   // 0 = legacy config, no _config_version key
+  "can_update_hermes": true,                         // false when a container/launcher owns updates
+  "gateway_drainable": false,                        // live AND state == running (gateway/status.py:1140)
+  "restart_drain_timeout": 300.0,                    // seconds; float on the wire
+  "profiles": ["default", "research"],
+  "gateway_mode": "multiplex",                       // multiplex | single | multiple | none | unknown
+  "components": { /* gateway/dashboard/storage/platforms */ }, "overall": "ok",
+  "fts_rebuild": {"pending": true, "total": 5000, "indexed": 1250, "percent": 25}
+}
+```
+
+Two absence rules that matter:
+- `fts_rebuild` is present **only while a rebuild is pending**
+  (`hermes_state_search.py:83`) — the gateway omits the block rather than
+  sending `pending: false`, so absent means "index healthy".
+- `gateways` is grouped with the host recon fields above, **not** with
+  `profiles` / `gateway_mode`: it carries host ports, so a gated gateway sends
+  the profile list and topology mode with no per-gateway liveness detail. Each
+  entry is `{profile, ports: {platform: port}, served_profiles?}`, and
+  `served_profiles` is what tells you a multiplexing gateway is also serving
+  profiles that have no entry of their own (`web_server.py:2888`).
+
+`components` / `overall` are not modelled (flit's Health screen reads the RPC
+health calls instead).
 
 v0.20 also adds **`auth_flows`** (`web_server.py:3190-3204`), the auth
 capability advertisement the client must use to pick a login flow:

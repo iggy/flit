@@ -169,7 +169,7 @@ updated and all 154 `file:line` citations re-verified against v0.20.0 source
 
 ---
 
-## 8. Status endpoint fields (non-breaking follow-through)
+## 8. Status endpoint fields (non-breaking follow-through) — ✅ DONE
 
 From the required-doc item #6 — the DTO additions are required, but the
 following are purely informational once the DTO is extended:
@@ -182,4 +182,44 @@ following are purely informational once the DTO is extended:
 - `config_version` / `latest_config_version` / `can_update_hermes` (an
   "update available / config migration needed" banner).
 
-**TODO**: wire whichever of these the app actually wants to display.
+**Done**: all four groups are on `GatewayStatusDto` + `GatewayStatus`, with two
+nested models (`GatewayTopologyEntry`, `FtsRebuild`) and the derived
+`configMigrationNeeded` / `ftsRebuildPending` / `liveGatewayProfiles`. Every
+field is nullable — a pre-0.20 gateway sends none of them.
+
+Surfaced modestly, since none of this is actionable in-app (the remedies are
+host-side CLI):
+- The About screen grew a **Gateway host** section: config schema version (and
+  "run `hermes config migrate` on the host" when behind), whether the host owns
+  its own updates, drain readiness + the resolved timeout, a search-index
+  rebuild progress bar with the "search is slower and incomplete" caveat, and
+  the profile/gateway topology in words. Each row renders only when the gateway
+  sent its field, so the whole section disappears against an older gateway.
+- The profile menu marks the profiles a live gateway is serving and notes when
+  one gateway multiplexes several.
+
+Four things the shapes make easy to get wrong:
+- **Absent ≠ false for `fts_rebuild`.** The gateway omits the block when no
+  rebuild is pending rather than sending `pending: false`, so null is the
+  HEALTHY state and the row is hidden. A refresh must be able to clear it.
+- **`gateways` is recon, `profiles`/`gateway_mode` are product.** The gateway
+  withholds `gateways` (it carries host ports) unless `auth_required == false`,
+  so on a gated gateway the profile list arrives with no liveness detail. An
+  un-annotated profile row therefore means "not told", never "not running".
+- **`config_version: 0` is a value** — a legacy config with no
+  `_config_version` key at all (`config.py:1783`), not a missing field. And
+  `configMigrationNeeded` is false whenever EITHER version is unknown, so an
+  older gateway can never provoke a migration banner.
+- **A multiplexing gateway serves profiles that have no `gateways[]` entry of
+  their own**, so liveness reads `profile` + `served_profiles` from every entry
+  rather than just the keys.
+
+The status is probed ONCE on connect and there is no status event on the WS, so
+these fields go stale (a rebuild's percent above all). `GatewayStatusNotifier
+.refresh()` re-probes on demand behind the About screen's refresh action —
+deliberately not a poll, and a failed re-probe keeps the last readout instead of
+blanking it.
+
+Not wired: `components` / `overall` (the health rollup — `HealthScreen` already
+covers provider/runtime/verification health from the RPC side, and mixing a
+second, differently-shaped source into it is its own ticket).
