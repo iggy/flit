@@ -56,6 +56,14 @@ Each platform requires its own packaging tools:
   sudo mv appimagetool-x86_64.AppImage /usr/local/bin/appimagetool
   ```
   Only needed for `package-linux`. The raw executable bundle (`package-linux-binary`) has no prerequisites.
+  If it is missing from PATH, `linux_appimage.sh` downloads it into `build/tools/` automatically.
+
+### Linux (deb/rpm)
+
+- **dpkg-deb** — ships with dpkg on Debian/Ubuntu
+- **rpmbuild** — from the `rpm` package (`sudo apt-get install -y rpm` on Ubuntu)
+  Only needed for `package-linux-packages`. The script skips the RPM if
+  rpmbuild is missing.
 
 ### macOS (DMG)
 
@@ -81,6 +89,9 @@ task package-linux
 task package-linux-binary
 # or: ./packaging/linux_binary.sh
 
+# Linux .deb + .rpm packages
+./packaging/linux_packages.sh
+
 # macOS DMG
 task package-macos
 # or: ./packaging/macos_dmg.sh
@@ -105,7 +116,7 @@ task package
 
 Packages are written to `build/<platform>/`:
 
-- Linux: `build/linux/flit-x86_64.AppImage` (AppImage), or `build/linux/flit-linux-x64/` (raw executable bundle)
+- Linux: `build/linux/flit-x86_64.AppImage` (AppImage), `build/linux/flit-linux-x64/` (raw executable bundle), or `build/linux/flit_<ver>_amd64.deb` / `build/linux/flit-<ver>-1.x86_64.rpm` (native packages)
 - macOS: `build/macos/flit.dmg`
 - Windows: `build/windows/flit-windows-x64.zip`
 

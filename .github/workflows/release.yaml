@@ -82,6 +82,12 @@ jobs:
           sudo add-apt-repository -y universe
           sudo apt-get install -y libfuse2
 
+      - name: Install rpmbuild
+        if: matrix.target == 'linux'
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y rpm
+
       - name: Install dependencies
         run: flutter pub get
 
@@ -95,12 +101,46 @@ jobs:
         if: matrix.target == 'linux'
         run: ./packaging/linux_appimage.sh
 
-      - name: Upload Linux artifact
+      - name: Build & package Linux deb/rpm
+        if: matrix.target == 'linux'
+        run: ./packaging/linux_packages.sh
+
+      - name: Build & package Linux binary bundle
+        if: matrix.target == 'linux'
+        run: ./packaging/linux_binary.sh
+
+      - name: Archive Linux binary bundle
+        if: matrix.target == 'linux'
+        run: |
+          cd build/linux
+          zip -r flit-linux-x64.zip flit-linux-x64/
+          cd ../..
+          mv build/linux/flit-linux-x64.zip build/flit-linux-x64.zip
+
+      - name: Upload Linux AppImage artifact
         if: matrix.target == 'linux'
         uses: actions/upload-artifact@v7
         with:
           name: release-linux
           path: app/build/linux/flit-x86_64.AppImage
+          if-no-files-found: error
+
+      - name: Upload Linux deb/rpm artifacts
+        if: matrix.target == 'linux'
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-linux-packages
+          path: |
+            app/build/linux/*.deb
+            app/build/linux/*.rpm
+          if-no-files-found: error
+
+      - name: Upload Linux binary bundle artifact
+        if: matrix.target == 'linux'
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-linux-binary
+          path: app/build/flit-linux-x64.zip
           if-no-files-found: error
 
       # ---------------------------------------------------------------------
@@ -232,15 +272,16 @@ jobs:
           # Prefix every artifact with the version so downloads are self-describing.
           ver="${{ steps.ver.outputs.version }}"
           for f in *; do
-            ext="${f##*.}"
-            base="${f%.*}"
             case "$f" in
-              flit-x86_64.AppImage) mv "$f" "flit-${ver}-linux-x86_64.AppImage" ;;
-              flit-web.zip)         mv "$f" "flit-${ver}-web.zip" ;;
+              flit-x86_64.AppImage)  mv "$f" "flit-${ver}-linux-x86_64.AppImage" ;;
+              flit-web.zip)          mv "$f" "flit-${ver}-web.zip" ;;
               flit-ios-unsigned.zip) mv "$f" "flit-${ver}-ios-unsigned.zip" ;;
-              flit-windows-x64.zip) mv "$f" "flit-${ver}-windows-x64.zip" ;;
-              flit.dmg)             mv "$f" "flit-${ver}-macos.dmg" ;;
-              *.apk)                mv "$f" "flit-${ver}-android.apk" ;;
+              flit-windows-x64.zip)  mv "$f" "flit-${ver}-windows-x64.zip" ;;
+              flit-linux-x64.zip)    mv "$f" "flit-${ver}-linux-x64.zip" ;;
+              flit.dmg)              mv "$f" "flit-${ver}-macos.dmg" ;;
+              *.apk)                 mv "$f" "flit-${ver}-android.apk" ;;
+              *.deb)                 mv "$f" "flit-${ver}-linux.deb" ;;
+              *.rpm)                 mv "$f" "flit-${ver}-linux.rpm" ;;
               *) echo "Leaving $f as-is" ;;
             esac
           done

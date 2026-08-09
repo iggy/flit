@@ -74,15 +74,16 @@ install -m 644 "$ICON_SRC_DIR/flit_256.png" "$APPDIR/flit.png"
 
 echo "==> Checking for appimagetool..."
 if ! command -v appimagetool &> /dev/null; then
-  echo ""
-  echo "ERROR: appimagetool is not installed or not on PATH."
-  echo ""
-  echo "To install appimagetool:"
-  echo "  1. Download from https://github.com/AppImage/AppImageKit/releases"
-  echo "  2. Make it executable: chmod +x appimagetool-x86_64.AppImage"
-  echo "  3. Move to PATH: sudo mv appimagetool-x86_64.AppImage /usr/local/bin/appimagetool"
-  echo ""
-  exit 1
+  echo "appimagetool not found; downloading the AppImage release into build/tools/..."
+  mkdir -p build/tools
+  wget -q -O build/tools/appimagetool \
+    https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+  chmod +x build/tools/appimagetool
+  export PATH="$(pwd)/build/tools:$PATH"
+  if ! command -v appimagetool &> /dev/null; then
+    echo "ERROR: failed to obtain appimagetool." >&2
+    exit 1
+  fi
 fi
 
 echo "==> Building AppImage..."
