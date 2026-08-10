@@ -57,6 +57,44 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
+      - name: Resolve release version from tag
+        id: ver
+        shell: bash
+        working-directory: app
+        run: |
+          # The git tag (sans leading `v`) is the source of truth for release
+          # version. e.g. tag `v0.0.3` -> version `0.0.3`.
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            tag="${{ github.event.inputs.tag }}"
+          else
+            tag="${GITHUB_REF_NAME}"
+          fi
+          ver="${tag#v}"
+          # Reject malformed tags early; otherwise assets become e.g.
+          # `flit--android.apk`.
+          if ! printf '%s' "$ver" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([-.+].*)?$'; then
+            echo "::error::Tag '$tag' does not look like vX.Y.Z"
+            exit 1
+          fi
+          echo "tag=$tag"    >> "$GITHUB_OUTPUT"
+          echo "version=$ver" >> "$GITHUB_OUTPUT"
+
+      - name: Stamp version into pubspec.yaml
+        shell: bash
+        working-directory: app
+        run: |
+          # Rewrite pubspec's `version:` line to the tag version so the built
+          # binaries self-identify as the tag version (versionName on Android,
+          # CFBundleShortVersionString on iOS, product version on Windows).
+          # Build number resets to 1 each release.
+          ver="${{ steps.ver.outputs.version }}"
+          if ! grep -Eq '^version:[[:space:]]*[0-9]' pubspec.yaml; then
+            echo "::error::no 'version:' line in pubspec.yaml to stamp"
+            exit 1
+          fi
+          sed -i -E "s|^version:[[:space:]].*|version: ${ver}+1|" pubspec.yaml
+          grep -E '^version:' pubspec.yaml
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -242,22 +280,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Resolve tag name
-        id: tag
-        run: |
-          if [ -n "${{ github.event.inputs.tag }}" ]; then
-            echo "name=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "name=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Read version from pubspec
+      - name: Resolve release version from tag
         id: ver
+        shell: bash
         working-directory: app
         run: |
-          # pubspec.yaml `version: X.Y.Z+N` -> extract X.Y.Z
-          v=$(grep -E '^version:' pubspec.yaml | head -n1 | awk '{print $2}' | cut -d+ -f1)
-          echo "version=$v" >> "$GITHUB_OUTPUT"
+          # Same logic as the build job's `ver` step — keep them in lockstep.
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            tag="${{ github.event.inputs.tag }}"
+          else
+            tag="${GITHUB_REF_NAME}"
+          fi
+          ver="${tag#v}"
+          echo "name=$tag"    >> "$GITHUB_OUTPUT"
+          echo "version=$ver" >> "$GITHUB_OUTPUT"
 
       - name: Download all artifacts
         uses: actions/download-artifact@v8
@@ -290,9 +326,9 @@ jobs:
       - name: Create GitHub Release and upload assets
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ steps.tag.outputs.name }}
-          name: ${{ steps.tag.outputs.name }}
+          tag_name: ${{ steps.ver.outputs.name }}
+          name: ${{ steps.ver.outputs.name }}
           generate_release_notes: true
           draft: false
-          prerelease: ${{ contains(steps.tag.outputs.name, '-') }}
+          prerelease: ${{ contains(steps.ver.outputs.name, '-') }}
           files: release-assets/*
