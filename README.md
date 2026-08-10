@@ -102,3 +102,8 @@ The plan is written so that most tickets can be picked up and completed
    criteria** (how to know it's done).
 3. Ground every wire interaction in [`docs/reference/03-mvp-wire-shapes.md`](docs/reference/03-mvp-wire-shapes.md)
    or the relevant reference section. Do not invent RPC method names or fields.
+
+## Release process
+
+Create a tag with a description (`git tag --sign`) and then push (`git push origin --tags`). CI creates the github
+release, etc.
