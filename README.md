@@ -91,6 +91,19 @@ Builds: `task build-android|build-ios|build-web|build-macos|build-windows|build-
 [`app/README.md`](app/README.md) and [`AGENTS.md`](AGENTS.md) for the full
 command reference, pinned dependencies, and architecture rules.
 
+## Screenshots
+
+### Android
+
+<img src="docs/screenshots/android-chat.png" alt="Android chat" width="270" />
+<img src="docs/screenshots/android-sessions.png" alt="Android sessions" width="270" />
+<img src="docs/screenshots/android-menu.png" alt="Android menu" width="270" />
+
+### Linux
+
+<img src="docs/screenshots/linux-chat.jpg" alt="Linux chat" width="480" />
+<img src="docs/screenshots/linux-sessions.jpg" alt="Linux sessions" width="480" />
+
 ## For implementers
 
 The plan is written so that most tickets can be picked up and completed
