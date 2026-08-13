@@ -5,6 +5,7 @@ library;
 
 import 'dart:async';
 
+import 'package:flit/application/models/model_providers.dart';
 import 'package:flit/application/sessions/active_session.dart';
 import 'package:flit/application/sessions/session_info.dart';
 import 'package:flit/application/sessions/session_list.dart';
@@ -103,13 +104,21 @@ class _SessionInfoSheetState extends ConsumerState<SessionInfoSheet> {
       };
     }
 
+    // Prefer the currently-selected model (the picker's source, updated
+    // immediately on a switch) so this row always agrees with the app-bar
+    // model picker. The usage's model only reflects the last turn that ran
+    // and goes stale the moment the user switches models.
+    final current = ref.watch(currentModelProvider);
+    final model = (current != null && current.model.isNotEmpty)
+        ? current.model
+        : usage.model;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text('Usage', style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 8),
-        if (usage.model.isNotEmpty)
-          _InfoRow(label: 'Model', value: usage.model),
+        if (model.isNotEmpty) _InfoRow(label: 'Model', value: model),
         _InfoRow(label: 'Total tokens', value: '${usage.total}'),
         _InfoRow(label: 'Input', value: '${usage.input}'),
         _InfoRow(label: 'Output', value: '${usage.output}'),

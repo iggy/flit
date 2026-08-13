@@ -2,9 +2,11 @@
 // context breakdown, and the four action buttons (compress / undo / save /
 // set-cwd).
 
+import 'package:flit/application/models/model_providers.dart';
 import 'package:flit/application/sessions/active_session.dart';
 import 'package:flit/application/sessions/session_info.dart';
 import 'package:flit/application/sessions/session_list.dart';
+import 'package:flit/domain/models/model_option.dart';
 import 'package:flit/domain/models/session_detail.dart';
 import 'package:flit/presentation/sessions/session_info_sheet.dart';
 import 'package:flutter/material.dart';
@@ -125,6 +127,45 @@ void main() {
     expect(find.text('2'), findsOneWidget);
     expect(find.text('48000 / 128000 tokens (38%)'), findsOneWidget);
   });
+
+  testWidgets(
+    'Model row shows the current selected model, not the stale usage model',
+    (tester) async {
+      // Usage reports the model of the LAST turn — stale after a switch.
+      const usage = SessionUsageStats(
+        model: 'claude-opus',
+        input: 10,
+        output: 10,
+        total: 20,
+        calls: 1,
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sessionUsageProvider.overrideWith((ref) async => usage),
+            contextBreakdownProvider.overrideWith((ref) async => null),
+            sessionActionsProvider.overrideWithValue(fakeActions),
+            activeSessionProvider.overrideWith(
+              () => _FakeActiveSessionNotifier(
+                const ActiveSessionState(liveId: 'a1b2c3d4'),
+              ),
+            ),
+            currentModelProvider.overrideWith(
+              () => _FakeCurrentModelNotifier(
+                const CurrentModel(model: 'hermes-4-405b', provider: 'nous'),
+              ),
+            ),
+          ],
+          child: const MaterialApp(home: Scaffold(body: SessionInfoSheet())),
+        ),
+      );
+      await tester.pump(); // FutureProviders resolve
+
+      // The picker's model wins; the stale usage model is not shown.
+      expect(find.text('hermes-4-405b'), findsOneWidget);
+      expect(find.text('claude-opus'), findsNothing);
+    },
+  );
 
   testWidgets('renders context breakdown when categories present', (
     tester,
@@ -335,4 +376,14 @@ class _FakeActiveSessionNotifier extends ActiveSessionNotifier {
 
   @override
   ActiveSessionState build() => _state;
+}
+
+/// Fake current-model notifier for overriding currentModelProvider.
+class _FakeCurrentModelNotifier extends CurrentModelNotifier {
+  _FakeCurrentModelNotifier(this._model);
+
+  final CurrentModel? _model;
+
+  @override
+  CurrentModel? build() => _model;
 }
