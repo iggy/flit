@@ -12,6 +12,14 @@ import 'package:flit/domain/models/model_option.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+/// Parses a "providerSlug:model" string into its components.
+/// Returns null if the format is invalid.
+(String, String)? _parseModelKey(String key) {
+  final parts = key.split(':');
+  if (parts.length != 2) return null;
+  return (parts[0], parts[1]);
+}
+
 /// App-bar action for model selection: the smart-toy icon plus the current
 /// model name as a compact label (when known), opening [ModelPickerSheet].
 class ModelPickerButton extends ConsumerWidget {
@@ -156,6 +164,24 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
     required bool switching,
   }) {
     final query = _searchQuery.toLowerCase();
+    final modelPrefs = ref.watch(modelPreferencesProvider);
+
+    // Build a lookup map for provider info by slug
+    final providerBySlug = <String, ModelProvider>{
+      for (final provider in providers) provider.slug: provider,
+    };
+
+    // Helper to check if a provider/model combination is pickable
+    bool isPickable(String providerSlug, String model) {
+      final provider = providerBySlug[providerSlug];
+      return provider?.authenticated ?? false;
+    }
+
+    // Helper to get provider name
+    String providerName(String providerSlug) {
+      return providerBySlug[providerSlug]?.name ?? providerSlug;
+    }
+
     final filteredProviders = providers
         .map((provider) {
           if (query.isEmpty) return provider;
@@ -184,9 +210,92 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
       );
     }
 
+    // Build quick picks: current, favorites, recents (only shown when not searching)
+    final quickPickTiles = <Widget>[];
+    final addedToQuickPicks = <String>{};
+
+    if (query.isEmpty) {
+      // Add current model first (if known and valid)
+      if (current != null && current.model.isNotEmpty) {
+        final key = '${current.provider}:${current.model}';
+        if (isPickable(current.provider, current.model)) {
+          quickPickTiles.add(
+            _buildQuickPickTile(
+              context,
+              providerSlug: current.provider,
+              model: current.model,
+              providerName: providerName(current.provider),
+              isCurrent: true,
+              switching: switching,
+              isFavorite: modelPrefs.favorites.contains(key),
+            ),
+          );
+          addedToQuickPicks.add(key);
+        }
+      }
+
+      // Add favorites
+      if (modelPrefs.favorites.isNotEmpty) {
+        for (final key in modelPrefs.favorites) {
+          if (addedToQuickPicks.contains(key)) continue;
+          final parsed = _parseModelKey(key);
+          if (parsed == null) continue;
+          final (providerSlug, model) = parsed;
+          if (!isPickable(providerSlug, model)) continue;
+          quickPickTiles.add(
+            _buildQuickPickTile(
+              context,
+              providerSlug: providerSlug,
+              model: model,
+              providerName: providerName(providerSlug),
+              isCurrent:
+                  current?.model == model && current?.provider == providerSlug,
+              switching: switching,
+              isFavorite: true,
+            ),
+          );
+          addedToQuickPicks.add(key);
+        }
+      }
+
+      // Add recents (up to 5, not already in current/favorites)
+      final recentToShow = modelPrefs.recents
+          .where((key) => !addedToQuickPicks.contains(key))
+          .take(5);
+      for (final key in recentToShow) {
+        final parsed = _parseModelKey(key);
+        if (parsed == null) continue;
+        final (providerSlug, model) = parsed;
+        if (!isPickable(providerSlug, model)) continue;
+        quickPickTiles.add(
+          _buildQuickPickTile(
+            context,
+            providerSlug: providerSlug,
+            model: model,
+            providerName: providerName(providerSlug),
+            isCurrent:
+                current?.model == model && current?.provider == providerSlug,
+            switching: switching,
+            isFavorite: false,
+          ),
+        );
+      }
+    }
+
     return ListView(
       shrinkWrap: true,
       children: <Widget>[
+        if (quickPickTiles.isNotEmpty) ...<Widget>[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Text(
+              'Quick picks',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+          ),
+          ...quickPickTiles,
+          const Divider(height: 16),
+        ],
         for (final provider in filteredProviders) ...<Widget>[
           _buildProviderHeader(context, provider),
           if (provider.models.isEmpty)
@@ -253,6 +362,10 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
   }) {
     final theme = Theme.of(context);
     final pickable = provider.authenticated;
+    final modelPrefs = ref.watch(modelPreferencesProvider);
+    final key = '${provider.slug}:$model';
+    final isFavorite = modelPrefs.favorites.contains(key);
+
     return ListTile(
       dense: true,
       enabled: pickable && !switching,
@@ -262,15 +375,91 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
           : Text(
               'Needs key (${provider.keyEnv ?? 'API key'}) — key entry comes in a later phase.',
             ),
-      trailing: isCurrent
-          ? Icon(Icons.check_circle, color: theme.colorScheme.primary)
-          : (pickable ? null : const Icon(Icons.key_off_outlined)),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          if (pickable)
+            IconButton(
+              icon: Icon(
+                isFavorite ? Icons.star : Icons.star_outline,
+                size: 20,
+                color: isFavorite ? theme.colorScheme.primary : null,
+              ),
+              tooltip: isFavorite
+                  ? 'Remove from favorites'
+                  : 'Add to favorites',
+              onPressed: switching
+                  ? null
+                  : () => unawaited(
+                      ref
+                          .read(modelPreferencesProvider.notifier)
+                          .toggleFavorite(provider.slug, model),
+                    ),
+            ),
+          if (isCurrent)
+            Icon(Icons.check_circle, color: theme.colorScheme.primary)
+          else if (!pickable)
+            const Icon(Icons.key_off_outlined),
+        ],
+      ),
       onTap: pickable && !switching
           ? () => unawaited(
               ref
                   .read(modelPickerControllerProvider.notifier)
                   .select(
                     ModelOption(providerSlug: provider.slug, model: model),
+                  ),
+            )
+          : null,
+    );
+  }
+
+  /// Build a compact tile for the quick picks section.
+  Widget _buildQuickPickTile(
+    BuildContext context, {
+    required String providerSlug,
+    required String model,
+    required String providerName,
+    required bool isCurrent,
+    required bool switching,
+    required bool isFavorite,
+  }) {
+    final theme = Theme.of(context);
+    return ListTile(
+      dense: true,
+      enabled: !switching,
+      leading: isCurrent
+          ? Icon(Icons.check_circle, color: theme.colorScheme.primary, size: 20)
+          : isFavorite
+          ? Icon(Icons.star, color: theme.colorScheme.primary, size: 20)
+          : Icon(Icons.history, size: 20, color: theme.colorScheme.outline),
+      title: Text(model, overflow: TextOverflow.ellipsis),
+      subtitle: Text(
+        providerName,
+        style: theme.textTheme.bodySmall,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: IconButton(
+        icon: Icon(
+          isFavorite ? Icons.star : Icons.star_outline,
+          size: 20,
+          color: isFavorite ? theme.colorScheme.primary : null,
+        ),
+        tooltip: isFavorite ? 'Remove from favorites' : 'Add to favorites',
+        onPressed: switching
+            ? null
+            : () => unawaited(
+                ref
+                    .read(modelPreferencesProvider.notifier)
+                    .toggleFavorite(providerSlug, model),
+              ),
+      ),
+      onTap: !switching
+          ? () => unawaited(
+              ref
+                  .read(modelPickerControllerProvider.notifier)
+                  .select(
+                    ModelOption(providerSlug: providerSlug, model: model),
                   ),
             )
           : null,

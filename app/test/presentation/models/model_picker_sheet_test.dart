@@ -147,8 +147,9 @@ void main() {
   ) async {
     await pumpSheet(tester, sheetHarness());
 
-    // Provider sections.
-    expect(find.text('Nous Portal'), findsOneWidget);
+    // Provider sections. "Nous Portal" appears in the quick-pick
+    // subtitle (current model) AND the provider header.
+    expect(find.text('Nous Portal'), findsWidgets);
     expect(find.text('OpenRouter'), findsOneWidget);
     // Auth badges: authenticated / needs key / current provider marked.
     expect(find.text('Authenticated'), findsOneWidget);
@@ -157,11 +158,13 @@ void main() {
     // The wire warning explains the disabled provider.
     expect(find.text('no key'), findsOneWidget);
 
-    // Model rows under the authenticated provider.
-    expect(find.text('hermes-4-405b'), findsOneWidget);
+    // Model rows under the authenticated provider. The current model
+    // (hermes-4-405b) also appears in the quick-picks section.
+    expect(find.text('hermes-4-405b'), findsWidgets);
     expect(find.text('hermes-4-70b'), findsOneWidget);
-    // The current model (hermes-4-405b, seeded from options) is checked.
-    expect(find.byIcon(Icons.check_circle), findsOneWidget);
+    // The current model (hermes-4-405b) is checked in both the quick-pick
+    // tile and the provider model row.
+    expect(find.byIcon(Icons.check_circle), findsWidgets);
 
     // OpenRouter has no models on the wire (§8) — empty section hint.
     expect(find.text('No models listed'), findsOneWidget);
@@ -287,7 +290,9 @@ void main() {
     await tester.tap(find.byType(ModelPickerButton));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1)); // sheet open animation
-    expect(find.text('Nous Portal'), findsOneWidget);
+    // "Nous Portal" appears in both the quick-pick subtitle and the
+    // provider header while the sheet is open.
+    expect(find.text('Nous Portal'), findsWidgets);
 
     await tester.tap(find.text('hermes-4-70b'));
     await tester.pump(); // select() applies

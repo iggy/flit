@@ -18,6 +18,49 @@ enum ToolCallStatus {
   error,
 }
 
+/// A single task item from the gateway's tool.todos array.
+final class ToolTask {
+  const ToolTask({
+    required this.id,
+    required this.content,
+    this.status = ToolTaskStatus.pending,
+  });
+
+  /// Unique identifier for this task.
+  final String id;
+
+  /// The task content/description.
+  final String content;
+
+  /// Current status of this task.
+  final ToolTaskStatus status;
+
+  ToolTask copyWith({String? id, String? content, ToolTaskStatus? status}) {
+    return ToolTask(
+      id: id ?? this.id,
+      content: content ?? this.content,
+      status: status ?? this.status,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ToolTask &&
+        other.id == id &&
+        other.content == content &&
+        other.status == status;
+  }
+
+  @override
+  int get hashCode => Object.hash(id, content, status);
+
+  @override
+  String toString() => 'ToolTask(id: $id, content: $content, status: $status)';
+}
+
+/// Status of a task item.
+enum ToolTaskStatus { pending, inProgress, completed, cancelled }
+
 /// Display-only model of a tool call (protocol §7: no client reply required).
 final class ToolCall {
   const ToolCall({
@@ -29,6 +72,7 @@ final class ToolCall {
     this.summary,
     this.inlineDiff,
     this.durationS,
+    this.tasks = const <ToolTask>[],
   });
 
   /// Wire `tool_id` — correlates `tool.complete` to `tool.start`.
@@ -56,6 +100,9 @@ final class ToolCall {
   /// Wire `duration_s` — wall time of the tool run in seconds.
   final double? durationS;
 
+  /// Task items from the gateway (tool.todos).
+  final List<ToolTask> tasks;
+
   /// The event fold mutates via copy (ticket P1-01).
   ToolCall copyWith({
     String? id,
@@ -66,6 +113,7 @@ final class ToolCall {
     String? summary,
     String? inlineDiff,
     double? durationS,
+    List<ToolTask>? tasks,
   }) {
     return ToolCall(
       id: id ?? this.id,
@@ -76,6 +124,7 @@ final class ToolCall {
       summary: summary ?? this.summary,
       inlineDiff: inlineDiff ?? this.inlineDiff,
       durationS: durationS ?? this.durationS,
+      tasks: tasks ?? this.tasks,
     );
   }
 
@@ -89,7 +138,16 @@ final class ToolCall {
         other.result == result &&
         other.summary == summary &&
         other.inlineDiff == inlineDiff &&
-        other.durationS == durationS;
+        other.durationS == durationS &&
+        _tasksEquals(other.tasks, tasks);
+  }
+
+  static bool _tasksEquals(List<ToolTask> a, List<ToolTask> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 
   @override
@@ -102,12 +160,13 @@ final class ToolCall {
     summary,
     inlineDiff,
     durationS,
+    Object.hashAll(tasks),
   );
 
   @override
   String toString() {
     return 'ToolCall(id: $id, name: $name, context: $context, '
         'status: ${status.name}, result: $result, summary: $summary, '
-        'inlineDiff: $inlineDiff, durationS: $durationS)';
+        'inlineDiff: $inlineDiff, durationS: $durationS, tasks: $tasks)';
   }
 }

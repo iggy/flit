@@ -237,6 +237,7 @@ FoldState _onToolStart(FoldState state, ToolStart event) {
     id: event.toolId,
     name: event.name,
     context: event.context,
+    tasks: _parseTasks(event.todos),
   );
   final index = _streamingAssistantIndex(state.messages);
   if (index == null) {
@@ -305,12 +306,15 @@ FoldState _onToolComplete(FoldState state, ToolComplete event) {
   }
   final tool = current.toolCalls[toolIndex];
   final tools = <ToolCall>[...current.toolCalls];
+  // Merge tasks: prefer the updated list from complete, else keep start tasks
+  final updatedTasks = _parseTasks(event.todos);
   tools[toolIndex] = tool.copyWith(
     status: event.error != null ? ToolCallStatus.error : ToolCallStatus.done,
     result: event.result,
     summary: event.summary,
     inlineDiff: event.inlineDiff,
     durationS: event.durationS,
+    tasks: updatedTasks.isNotEmpty ? updatedTasks : null,
   );
   return _replaceMessage(state, index, current.copyWith(toolCalls: tools));
 }
@@ -498,4 +502,38 @@ FoldState _replaceMessage(FoldState state, int index, ChatMessage next) {
   final messages = <ChatMessage>[...state.messages];
   messages[index] = next;
   return state.copyWith(messages: messages);
+}
+
+/// Parse the raw tasks list from tool.start/tool.complete into [ToolTask]s.
+/// The schema is not pinned by the docs, so we handle graceful fallback.
+List<ToolTask> _parseTasks(List<dynamic>? raw) {
+  if (raw == null || raw.isEmpty) return const <ToolTask>[];
+  final tasks = <ToolTask>[];
+  for (var i = 0; i < raw.length; i++) {
+    final item = raw[i];
+    if (item is String) {
+      // Simple string: use index as id
+      tasks.add(ToolTask(id: '$i', content: item));
+    } else if (item is Map) {
+      final id = item['id']?.toString() ?? '$i';
+      final content =
+          item['content']?.toString() ?? item['text']?.toString() ?? '';
+      if (content.isNotEmpty) {
+        final status = _parseTaskStatus(item['status']);
+        tasks.add(ToolTask(id: id, content: content, status: status));
+      }
+    }
+  }
+  return tasks;
+}
+
+ToolTaskStatus _parseTaskStatus(dynamic status) {
+  if (status == null) return ToolTaskStatus.pending;
+  final s = status.toString().toLowerCase();
+  return switch (s) {
+    'in_progress' || 'inprogress' || 'running' => ToolTaskStatus.inProgress,
+    'completed' || 'done' || 'complete' => ToolTaskStatus.completed,
+    'cancelled' || 'canceled' || 'skipped' => ToolTaskStatus.cancelled,
+    _ => ToolTaskStatus.pending,
+  };
 }

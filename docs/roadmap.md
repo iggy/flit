@@ -22,18 +22,18 @@ Agent, from an MVP demo to full desktop/TUI parity. Read
 
 ## Phase overview
 
-| Phase | Theme | Outcome | Depends on |
-|------:|-------|---------|-----------|
-| **0** | Foundation | Flutter project scaffolded; transport core (RPC + REST clients); connects to a gateway and prints `gateway.ready`. | — |
-| **1** | **MVP** (demo target) | Connect (URL+token) → chat with streaming + tool cards → model picker → profile dropdown → plugins list → kanban board (read+move) → approvals/clarify. | 0 |
-| **2** | Session depth | Full session management: history, resume, list, rename, branch, delete, compress, usage, multi-session switching, reconnect resilience. | 1 |
-| **3** | Agent transparency | Slash commands + autocomplete; subagent/delegation visualization; steer; sudo/secret prompts; interrupt controls. | 1 |
-| **4** | Config & models | Provider key management; reasoning/fast toggles; tools & toolsets config; MCP reload; projects/workspaces; full config editor. | 1 |
-| **5** | Automation & plugins | Cron scheduler UI; full kanban (fleet/runs/boards/orchestration); plugins hub (enable/disable); background tasks; process control; handoff. | 1, 4 |
-| **6** | Memory & learning | Learning timeline (/journey) view/edit; insights/analytics; project facts; git rollback/checkpoints. | 2 |
-| **7** | Rich I/O | Image/PDF/file attachments (mobile-native); voice (record/TTS); paste handling. | 1 |
-| **8** | Auth & billing | OAuth mode (ticket flow, cookie session); credits & billing (state/charge/auto-reload/step-up); multi-gateway connection manager. | 1 |
-| **9** | Platform polish | Desktop window chrome; deep links; notifications; command palette; browser/preview control; theming (Hermes skin); optional pet mascot; store packaging. | most |
+| Phase | Theme | Outcome | Depends on | Status | 
+|------:|-------|---------|------------|--------|
+| **0** | Foundation | Flutter project scaffolded; transport core (RPC + REST clients); connects to a gateway and prints `gateway.ready`. | — | done |
+| **1** | **MVP** (demo target) | Connect (URL+token) → chat with streaming + tool cards → model picker → profile dropdown → plugins list → kanban board (read+move) → approvals/clarify. | 0 | done |
+| **2** | Session depth | Full session management: history, resume, list, rename, branch, delete, compress, usage, multi-session switching, reconnect resilience. | 1 | done |
+| **3** | Agent transparency | Slash commands + autocomplete; subagent/delegation visualization; steer; sudo/secret prompts; interrupt controls. | 1 | partial |
+| **4** | Config & models | Provider key management; reasoning/fast toggles; tools & toolsets config; MCP reload; projects/workspaces; full config editor. | 1 | partial |
+| **5** | Automation & plugins | Cron scheduler UI; full kanban (fleet/runs/boards/orchestration); plugins hub (enable/disable); background tasks; process control; handoff. | 1, 4 | |
+| **6** | Memory & learning | Learning timeline (/journey) view/edit; insights/analytics; project facts; git rollback/checkpoints. | 2 | partial |
+| **7** | Rich I/O | Image/PDF/file attachments (mobile-native); voice (record/TTS); paste handling. | 1 | |
+| **8** | Auth & billing | OAuth mode (ticket flow, cookie session); credits & billing (state/charge/auto-reload/step-up); multi-gateway connection manager. | 1 | partial |
+| **9** | Platform polish | Desktop window chrome; deep links; notifications; command palette; browser/preview control; theming (Hermes skin); optional pet mascot; store packaging. | most | partial |
 
 ## The MVP (Phase 1) — explicit scope for the demo
 
