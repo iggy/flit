@@ -358,6 +358,14 @@ class SessionActions {
         return 'Compression was not applied — '
             '${result.message ?? 'a tool was mid-flight or the model declined.'}';
       }
+      // Seed the post-compression message list so the UI updates immediately.
+      // The gateway returns the canonical message list (wire `messages`) —
+      // identical shape to `session.resume` — which we inject into the fold.
+      if (result.messages.isNotEmpty) {
+        _ref
+            .read(messageListProvider(liveId).notifier)
+            .seedHistory(result.messages);
+      }
       _ref.invalidate(activeSessionListProvider);
       return null;
     } on GatewayException catch (error) {

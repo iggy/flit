@@ -379,12 +379,20 @@ class _SessionDrawerState extends ConsumerState<SessionDrawer> {
               durableId: null,
               currentTitle: title ?? '',
             ),
-      onTap: () => unawaited(
-        _run(() {
-          ref.read(sessionActionsProvider).switchToLive(session);
-          return null;
-        }),
-      ),
+      onTap: () {
+        // If already on this session, close the drawer without switching.
+        // The user selected the current session - just dismiss the drawer.
+        if (isCurrent) {
+          Navigator.of(context).pop();
+          return;
+        }
+        unawaited(
+          _run(() {
+            ref.read(sessionActionsProvider).switchToLive(session);
+            return null;
+          }),
+        );
+      },
     );
   }
 

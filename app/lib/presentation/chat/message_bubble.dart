@@ -58,7 +58,7 @@ class _UserBubble extends StatelessWidget {
             color: scheme.primaryContainer,
             borderRadius: BorderRadius.circular(16),
           ),
-          child: Text(
+          child: SelectableText(
             message.text,
             style: TextStyle(color: scheme.onPrimaryContainer),
           ),
