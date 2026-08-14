@@ -6,9 +6,11 @@ library;
 import 'dart:async';
 
 import 'package:flit/application/models/model_providers.dart';
+import 'package:flit/application/projects/projects_providers.dart';
 import 'package:flit/application/sessions/active_session.dart';
 import 'package:flit/application/sessions/session_info.dart';
 import 'package:flit/application/sessions/session_list.dart';
+import 'package:flit/domain/models/project.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -73,6 +75,8 @@ class _SessionInfoSheetState extends ConsumerState<SessionInfoSheet> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               Text('Session', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 16),
+              _buildProjectSection(),
               const SizedBox(height: 16),
               _buildUsageSection(),
               const SizedBox(height: 16),
@@ -140,6 +144,65 @@ class _SessionInfoSheetState extends ConsumerState<SessionInfoSheet> {
         ],
         if (usage.compressions != null && usage.compressions! > 0)
           _InfoRow(label: 'Compressions', value: '${usage.compressions}'),
+      ],
+    );
+  }
+
+  Widget _buildProjectSection() {
+    final projectsAsync = ref.watch(projectsListProvider);
+
+    return switch (projectsAsync) {
+      AsyncData(:final value) => _buildProjectSelector(
+        value.projects,
+        value.activeId,
+      ),
+      AsyncError(:final error) => Text(
+        'Could not load projects: $error',
+        style: TextStyle(color: Theme.of(context).colorScheme.error),
+      ),
+      _ => const SizedBox.shrink(),
+    };
+  }
+
+  Widget _buildProjectSelector(List<Project> projects, String? activeId) {
+    if (projects.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text('Project', style: theme.textTheme.titleSmall),
+        const SizedBox(height: 8),
+        ...projects.map((project) {
+          final isActive = project.id == activeId;
+          return ListTile(
+            dense: true,
+            leading: project.icon != null
+                ? Text(project.icon!, style: const TextStyle(fontSize: 20))
+                : const Icon(Icons.folder_outlined, size: 20),
+            title: Text(project.name),
+            trailing: isActive
+                ? const Icon(Icons.check_circle, size: 20)
+                : null,
+            selected: isActive,
+            selectedTileColor: theme.colorScheme.primaryContainer.withValues(
+              alpha: 0.3,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            onTap: isActive
+                ? null
+                : () {
+                    ref
+                        .read(projectsControllerProvider.notifier)
+                        .setActive(project.id);
+                  },
+          );
+        }),
       ],
     );
   }
