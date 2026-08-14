@@ -6,14 +6,36 @@
 
 import 'dart:async';
 
+import 'package:flit/application/config/preferences_providers.dart';
 import 'package:flit/application/connection/connection_providers.dart';
 import 'package:flit/application/models/model_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
+import 'package:flit/data/storage/connection_store.dart';
+import 'package:flit/data/storage/preferences_store.dart';
 import 'package:flit/data/transport/gateway_rpc_client.dart';
 import 'package:flit/domain/models/model_option.dart';
 import 'package:flit/domain/repositories/model_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+/// In-memory key-value store used to avoid flutter_secure_storage's
+/// MethodChannel (which requires a binding-initialized test environment).
+final class _InMemoryKeyValueStore implements KeyValueStore {
+  final Map<String, String> values = <String, String>{};
+
+  @override
+  Future<String?> read(String key) async => values[key];
+
+  @override
+  Future<void> write(String key, String value) async {
+    values[key] = value;
+  }
+
+  @override
+  Future<void> delete(String key) async {
+    values.remove(key);
+  }
+}
 
 /// Fake model repository: records calls, answers from configurable stubs.
 final class FakeModelRepository implements ModelRepository {
@@ -96,7 +118,12 @@ void main() {
   setUp(() {
     repository = FakeModelRepository();
     container = ProviderContainer(
-      overrides: [modelRepositoryProvider.overrideWithValue(repository)],
+      overrides: [
+        modelRepositoryProvider.overrideWithValue(repository),
+        preferencesStoreProvider.overrideWithValue(
+          PreferencesStore(_InMemoryKeyValueStore()),
+        ),
+      ],
     );
   });
 

@@ -17,10 +17,12 @@ import 'dart:async';
 
 import 'package:flit/application/chat/message_fold.dart';
 import 'package:flit/application/chat/message_list_notifier.dart';
+import 'package:flit/application/chat/todo_tracker.dart';
 import 'package:flit/application/connection/connection_providers.dart';
 import 'package:flit/application/sessions/active_session.dart';
 import 'package:flit/data/transport/gateway_rpc_client.dart';
 import 'package:flit/domain/models/interactive_prompt.dart';
+import 'package:flit/domain/models/tool_call.dart';
 import 'package:flit/presentation/chat/approval_prompt_card.dart';
 import 'package:flit/presentation/chat/chat_app_bar.dart';
 import 'package:flit/presentation/chat/clarify_prompt_card.dart';
@@ -132,6 +134,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             child: Column(
               children: <Widget>[
                 Expanded(child: _buildBody(session)),
+                const _TaskProgressPanel(),
                 const Composer(),
               ],
             ),
@@ -285,6 +288,130 @@ class _PromptCard extends StatelessWidget {
         liveId: liveId,
       ),
     };
+  }
+}
+
+/// Sticky progress panel shown while the agent is working.
+/// Displays checklist-style progress for the current turn's tasks.
+class _TaskProgressPanel extends ConsumerWidget {
+  const _TaskProgressPanel();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isWorking = ref.watch(isAgentWorkingProvider);
+    final tasks = ref.watch(liveTasksProvider);
+    final counts = ref.watch(taskCountsProvider);
+
+    // Don't show anything if not working or no tasks
+    if (!isWorking || tasks.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        border: Border(top: BorderSide(color: scheme.outlineVariant)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 8),
+              Text('Working', style: theme.textTheme.labelMedium),
+              const Spacer(),
+              Text(
+                '${counts.completed}/${counts.total}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: scheme.outline,
+                ),
+              ),
+            ],
+          ),
+          if (tasks.isNotEmpty) ...<Widget>[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: tasks
+                  .take(5)
+                  .map((task) => _TaskChip(task: task))
+                  .toList(),
+            ),
+            if (tasks.length > 5)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  '+${tasks.length - 5} more',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: scheme.outline,
+                  ),
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// A single task chip with status icon.
+class _TaskChip extends StatelessWidget {
+  const _TaskChip({required this.task});
+
+  final ToolTask task;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    final (icon, color) = switch (task.status) {
+      ToolTaskStatus.completed => (Icons.check_circle, scheme.primary),
+      ToolTaskStatus.inProgress => (Icons.circle, scheme.tertiary),
+      ToolTaskStatus.cancelled => (Icons.cancel_outlined, scheme.outline),
+      ToolTaskStatus.pending => (Icons.circle_outlined, scheme.outline),
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 150),
+            child: Text(
+              task.content,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: scheme.onSurface,
+                decoration: task.status == ToolTaskStatus.completed
+                    ? TextDecoration.lineThrough
+                    : null,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

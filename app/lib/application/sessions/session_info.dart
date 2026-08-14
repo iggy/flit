@@ -73,3 +73,29 @@ class LiveUsageNotifier extends Notifier<SessionUsageStats?> {
     return null;
   }
 }
+
+/// Live working directory from `session.info` events.
+/// Tracks the `cwd` field so the UI can display the current working directory.
+final liveCwdProvider = NotifierProvider<LiveCwdNotifier, String?>(
+  LiveCwdNotifier.new,
+);
+
+class LiveCwdNotifier extends Notifier<String?> {
+  @override
+  String? build() {
+    ref.listen(gatewayEventsProvider, (previous, next) {
+      final raw = next.value;
+      if (raw == null) {
+        return;
+      }
+      final event = parseGatewayEvent(raw);
+      if (event is SessionInfo) {
+        final cwd = event.info['cwd'];
+        if (cwd is String) {
+          state = cwd;
+        }
+      }
+    });
+    return null;
+  }
+}

@@ -89,6 +89,7 @@ class _SessionInfoSheetState extends ConsumerState<SessionInfoSheet> {
 
   Widget _buildUsageSection() {
     final liveUsage = ref.watch(liveUsageProvider);
+    final liveCwd = ref.watch(liveCwdProvider);
     final usageAsync = ref.watch(sessionUsageProvider);
 
     // Prefer live usage; fall back to async fetch.
@@ -119,6 +120,8 @@ class _SessionInfoSheetState extends ConsumerState<SessionInfoSheet> {
         Text('Usage', style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 8),
         if (model.isNotEmpty) _InfoRow(label: 'Model', value: model),
+        if (liveCwd != null && liveCwd.isNotEmpty)
+          _InfoRow(label: 'Working dir', value: liveCwd),
         _InfoRow(label: 'Total tokens', value: '${usage.total}'),
         _InfoRow(label: 'Input', value: '${usage.input}'),
         _InfoRow(label: 'Output', value: '${usage.output}'),

@@ -3,6 +3,9 @@
 /// interaction controller, and the merged current-model tracker.
 library;
 
+import 'dart:async';
+
+import 'package:flit/application/config/preferences_providers.dart';
 import 'package:flit/application/connection/connection_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/data/dto/events/gateway_event_parser.dart';
@@ -241,6 +244,12 @@ class ModelPickerController extends Notifier<ModelPickerState> {
                 provider: option.providerSlug,
               ),
             );
+        // Add to recents.
+        unawaited(
+          ref
+              .read(modelPreferencesProvider.notifier)
+              .addToRecents(option.providerSlug, option.model),
+        );
         // Refresh the picker's badges/current markers.
         ref.invalidate(modelOptionsProvider);
       case ModelSetNeedsConfirm(:final message):
@@ -329,5 +338,103 @@ class ProviderKeyController extends Notifier<ProviderKeyState> {
 
   void clearError() {
     state = ProviderKeyState(busy: state.busy);
+  }
+}
+
+/// Model favorites and recents state.
+final class ModelPreferencesState {
+  const ModelPreferencesState({
+    this.favorites = const <String>[],
+    this.recents = const <String>[],
+  });
+
+  /// List of favorite models as "providerSlug:model" strings.
+  final List<String> favorites;
+
+  /// List of recent models as "providerSlug:model" strings (most recent first).
+  final List<String> recents;
+
+  /// Maximum number of recents to keep.
+  static const int maxRecents = 10;
+
+  @override
+  bool operator ==(Object other) {
+    return other is ModelPreferencesState &&
+        other.favorites == favorites &&
+        other.recents == recents;
+  }
+
+  @override
+  int get hashCode => Object.hash(favorites, recents);
+
+  @override
+  String toString() =>
+      'ModelPreferencesState(favorites: $favorites, recents: $recents)';
+}
+
+/// Provider for model favorites and recents.
+final modelPreferencesProvider =
+    NotifierProvider<ModelPreferencesNotifier, ModelPreferencesState>(
+      ModelPreferencesNotifier.new,
+    );
+
+class ModelPreferencesNotifier extends Notifier<ModelPreferencesState> {
+  @override
+  ModelPreferencesState build() {
+    _load();
+    return const ModelPreferencesState();
+  }
+
+  Future<void> _load() async {
+    final store = ref.read(preferencesStoreProvider);
+    final favorites = await store.loadModelFavorites();
+    final recents = await store.loadModelRecents();
+    if (!ref.mounted) {
+      return;
+    }
+    state = ModelPreferencesState(favorites: favorites, recents: recents);
+  }
+
+  /// Check if a model is favorited.
+  bool isFavorite(String providerSlug, String model) {
+    final key = '$providerSlug:$model';
+    return state.favorites.contains(key);
+  }
+
+  /// Toggle favorite status for a model.
+  Future<void> toggleFavorite(String providerSlug, String model) async {
+    final key = '$providerSlug:$model';
+    final favorites = List<String>.from(state.favorites);
+    if (favorites.contains(key)) {
+      favorites.remove(key);
+    } else {
+      favorites.add(key);
+    }
+    final store = ref.read(preferencesStoreProvider);
+    await store.saveModelFavorites(favorites);
+    if (!ref.mounted) {
+      return;
+    }
+    state = ModelPreferencesState(favorites: favorites, recents: state.recents);
+  }
+
+  /// Add a model to recents (called on successful model switch).
+  Future<void> addToRecents(String providerSlug, String model) async {
+    final key = '$providerSlug:$model';
+    final recents = List<String>.from(state.recents);
+    // Remove if already exists (will be added at front)
+    recents.remove(key);
+    // Add to front
+    recents.insert(0, key);
+    // Trim to max size
+    if (recents.length > ModelPreferencesState.maxRecents) {
+      recents.removeRange(ModelPreferencesState.maxRecents, recents.length);
+    }
+    final store = ref.read(preferencesStoreProvider);
+    await store.saveModelRecents(recents);
+    if (!ref.mounted) {
+      return;
+    }
+    state = ModelPreferencesState(favorites: state.favorites, recents: recents);
   }
 }

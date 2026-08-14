@@ -93,6 +93,12 @@ final class PreferencesStore {
   /// platform permission prompt is only raised on enable).
   static const String notificationsEnabledKey = 'prefs.notifications_enabled';
 
+  /// Model favorites: JSON-encoded list of "providerSlug:model" strings.
+  static const String modelFavoritesKey = 'prefs.model_favorites';
+
+  /// Model recents: JSON-encoded list of "providerSlug:model" strings (most recent first).
+  static const String modelRecentsKey = 'prefs.model_recents';
+
   Future<bool> loadSkinEnabled() => _loadBool(skinEnabledKey);
 
   Future<void> saveSkinEnabled(bool enabled) =>
@@ -125,6 +131,21 @@ final class PreferencesStore {
   Future<void> saveWindowGeometry(WindowGeometry geometry) =>
       _store.write(windowGeometryKey, jsonEncode(geometry.toJson()));
 
+  /// Load model favorites as a list of "providerSlug:model" strings.
+  Future<List<String>> loadModelFavorites() =>
+      _loadStringList(modelFavoritesKey);
+
+  /// Save model favorites (list of "providerSlug:model" strings).
+  Future<void> saveModelFavorites(List<String> favorites) =>
+      _store.write(modelFavoritesKey, jsonEncode(favorites));
+
+  /// Load model recents as a list of "providerSlug:model" strings (most recent first).
+  Future<List<String>> loadModelRecents() => _loadStringList(modelRecentsKey);
+
+  /// Save model recents (list of "providerSlug:model" strings).
+  Future<void> saveModelRecents(List<String> recents) =>
+      _store.write(modelRecentsKey, jsonEncode(recents));
+
   Future<bool> _loadBool(String key) async {
     final raw = await _read(key);
     return raw == 'true';
@@ -136,6 +157,23 @@ final class PreferencesStore {
       return await _store.read(key);
     } on Object {
       return null;
+    }
+  }
+
+  /// Load a JSON-encoded string list, or empty list on failure.
+  Future<List<String>> _loadStringList(String key) async {
+    final raw = await _read(key);
+    if (raw == null || raw.isEmpty) {
+      return <String>[];
+    }
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) {
+        return <String>[];
+      }
+      return decoded.map((e) => e.toString()).toList();
+    } on FormatException {
+      return <String>[];
     }
   }
 }
