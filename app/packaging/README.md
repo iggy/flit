@@ -57,6 +57,11 @@ Each platform requires its own packaging tools:
   ```
   Only needed for `package-linux`. The raw executable bundle (`package-linux-binary`) has no prerequisites.
   If it is missing from PATH, `linux_appimage.sh` downloads it into `build/tools/` automatically.
+- **Build deps for voice** — the audioplayers Linux plugin links GStreamer, so
+  `flutter build linux` needs `libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev`
+  installed. At runtime TTS playback uses the host's gstreamer1.0 plugins
+  (`gstreamer1.0-plugins-good` covers mp3/ogg); AppImage/deb/rpm users on a
+  desktop distro already have them.
 
 ### Linux (deb/rpm)
 

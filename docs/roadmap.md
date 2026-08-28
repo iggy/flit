@@ -31,7 +31,7 @@ Agent, from an MVP demo to full desktop/TUI parity. Read
 | **4** | Config & models | Provider key management; reasoning/fast toggles; tools & toolsets config; MCP reload; projects/workspaces; full config editor. | 1 | partial |
 | **5** | Automation & plugins | Cron scheduler UI; full kanban (fleet/runs/boards/orchestration); plugins hub (enable/disable); background tasks; process control; handoff. | 1, 4 | |
 | **6** | Memory & learning | Learning timeline (/journey) view/edit; insights/analytics; project facts; git rollback/checkpoints. | 2 | partial |
-| **7** | Rich I/O | Image/PDF/file attachments (mobile-native); voice (record/TTS); paste handling. | 1 | |
+| **7** | Rich I/O | Image/PDF/file attachments (mobile-native); voice (device-captured record → gateway transcribe; TTS playback); paste handling. | 1 | |
 | **8** | Auth & billing | OAuth mode (ticket flow, cookie session); credits & billing (state/charge/auto-reload/step-up); multi-gateway connection manager. | 1 | partial |
 | **9** | Platform polish | Desktop window chrome; deep links; notifications; command palette; browser/preview control; theming (Hermes skin); optional pet mascot; store packaging. | most | partial |
 
