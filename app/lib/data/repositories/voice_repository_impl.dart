@@ -6,8 +6,10 @@ import 'package:flit/domain/repositories/voice_repository.dart';
 /// [VoiceRepository] over [GatewayRpcClient.request] (ticket P7-05).
 ///
 /// Method names/params come VERBATIM from wire protocol: never invent fields.
-/// Server-side voice: the gateway records from its mic and speaks through its
-/// speakers; this client just triggers actions and consumes events.
+/// Legacy fallback path: the gateway records from its own mic and speaks
+/// through its own speakers; this client just triggers actions and consumes
+/// events. The default client-side path lives in
+/// lib/application/voice/client_voice_providers.dart.
 final class VoiceRepositoryImpl implements VoiceRepository {
   const VoiceRepositoryImpl(this._client);
 

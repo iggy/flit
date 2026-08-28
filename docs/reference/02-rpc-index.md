@@ -207,11 +207,21 @@ deliberately never emitted on the parent session (`server.py:5621`).
 
 ## Voice
 
+Flit records **on the device** (Android/Linux) and uses the gateway's REST
+audio routes — the same released contracts the Hermes desktop app uses. The
+JSON-RPC methods below are the legacy server-mic fallback for older gateways.
+
+| Surface | Purpose | Phase |
+|---------|---------|-------|
+| `POST /api/audio/transcribe` | `{data_url, mime_type}` (base64 clip) → transcript; empty = silence | 7 |
+| `POST /api/audio/speak` | `{text}` → base64 `data_url` audio, played locally | 7 |
+| `GET /api/audio/elevenlabs/voices` | capability probe (404 → no audio routes) | 7 |
+
 | Method | Purpose | Phase |
 |--------|---------|-------|
-| `voice.toggle` | status/on/off/tts | 7 |
-| `voice.record` | VAD push-to-talk start/stop; emits `voice.transcript`/`voice.status` | 7 |
-| `voice.tts` | Speak text via TTS | 7 |
+| `voice.toggle` | status/on/off/tts (legacy fallback path) | 7 |
+| `voice.record` | Server-mic VAD push-to-talk start/stop; emits `voice.transcript`/`voice.status` (legacy fallback) | 7 |
+| `voice.tts` | Speak text via server-side TTS (legacy fallback) | 7 |
 
 ## Billing & credits
 

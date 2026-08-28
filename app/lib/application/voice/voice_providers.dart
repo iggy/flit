@@ -1,4 +1,7 @@
-/// Riverpod wiring for voice control (ticket P7-05).
+/// Riverpod wiring for the legacy server-side voice path (ticket P7-05).
+///
+/// P7-05 rework: this is the FALLBACK for gateways without `/api/audio/*`.
+/// The default client-side capture path lives in client_voice_providers.dart.
 library;
 
 import 'dart:async';

@@ -32,13 +32,28 @@ for large text pastes.
 ## Voice
 
 ### P7-05 — Voice capture
-`voice.toggle` (status/on/off) and `voice.record` (VAD push-to-talk start/stop),
-consuming `voice.status` (idle/listening/transcribing) and `voice.transcript`
-events → drop the transcript into the composer. A mic button with live state.
+Client-side push-to-talk on Android/Linux desktop: the app records from the
+device microphone (`record` plugin, WAV 16 kHz mono), uploads the clip to the
+gateway's `POST /api/audio/transcribe` (base64 data URL — the same released
+route the Hermes desktop app uses), and drops the transcript into the
+composer. Works against remote gateways with **no server-side mic or
+PortAudio dependency**; auth rides the normal REST transport (token header /
+session cookies / Bearer).
+
+Gateways without the audio routes (probe answers 404) fall back to the legacy
+server-side flow: `voice.toggle` (status/on/off) and `voice.record` (VAD
+push-to-talk start/stop), consuming `voice.status`
+(idle/listening/transcribing) and `voice.transcript` events. That path
+records on the gateway host and therefore requires audio deps there.
 
 ### P7-06 — TTS playback
-`voice.tts` — speak assistant replies aloud (optional toggle). Handle the
+`POST /api/audio/speak` synthesizes text through the gateway's configured TTS
+provider chain and returns base64 audio, played locally via audioplayers.
+The composer's speaker button speaks the latest assistant reply; a second tap
+stops playback. On gateways without the audio routes this falls back to the
+legacy `voice.tts` auto-speak toggle (server-side playback). Handle the
 audio-available/stt-available capability flags from the toggle result.
 
-**Exit criteria:** on a phone you can attach photos/files/PDFs, dictate a prompt
-by voice, and optionally hear replies — all through the remote-friendly RPCs.
+**Exit criteria:** on a phone you can attach photos/files/PDFs, dictate a
+prompt by voice from your device mic, and hear replies locally — all through
+the remote-friendly bytes/base64 contracts.

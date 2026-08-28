@@ -17,6 +17,8 @@ OAuth-only gateways are detected and honestly flagged as Phase 8.
   - Linux desktop is the primary dev target (GTK + clang toolchain installed).
   - Android toolchain intentionally not installed yet (deferred, see roadmap).
 - Linux build deps (apt): `clang cmake ninja-build libgtk-3-dev libsecret-1-dev xz-utils`
+  - Voice (P7-05 rework) adds `libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev`
+    — audioplayers_linux synthesizes TTS playback through GStreamer.
 
 ## Develop
 

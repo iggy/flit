@@ -107,6 +107,12 @@ final class GatewayRestClient {
   final String? bearerToken;
   final String? Function()? bearerTokenGetter;
 
+  /// The auth-wired dio instance for feature repositories that need request
+  /// options the generic verbs don't take (custom receive timeouts, raw
+  /// response types). Shares the interceptor pipeline (auth headers, cookie
+  /// capture, 401/403 expiry detection) — do not mutate its options here.
+  Dio get dioForFeatureCalls => _dio;
+
   void _captureCookies(Response<dynamic>? response) {
     final jar = cookieJar;
     if (jar == null || response == null) {

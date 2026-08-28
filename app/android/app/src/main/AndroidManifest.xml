@@ -1,6 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Client-side voice capture (P7-05 rework): mic audio is recorded only
+         while the user actively holds the composer mic flow and is uploaded
+         to the user's configured Hermes gateway for transcription. The
+         record plugin surfaces the runtime permission prompt on first use. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-feature android:name="android.hardware.microphone" android:required="false"/>
     <application
         android:label="Flit"
         android:name="${applicationName}"

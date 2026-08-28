@@ -5,9 +5,12 @@ import 'package:flit/domain/models/voice_state.dart';
 
 /// Voice control repository — toggle mode/tts, record audio, and speak text.
 ///
-/// IMPORTANT: Voice is SERVER-SIDE. The gateway host records from its microphone
-/// and speaks through its speakers. This client merely triggers actions and
-/// consumes events — no local audio recording or playback.
+/// LEGACY PATH (P7-05 rework): this repository drives the gateway's own mic
+/// and speakers via `voice.record`/`voice.tts`, so it only makes sense when
+/// the gateway host has audio hardware/deps (or is loopback). It remains as
+/// the fallback for gateways without the `/api/audio/*` REST routes; the
+/// default client path records on-device and calls those routes instead —
+/// see lib/application/voice/client_voice_providers.dart.
 abstract interface class VoiceRepository {
   /// Toggle voice mode or TTS (wire `voice.toggle`).
   ///

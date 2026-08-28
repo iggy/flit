@@ -30,9 +30,11 @@ import 'package:flit/application/providers.dart';
 import 'package:flit/application/sessions/active_session.dart';
 import 'package:flit/application/sessions/desktop_contract.dart';
 import 'package:flit/application/slash/slash_providers.dart';
+import 'package:flit/application/voice/client_voice_providers.dart';
 import 'package:flit/application/voice/voice_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/domain/models/attachment.dart';
+import 'package:flit/domain/models/chat_message.dart';
 import 'package:flit/domain/models/command_dispatch.dart';
 import 'package:flit/domain/models/prompt_submit_status.dart';
 import 'package:flit/domain/models/slash_completion.dart';
@@ -80,6 +82,9 @@ class _ComposerState extends ConsumerState<Composer> {
 
   /// P7: track voice error to detect changes (avoid snackbar spam).
   String? _lastVoiceError;
+
+  /// P7 rework: track client-capture voice error to detect changes.
+  String? _lastClientVoiceError;
 
   /// P7: track whether we've done the initial voice status refresh.
   bool _voiceStatusRefreshed = false;
@@ -541,7 +546,16 @@ class _ComposerState extends ConsumerState<Composer> {
   }
 
   /// P7: toggle mic recording.
+  ///
+  /// Client-side capture (Android/Linux against gateways with /api/audio)
+  /// records on-device and transcribes through the gateway REST route; the
+  /// legacy server-side `voice.record` path stays for older gateways and
+  /// platforms without local capture.
   void _toggleMic(String liveId) {
+    if (ref.read(composerVoiceModeProvider) == ComposerVoiceMode.clientCapture) {
+      _toggleClientMic();
+      return;
+    }
     final controller = ref.read(voiceControllerProvider.notifier);
     final state = ref.read(voiceControllerProvider);
     if (!state.modeEnabled) {
@@ -558,8 +572,47 @@ class _ComposerState extends ConsumerState<Composer> {
     }
   }
 
-  /// P7: toggle TTS.
+  /// P7 rework: device-capture mic toggle — record locally, stop to
+  /// transcribe, transcript lands in the composer draft.
+  void _toggleClientMic() {
+    final controller = ref.read(clientVoiceControllerProvider.notifier);
+    final state = ref.read(clientVoiceControllerProvider);
+    switch (state.phase) {
+      case ClientVoicePhase.idle:
+        unawaited(controller.start());
+      case ClientVoicePhase.recording:
+        unawaited(controller.stopAndTranscribe());
+      case ClientVoicePhase.transcribing:
+        break;
+    }
+  }
+
+  /// P7: toggle TTS. On the client-capture path the button SPEAKS the latest
+  /// assistant reply through /api/audio/speak; on the legacy path it toggles
+  /// the server-side auto-TTS flag as before.
   void _toggleTts() {
+    if (ref.read(composerVoiceModeProvider) == ComposerVoiceMode.clientCapture) {
+      final client = ref.read(clientVoiceControllerProvider.notifier);
+      if (ref.read(clientVoiceControllerProvider).speaking) {
+        client.stopSpeaking();
+        return;
+      }
+      final fold = ref.read(messageListProvider(ref.read(activeSessionProvider).liveId ?? ''));
+      final lastReply = fold.messages.lastWhere(
+        (message) =>
+            message.role == MessageRole.assistant && message.text.isNotEmpty,
+        orElse: () => const ChatMessage(
+          role: MessageRole.assistant,
+          text: '',
+        ),
+      );
+      final text = lastReply.text.trim();
+      if (text.isEmpty) {
+        return;
+      }
+      unawaited(client.speak(text));
+      return;
+    }
     final controller = ref.read(voiceControllerProvider.notifier);
     unawaited(controller.toggleTts());
   }
@@ -579,6 +632,21 @@ class _ComposerState extends ConsumerState<Composer> {
         _controller.selection = TextSelection.collapsed(offset: next.length);
         _focusNode.requestFocus();
         ref.read(composerPrefillProvider.notifier).clear();
+      }
+    });
+
+    // P7 rework: consume a voice transcript once — APPENDED to the draft so a
+    // dictation pass extends whatever was already typed.
+    ref.listen(composerPrefillFromVoiceProvider, (previous, next) {
+      if (next != null) {
+        final existing = _controller.text;
+        final merged = existing.isEmpty
+            ? next
+            : '$existing ${next.trim()}';
+        _controller.text = merged;
+        _controller.selection = TextSelection.collapsed(offset: merged.length);
+        _focusNode.requestFocus();
+        ref.read(composerPrefillFromVoiceProvider.notifier).clear();
       }
     });
 
@@ -615,8 +683,26 @@ class _ComposerState extends ConsumerState<Composer> {
       }
     });
 
+    // P7 rework: client-capture voice errors.
+    ref.listen(clientVoiceControllerProvider, (previous, next) {
+      if (next.error != null && next.error != _lastClientVoiceError) {
+        _lastClientVoiceError = next.error;
+        if (mounted) {
+          _showSnackBar('Voice: ${next.error}');
+        }
+      } else if (next.error == null) {
+        _lastClientVoiceError = null;
+      }
+    });
+
     // P7: watch voice state for UI.
     final voiceState = ref.watch(voiceControllerProvider);
+    // P7 rework: device-capture state drives the mic button when active.
+    final voiceMode = ref.watch(composerVoiceModeProvider);
+    final clientVoiceModeActive = voiceMode == ComposerVoiceMode.clientCapture;
+    final clientVoice = clientVoiceModeActive
+        ? ref.watch(clientVoiceControllerProvider)
+        : null;
 
     // P7: refresh voice status on first build (only when voice repo is available).
     if (!_voiceStatusRefreshed && ref.read(voiceRepositoryProvider) != null) {
@@ -674,29 +760,48 @@ class _ComposerState extends ConsumerState<Composer> {
                 ),
               ),
               const SizedBox(width: 8),
-              // P7: mic button.
+              // P7: mic button. Client capture (Android/Linux + /api/audio
+              // gateway) records locally; otherwise the legacy server-side
+              // voice.record flow drives it.
               IconButton(
                 key: const Key('composer_mic'),
-                tooltip: voiceState.recording ? voiceState.micState : 'Voice',
+                tooltip: clientVoice != null
+                    ? switch (clientVoice.phase) {
+                        ClientVoicePhase.recording => 'Recording — tap to transcribe',
+                        ClientVoicePhase.transcribing => 'Transcribing…',
+                        ClientVoicePhase.idle => 'Voice',
+                      }
+                    : (voiceState.recording ? voiceState.micState : 'Voice'),
                 onPressed: liveId == null ? null : () => _toggleMic(liveId),
                 icon: Icon(
-                  voiceState.micState == 'transcribing'
+                  (clientVoice?.transcribing ?? false) ||
+                          (!clientVoiceModeActive &&
+                              voiceState.micState == 'transcribing')
                       ? Icons.hourglass_top
                       : Icons.mic,
-                  color: voiceState.recording
+                  color: (clientVoice?.recording ?? false) ||
+                          (!clientVoiceModeActive && voiceState.recording)
                       ? Theme.of(context).colorScheme.primary
                       : null,
                 ),
               ),
-              // P7: TTS toggle button.
+              // P7: TTS toggle button. Client capture: speak/stop the latest
+              // reply; legacy path: toggle server-side auto-TTS.
               IconButton(
                 key: const Key('composer_tts'),
-                tooltip: 'Text-to-speech',
-                onPressed: voiceState.modeEnabled && liveId != null
+                tooltip: clientVoiceModeActive
+                    ? (clientVoice?.speaking ?? false ? 'Stop speaking' : 'Speak last reply')
+                    : 'Text-to-speech',
+                onPressed: liveId != null &&
+                        ((clientVoiceModeActive &&
+                                ref.watch(audioRoutesProvider).value == true) ||
+                            (!clientVoiceModeActive && voiceState.modeEnabled))
                     ? _toggleTts
                     : null,
                 icon: Icon(
-                  voiceState.ttsEnabled ? Icons.volume_up : Icons.volume_off,
+                  (clientVoice?.speaking ?? false) || voiceState.ttsEnabled
+                      ? Icons.volume_up
+                      : Icons.volume_off,
                 ),
               ),
               if (working && liveId != null) ...<Widget>[
