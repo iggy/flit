@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flit/core/debug/voice_debug.dart';
 import 'package:flit/domain/services/local_mic_recorder.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
@@ -28,11 +29,15 @@ final class PluginMicRecorder implements LocalMicRecorder {
 
   @override
   Future<void> start() async {
+    voiceDebug('pluginRecorder.start begin recording=$_recording');
     if (_recording) {
+      voiceDebug('pluginRecorder.start ignored already recording');
       return;
     }
     try {
-      if (!await _recorder.hasPermission()) {
+      final permission = await _recorder.hasPermission();
+      voiceDebug('pluginRecorder.permission=$permission');
+      if (!permission) {
         throw const MicCaptureException(
           MicCaptureFailure.permissionDenied,
           'Microphone permission was denied.',
@@ -40,6 +45,7 @@ final class PluginMicRecorder implements LocalMicRecorder {
       }
       final path =
           '${(await getTemporaryDirectory()).path}/flit-voice-${DateTime.now().microsecondsSinceEpoch}.wav';
+      voiceDebug('pluginRecorder.starting recorder path=$path');
       await _recorder.start(
         const RecordConfig(
           encoder: AudioEncoder.wav,
@@ -52,9 +58,11 @@ final class PluginMicRecorder implements LocalMicRecorder {
       );
       _activePath = path;
       _recording = true;
+      voiceDebug('pluginRecorder.started');
     } on MicCaptureException {
       rethrow;
     } on Object catch (error) {
+      voiceDebug('pluginRecorder.start error=$error');
       throw MicCaptureException(
         MicCaptureFailure.unknown,
         'Could not start the microphone: $error',
@@ -64,24 +72,33 @@ final class PluginMicRecorder implements LocalMicRecorder {
 
   @override
   Future<LocalRecording?> stop() async {
+    voiceDebug('pluginRecorder.stop begin recording=$_recording path=$_activePath');
     if (!_recording) {
+      voiceDebug('pluginRecorder.stop skipped not recording');
       return null;
     }
     try {
       final path = await _recorder.stop();
       final activePath = path?.isNotEmpty == true ? path : _activePath;
       _activePath = null;
+      voiceDebug(
+        'pluginRecorder.stopped pluginPath=$path activePath=$activePath',
+      );
       if (activePath == null || activePath.isEmpty) {
+        voiceDebug('pluginRecorder.stop no active path');
         return null;
       }
       final bytes = await _readFile(activePath);
+      voiceDebug('pluginRecorder.fileBytes=${bytes.length}');
       if (bytes.isEmpty) {
+        voiceDebug('pluginRecorder.stop empty file');
         return null;
       }
       return LocalRecording(bytes: bytes, mimeType: 'audio/wav');
     } on MicCaptureException {
       rethrow;
     } on Object catch (error) {
+      voiceDebug('pluginRecorder.stop error=$error');
       throw MicCaptureException(
         MicCaptureFailure.unknown,
         'Could not finish the recording: $error',

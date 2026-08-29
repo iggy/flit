@@ -11,6 +11,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flit/application/connection/connection_providers.dart';
+import 'package:flit/core/debug/voice_debug.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/data/repositories/audio_repository_impl.dart';
 import 'package:flit/data/services/audio_player_playback.dart';
@@ -25,6 +26,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// REST client (disconnected / pre-connect).
 final audioRepositoryProvider = Provider<AudioRepository?>((ref) {
   final rest = ref.watch(restClientProvider);
+  voiceDebug('audioRepository restClient=${rest == null ? 'null' : 'present'}');
   if (rest == null) {
     return null;
   }
@@ -60,14 +62,20 @@ final audioRoutesProvider = FutureProvider<bool>((ref) async {
 /// desktops keep the legacy server-side flow.
 final clientVoiceCaptureSupportedProvider = Provider<bool>((ref) {
   if (kIsWeb) {
+    voiceDebug('clientVoiceSupported=false web');
     return false;
   }
   final routes = ref.watch(audioRoutesProvider);
-  if (routes.value != true) {
-    return false;
-  }
-  return defaultTargetPlatform == TargetPlatform.android ||
-      defaultTargetPlatform == TargetPlatform.linux;
+  final supported =
+      routes.value == true &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.linux);
+  voiceDebug(
+    'clientVoiceSupported=$supported '
+    'platform=$defaultTargetPlatform routesState=${routes.runtimeType} '
+    'routesValue=${routes.value}',
+  );
+  return supported;
 });
 
 /// Controller for device-side push-to-talk: start → stop → transcribe →
@@ -84,15 +92,20 @@ class ClientVoiceController extends Notifier<ClientVoiceState> {
   /// routes here when [clientVoiceCaptureSupportedProvider] is true, so a
   /// direct call (tests, future surfaces) still works on any platform.
   Future<void> start() async {
+    voiceDebug('controller.start phase=${state.phase.name}');
     if (state.phase != ClientVoicePhase.idle) {
+      voiceDebug('controller.start ignored non-idle');
       return;
     }
     try {
       await _mic.start();
       state = const ClientVoiceState(phase: ClientVoicePhase.recording);
+      voiceDebug('controller.start recording');
     } on MicCaptureException catch (error) {
+      voiceDebug('controller.start mic error=${error.message}');
       state = ClientVoiceState(error: error.message);
     } on Object catch (error) {
+      voiceDebug('controller.start error=$error');
       state = ClientVoiceState(error: error.toString());
     }
   }
@@ -100,18 +113,25 @@ class ClientVoiceController extends Notifier<ClientVoiceState> {
   /// Stop capturing and transcribe through the gateway; a non-empty
   /// transcript lands in the composer prefill slot.
   Future<void> stopAndTranscribe() async {
+    voiceDebug('controller.stopAndTranscribe phase=${state.phase.name}');
     if (state.phase != ClientVoicePhase.recording) {
+      voiceDebug('controller.stopAndTranscribe ignored non-recording');
       return;
     }
     state = const ClientVoiceState(phase: ClientVoicePhase.transcribing);
     try {
       final recording = await _mic.stop();
+      voiceDebug(
+        'controller.micStop result=${recording?.bytes.length ?? 'null'}',
+      );
       if (recording == null) {
+        voiceDebug('controller.stopAndTranscribe no recording => idle');
         state = const ClientVoiceState();
         return;
       }
       final repository = ref.read(audioRepositoryProvider);
       if (repository == null) {
+        voiceDebug('controller.stopAndTranscribe no repository');
         state = const ClientVoiceState(error: 'Not connected to a gateway.');
         return;
       }
@@ -120,16 +140,24 @@ class ClientVoiceController extends Notifier<ClientVoiceState> {
             'data:${recording.mimeType};base64,${base64Encode(recording.bytes)}',
         mimeType: recording.mimeType,
       );
+      voiceDebug(
+        'controller.transcribe resultLength=${result.transcript.length} '
+        'provider=${result.provider}',
+      );
       if (result.transcript.isEmpty) {
         // Silence — back to idle with nothing to insert.
+        voiceDebug('controller.stopAndTranscribe empty transcript => idle');
         state = const ClientVoiceState();
         return;
       }
       state = const ClientVoiceState();
       ref.read(composerPrefillFromVoiceProvider.notifier).prefill(result.transcript);
+      voiceDebug('controller.stopAndTranscribe prefilled composer');
     } on GatewayException catch (error) {
+      voiceDebug('controller.stopAndTranscribe gateway error=${error.message}');
       state = ClientVoiceState(error: error.message);
     } on Object catch (error) {
+      voiceDebug('controller.stopAndTranscribe error=$error');
       state = ClientVoiceState(error: error.toString());
     }
   }
@@ -253,9 +281,11 @@ final class ClientVoiceState {
 /// Convenience view combining both voice paths for the composer: which one
 /// owns the mic button, plus the merged display state.
 final composerVoiceModeProvider = Provider<ComposerVoiceMode>((ref) {
-  return ref.watch(clientVoiceCaptureSupportedProvider)
+  final mode = ref.watch(clientVoiceCaptureSupportedProvider)
       ? ComposerVoiceMode.clientCapture
       : ComposerVoiceMode.serverCapture;
+  voiceDebug('composerVoiceMode=${mode.name}');
+  return mode;
 });
 
 enum ComposerVoiceMode { clientCapture, serverCapture }
