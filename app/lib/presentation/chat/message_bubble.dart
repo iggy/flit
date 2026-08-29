@@ -68,18 +68,28 @@ class _UserBubble extends StatelessWidget {
   }
 }
 
-class _AssistantMessage extends StatelessWidget {
+class _AssistantMessage extends StatefulWidget {
   const _AssistantMessage({required this.message});
 
   final ChatMessage message;
 
   @override
+  State<_AssistantMessage> createState() => _AssistantMessageState();
+}
+
+class _AssistantMessageState extends State<_AssistantMessage> {
+  bool _contentExpanded = true;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final message = widget.message;
     // `rendered` supersedes `text` when the gateway provides it (§6).
     final content = message.rendered ?? message.text;
     final reasoning = message.reasoning;
+    final isLongContent = content.length > 500;
+
     return Align(
       alignment: Alignment.centerLeft,
       child: ConstrainedBox(
@@ -97,6 +107,9 @@ class _AssistantMessage extends StatelessWidget {
                 reasoning: reasoning,
                 streaming: message.reasoningStreaming,
               ),
+            // Tool cards belong to the middle of a turn. Render them before
+            // the assistant's final answer so the answer is visibly last.
+            for (final tool in message.toolCalls) ToolCallCard(tool: tool),
             if (content.isNotEmpty)
               Container(
                 margin: const EdgeInsets.symmetric(vertical: 4),
@@ -109,9 +122,48 @@ class _AssistantMessage extends StatelessWidget {
                   border: Border.all(color: scheme.outlineVariant),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: MarkdownBody(data: content, selectable: true),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    if (!_contentExpanded && isLongContent)
+                      Text(
+                        '${content.substring(0, 200)}...',
+                        style: TextStyle(color: scheme.onSurfaceVariant),
+                      )
+                    else
+                      MarkdownBody(data: content, selectable: true),
+                    if (isLongContent)
+                      SizedBox(
+                        height: 32,
+                        child: TextButton.icon(
+                          onPressed: () => setState(
+                            () => _contentExpanded = !_contentExpanded,
+                          ),
+                          icon: Icon(
+                            _contentExpanded
+                                ? Icons.expand_less
+                                : Icons.expand_more,
+                            size: 18,
+                          ),
+                          label: Text(
+                            _contentExpanded
+                                ? 'Collapse long output'
+                                : 'Show full output',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            for (final tool in message.toolCalls) ToolCallCard(tool: tool),
             if (message.streaming)
               const Padding(
                 padding: EdgeInsets.only(left: 8, top: 2, bottom: 4),

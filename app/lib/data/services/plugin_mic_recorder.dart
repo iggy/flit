@@ -72,7 +72,9 @@ final class PluginMicRecorder implements LocalMicRecorder {
 
   @override
   Future<LocalRecording?> stop() async {
-    voiceDebug('pluginRecorder.stop begin recording=$_recording path=$_activePath');
+    voiceDebug(
+      'pluginRecorder.stop begin recording=$_recording path=$_activePath',
+    );
     if (!_recording) {
       voiceDebug('pluginRecorder.stop skipped not recording');
       return null;

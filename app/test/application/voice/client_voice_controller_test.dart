@@ -75,7 +75,7 @@ ClientVoiceContainer _container({
   final container = ProviderContainer(
     overrides: [
       localMicRecorderProvider.overrideWithValue(
-      mic ?? FakeMicRecorder(stopResult: _stubRecording()),
+        mic ?? FakeMicRecorder(stopResult: _stubRecording()),
       ),
       audioRepositoryProvider.overrideWithValue(audio ?? FakeAudioRepository()),
       restClientProvider.overrideWithValue(null),
@@ -100,27 +100,29 @@ class ClientVoiceContainer {
 }
 
 LocalRecording _stubRecording() => LocalRecording(
-      bytes: Uint8List.fromList(<int>[1, 2, 3]),
-      mimeType: 'audio/wav',
-    );
+  bytes: Uint8List.fromList(<int>[1, 2, 3]),
+  mimeType: 'audio/wav',
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('start → stopAndTranscribe delivers the transcript to the composer',
-      () async {
-    final audio = FakeAudioRepository(transcript: 'hello world');
-    final voice = _container(audio: audio);
+  test(
+    'start → stopAndTranscribe delivers the transcript to the composer',
+    () async {
+      final audio = FakeAudioRepository(transcript: 'hello world');
+      final voice = _container(audio: audio);
 
-    await voice.controller.start();
-    expect(voice.state.recording, isTrue);
+      await voice.controller.start();
+      expect(voice.state.recording, isTrue);
 
-    await voice.controller.stopAndTranscribe();
+      await voice.controller.stopAndTranscribe();
 
-    expect(voice.state.phase, ClientVoicePhase.idle);
-    expect(voice.prefilledTranscript, 'hello world');
-    expect(audio.lastDataUrl, startsWith('data:audio/wav;base64,'));
-  });
+      expect(voice.state.phase, ClientVoicePhase.idle);
+      expect(voice.prefilledTranscript, 'hello world');
+      expect(audio.lastDataUrl, startsWith('data:audio/wav;base64,'));
+    },
+  );
 
   test('silence resets to idle with no composer insert', () async {
     final voice = _container(audio: FakeAudioRepository(transcript: ''));

@@ -34,8 +34,9 @@ final audioRepositoryProvider = Provider<AudioRepository?>((ref) {
 });
 
 /// Device mic capture (record plugin). Created lazily; tests inject a fake.
-final localMicRecorderProvider =
-    Provider<LocalMicRecorder>((ref) => PluginMicRecorder());
+final localMicRecorderProvider = Provider<LocalMicRecorder>(
+  (ref) => PluginMicRecorder(),
+);
 
 /// Device audio output (audioplayers over /api/audio/speak bytes).
 final audioPlaybackProvider = Provider<AudioPlayback>(
@@ -151,7 +152,9 @@ class ClientVoiceController extends Notifier<ClientVoiceState> {
         return;
       }
       state = const ClientVoiceState();
-      ref.read(composerPrefillFromVoiceProvider.notifier).prefill(result.transcript);
+      ref
+          .read(composerPrefillFromVoiceProvider.notifier)
+          .prefill(result.transcript);
       voiceDebug('controller.stopAndTranscribe prefilled composer');
     } on GatewayException catch (error) {
       voiceDebug('controller.stopAndTranscribe gateway error=${error.message}');
@@ -258,7 +261,11 @@ final class ClientVoiceState {
   bool get recording => phase == ClientVoicePhase.recording;
   bool get transcribing => phase == ClientVoicePhase.transcribing;
 
-  ClientVoiceState copyWith({ClientVoicePhase? phase, bool? speaking, String? error}) {
+  ClientVoiceState copyWith({
+    ClientVoicePhase? phase,
+    bool? speaking,
+    String? error,
+  }) {
     return ClientVoiceState(
       phase: phase ?? this.phase,
       speaking: speaking ?? this.speaking,
