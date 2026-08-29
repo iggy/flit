@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 
+import 'package:flit/core/debug/voice_debug.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/data/transport/connection_config.dart';
 import 'package:flit/data/transport/gateway_rest_client.dart';
@@ -35,6 +36,7 @@ final class RestAudioRepository implements AudioRepository {
     required String dataUrl,
     String? mimeType,
   }) async {
+    voiceDebug('audio.transcribe begin payloadChars=${dataUrl.length} mime=$mimeType');
     final body = await _post(
       '/api/audio/transcribe',
       data: <String, String?>{'data_url': dataUrl, 'mime_type': mimeType},
@@ -81,15 +83,31 @@ final class RestAudioRepository implements AudioRepository {
 
   @override
   Future<bool> audioRoutesAvailable() async {
+    voiceDebug('audio.probe GET /api/audio/elevenlabs/voices');
     try {
       await _client.getJson('/api/audio/elevenlabs/voices');
+      voiceDebug('audio.probe ok');
       return true;
     } on GatewayException catch (error) {
+      final status = _statusCodeFromError(error);
+      final notFound = _isNotFound(error);
+      voiceDebug(
+        'audio.probe failed error=${error.runtimeType} '
+        'status=$status notFound=$notFound',
+      );
       // A missing route on old gateways answers 404; anything else
       // (network down, auth expired) must not permanently hide voice —
       // report unknown as available so failures surface at use time.
-      return error is! GatewayParseException && !_isNotFound(error);
+      return error is! GatewayParseException && !notFound;
     }
+  }
+
+  int? _statusCodeFromError(GatewayException error) {
+    final cause = error.cause;
+    if (cause is DioException) {
+      return cause.response?.statusCode;
+    }
+    return null;
   }
 
   bool _isNotFound(GatewayException error) =>
@@ -101,14 +119,20 @@ final class RestAudioRepository implements AudioRepository {
     required Object data,
     required Duration receiveTimeout,
   }) async {
+    voiceDebug('audio.post begin path=$path timeout=${receiveTimeout.inSeconds}s');
     try {
       final response = await _dio.post<dynamic>(
         path,
         data: data,
         options: Options(receiveTimeout: receiveTimeout),
       );
+      voiceDebug('audio.post response path=$path status=${response.statusCode}');
       return response.data;
     } on DioException catch (error) {
+      voiceDebug(
+        'audio.post failed path=$path type=${error.type} '
+        'status=${error.response?.statusCode}',
+      );
       throw _mapDioException(error);
     }
   }
