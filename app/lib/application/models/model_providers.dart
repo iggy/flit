@@ -49,13 +49,25 @@ final modelOptionsProvider = FutureProvider<ModelOptions>((ref) async {
 /// 1. [modelOptionsProvider] results (seed on load; refresh after a
 ///    switch) — carries model AND provider.
 /// 2. `session.info` events (wire §6/§9): after a successful switch the
-///    gateway pushes one whose payload reflects the new model. Only
-///    `payload.model` is pinned by the docs, so the provider slug is kept
-///    from the previous state.
+///    gateway pushes one whose payload reflects the new model and provider.
 final currentModelProvider =
     NotifierProvider<CurrentModelNotifier, CurrentModel?>(
       CurrentModelNotifier.new,
     );
+
+final modelSelectionWarningProvider =
+    NotifierProvider<ModelSelectionWarningNotifier, String?>(
+      ModelSelectionWarningNotifier.new,
+    );
+
+class ModelSelectionWarningNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void set(String message) {
+    state = message;
+  }
+}
 
 class CurrentModelNotifier extends Notifier<CurrentModel?> {
   @override
@@ -86,8 +98,19 @@ class CurrentModelNotifier extends Notifier<CurrentModel?> {
       final event = parseGatewayEvent(raw);
       if (event is SessionInfo) {
         final model = event.info['model'];
+        final provider = event.info['provider'];
         if (model is String && model.isNotEmpty) {
-          state = CurrentModel(model: model, provider: state?.provider ?? '');
+          final nextProvider = provider is String && provider.isNotEmpty
+              ? provider
+              : state?.provider ?? '';
+          final previous = state;
+          state = CurrentModel(model: model, provider: nextProvider);
+          if (previous != null &&
+              (previous.model != model || previous.provider != nextProvider)) {
+            ref
+                .read(modelSelectionWarningProvider.notifier)
+                .set('Gateway model changed to $nextProvider/$model');
+          }
         }
       }
     });

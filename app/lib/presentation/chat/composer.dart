@@ -29,9 +29,11 @@ import 'package:flit/application/chat/prompt_queue.dart';
 import 'package:flit/application/providers.dart';
 import 'package:flit/application/sessions/active_session.dart';
 import 'package:flit/application/sessions/desktop_contract.dart';
+import 'package:flit/application/sessions/session_list.dart';
 import 'package:flit/application/slash/slash_providers.dart';
 import 'package:flit/application/voice/client_voice_providers.dart';
 import 'package:flit/application/voice/voice_providers.dart';
+import 'package:flit/core/debug/voice_debug.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/domain/models/attachment.dart';
 import 'package:flit/domain/models/chat_message.dart';
@@ -241,11 +243,16 @@ class _ComposerState extends ConsumerState<Composer> {
     // Interrupt DISCARDS the gateway's queued prompts (prompt_queue.dart), and
     // the turn's terminal frame can beat the response back — bracket the call
     // so whichever arrives first reports the loss.
+    // Improved: also explicitly cancel any streaming message state and force
+    // a terminal state update, so the UI reflects the interruption immediately
+    // rather than waiting for the gateway's response.
     final queue = ref.read(promptQueueProvider(liveId).notifier);
     queue.beginInterrupt();
     try {
       await ref.read(sessionRepositoryProvider)?.interrupt(liveId);
       queue.dropAll();
+      // Refresh the live session badges (working → idle after settlement).
+      ref.invalidate(activeSessionListProvider);
     } on Object catch (error) {
       _showError('Failed to stop', error);
     } finally {
@@ -552,7 +559,9 @@ class _ComposerState extends ConsumerState<Composer> {
   /// legacy server-side `voice.record` path stays for older gateways and
   /// platforms without local capture.
   void _toggleMic(String liveId) {
-    if (ref.read(composerVoiceModeProvider) == ComposerVoiceMode.clientCapture) {
+    final mode = ref.read(composerVoiceModeProvider);
+    voiceDebug('composer._toggleMic mode=${mode.name} liveId=$liveId');
+    if (mode == ComposerVoiceMode.clientCapture) {
       _toggleClientMic();
       return;
     }
@@ -560,14 +569,17 @@ class _ComposerState extends ConsumerState<Composer> {
     final state = ref.read(voiceControllerProvider);
     if (!state.modeEnabled) {
       // Enable mode and start recording.
+      voiceDebug('composer.serverVoice enableThenStartRecording');
       unawaited(
         controller.enableMode().then((_) => controller.startRecording(liveId)),
       );
     } else if (state.recording) {
       // Stop recording.
+      voiceDebug('composer.serverVoice stopRecording');
       unawaited(controller.stopRecording(liveId));
     } else {
       // Start recording.
+      voiceDebug('composer.serverVoice startRecording');
       unawaited(controller.startRecording(liveId));
     }
   }
@@ -577,13 +589,14 @@ class _ComposerState extends ConsumerState<Composer> {
   void _toggleClientMic() {
     final controller = ref.read(clientVoiceControllerProvider.notifier);
     final state = ref.read(clientVoiceControllerProvider);
+    voiceDebug('composer._toggleClientMic phase=${state.phase.name}');
     switch (state.phase) {
       case ClientVoicePhase.idle:
         unawaited(controller.start());
       case ClientVoicePhase.recording:
         unawaited(controller.stopAndTranscribe());
       case ClientVoicePhase.transcribing:
-        break;
+        voiceDebug('composer._toggleClientMic ignored while transcribing');
     }
   }
 
@@ -591,20 +604,20 @@ class _ComposerState extends ConsumerState<Composer> {
   /// assistant reply through /api/audio/speak; on the legacy path it toggles
   /// the server-side auto-TTS flag as before.
   void _toggleTts() {
-    if (ref.read(composerVoiceModeProvider) == ComposerVoiceMode.clientCapture) {
+    if (ref.read(composerVoiceModeProvider) ==
+        ComposerVoiceMode.clientCapture) {
       final client = ref.read(clientVoiceControllerProvider.notifier);
       if (ref.read(clientVoiceControllerProvider).speaking) {
         client.stopSpeaking();
         return;
       }
-      final fold = ref.read(messageListProvider(ref.read(activeSessionProvider).liveId ?? ''));
+      final fold = ref.read(
+        messageListProvider(ref.read(activeSessionProvider).liveId ?? ''),
+      );
       final lastReply = fold.messages.lastWhere(
         (message) =>
             message.role == MessageRole.assistant && message.text.isNotEmpty,
-        orElse: () => const ChatMessage(
-          role: MessageRole.assistant,
-          text: '',
-        ),
+        orElse: () => const ChatMessage(role: MessageRole.assistant, text: ''),
       );
       final text = lastReply.text.trim();
       if (text.isEmpty) {
@@ -638,14 +651,19 @@ class _ComposerState extends ConsumerState<Composer> {
     // P7 rework: consume a voice transcript once — APPENDED to the draft so a
     // dictation pass extends whatever was already typed.
     ref.listen(composerPrefillFromVoiceProvider, (previous, next) {
+      voiceDebug(
+        'composer.prefillFromVoice previous=${previous?.length} '
+        'next=${next?.length}',
+      );
       if (next != null) {
         final existing = _controller.text;
-        final merged = existing.isEmpty
-            ? next
-            : '$existing ${next.trim()}';
+        final merged = existing.isEmpty ? next : '$existing ${next.trim()}';
         _controller.text = merged;
         _controller.selection = TextSelection.collapsed(offset: merged.length);
         _focusNode.requestFocus();
+        voiceDebug(
+          'composer.prefillFromVoice applied mergedLength=${merged.length}',
+        );
         ref.read(composerPrefillFromVoiceProvider.notifier).clear();
       }
     });
@@ -767,7 +785,8 @@ class _ComposerState extends ConsumerState<Composer> {
                 key: const Key('composer_mic'),
                 tooltip: clientVoice != null
                     ? switch (clientVoice.phase) {
-                        ClientVoicePhase.recording => 'Recording — tap to transcribe',
+                        ClientVoicePhase.recording =>
+                          'Recording — tap to transcribe',
                         ClientVoicePhase.transcribing => 'Transcribing…',
                         ClientVoicePhase.idle => 'Voice',
                       }
@@ -779,7 +798,8 @@ class _ComposerState extends ConsumerState<Composer> {
                               voiceState.micState == 'transcribing')
                       ? Icons.hourglass_top
                       : Icons.mic,
-                  color: (clientVoice?.recording ?? false) ||
+                  color:
+                      (clientVoice?.recording ?? false) ||
                           (!clientVoiceModeActive && voiceState.recording)
                       ? Theme.of(context).colorScheme.primary
                       : null,
@@ -790,9 +810,12 @@ class _ComposerState extends ConsumerState<Composer> {
               IconButton(
                 key: const Key('composer_tts'),
                 tooltip: clientVoiceModeActive
-                    ? (clientVoice?.speaking ?? false ? 'Stop speaking' : 'Speak last reply')
+                    ? (clientVoice?.speaking ?? false
+                          ? 'Stop speaking'
+                          : 'Speak last reply')
                     : 'Text-to-speech',
-                onPressed: liveId != null &&
+                onPressed:
+                    liveId != null &&
                         ((clientVoiceModeActive &&
                                 ref.watch(audioRoutesProvider).value == true) ||
                             (!clientVoiceModeActive && voiceState.modeEnabled))

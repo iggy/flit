@@ -33,9 +33,17 @@ class ModelPickerButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final current = ref.watch(currentModelProvider);
+    final warning = ref.watch(modelSelectionWarningProvider);
+    ref.listen<String?>(modelSelectionWarningProvider, (previous, next) {
+      if (next != null && next != previous) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(next)));
+      }
+    });
     final known = current != null && current.model.isNotEmpty;
     return Tooltip(
-      message: 'Select model',
+      message: warning ?? 'Select model',
       child: TextButton.icon(
         style: TextButton.styleFrom(
           foregroundColor: Theme.of(context).colorScheme.onSurface,

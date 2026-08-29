@@ -36,7 +36,9 @@ final class RestAudioRepository implements AudioRepository {
     required String dataUrl,
     String? mimeType,
   }) async {
-    voiceDebug('audio.transcribe begin payloadChars=${dataUrl.length} mime=$mimeType');
+    voiceDebug(
+      'audio.transcribe begin payloadChars=${dataUrl.length} mime=$mimeType',
+    );
     final body = await _post(
       '/api/audio/transcribe',
       data: <String, String?>{'data_url': dataUrl, 'mime_type': mimeType},
@@ -78,7 +80,10 @@ final class RestAudioRepository implements AudioRepository {
         'POST /api/audio/speak returned no audio payload.',
       );
     }
-    return SpeechAudio(bytes: _decodeDataAudio(dataUrl), mimeType: _dataMime(dataUrl));
+    return SpeechAudio(
+      bytes: _decodeDataAudio(dataUrl),
+      mimeType: _dataMime(dataUrl),
+    );
   }
 
   @override
@@ -119,14 +124,18 @@ final class RestAudioRepository implements AudioRepository {
     required Object data,
     required Duration receiveTimeout,
   }) async {
-    voiceDebug('audio.post begin path=$path timeout=${receiveTimeout.inSeconds}s');
+    voiceDebug(
+      'audio.post begin path=$path timeout=${receiveTimeout.inSeconds}s',
+    );
     try {
       final response = await _dio.post<dynamic>(
         path,
         data: data,
         options: Options(receiveTimeout: receiveTimeout),
       );
-      voiceDebug('audio.post response path=$path status=${response.statusCode}');
+      voiceDebug(
+        'audio.post response path=$path status=${response.statusCode}',
+      );
       return response.data;
     } on DioException catch (error) {
       voiceDebug(

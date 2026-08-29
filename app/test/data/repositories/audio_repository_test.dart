@@ -88,7 +88,9 @@ void main() {
     );
     final repository = RestAudioRepository(clientWith(adapter));
 
-    final result = await repository.transcribe(dataUrl: 'data:audio/wav;base64,');
+    final result = await repository.transcribe(
+      dataUrl: 'data:audio/wav;base64,',
+    );
 
     expect(result.transcript, isEmpty);
   });
@@ -107,8 +109,7 @@ void main() {
 
   test('speak decodes the base64 data URL payload', () async {
     final audioBytes = <int>[1, 2, 3, 4];
-    final dataUrl =
-        'data:audio/mpeg;base64,${base64Encode(audioBytes)}';
+    final dataUrl = 'data:audio/mpeg;base64,${base64Encode(audioBytes)}';
     final adapter = FakeAdapter(
       (options) => ResponseBody.fromString(
         jsonEncode(<String, dynamic>{
@@ -142,7 +143,10 @@ void main() {
     );
     final repository = RestAudioRepository(clientWith(adapter));
 
-    await expectLater(repository.speak('hello'), throwsA(isA<GatewayException>()));
+    await expectLater(
+      repository.speak('hello'),
+      throwsA(isA<GatewayException>()),
+    );
   });
 
   test('audioRoutesAvailable is true when the routes exist', () async {

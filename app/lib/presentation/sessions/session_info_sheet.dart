@@ -4,13 +4,14 @@
 library;
 
 import 'dart:async';
-
 import 'package:flit/application/models/model_providers.dart';
 import 'package:flit/application/projects/projects_providers.dart';
 import 'package:flit/application/sessions/active_session.dart';
 import 'package:flit/application/sessions/session_info.dart';
 import 'package:flit/application/sessions/session_list.dart';
+import 'package:flit/application/slash/slash_providers.dart';
 import 'package:flit/domain/models/project.dart';
+import 'package:flit/domain/models/slash_completion.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -196,10 +197,19 @@ class _SessionInfoSheetState extends ConsumerState<SessionInfoSheet> {
             ),
             onTap: isActive
                 ? null
-                : () {
-                    ref
-                        .read(projectsControllerProvider.notifier)
-                        .setActive(project.id);
+                : () async {
+                    final controller = ref.read(
+                      projectsControllerProvider.notifier,
+                    );
+                    await controller.setActive(project.id);
+                    // Auto-set working directory to project's primary path if available
+                    final liveId = ref.read(activeSessionProvider).liveId;
+                    if (liveId != null &&
+                        project.primaryPath != null &&
+                        project.primaryPath!.isNotEmpty) {
+                      final actions = ref.read(sessionActionsProvider);
+                      await actions.setCwd(liveId, project.primaryPath!);
+                    }
                   },
           );
         }),
@@ -411,31 +421,135 @@ class _SessionInfoSheetState extends ConsumerState<SessionInfoSheet> {
   }
 
   Future<void> _handleSetCwd(String liveId, SessionActions actions) async {
-    final controller = TextEditingController();
+    // State for autocomplete functionality
+    final wordController = TextEditingController();
+    final focusNode = FocusNode();
+    List<CompletionItem>? suggestions;
+    int completionRequestGen = 0;
+
+    // Cleanup function
+    void cleanup() {
+      wordController.dispose();
+      focusNode.dispose();
+    }
+
+    // Show dialog with autocomplete
     final cwd = await showDialog<String>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Set working directory'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Working directory',
-            hintText: '/path/to/directory',
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setState) => AlertDialog(
+          title: const Text('Set working directory'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: wordController,
+                focusNode: focusNode,
+                decoration: const InputDecoration(
+                  labelText: 'Working directory',
+                  hintText: '/path/to/directory',
+                ),
+                autofocus: true,
+                onChanged: (text) async {
+                  completionRequestGen++;
+                  if (text.startsWith('/') || text.contains('/')) {
+                    // `complete.path` resolves paths relative to the gateway
+                    // process. Send the complete input, not just the basename;
+                    // otherwise `/projects` becomes `projects` and is searched
+                    // under the gateway user's cwd (typically `/opt/data`).
+                    final word = text;
+                    if (word.isNotEmpty) {
+                      final repo = ref.read(slashRepositoryProvider);
+                      if (repo != null) {
+                        final thisGen = completionRequestGen;
+                        try {
+                          final result = await repo.completePath(word);
+                          if (thisGen == completionRequestGen && mounted) {
+                            setState(() {
+                              suggestions = result;
+                            });
+                          }
+                        } on Object {
+                          if (thisGen == completionRequestGen && mounted) {
+                            setState(() {
+                              suggestions = null;
+                            });
+                          }
+                        }
+                      }
+                    } else {
+                      setState(() {
+                        suggestions = null;
+                      });
+                    }
+                  } else {
+                    setState(() {
+                      suggestions = null;
+                    });
+                  }
+                },
+              ),
+              if (suggestions != null && suggestions!.isNotEmpty)
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 200),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: suggestions!.map((item) {
+                        return ListTile(
+                          leading: const Icon(Icons.folder_outlined),
+                          title: Text(
+                            item.display.isNotEmpty ? item.display : item.text,
+                          ),
+                          subtitle: item.meta.isNotEmpty
+                              ? Text(item.meta)
+                              : null,
+                          onTap: () {
+                            final path = _completionPath(
+                              item.text,
+                              display: item.display,
+                              currentText: wordController.text,
+                            );
+                            wordController.value = TextEditingValue(
+                              text: path,
+                              selection: TextSelection.collapsed(
+                                offset: path.length,
+                              ),
+                            );
+                            focusNode.requestFocus();
+                            // Keep the field focused and let the controller's
+                            // change notification refresh the next directory
+                            // level. This allows repeated keyboard/click
+                            // navigation without re-entering the path.
+                            setState(() {});
+                          },
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+            ],
           ),
-          autofocus: true,
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                cleanup();
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                cleanup();
+                Navigator.of(dialogContext).pop(wordController.text);
+              },
+              child: const Text('Set'),
+            ),
+          ],
         ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(controller.text),
-            child: const Text('Set'),
-          ),
-        ],
       ),
     );
+
     if (cwd == null || cwd.isEmpty || !mounted) {
       return;
     }
@@ -457,6 +571,29 @@ class _SessionInfoSheetState extends ConsumerState<SessionInfoSheet> {
       setState(() => _error = result);
     }
   }
+}
+
+String _completionPath(
+  String completion, {
+  required String display,
+  required String currentText,
+}) {
+  if (completion.startsWith('~/') ||
+      completion.startsWith('/') ||
+      completion.startsWith('./')) {
+    return completion;
+  }
+
+  // The gateway returns relative paths for entries beneath its completion
+  // root. Preserve the user's input style and prefix the directory already
+  // typed instead of turning `/projects` into a path relative to the root.
+  final slash = currentText.lastIndexOf('/');
+  if (slash >= 0) {
+    final typedDirectory = currentText.substring(0, slash + 1);
+    final suffix = completion.endsWith('/') || display.endsWith('/') ? '/' : '';
+    return '$typedDirectory$display$suffix';
+  }
+  return completion;
 }
 
 /// A label-value row for usage info.
