@@ -47,7 +47,7 @@ dependencies:
   flutter_markdown_plus: 1.0.12
   flutter_highlight: 0.7.0
   image_picker: 1.2.3
-  file_picker: 12.0.0-beta.7
+  file_picker: 12.2.0
   # Phase 8 (P8-01/P8-03): OAuth native-app login. `url_launcher` opens the
   # system browser for the RFC 8252 flow; `crypto` (promoted from transitive)
   # computes the PKCE S256 challenge. Pinned exact — bump deliberately.
