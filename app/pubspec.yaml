@@ -65,7 +65,7 @@ dependencies:
   # the gateway's /api/audio/transcribe instead of server-side voice.record.
   record: 6.1.1
   # Playback of /api/audio/speak output (P7-06 rework).
-  audioplayers: 6.5.1
+  audioplayers: 6.8.1
   # Temp files for TTS clips (promoted from transitive for direct import).
   path_provider: 2.1.6
 
