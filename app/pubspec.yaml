@@ -63,7 +63,7 @@ dependencies:
   package_info_plus: 10.2.1
   # Client-side voice capture (P7-05 rework): local mic recording uploaded to
   # the gateway's /api/audio/transcribe instead of server-side voice.record.
-  record: 6.1.1
+  record: 6.2.1
   # Playback of /api/audio/speak output (P7-06 rework).
   audioplayers: 6.5.1
   # Temp files for TTS clips (promoted from transitive for direct import).
