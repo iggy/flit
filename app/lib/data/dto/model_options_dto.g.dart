@@ -41,17 +41,69 @@ ModelProviderDto _$ModelProviderDtoFromJson(Map<String, dynamic> json) =>
           const <String>[],
       totalModels: (json['total_models'] as num?)?.toInt(),
       warning: json['warning'] as String?,
+      capabilities:
+          (json['capabilities'] as Map<String, dynamic>?)?.map(
+            (k, e) => MapEntry(
+              k,
+              ModelCapabilitiesDto.fromJson(e as Map<String, dynamic>),
+            ),
+          ) ??
+          const <String, ModelCapabilitiesDto>{},
     );
 
-Map<String, dynamic> _$ModelProviderDtoToJson(ModelProviderDto instance) =>
-    <String, dynamic>{
-      'name': instance.name,
-      'slug': instance.slug,
-      'authenticated': instance.authenticated,
-      'is_current': instance.isCurrent,
-      'auth_type': instance.authType,
-      'key_env': instance.keyEnv,
-      'models': instance.models,
-      'total_models': instance.totalModels,
-      'warning': instance.warning,
-    };
+ModelCapabilitiesDto _$ModelCapabilitiesDtoFromJson(
+  Map<String, dynamic> json,
+) => ModelCapabilitiesDto(
+  contextWindow: (json['context_window'] as num?)?.toInt(),
+  maxOutputTokens: (json['max_output_tokens'] as num?)?.toInt(),
+  reasoning: json['reasoning'] as bool? ?? false,
+  tools: json['tools'] as bool? ?? false,
+  vision: json['vision'] as bool? ?? false,
+  audio: json['audio'] as bool? ?? false,
+  inputModalities:
+      (json['input_modalities'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const <String>[],
+  outputModalities:
+      (json['output_modalities'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const <String>[],
+  reasoningLevels:
+      (json['reasoning_levels'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const <String>[],
+  canDisableReasoning: json['can_disable_reasoning'] as bool?,
+);
+
+Map<String, dynamic> _$ModelCapabilitiesDtoToJson(
+  ModelCapabilitiesDto instance,
+) => <String, dynamic>{
+  'context_window': instance.contextWindow,
+  'max_output_tokens': instance.maxOutputTokens,
+  'reasoning': instance.reasoning,
+  'tools': instance.tools,
+  'vision': instance.vision,
+  'audio': instance.audio,
+  'input_modalities': instance.inputModalities,
+  'output_modalities': instance.outputModalities,
+  'reasoning_levels': instance.reasoningLevels,
+  'can_disable_reasoning': instance.canDisableReasoning,
+};
+
+Map<String, dynamic> _$ModelProviderDtoToJson(
+  ModelProviderDto instance,
+) => <String, dynamic>{
+  'name': instance.name,
+  'slug': instance.slug,
+  'authenticated': instance.authenticated,
+  'is_current': instance.isCurrent,
+  'auth_type': instance.authType,
+  'key_env': instance.keyEnv,
+  'models': instance.models,
+  'total_models': instance.totalModels,
+  'warning': instance.warning,
+  'capabilities': instance.capabilities.map((k, e) => MapEntry(k, e.toJson())),
+};
