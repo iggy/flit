@@ -13,6 +13,7 @@ final class ModelProvider {
     this.models = const <String>[],
     this.totalModels,
     this.warning,
+    this.modelDetails = const <String, ModelDetails>{},
   });
 
   /// Display name, e.g. `Nous Portal`.
@@ -43,6 +44,10 @@ final class ModelProvider {
   /// Problem hint, e.g. `no key`.
   final String? warning;
 
+  /// Rich metadata keyed by model id. Unknown fields are intentionally absent
+  /// so older gateways remain compatible.
+  final Map<String, ModelDetails> modelDetails;
+
   @override
   bool operator ==(Object other) {
     return other is ModelProvider &&
@@ -54,7 +59,8 @@ final class ModelProvider {
         other.keyEnv == keyEnv &&
         deepListEquals(other.models, models) &&
         other.totalModels == totalModels &&
-        other.warning == warning;
+        other.warning == warning &&
+        shallowMapEquals(other.modelDetails, modelDetails);
   }
 
   @override
@@ -68,6 +74,9 @@ final class ModelProvider {
     Object.hashAll(models),
     totalModels,
     warning,
+    Object.hashAll(
+      modelDetails.entries.map((entry) => Object.hash(entry.key, entry.value)),
+    ),
   );
 
   @override
@@ -75,8 +84,73 @@ final class ModelProvider {
     return 'ModelProvider(name: $name, slug: $slug, '
         'authenticated: $authenticated, isCurrent: $isCurrent, '
         'authType: $authType, keyEnv: $keyEnv, models: $models, '
-        'totalModels: $totalModels, warning: $warning)';
+        'totalModels: $totalModels, warning: $warning, '
+        'modelDetails: $modelDetails)';
   }
+}
+
+/// Metadata surfaced by the model picker for one model.
+final class ModelDetails {
+  const ModelDetails({
+    this.contextWindow,
+    this.maxOutputTokens,
+    this.reasoning = false,
+    this.tools = false,
+    this.vision = false,
+    this.audio = false,
+    this.inputModalities = const <String>[],
+    this.outputModalities = const <String>[],
+    this.reasoningLevels = const <String>[],
+    this.canDisableReasoning,
+  });
+
+  final int? contextWindow;
+  final int? maxOutputTokens;
+  final bool reasoning;
+  final bool tools;
+  final bool vision;
+  final bool audio;
+  final List<String> inputModalities;
+  final List<String> outputModalities;
+  final List<String> reasoningLevels;
+  final bool? canDisableReasoning;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ModelDetails &&
+      other.contextWindow == contextWindow &&
+      other.maxOutputTokens == maxOutputTokens &&
+      other.reasoning == reasoning &&
+      other.tools == tools &&
+      other.vision == vision &&
+      other.audio == audio &&
+      deepListEquals(other.inputModalities, inputModalities) &&
+      deepListEquals(other.outputModalities, outputModalities) &&
+      deepListEquals(other.reasoningLevels, reasoningLevels) &&
+      other.canDisableReasoning == canDisableReasoning;
+
+  @override
+  int get hashCode => Object.hash(
+    contextWindow,
+    maxOutputTokens,
+    reasoning,
+    tools,
+    vision,
+    audio,
+    Object.hashAll(inputModalities),
+    Object.hashAll(outputModalities),
+    Object.hashAll(reasoningLevels),
+    canDisableReasoning,
+  );
+
+  @override
+  String toString() =>
+      'ModelDetails(contextWindow: $contextWindow, '
+      'maxOutputTokens: $maxOutputTokens, reasoning: $reasoning, '
+      'tools: $tools, vision: $vision, audio: $audio, '
+      'inputModalities: $inputModalities, outputModalities: $outputModalities, '
+      'reasoningLevels: $reasoningLevels, '
+      'canDisableReasoning: $canDisableReasoning)';
 }
 
 /// A flattened pickable entry: one model offered by one provider. Built by

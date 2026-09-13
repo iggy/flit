@@ -67,6 +67,39 @@ void main() {
     expect(openrouter.warning, 'no key');
   });
 
+  test('parses per-model capability metadata', () {
+    final provider = ModelProviderDto.fromJson({
+      'name': 'Nous Portal',
+      'slug': 'nous',
+      'authenticated': true,
+      'models': ['hermes-4-405b'],
+      'capabilities': {
+        'hermes-4-405b': {
+          'context_window': 200000,
+          'max_output_tokens': 8192,
+          'reasoning': true,
+          'tools': true,
+          'vision': true,
+          'input_modalities': ['text', 'image'],
+          'output_modalities': ['text'],
+          'reasoning_levels': ['low', 'medium', 'high'],
+          'can_disable_reasoning': true,
+        },
+      },
+    }).toDomain();
+
+    final details = provider.modelDetails['hermes-4-405b'];
+    expect(details, isNotNull);
+    expect(details!.contextWindow, 200000);
+    expect(details.maxOutputTokens, 8192);
+    expect(details.reasoning, isTrue);
+    expect(details.tools, isTrue);
+    expect(details.vision, isTrue);
+    expect(details.inputModalities, ['text', 'image']);
+    expect(details.reasoningLevels, ['low', 'medium', 'high']);
+    expect(details.canDisableReasoning, isTrue);
+  });
+
   test('flattens providers into pickable ModelOptions', () {
     final dto = ModelOptionsResultDto.fromJson(
       (jsonDecode(frame) as Map<String, dynamic>)['result']

@@ -206,6 +206,7 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
             models: filteredModels,
             totalModels: provider.totalModels,
             warning: provider.warning,
+            modelDetails: provider.modelDetails,
           );
         })
         .where((provider) => query.isEmpty || provider.models.isNotEmpty)
@@ -216,6 +217,17 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
         icon: Icons.search_off,
         text: 'No models match your search.',
       );
+    }
+
+    // Keep starred models visible before the provider catalog on every
+    // platform. Android's persisted preference load can complete after the
+    // first frame, so this ordering must be derived during every rebuild.
+    final favoriteOptions = <(String, String)>[];
+    for (final key in modelPrefs.favorites) {
+      final parsed = _parseModelKey(key);
+      if (parsed != null && isPickable(parsed.$1, parsed.$2)) {
+        favoriteOptions.add(parsed);
+      }
     }
 
     // Build quick picks: current, favorites, recents (only shown when not searching)
@@ -242,28 +254,24 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
         }
       }
 
-      // Add favorites
-      if (modelPrefs.favorites.isNotEmpty) {
-        for (final key in modelPrefs.favorites) {
-          if (addedToQuickPicks.contains(key)) continue;
-          final parsed = _parseModelKey(key);
-          if (parsed == null) continue;
-          final (providerSlug, model) = parsed;
-          if (!isPickable(providerSlug, model)) continue;
-          quickPickTiles.add(
-            _buildQuickPickTile(
-              context,
-              providerSlug: providerSlug,
-              model: model,
-              providerName: providerName(providerSlug),
-              isCurrent:
-                  current?.model == model && current?.provider == providerSlug,
-              switching: switching,
-              isFavorite: true,
-            ),
-          );
-          addedToQuickPicks.add(key);
-        }
+      // Add favorites in persisted order (oldest Android preference formats
+      // are normalized by _parseModelKey before they reach the tiles).
+      for (final (providerSlug, model) in favoriteOptions) {
+        final key = '$providerSlug:$model';
+        if (addedToQuickPicks.contains(key)) continue;
+        quickPickTiles.add(
+          _buildQuickPickTile(
+            context,
+            providerSlug: providerSlug,
+            model: model,
+            providerName: providerName(providerSlug),
+            isCurrent:
+                current?.model == model && current?.provider == providerSlug,
+            switching: switching,
+            isFavorite: true,
+          ),
+        );
+        addedToQuickPicks.add(key);
       }
 
       // Add recents (up to 5, not already in current/favorites)
@@ -373,13 +381,14 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
     final modelPrefs = ref.watch(modelPreferencesProvider);
     final key = '${provider.slug}:$model';
     final isFavorite = modelPrefs.favorites.contains(key);
+    final details = provider.modelDetails[model];
 
     return ListTile(
       dense: true,
       enabled: pickable && !switching,
       title: Text(model),
       subtitle: pickable
-          ? null
+          ? _buildModelDetailsLine(details)
           : Text(
               'Needs key (${provider.keyEnv ?? 'API key'}) — key entry comes in a later phase.',
             ),
@@ -422,7 +431,45 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
     );
   }
 
-  /// Build a compact tile for the quick picks section.
+  /// Compact capability summary shown under each model when the gateway
+  /// provides metadata. It deliberately renders nothing for older gateways.
+  Widget _buildModelDetailsLine(ModelDetails? details) {
+    if (details == null) return const SizedBox.shrink();
+    final parts = <String>[];
+    if (details.contextWindow != null) {
+      parts.add('${_formatTokenCount(details.contextWindow!)} context');
+    }
+    if (details.reasoning) parts.add('reasoning');
+    if (details.tools) parts.add('tools');
+    if (details.vision) parts.add('vision');
+    if (details.audio) parts.add('audio');
+    if (details.inputModalities.isNotEmpty) {
+      parts.add('in: ${details.inputModalities.join(', ')}');
+    }
+    if (details.outputModalities.isNotEmpty) {
+      parts.add('out: ${details.outputModalities.join(', ')}');
+    }
+    if (details.reasoningLevels.isNotEmpty) {
+      parts.add('levels: ${details.reasoningLevels.join(', ')}');
+    }
+    if (details.canDisableReasoning == false) {
+      parts.add('reasoning required');
+    }
+    if (details.maxOutputTokens != null) {
+      parts.add('${_formatTokenCount(details.maxOutputTokens!)} output');
+    }
+    if (parts.isEmpty) return const SizedBox.shrink();
+    return Text(parts.join(' · '), overflow: TextOverflow.ellipsis);
+  }
+
+  String _formatTokenCount(int value) {
+    if (value >= 1000000) {
+      return '${(value / 1000000).toStringAsFixed(1)}M';
+    }
+    if (value >= 1000) return '${(value / 1000).toStringAsFixed(0)}K';
+    return '$value';
+  }
+
   Widget _buildQuickPickTile(
     BuildContext context, {
     required String providerSlug,
