@@ -475,11 +475,10 @@ class _ComposerState extends ConsumerState<Composer> {
       return;
     }
     try {
-      final result = await FilePicker.pickFiles(
+      final pickedFile = await FilePicker.pickFile(
         type: FileType.custom,
         allowedExtensions: const <String>['pdf'],
       );
-      final pickedFile = result?.files.single;
       if (pickedFile == null) {
         return; // User cancelled.
       }
@@ -514,8 +513,7 @@ class _ComposerState extends ConsumerState<Composer> {
       return;
     }
     try {
-      final result = await FilePicker.pickFiles();
-      final pickedFile = result?.files.single;
+      final pickedFile = await FilePicker.pickFile();
       if (pickedFile == null) {
         return; // User cancelled.
       }
