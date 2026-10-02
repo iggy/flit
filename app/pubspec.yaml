@@ -51,7 +51,7 @@ dependencies:
   # Phase 8 (P8-01/P8-03): OAuth native-app login. `url_launcher` opens the
   # system browser for the RFC 8252 flow; `crypto` (promoted from transitive)
   # computes the PKCE S256 challenge. Pinned exact — bump deliberately.
-  url_launcher: 6.3.2
+  url_launcher: 6.3.3
   crypto: 3.0.7
   # Phase 9 platform polish. Pinned exact — bump deliberately.
   # P9-01: native desktop window sizing/state (linux/macos/windows only).
