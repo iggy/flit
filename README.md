@@ -4,10 +4,12 @@ An open source coding agent. flit is a **Go server** (`flit serve`) that runs
 the agent, plus a cross-platform **Flutter app** (iOS, Android, macOS,
 Windows, Linux, web) as its main front end.
 
-> **Status:** early. The server skeleton (milestone M0) is in place: one
-> static binary, a versioned protobuf/Connect API, YAML config that reloads
-> live, and token auth. The app is still a client for Hermes Agent (below)
-> until it is switched over to the flit server in M2.
+> **Status:** early. The server runs agent sessions (milestone M1): an
+> OpenAI-compatible model client with streaming and tool calls, built-in
+> file and shell tools, and a persistent, replayable event log per session,
+> all over a versioned protobuf/Connect API with token auth. The app is
+> still a client for Hermes Agent (below) until it is switched over to the
+> flit server in M2.
 
 ## Repository layout
 
@@ -60,6 +62,40 @@ Config is YAML only, and edits to the file are applied while flit runs,
 including moving to a new listen address or turning TLS on (`tls.cert_file`
 and `tls.key_file`). The one exception is `data_dir`, which is read at
 startup.
+
+### Models
+
+flit talks to any OpenAI-compatible chat completions endpoint: llama.cpp's
+`llama-server` (start it with `--jinja` so tool calls work), vLLM, Ollama's
+`/v1`, OpenAI and so on. Configure as many as you like and pick a default:
+
+```yaml
+providers:
+  - name: local
+    base_url: http://localhost:8080/v1
+  - name: openai
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY
+agent:
+  provider: local
+  model: qwen3-coder
+```
+
+### Sessions and tools
+
+A session is a conversation with the agent in one working directory. The
+agent has `read`, `write`, `patch`, `list`, `grep` and `shell` tools; file
+tools can't leave the working directory. `AGENTS.md` and `CLAUDE.md` in the
+working directory are added to the system prompt.
+
+Shell commands are checked against `shell.allow` / `shell.deny` patterns in
+the config; anything else follows `shell.default` (`ask` by default), which
+pauses the turn until a client answers the prompt. These rules reduce
+prompts; they are not a sandbox.
+
+Everything a session does is stored as numbered events in `flit.db` in the
+data dir. A client can attach from any event number, replay, and then follow
+live, so reconnecting never loses anything.
 
 The API schema lives in [`proto/`](proto/); `buf generate` there produces the
 Go server code and the Dart client. See [`AGENTS.md`](AGENTS.md) for the
