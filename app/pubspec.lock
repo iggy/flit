@@ -209,6 +209,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.19.1"
+  connectrpc:
+    dependency: "direct main"
+    description:
+      name: connectrpc
+      sha256: "55c09ccff3cd6d24cd60f6a4d3b4817757340854a86a2a9a9d13d0c2e45cc2de"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.0"
   convert:
     dependency: transitive
     description:
@@ -386,13 +394,20 @@ packages:
     source: hosted
     version: "0.9.3+5"
   fixnum:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: fixnum
       sha256: b6dc7065e46c974bc7c5f143080a6764ec7a4be6da1285ececdc37be96de53be
       url: "https://pub.dev"
     source: hosted
     version: "1.1.1"
+  flit_api:
+    dependency: "direct main"
+    description:
+      path: "../proto/dart"
+      relative: true
+    source: path
+    version: "0.1.0"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -605,6 +620,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.6.0"
+  http2:
+    dependency: transitive
+    description:
+      name: http2
+      sha256: "382d3aefc5bd6dc68c6b892d7664f29b5beb3251611ae946a98d35158a82bbfa"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.3.1"
   http_multi_server:
     dependency: transitive
     description:
@@ -837,6 +860,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
+  mobile_scanner:
+    dependency: "direct main"
+    description:
+      name: mobile_scanner
+      sha256: "5a51ea79f0cf8293f616a5d08baae185b59b5e6bb24df01f2a63037ade0bade0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "7.4.2"
   mockito:
     dependency: transitive
     description:
@@ -965,6 +996,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.5.2"
+  protobuf:
+    dependency: "direct main"
+    description:
+      name: protobuf
+      sha256: "13b6717366aa7ec3792dd62c19c7d33a785708224365f2db23c5ca01f1c1a0f2"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.1.0"
   pub_semver:
     dependency: transitive
     description:

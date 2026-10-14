@@ -21,7 +21,7 @@ mixin _$TypedGatewayEvent {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TypedGatewayEvent);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is TypedGatewayEvent);
 }
 
 
@@ -30,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'TypedGatewayEvent()';
+    return 'TypedGatewayEvent()';
 }
 
 
@@ -341,16 +341,18 @@ $GatewayReadyCopyWith<GatewayReady> get copyWith => _$GatewayReadyCopyWithImpl<G
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is GatewayReady&&const DeepCollectionEquality().equals(other._skin, _skin));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is GatewayReady&&const DeepCollectionEquality().equals(other.skin, _skin));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_skin));
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_skin));
+}
 
 @override
 String toString() {
-  return 'TypedGatewayEvent.gatewayReady(skin: $skin)';
+    return 'TypedGatewayEvent.gatewayReady(skin: $skin)';
 }
 
 
@@ -414,16 +416,18 @@ $SessionInfoCopyWith<SessionInfo> get copyWith => _$SessionInfoCopyWithImpl<Sess
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionInfo&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&const DeepCollectionEquality().equals(other._info, _info));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SessionInfo&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&const DeepCollectionEquality().equals(other.info, _info));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,sessionId,const DeepCollectionEquality().hash(_info));
+int get hashCode {
+    return Object.hash(runtimeType,sessionId,const DeepCollectionEquality().hash(_info));
+}
 
 @override
 String toString() {
-  return 'TypedGatewayEvent.sessionInfo(sessionId: $sessionId, info: $info)';
+    return 'TypedGatewayEvent.sessionInfo(sessionId: $sessionId, info: $info)';
 }
 
 
@@ -481,16 +485,18 @@ $MessageStartCopyWith<MessageStart> get copyWith => _$MessageStartCopyWithImpl<M
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MessageStart&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is MessageStart&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,sessionId);
+int get hashCode {
+    return Object.hash(runtimeType,sessionId);
+}
 
 @override
 String toString() {
-  return 'TypedGatewayEvent.messageStart(sessionId: $sessionId)';
+    return 'TypedGatewayEvent.messageStart(sessionId: $sessionId)';
 }
 
 
@@ -549,16 +555,18 @@ $MessageDeltaCopyWith<MessageDelta> get copyWith => _$MessageDeltaCopyWithImpl<M
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MessageDelta&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.text, text) || other.text == text)&&(identical(other.rendered, rendered) || other.rendered == rendered));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is MessageDelta&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.text, text) || other.text == text)&&(identical(other.rendered, rendered) || other.rendered == rendered));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,sessionId,text,rendered);
+int get hashCode {
+    return Object.hash(runtimeType,sessionId,text,rendered);
+}
 
 @override
 String toString() {
-  return 'TypedGatewayEvent.messageDelta(sessionId: $sessionId, text: $text, rendered: $rendered)';
+    return 'TypedGatewayEvent.messageDelta(sessionId: $sessionId, text: $text, rendered: $rendered)';
 }
 
 
@@ -622,16 +630,18 @@ $MessageCompleteCopyWith<MessageComplete> get copyWith => _$MessageCompleteCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MessageComplete&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.text, text) || other.text == text)&&(identical(other.rendered, rendered) || other.rendered == rendered)&&(identical(other.reasoning, reasoning) || other.reasoning == reasoning)&&(identical(other.usage, usage) || other.usage == usage)&&(identical(other.status, status) || other.status == status));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is MessageComplete&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.text, text) || other.text == text)&&(identical(other.rendered, rendered) || other.rendered == rendered)&&(identical(other.reasoning, reasoning) || other.reasoning == reasoning)&&(identical(other.usage, usage) || other.usage == usage)&&(identical(other.status, status) || other.status == status));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,sessionId,text,rendered,reasoning,usage,status);
+int get hashCode {
+    return Object.hash(runtimeType,sessionId,text,rendered,reasoning,usage,status);
+}
 
 @override
 String toString() {
-  return 'TypedGatewayEvent.messageComplete(sessionId: $sessionId, text: $text, rendered: $rendered, reasoning: $reasoning, usage: $usage, status: $status)';
+    return 'TypedGatewayEvent.messageComplete(sessionId: $sessionId, text: $text, rendered: $rendered, reasoning: $reasoning, usage: $usage, status: $status)';
 }
 
 
@@ -695,16 +705,18 @@ $ReasoningDeltaCopyWith<ReasoningDelta> get copyWith => _$ReasoningDeltaCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReasoningDelta&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.text, text) || other.text == text)&&(identical(other.verbose, verbose) || other.verbose == verbose));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ReasoningDelta&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.text, text) || other.text == text)&&(identical(other.verbose, verbose) || other.verbose == verbose));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,sessionId,text,verbose);
+int get hashCode {
+    return Object.hash(runtimeType,sessionId,text,verbose);
+}
 
 @override
 String toString() {
-  return 'TypedGatewayEvent.reasoningDelta(sessionId: $sessionId, text: $text, verbose: $verbose)';
+    return 'TypedGatewayEvent.reasoningDelta(sessionId: $sessionId, text: $text, verbose: $verbose)';
 }
 
 
@@ -765,16 +777,18 @@ $ReasoningAvailableCopyWith<ReasoningAvailable> get copyWith => _$ReasoningAvail
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReasoningAvailable&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.text, text) || other.text == text)&&(identical(other.verbose, verbose) || other.verbose == verbose));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ReasoningAvailable&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.text, text) || other.text == text)&&(identical(other.verbose, verbose) || other.verbose == verbose));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,sessionId,text,verbose);
+int get hashCode {
+    return Object.hash(runtimeType,sessionId,text,verbose);
+}
 
 @override
 String toString() {
-  return 'TypedGatewayEvent.reasoningAvailable(sessionId: $sessionId, text: $text, verbose: $verbose)';
+    return 'TypedGatewayEvent.reasoningAvailable(sessionId: $sessionId, text: $text, verbose: $verbose)';
 }
 
 
@@ -834,16 +848,18 @@ $TurnErrorCopyWith<TurnError> get copyWith => _$TurnErrorCopyWithImpl<TurnError>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TurnError&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.message, message) || other.message == message));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is TurnError&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.message, message) || other.message == message));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,sessionId,message);
+int get hashCode {
+    return Object.hash(runtimeType,sessionId,message);
+}
 
 @override
 String toString() {
-  return 'TypedGatewayEvent.turnError(sessionId: $sessionId, message: $message)';
+    return 'TypedGatewayEvent.turnError(sessionId: $sessionId, message: $message)';
 }
 
 
@@ -914,16 +930,18 @@ $ToolStartCopyWith<ToolStart> get copyWith => _$ToolStartCopyWithImpl<ToolStart>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ToolStart&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.toolId, toolId) || other.toolId == toolId)&&(identical(other.name, name) || other.name == name)&&(identical(other.context, context) || other.context == context)&&(identical(other.argsText, argsText) || other.argsText == argsText)&&const DeepCollectionEquality().equals(other._todos, _todos));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ToolStart&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.toolId, toolId) || other.toolId == toolId)&&(identical(other.name, name) || other.name == name)&&(identical(other.context, context) || other.context == context)&&(identical(other.argsText, argsText) || other.argsText == argsText)&&const DeepCollectionEquality().equals(other.todos, _todos));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,sessionId,toolId,name,context,argsText,const DeepCollectionEquality().hash(_todos));
+int get hashCode {
+    return Object.hash(runtimeType,sessionId,toolId,name,context,argsText,const DeepCollectionEquality().hash(_todos));
+}
 
 @override
 String toString() {
-  return 'TypedGatewayEvent.toolStart(sessionId: $sessionId, toolId: $toolId, name: $name, context: $context, argsText: $argsText, todos: $todos)';
+    return 'TypedGatewayEvent.toolStart(sessionId: $sessionId, toolId: $toolId, name: $name, context: $context, argsText: $argsText, todos: $todos)';
 }
 
 
@@ -987,16 +1005,18 @@ $ToolProgressCopyWith<ToolProgress> get copyWith => _$ToolProgressCopyWithImpl<T
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ToolProgress&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.name, name) || other.name == name)&&(identical(other.preview, preview) || other.preview == preview));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ToolProgress&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.name, name) || other.name == name)&&(identical(other.preview, preview) || other.preview == preview));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,sessionId,name,preview);
+int get hashCode {
+    return Object.hash(runtimeType,sessionId,name,preview);
+}
 
 @override
 String toString() {
-  return 'TypedGatewayEvent.toolProgress(sessionId: $sessionId, name: $name, preview: $preview)';
+    return 'TypedGatewayEvent.toolProgress(sessionId: $sessionId, name: $name, preview: $preview)';
 }
 
 
@@ -1073,16 +1093,18 @@ $ToolCompleteCopyWith<ToolComplete> get copyWith => _$ToolCompleteCopyWithImpl<T
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ToolComplete&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.toolId, toolId) || other.toolId == toolId)&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other.args, args)&&const DeepCollectionEquality().equals(other.result, result)&&(identical(other.durationS, durationS) || other.durationS == durationS)&&(identical(other.summary, summary) || other.summary == summary)&&(identical(other.resultText, resultText) || other.resultText == resultText)&&(identical(other.inlineDiff, inlineDiff) || other.inlineDiff == inlineDiff)&&const DeepCollectionEquality().equals(other._todos, _todos)&&(identical(other.error, error) || other.error == error));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ToolComplete&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.toolId, toolId) || other.toolId == toolId)&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other.args, args)&&const DeepCollectionEquality().equals(other.result, result)&&(identical(other.durationS, durationS) || other.durationS == durationS)&&(identical(other.summary, summary) || other.summary == summary)&&(identical(other.resultText, resultText) || other.resultText == resultText)&&(identical(other.inlineDiff, inlineDiff) || other.inlineDiff == inlineDiff)&&const DeepCollectionEquality().equals(other.todos, _todos)&&(identical(other.error, error) || other.error == error));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,sessionId,toolId,name,const DeepCollectionEquality().hash(args),const DeepCollectionEquality().hash(result),durationS,summary,resultText,inlineDiff,const DeepCollectionEquality().hash(_todos),error);
+int get hashCode {
+    return Object.hash(runtimeType,sessionId,toolId,name,const DeepCollectionEquality().hash(args),const DeepCollectionEquality().hash(result),durationS,summary,resultText,inlineDiff,const DeepCollectionEquality().hash(_todos),error);
+}
 
 @override
 String toString() {
-  return 'TypedGatewayEvent.toolComplete(sessionId: $sessionId, toolId: $toolId, name: $name, args: $args, result: $result, durationS: $durationS, summary: $summary, resultText: $resultText, inlineDiff: $inlineDiff, todos: $todos, error: $error)';
+    return 'TypedGatewayEvent.toolComplete(sessionId: $sessionId, toolId: $toolId, name: $name, args: $args, result: $result, durationS: $durationS, summary: $summary, resultText: $resultText, inlineDiff: $inlineDiff, todos: $todos, error: $error)';
 }
 
 
@@ -1160,16 +1182,18 @@ $ApprovalRequestEventCopyWith<ApprovalRequestEvent> get copyWith => _$ApprovalRe
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ApprovalRequestEvent&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.command, command) || other.command == command)&&(identical(other.description, description) || other.description == description)&&(identical(other.patternKey, patternKey) || other.patternKey == patternKey)&&const DeepCollectionEquality().equals(other._patternKeys, _patternKeys)&&(identical(other.allowPermanent, allowPermanent) || other.allowPermanent == allowPermanent));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ApprovalRequestEvent&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.command, command) || other.command == command)&&(identical(other.description, description) || other.description == description)&&(identical(other.patternKey, patternKey) || other.patternKey == patternKey)&&const DeepCollectionEquality().equals(other.patternKeys, _patternKeys)&&(identical(other.allowPermanent, allowPermanent) || other.allowPermanent == allowPermanent));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,sessionId,command,description,patternKey,const DeepCollectionEquality().hash(_patternKeys),allowPermanent);
+int get hashCode {
+    return Object.hash(runtimeType,sessionId,command,description,patternKey,const DeepCollectionEquality().hash(_patternKeys),allowPermanent);
+}
 
 @override
 String toString() {
-  return 'TypedGatewayEvent.approvalRequest(sessionId: $sessionId, command: $command, description: $description, patternKey: $patternKey, patternKeys: $patternKeys, allowPermanent: $allowPermanent)';
+    return 'TypedGatewayEvent.approvalRequest(sessionId: $sessionId, command: $command, description: $description, patternKey: $patternKey, patternKeys: $patternKeys, allowPermanent: $allowPermanent)';
 }
 
 
@@ -1242,16 +1266,18 @@ $ClarifyRequestEventCopyWith<ClarifyRequestEvent> get copyWith => _$ClarifyReque
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ClarifyRequestEvent&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.question, question) || other.question == question)&&const DeepCollectionEquality().equals(other._choices, _choices)&&(identical(other.requestId, requestId) || other.requestId == requestId));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ClarifyRequestEvent&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.question, question) || other.question == question)&&const DeepCollectionEquality().equals(other.choices, _choices)&&(identical(other.requestId, requestId) || other.requestId == requestId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,sessionId,question,const DeepCollectionEquality().hash(_choices),requestId);
+int get hashCode {
+    return Object.hash(runtimeType,sessionId,question,const DeepCollectionEquality().hash(_choices),requestId);
+}
 
 @override
 String toString() {
-  return 'TypedGatewayEvent.clarifyRequest(sessionId: $sessionId, question: $question, choices: $choices, requestId: $requestId)';
+    return 'TypedGatewayEvent.clarifyRequest(sessionId: $sessionId, question: $question, choices: $choices, requestId: $requestId)';
 }
 
 
@@ -1312,16 +1338,18 @@ $SudoRequestEventCopyWith<SudoRequestEvent> get copyWith => _$SudoRequestEventCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SudoRequestEvent&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.requestId, requestId) || other.requestId == requestId));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SudoRequestEvent&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.requestId, requestId) || other.requestId == requestId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,sessionId,requestId);
+int get hashCode {
+    return Object.hash(runtimeType,sessionId,requestId);
+}
 
 @override
 String toString() {
-  return 'TypedGatewayEvent.sudoRequest(sessionId: $sessionId, requestId: $requestId)';
+    return 'TypedGatewayEvent.sudoRequest(sessionId: $sessionId, requestId: $requestId)';
 }
 
 
@@ -1382,16 +1410,18 @@ $SecretRequestEventCopyWith<SecretRequestEvent> get copyWith => _$SecretRequestE
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SecretRequestEvent&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.envVar, envVar) || other.envVar == envVar)&&(identical(other.prompt, prompt) || other.prompt == prompt)&&(identical(other.requestId, requestId) || other.requestId == requestId));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SecretRequestEvent&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.envVar, envVar) || other.envVar == envVar)&&(identical(other.prompt, prompt) || other.prompt == prompt)&&(identical(other.requestId, requestId) || other.requestId == requestId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,sessionId,envVar,prompt,requestId);
+int get hashCode {
+    return Object.hash(runtimeType,sessionId,envVar,prompt,requestId);
+}
 
 @override
 String toString() {
-  return 'TypedGatewayEvent.secretRequest(sessionId: $sessionId, envVar: $envVar, prompt: $prompt, requestId: $requestId)';
+    return 'TypedGatewayEvent.secretRequest(sessionId: $sessionId, envVar: $envVar, prompt: $prompt, requestId: $requestId)';
 }
 
 
@@ -1454,16 +1484,18 @@ $TerminalReadRequestEventCopyWith<TerminalReadRequestEvent> get copyWith => _$Te
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TerminalReadRequestEvent&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.requestId, requestId) || other.requestId == requestId)&&(identical(other.start, start) || other.start == start)&&(identical(other.count, count) || other.count == count));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is TerminalReadRequestEvent&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.requestId, requestId) || other.requestId == requestId)&&(identical(other.start, start) || other.start == start)&&(identical(other.count, count) || other.count == count));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,sessionId,requestId,start,count);
+int get hashCode {
+    return Object.hash(runtimeType,sessionId,requestId,start,count);
+}
 
 @override
 String toString() {
-  return 'TypedGatewayEvent.terminalReadRequest(sessionId: $sessionId, requestId: $requestId, start: $start, count: $count)';
+    return 'TypedGatewayEvent.terminalReadRequest(sessionId: $sessionId, requestId: $requestId, start: $start, count: $count)';
 }
 
 
@@ -1571,16 +1603,18 @@ $SubagentEventCopyWith<SubagentEvent> get copyWith => _$SubagentEventCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SubagentEvent&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.type, type) || other.type == type)&&(identical(other.goal, goal) || other.goal == goal)&&(identical(other.taskCount, taskCount) || other.taskCount == taskCount)&&(identical(other.taskIndex, taskIndex) || other.taskIndex == taskIndex)&&(identical(other.subagentId, subagentId) || other.subagentId == subagentId)&&(identical(other.parentId, parentId) || other.parentId == parentId)&&(identical(other.childSessionId, childSessionId) || other.childSessionId == childSessionId)&&(identical(other.depth, depth) || other.depth == depth)&&(identical(other.model, model) || other.model == model)&&(identical(other.toolCount, toolCount) || other.toolCount == toolCount)&&const DeepCollectionEquality().equals(other._toolsets, _toolsets)&&(identical(other.inputTokens, inputTokens) || other.inputTokens == inputTokens)&&(identical(other.outputTokens, outputTokens) || other.outputTokens == outputTokens)&&(identical(other.reasoningTokens, reasoningTokens) || other.reasoningTokens == reasoningTokens)&&(identical(other.apiCalls, apiCalls) || other.apiCalls == apiCalls)&&const DeepCollectionEquality().equals(other._filesRead, _filesRead)&&const DeepCollectionEquality().equals(other._filesWritten, _filesWritten)&&(identical(other.toolName, toolName) || other.toolName == toolName)&&(identical(other.toolPreview, toolPreview) || other.toolPreview == toolPreview)&&(identical(other.text, text) || other.text == text)&&(identical(other.status, status) || other.status == status)&&(identical(other.summary, summary) || other.summary == summary)&&(identical(other.durationSeconds, durationSeconds) || other.durationSeconds == durationSeconds)&&(identical(other.costUsd, costUsd) || other.costUsd == costUsd));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SubagentEvent&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.type, type) || other.type == type)&&(identical(other.goal, goal) || other.goal == goal)&&(identical(other.taskCount, taskCount) || other.taskCount == taskCount)&&(identical(other.taskIndex, taskIndex) || other.taskIndex == taskIndex)&&(identical(other.subagentId, subagentId) || other.subagentId == subagentId)&&(identical(other.parentId, parentId) || other.parentId == parentId)&&(identical(other.childSessionId, childSessionId) || other.childSessionId == childSessionId)&&(identical(other.depth, depth) || other.depth == depth)&&(identical(other.model, model) || other.model == model)&&(identical(other.toolCount, toolCount) || other.toolCount == toolCount)&&const DeepCollectionEquality().equals(other.toolsets, _toolsets)&&(identical(other.inputTokens, inputTokens) || other.inputTokens == inputTokens)&&(identical(other.outputTokens, outputTokens) || other.outputTokens == outputTokens)&&(identical(other.reasoningTokens, reasoningTokens) || other.reasoningTokens == reasoningTokens)&&(identical(other.apiCalls, apiCalls) || other.apiCalls == apiCalls)&&const DeepCollectionEquality().equals(other.filesRead, _filesRead)&&const DeepCollectionEquality().equals(other.filesWritten, _filesWritten)&&(identical(other.toolName, toolName) || other.toolName == toolName)&&(identical(other.toolPreview, toolPreview) || other.toolPreview == toolPreview)&&(identical(other.text, text) || other.text == text)&&(identical(other.status, status) || other.status == status)&&(identical(other.summary, summary) || other.summary == summary)&&(identical(other.durationSeconds, durationSeconds) || other.durationSeconds == durationSeconds)&&(identical(other.costUsd, costUsd) || other.costUsd == costUsd));
 }
 
 
 @override
-int get hashCode => Object.hashAll([runtimeType,sessionId,type,goal,taskCount,taskIndex,subagentId,parentId,childSessionId,depth,model,toolCount,const DeepCollectionEquality().hash(_toolsets),inputTokens,outputTokens,reasoningTokens,apiCalls,const DeepCollectionEquality().hash(_filesRead),const DeepCollectionEquality().hash(_filesWritten),toolName,toolPreview,text,status,summary,durationSeconds,costUsd]);
+int get hashCode {
+    return Object.hashAll([runtimeType,sessionId,type,goal,taskCount,taskIndex,subagentId,parentId,childSessionId,depth,model,toolCount,const DeepCollectionEquality().hash(_toolsets),inputTokens,outputTokens,reasoningTokens,apiCalls,const DeepCollectionEquality().hash(_filesRead),const DeepCollectionEquality().hash(_filesWritten),toolName,toolPreview,text,status,summary,durationSeconds,costUsd]);
+}
 
 @override
 String toString() {
-  return 'TypedGatewayEvent.subagentEvent(sessionId: $sessionId, type: $type, goal: $goal, taskCount: $taskCount, taskIndex: $taskIndex, subagentId: $subagentId, parentId: $parentId, childSessionId: $childSessionId, depth: $depth, model: $model, toolCount: $toolCount, toolsets: $toolsets, inputTokens: $inputTokens, outputTokens: $outputTokens, reasoningTokens: $reasoningTokens, apiCalls: $apiCalls, filesRead: $filesRead, filesWritten: $filesWritten, toolName: $toolName, toolPreview: $toolPreview, text: $text, status: $status, summary: $summary, durationSeconds: $durationSeconds, costUsd: $costUsd)';
+    return 'TypedGatewayEvent.subagentEvent(sessionId: $sessionId, type: $type, goal: $goal, taskCount: $taskCount, taskIndex: $taskIndex, subagentId: $subagentId, parentId: $parentId, childSessionId: $childSessionId, depth: $depth, model: $model, toolCount: $toolCount, toolsets: $toolsets, inputTokens: $inputTokens, outputTokens: $outputTokens, reasoningTokens: $reasoningTokens, apiCalls: $apiCalls, filesRead: $filesRead, filesWritten: $filesWritten, toolName: $toolName, toolPreview: $toolPreview, text: $text, status: $status, summary: $summary, durationSeconds: $durationSeconds, costUsd: $costUsd)';
 }
 
 
@@ -1663,16 +1697,18 @@ $StatusUpdateCopyWith<StatusUpdate> get copyWith => _$StatusUpdateCopyWithImpl<S
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StatusUpdate&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.text, text) || other.text == text));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is StatusUpdate&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.text, text) || other.text == text));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,sessionId,kind,text);
+int get hashCode {
+    return Object.hash(runtimeType,sessionId,kind,text);
+}
 
 @override
 String toString() {
-  return 'TypedGatewayEvent.statusUpdate(sessionId: $sessionId, kind: $kind, text: $text)';
+    return 'TypedGatewayEvent.statusUpdate(sessionId: $sessionId, kind: $kind, text: $text)';
 }
 
 
@@ -1733,16 +1769,18 @@ $BackgroundCompleteEventCopyWith<BackgroundCompleteEvent> get copyWith => _$Back
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BackgroundCompleteEvent&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.taskId, taskId) || other.taskId == taskId)&&(identical(other.text, text) || other.text == text));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is BackgroundCompleteEvent&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.taskId, taskId) || other.taskId == taskId)&&(identical(other.text, text) || other.text == text));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,sessionId,taskId,text);
+int get hashCode {
+    return Object.hash(runtimeType,sessionId,taskId,text);
+}
 
 @override
 String toString() {
-  return 'TypedGatewayEvent.backgroundComplete(sessionId: $sessionId, taskId: $taskId, text: $text)';
+    return 'TypedGatewayEvent.backgroundComplete(sessionId: $sessionId, taskId: $taskId, text: $text)';
 }
 
 
@@ -1802,16 +1840,18 @@ $VoiceStatusEventCopyWith<VoiceStatusEvent> get copyWith => _$VoiceStatusEventCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is VoiceStatusEvent&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.state, state) || other.state == state));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is VoiceStatusEvent&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.state, state) || other.state == state));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,sessionId,state);
+int get hashCode {
+    return Object.hash(runtimeType,sessionId,state);
+}
 
 @override
 String toString() {
-  return 'TypedGatewayEvent.voiceStatus(sessionId: $sessionId, state: $state)';
+    return 'TypedGatewayEvent.voiceStatus(sessionId: $sessionId, state: $state)';
 }
 
 
@@ -1871,16 +1911,18 @@ $VoiceTranscriptEventCopyWith<VoiceTranscriptEvent> get copyWith => _$VoiceTrans
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is VoiceTranscriptEvent&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.text, text) || other.text == text)&&(identical(other.noSpeechLimit, noSpeechLimit) || other.noSpeechLimit == noSpeechLimit));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is VoiceTranscriptEvent&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.text, text) || other.text == text)&&(identical(other.noSpeechLimit, noSpeechLimit) || other.noSpeechLimit == noSpeechLimit));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,sessionId,text,noSpeechLimit);
+int get hashCode {
+    return Object.hash(runtimeType,sessionId,text,noSpeechLimit);
+}
 
 @override
 String toString() {
-  return 'TypedGatewayEvent.voiceTranscript(sessionId: $sessionId, text: $text, noSpeechLimit: $noSpeechLimit)';
+    return 'TypedGatewayEvent.voiceTranscript(sessionId: $sessionId, text: $text, noSpeechLimit: $noSpeechLimit)';
 }
 
 
@@ -1945,16 +1987,18 @@ $SkinChangedCopyWith<SkinChanged> get copyWith => _$SkinChangedCopyWithImpl<Skin
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SkinChanged&&const DeepCollectionEquality().equals(other._skin, _skin));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SkinChanged&&const DeepCollectionEquality().equals(other.skin, _skin));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_skin));
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_skin));
+}
 
 @override
 String toString() {
-  return 'TypedGatewayEvent.skinChanged(skin: $skin)';
+    return 'TypedGatewayEvent.skinChanged(skin: $skin)';
 }
 
 
@@ -2013,16 +2057,18 @@ $BrowserProgressEventCopyWith<BrowserProgressEvent> get copyWith => _$BrowserPro
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BrowserProgressEvent&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.message, message) || other.message == message)&&(identical(other.level, level) || other.level == level));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is BrowserProgressEvent&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.message, message) || other.message == message)&&(identical(other.level, level) || other.level == level));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,sessionId,message,level);
+int get hashCode {
+    return Object.hash(runtimeType,sessionId,message,level);
+}
 
 @override
 String toString() {
-  return 'TypedGatewayEvent.browserProgress(sessionId: $sessionId, message: $message, level: $level)';
+    return 'TypedGatewayEvent.browserProgress(sessionId: $sessionId, message: $message, level: $level)';
 }
 
 
@@ -2084,16 +2130,18 @@ $PreviewRestartProgressEventCopyWith<PreviewRestartProgressEvent> get copyWith =
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PreviewRestartProgressEvent&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.taskId, taskId) || other.taskId == taskId)&&(identical(other.text, text) || other.text == text)&&(identical(other.level, level) || other.level == level));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PreviewRestartProgressEvent&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.taskId, taskId) || other.taskId == taskId)&&(identical(other.text, text) || other.text == text)&&(identical(other.level, level) || other.level == level));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,sessionId,taskId,text,level);
+int get hashCode {
+    return Object.hash(runtimeType,sessionId,taskId,text,level);
+}
 
 @override
 String toString() {
-  return 'TypedGatewayEvent.previewRestartProgress(sessionId: $sessionId, taskId: $taskId, text: $text, level: $level)';
+    return 'TypedGatewayEvent.previewRestartProgress(sessionId: $sessionId, taskId: $taskId, text: $text, level: $level)';
 }
 
 
@@ -2155,16 +2203,18 @@ $PreviewRestartCompleteEventCopyWith<PreviewRestartCompleteEvent> get copyWith =
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PreviewRestartCompleteEvent&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.taskId, taskId) || other.taskId == taskId)&&(identical(other.text, text) || other.text == text));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PreviewRestartCompleteEvent&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&(identical(other.taskId, taskId) || other.taskId == taskId)&&(identical(other.text, text) || other.text == text));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,sessionId,taskId,text);
+int get hashCode {
+    return Object.hash(runtimeType,sessionId,taskId,text);
+}
 
 @override
 String toString() {
-  return 'TypedGatewayEvent.previewRestartComplete(sessionId: $sessionId, taskId: $taskId, text: $text)';
+    return 'TypedGatewayEvent.previewRestartComplete(sessionId: $sessionId, taskId: $taskId, text: $text)';
 }
 
 
@@ -2231,16 +2281,18 @@ $UnknownEventCopyWith<UnknownEvent> get copyWith => _$UnknownEventCopyWithImpl<U
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UnknownEvent&&(identical(other.type, type) || other.type == type)&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&const DeepCollectionEquality().equals(other._payload, _payload));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is UnknownEvent&&(identical(other.type, type) || other.type == type)&&(identical(other.sessionId, sessionId) || other.sessionId == sessionId)&&const DeepCollectionEquality().equals(other.payload, _payload));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,type,sessionId,const DeepCollectionEquality().hash(_payload));
+int get hashCode {
+    return Object.hash(runtimeType,type,sessionId,const DeepCollectionEquality().hash(_payload));
+}
 
 @override
 String toString() {
-  return 'TypedGatewayEvent.unknown(type: $type, sessionId: $sessionId, payload: $payload)';
+    return 'TypedGatewayEvent.unknown(type: $type, sessionId: $sessionId, payload: $payload)';
 }
 
 

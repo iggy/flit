@@ -26,6 +26,16 @@ enum AuthMode {
   oauth,
 }
 
+/// Which kind of server a connection talks to.
+enum BackendKind {
+  /// A Hermes Agent gateway (WebSocket JSON-RPC + REST).
+  hermes,
+
+  /// A flit server (flit.v1 over Connect). Auth is a per-device token from
+  /// pairing, stored in [ConnectionConfig.token].
+  flit,
+}
+
 /// Immutable description of one gateway connection.
 ///
 /// [baseUrl] is normalized on construction (see [normalizeGatewayBaseUrl]):
@@ -38,6 +48,8 @@ final class ConnectionConfig {
     AuthMode authMode = AuthMode.token,
     String? username,
     String? authProvider,
+    BackendKind backend = BackendKind.hermes,
+    String? deviceName,
   }) {
     return ConnectionConfig._(
       normalizeGatewayBaseUrl(baseUrl),
@@ -45,6 +57,8 @@ final class ConnectionConfig {
       authMode,
       username,
       authProvider,
+      backend,
+      deviceName,
     );
   }
 
@@ -54,7 +68,17 @@ final class ConnectionConfig {
     this.authMode,
     this.username,
     this.authProvider,
+    this.backend,
+    this.deviceName,
   );
+
+  /// Which kind of server this is. Hermes for every config saved before
+  /// flit support existed.
+  final BackendKind backend;
+
+  /// flit only: the name this device paired under (shown to other clients
+  /// when it answers a prompt).
+  final String? deviceName;
 
   /// Normalized gateway base URL, e.g. `https://gw.example.com/hermes`.
   final String baseUrl;
@@ -81,18 +105,28 @@ final class ConnectionConfig {
         other.token == token &&
         other.authMode == authMode &&
         other.username == username &&
-        other.authProvider == authProvider;
+        other.authProvider == authProvider &&
+        other.backend == backend &&
+        other.deviceName == deviceName;
   }
 
   @override
-  int get hashCode =>
-      Object.hash(baseUrl, token, authMode, username, authProvider);
+  int get hashCode => Object.hash(
+    baseUrl,
+    token,
+    authMode,
+    username,
+    authProvider,
+    backend,
+    deviceName,
+  );
 
   /// Token-redacted representation — safe for logs (05-conventions.md:
   /// "No secrets in logs").
   @override
   String toString() {
-    return 'ConnectionConfig(baseUrl: ${redactUrl(baseUrl)}, '
+    return 'ConnectionConfig(backend: ${backend.name}, '
+        'baseUrl: ${redactUrl(baseUrl)}, '
         'authMode: ${authMode.name}, username: $username, '
         'token: ${token == null ? 'null' : '***'})';
   }

@@ -1,0 +1,216 @@
+/// Events from a flit session's event log (flit.v1 `Event`), as the app
+/// sees them. Every event carries its per-session sequence number; the log
+/// has no gaps, so a client resumes by attaching from `lastSeq + 1`.
+library;
+
+import 'package:flit/domain/models/flit_session.dart';
+
+/// One entry in a session's event log.
+sealed class FlitEvent {
+  const FlitEvent({required this.seq, this.time});
+
+  /// Per-session sequence number, starting at 1.
+  final int seq;
+  final DateTime? time;
+}
+
+/// Who wrote a message.
+enum FlitRole { user, assistant, unknown }
+
+/// A message opened; its text follows as [FlitTextDelta]s.
+final class FlitMessageStarted extends FlitEvent {
+  const FlitMessageStarted({
+    required super.seq,
+    required this.messageId,
+    required this.role,
+    super.time,
+  });
+
+  final String messageId;
+  final FlitRole role;
+}
+
+final class FlitTextDelta extends FlitEvent {
+  const FlitTextDelta({
+    required super.seq,
+    required this.messageId,
+    required this.text,
+    super.time,
+  });
+
+  final String messageId;
+  final String text;
+}
+
+final class FlitReasoningDelta extends FlitEvent {
+  const FlitReasoningDelta({
+    required super.seq,
+    required this.messageId,
+    required this.text,
+    super.time,
+  });
+
+  final String messageId;
+  final String text;
+}
+
+/// A message closed; [text] is its full text.
+final class FlitMessageDone extends FlitEvent {
+  const FlitMessageDone({
+    required super.seq,
+    required this.messageId,
+    required this.text,
+    required this.reasoning,
+    required this.finishReason,
+    super.time,
+  });
+
+  final String messageId;
+  final String text;
+  final String reasoning;
+
+  /// "stop", "tool_calls", "length", "interrupted", "error", …
+  final String finishReason;
+}
+
+final class FlitToolCallStarted extends FlitEvent {
+  const FlitToolCallStarted({
+    required super.seq,
+    required this.messageId,
+    required this.toolCallId,
+    required this.name,
+    required this.arguments,
+    super.time,
+  });
+
+  final String messageId;
+  final String toolCallId;
+  final String name;
+
+  /// The arguments as the JSON text the model produced.
+  final String arguments;
+}
+
+/// Live output from a running tool.
+final class FlitToolOutput extends FlitEvent {
+  const FlitToolOutput({
+    required super.seq,
+    required this.toolCallId,
+    required this.text,
+    super.time,
+  });
+
+  final String toolCallId;
+  final String text;
+}
+
+final class FlitToolCallDone extends FlitEvent {
+  const FlitToolCallDone({
+    required super.seq,
+    required this.toolCallId,
+    required this.result,
+    required this.isError,
+    required this.truncated,
+    super.time,
+  });
+
+  final String toolCallId;
+
+  /// What the model saw, after truncation.
+  final String result;
+  final bool isError;
+  final bool truncated;
+}
+
+/// The agent waits for someone to allow or deny something.
+final class FlitPromptRequested extends FlitEvent {
+  const FlitPromptRequested({
+    required super.seq,
+    required this.promptId,
+    required this.toolCallId,
+    required this.title,
+    required this.detail,
+    super.time,
+  });
+
+  final String promptId;
+  final String toolCallId;
+  final String title;
+  final String detail;
+}
+
+/// A prompt was answered (by [client]) or resolved by the server.
+final class FlitPromptResolved extends FlitEvent {
+  const FlitPromptResolved({
+    required super.seq,
+    required this.promptId,
+    required this.allowed,
+    required this.client,
+    required this.reason,
+    super.time,
+  });
+
+  final String promptId;
+  final bool allowed;
+
+  /// The answering client's name; empty when the server resolved it.
+  final String client;
+  final String reason;
+}
+
+final class FlitTaskStateChanged extends FlitEvent {
+  const FlitTaskStateChanged({
+    required super.seq,
+    required this.state,
+    required this.reason,
+    super.time,
+  });
+
+  final FlitTaskState state;
+  final String reason;
+}
+
+final class FlitModelChanged extends FlitEvent {
+  const FlitModelChanged({
+    required super.seq,
+    required this.provider,
+    required this.model,
+    super.time,
+  });
+
+  final String provider;
+  final String model;
+}
+
+final class FlitUsage extends FlitEvent {
+  const FlitUsage({
+    required super.seq,
+    required this.messageId,
+    required this.inputTokens,
+    required this.outputTokens,
+    super.time,
+  });
+
+  final String messageId;
+  final int inputTokens;
+  final int outputTokens;
+}
+
+final class FlitTurnError extends FlitEvent {
+  const FlitTurnError({
+    required super.seq,
+    required this.message,
+    required this.canContinue,
+    super.time,
+  });
+
+  final String message;
+
+  /// True when sending again may work (e.g. a network blip).
+  final bool canContinue;
+}
+
+/// An event kind this app version doesn't know. Still advances the seq.
+final class FlitUnknownEvent extends FlitEvent {
+  const FlitUnknownEvent({required super.seq, super.time});
+}
