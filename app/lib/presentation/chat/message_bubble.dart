@@ -8,6 +8,7 @@ library;
 import 'dart:math' as math;
 
 import 'package:flit/domain/models/chat_message.dart';
+import 'package:flit/presentation/chat/collapse_footer.dart';
 import 'package:flit/presentation/chat/tool_call_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
@@ -18,6 +19,9 @@ const Key typingIndicatorKey = Key('typing_indicator');
 
 /// Key of the reasoning ("Thinking…") disclosure above an assistant bubble.
 const Key reasoningDisclosureKey = Key('reasoning_disclosure');
+
+/// The "Collapse" control at the bottom of long expanded thinking.
+const Key reasoningCollapseFooterKey = Key('reasoning_collapse_footer');
 
 /// One message in the chat list. User messages render as plain-text
 /// bubbles; assistant/system messages render markdown plus their tool
@@ -279,6 +283,14 @@ class _ReasoningDisclosureState extends State<_ReasoningDisclosure> {
               // (and half-streamed markdown renders as noise).
               child: SelectableText(text, style: caption),
             ),
+            if (needsCollapseFooter(text))
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 0, 4, 4),
+                child: CollapseFooter(
+                  key: reasoningCollapseFooterKey,
+                  onCollapse: () => setState(() => _expanded = false),
+                ),
+              ),
           ],
         ],
       ),

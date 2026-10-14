@@ -162,6 +162,14 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
       if (grew) {
         _scrollToEnd();
       }
+      // The server names a session from its first message (and may rename
+      // it later), so re-read the session when one arrives and after each
+      // turn instead of keeping the title it had when the screen opened.
+      if (flitSessionNeedsRefresh(prev?.fold, next.fold)) {
+        ref
+          ..invalidate(flitSessionProvider(widget.sessionId))
+          ..invalidate(flitSessionsProvider);
+      }
     });
 
     final provider = fold.provider.isNotEmpty
