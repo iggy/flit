@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -41,6 +42,22 @@ type Config struct {
 	Providers []Provider `yaml:"providers"`
 	Agent     Agent      `yaml:"agent"`
 	Shell     Shell      `yaml:"shell"`
+	// ModelOverridesFile is a YAML file that corrects or fills in what
+	// model discovery finds (context length, tool and reasoning support,
+	// effort levels). Relative paths are relative to the config file.
+	ModelOverridesFile string `yaml:"model_overrides_file"`
+	// RolesDir holds role files (*.md with YAML frontmatter). Relative
+	// paths are relative to the config file.
+	RolesDir string `yaml:"roles_dir"`
+}
+
+// ChatModel is the default model for new sessions: tasks.chat if set,
+// else the agent defaults.
+func (c Config) ChatModel() TaskModel {
+	if t, ok := c.Agent.Tasks["chat"]; ok && t.Provider != "" {
+		return t
+	}
+	return TaskModel{Provider: c.Agent.Provider, Model: c.Agent.Model, Effort: c.Agent.Effort}
 }
 
 // Provider is an OpenAI-compatible chat completions endpoint.
@@ -54,6 +71,25 @@ type Provider struct {
 	// holding it. Set at most one. Neither means no Authorization header.
 	APIKey    string `yaml:"api_key"`
 	APIKeyEnv string `yaml:"api_key_env"`
+	// Kind says how to read the provider's /models response: auto (the
+	// default: guess from the URL and the response), openai, openrouter,
+	// llamacpp or gomodel.
+	Kind string `yaml:"kind"`
+}
+
+// ProviderKinds are the accepted Provider.Kind values.
+var ProviderKinds = []string{"auto", "openai", "openrouter", "llamacpp", "gomodel"}
+
+// Tasks are the kinds of work that can have their own model.
+var Tasks = []string{"chat", "planning", "cron", "compaction", "search"}
+
+// TaskModel picks a model for one kind of work.
+type TaskModel struct {
+	Provider string `yaml:"provider"`
+	Model    string `yaml:"model"`
+	// Effort is the reasoning effort, e.g. low, medium or high; empty means
+	// the model's default.
+	Effort string `yaml:"effort"`
 }
 
 // Key returns the provider's API key, if any.
@@ -66,9 +102,15 @@ func (p Provider) Key() string {
 
 // Agent configures the agent loop.
 type Agent struct {
-	// Provider and Model are used by sessions that don't pick their own.
+	// Provider, Model and Effort are used by sessions that don't pick
+	// their own (or get one from their role). tasks.chat, if set, wins.
 	Provider string `yaml:"provider"`
 	Model    string `yaml:"model"`
+	Effort   string `yaml:"effort"`
+	// Tasks sets a model per kind of work (see Tasks). Only chat is used
+	// so far; the others are for planning, cron jobs, compaction and search
+	// as those features arrive.
+	Tasks map[string]TaskModel `yaml:"tasks"`
 	// MaxSteps caps model calls per turn.
 	MaxSteps int `yaml:"max_steps"`
 	// Tool output longer than this is cut down to its head and tail before
@@ -128,10 +170,13 @@ func (l Log) SlogLevel() slog.Level {
 // Default returns the config used when the file sets nothing.
 func Default() Config {
 	return Config{
-		Listen:    DefaultListen,
-		Log:       Log{Level: "info"},
-		Providers: []Provider{},
+		Listen:             DefaultListen,
+		Log:                Log{Level: "info"},
+		Providers:          []Provider{},
+		ModelOverridesFile: "models.yaml",
+		RolesDir:           "roles",
 		Agent: Agent{
+			Tasks:              map[string]TaskModel{},
 			MaxSteps:           50,
 			ToolOutputMaxBytes: 32 * 1024,
 			ToolOutputMaxLines: 500,
@@ -189,6 +234,12 @@ func (c *Config) fillDefaults() {
 	if c.Shell.Default == "" {
 		c.Shell.Default = d.Shell.Default
 	}
+	if c.ModelOverridesFile == "" {
+		c.ModelOverridesFile = d.ModelOverridesFile
+	}
+	if c.RolesDir == "" {
+		c.RolesDir = d.RolesDir
+	}
 }
 
 // Load reads and parses the config file at path.
@@ -238,9 +289,20 @@ func (c Config) Validate() error {
 		if p.APIKey != "" && p.APIKeyEnv != "" {
 			return fmt.Errorf("providers %q: set api_key or api_key_env, not both", p.Name)
 		}
+		if p.Kind != "" && !slices.Contains(ProviderKinds, p.Kind) {
+			return fmt.Errorf("providers %q: kind %q: want one of %s", p.Name, p.Kind, strings.Join(ProviderKinds, ", "))
+		}
 	}
 	if c.Agent.Provider != "" && !seen[c.Agent.Provider] {
 		return fmt.Errorf("agent.provider %q is not in providers", c.Agent.Provider)
+	}
+	for task, t := range c.Agent.Tasks {
+		if !slices.Contains(Tasks, task) {
+			return fmt.Errorf("agent.tasks: unknown task %q: want one of %s", task, strings.Join(Tasks, ", "))
+		}
+		if t.Provider != "" && !seen[t.Provider] {
+			return fmt.Errorf("agent.tasks.%s.provider %q is not in providers", task, t.Provider)
+		}
 	}
 	if c.Agent.MaxSteps < 0 || c.Agent.ToolOutputMaxBytes < 0 || c.Agent.ToolOutputMaxLines < 0 {
 		return errors.New("agent: limits must not be negative")
@@ -290,18 +352,34 @@ log:
   # debug, info, warn or error.
   level: info
 
-# OpenAI-compatible endpoints. Several can be configured at once.
+# OpenAI-compatible endpoints. Several can be configured at once. Models are
+# discovered from each one's /models endpoint; kind says how to read it
+# (auto, openai, openrouter, llamacpp, gomodel).
 providers: []
 #  - name: local
 #    base_url: http://localhost:8080/v1   # e.g. llama.cpp's llama-server
-#  - name: openai
-#    base_url: https://api.openai.com/v1
-#    api_key_env: OPENAI_API_KEY          # or api_key: sk-...
+#  - name: openrouter
+#    base_url: https://openrouter.ai/api/v1
+#    api_key_env: OPENROUTER_API_KEY      # or api_key: sk-...
+
+# Corrections and additions to discovered models (context length, tools,
+# reasoning, effort levels), relative to this file.
+model_overrides_file: models.yaml
+
+# Role files (*.md with YAML frontmatter), relative to this file.
+roles_dir: roles
 
 agent:
-  # Defaults for sessions that don't choose their own.
+  # Defaults for sessions that don't choose their own (or get one from
+  # their role).
   provider: ""
   model: ""
+  effort: ""
+  # A model per kind of work: chat, planning, cron, compaction, search.
+  # chat overrides the defaults above. Only chat is used so far.
+  tasks: {}
+  #   chat:     {provider: local, model: qwen3-coder, effort: medium}
+  #   planning: {provider: openrouter, model: some/bigger-model, effort: high}
   # Maximum model calls in one turn.
   max_steps: 50
   # Longer tool output is cut to its head and tail before the model sees it.

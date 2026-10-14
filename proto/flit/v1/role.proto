@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package flit.v1;
+
+option go_package = "github.com/iggy/flit/server/gen/flit/v1;flitv1";
+
+// RoleService lists roles. A role is a Markdown file with YAML frontmatter
+// in the server's roles directory: the body is added to the system prompt,
+// and the frontmatter sets a default model and effort, a memory file, and
+// per-task models. A session picks its role when it is created.
+service RoleService {
+  rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+}
+
+message AgentRole {
+  // The file name without .md, unless the frontmatter sets name.
+  string name = 1;
+  string description = 2;
+  // Defaults for sessions using the role; empty means the config's.
+  string provider = 3;
+  string model = 4;
+  string effort = 5;
+  // File whose contents are added to the system prompt each turn,
+  // relative to the session's working directory unless absolute.
+  string memory_file = 6;
+  // Problems reading the file, if any; such roles can't be picked.
+  string error = 7;
+}
+
+message ListRolesRequest {}
+
+message ListRolesResponse {
+  repeated AgentRole roles = 1;
+}

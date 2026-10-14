@@ -76,8 +76,14 @@ func (s *session) appendLocked(ev *flitv1.Event) (*flitv1.Event, error) {
 	}
 	s.info.LastSeq = ev.Seq
 	s.info.UpdatedAt = ev.Time.AsTime()
-	if st := ev.GetTaskStateChanged(); st != nil {
-		s.info.State = st.State
+	switch {
+	case ev.GetTaskStateChanged() != nil:
+		s.info.State = ev.GetTaskStateChanged().State
+	case ev.GetUsage() != nil:
+		u := ev.GetUsage()
+		s.info.ContextTokens, s.info.ContextLength = u.InputTokens+u.OutputTokens, u.ContextLength
+	case ev.GetModelChanged() != nil:
+		s.info.ContextLength = ev.GetModelChanged().ContextLength
 	}
 	for sub := range s.subs {
 		select {
@@ -269,12 +275,32 @@ func (s *session) setModel(ctx context.Context, provider, model string) (store.S
 		return store.Session{}, err
 	}
 	s.info.Provider, s.info.Model = provider, model
-	if _, err := s.appendLocked(&flitv1.Event{Payload: &flitv1.Event_ModelChanged{ModelChanged: &flitv1.ModelChanged{
-		Provider: provider, Model: model,
-	}}}); err != nil {
+	if _, err := s.appendLocked(s.modelChangedLocked()); err != nil {
 		return store.Session{}, err
 	}
 	return s.info, nil
+}
+
+func (s *session) setEffort(ctx context.Context, effort string) (store.Session, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := s.m.store.SetEffort(ctx, s.info.ID, effort); err != nil {
+		return store.Session{}, err
+	}
+	s.info.Effort = effort
+	if _, err := s.appendLocked(s.modelChangedLocked()); err != nil {
+		return store.Session{}, err
+	}
+	return s.info, nil
+}
+
+func (s *session) modelChangedLocked() *flitv1.Event {
+	return &flitv1.Event{Payload: &flitv1.Event_ModelChanged{ModelChanged: &flitv1.ModelChanged{
+		Provider:      s.info.Provider,
+		Model:         s.info.Model,
+		Effort:        s.info.Effort,
+		ContextLength: s.m.contextLength(s.info.Provider, s.info.Model),
+	}}}
 }
 
 func stateChanged(state flitv1.TaskState, reason string) *flitv1.Event {

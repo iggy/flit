@@ -19,6 +19,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"slices"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -28,6 +29,7 @@ import (
 	"github.com/iggy/flit/server/internal/buildinfo"
 	"github.com/iggy/flit/server/internal/config"
 	"github.com/iggy/flit/server/internal/devices"
+	"github.com/iggy/flit/server/internal/models"
 	"github.com/iggy/flit/server/internal/paths"
 	"github.com/iggy/flit/server/internal/server"
 	"github.com/iggy/flit/server/internal/store"
@@ -211,11 +213,28 @@ func serve(ctx context.Context, stderr io.Writer, configPath, dataDirFlag string
 		return fmt.Errorf("load sessions: %w", err)
 	}
 	defer sessions.Close()
+
+	// Paths in the config are relative to the config file.
+	configDir := filepath.Dir(configPath)
+	relToConfig := func(p string) string {
+		if p == "" || filepath.IsAbs(p) {
+			return p
+		}
+		return filepath.Join(configDir, p)
+	}
+	rolesDir := func() string { return relToConfig(current().RolesDir) }
+	catalog := models.NewCatalog(current, func() string { return relToConfig(current().ModelOverridesFile) }, log)
+	sessions.Catalog, sessions.RolesDir = catalog, rolesDir
+	go func() {
+		if err := catalog.Refresh(ctx, ""); err != nil {
+			log.Warn("model discovery", "err", err)
+		}
+	}()
 	if len(cfg.Providers) == 0 {
 		log.Warn("no providers configured; add one under providers in the config to run sessions", "config", configPath)
 	}
 
-	srv := server.New(server.NewHandler(token, server.Deps{Sessions: sessions, Devices: devices.New(st), Config: current}), log)
+	srv := server.New(server.NewHandler(token, server.Deps{Sessions: sessions, Devices: devices.New(st), Config: current, Catalog: catalog, RolesDir: rolesDir}), log)
 	if err := srv.Apply(cfg); err != nil {
 		return err
 	}
@@ -223,8 +242,12 @@ func serve(ctx context.Context, stderr io.Writer, configPath, dataDirFlag string
 	watchErr := make(chan error, 1)
 	go func() {
 		watchErr <- config.Watch(ctx, configPath, log, func(next config.Config) {
+			prev := *live.Load()
 			live.Store(&next)
 			level.Set(next.Log.SlogLevel())
+			if !slices.Equal(prev.Providers, next.Providers) || prev.ModelOverridesFile != next.ModelOverridesFile {
+				go func() { _ = catalog.Refresh(ctx, "") }()
+			}
 			if next.DataDir != cfg.DataDir && dataDirFlag == "" {
 				log.Warn("data_dir changed; it takes effect the next time flit starts", "in_use", dataDir)
 			}

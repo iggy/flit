@@ -67,6 +67,23 @@ final $typed_data.Uint8List promptDecisionDescriptor = $convert.base64Decode(
     'Cg5Qcm9tcHREZWNpc2lvbhIfChtQUk9NUFRfREVDSVNJT05fVU5TUEVDSUZJRUQQABIZChVQUk'
     '9NUFRfREVDSVNJT05fQUxMT1cQARIYChRQUk9NUFRfREVDSVNJT05fREVOWRAC');
 
+@$core.Deprecated('Use todoStatusDescriptor instead')
+const TodoStatus$json = {
+  '1': 'TodoStatus',
+  '2': [
+    {'1': 'TODO_STATUS_UNSPECIFIED', '2': 0},
+    {'1': 'TODO_STATUS_PENDING', '2': 1},
+    {'1': 'TODO_STATUS_IN_PROGRESS', '2': 2},
+    {'1': 'TODO_STATUS_COMPLETED', '2': 3},
+  ],
+};
+
+/// Descriptor for `TodoStatus`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List todoStatusDescriptor = $convert.base64Decode(
+    'CgpUb2RvU3RhdHVzEhsKF1RPRE9fU1RBVFVTX1VOU1BFQ0lGSUVEEAASFwoTVE9ET19TVEFUVV'
+    'NfUEVORElORxABEhsKF1RPRE9fU1RBVFVTX0lOX1BST0dSRVNTEAISGQoVVE9ET19TVEFUVVNf'
+    'Q09NUExFVEVEEAM=');
+
 @$core.Deprecated('Use sessionDescriptor instead')
 const Session$json = {
   '1': 'Session',
@@ -103,6 +120,10 @@ const Session$json = {
       '6': '.google.protobuf.Timestamp',
       '10': 'updateTime'
     },
+    {'1': 'effort', '3': 12, '4': 1, '5': 9, '10': 'effort'},
+    {'1': 'role', '3': 13, '4': 1, '5': 9, '10': 'role'},
+    {'1': 'context_tokens', '3': 14, '4': 1, '5': 3, '10': 'contextTokens'},
+    {'1': 'context_length', '3': 15, '4': 1, '5': 3, '10': 'contextLength'},
   ],
 };
 
@@ -114,7 +135,10 @@ final $typed_data.Uint8List sessionDescriptor = $convert.base64Decode(
     'oFbW9kZWwYByABKAlSBW1vZGVsEigKBXN0YXRlGAggASgOMhIuZmxpdC52MS5UYXNrU3RhdGVS'
     'BXN0YXRlEhkKCGxhc3Rfc2VxGAkgASgDUgdsYXN0U2VxEjsKC2NyZWF0ZV90aW1lGAogASgLMh'
     'ouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIKY3JlYXRlVGltZRI7Cgt1cGRhdGVfdGltZRgL'
-    'IAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCnVwZGF0ZVRpbWU=');
+    'IAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCnVwZGF0ZVRpbWUSFgoGZWZmb3J0GA'
+    'wgASgJUgZlZmZvcnQSEgoEcm9sZRgNIAEoCVIEcm9sZRIlCg5jb250ZXh0X3Rva2VucxgOIAEo'
+    'A1INY29udGV4dFRva2VucxIlCg5jb250ZXh0X2xlbmd0aBgPIAEoA1INY29udGV4dExlbmd0aA'
+    '==');
 
 @$core.Deprecated('Use createSessionRequestDescriptor instead')
 const CreateSessionRequest$json = {
@@ -124,6 +148,8 @@ const CreateSessionRequest$json = {
     {'1': 'title', '3': 2, '4': 1, '5': 9, '10': 'title'},
     {'1': 'provider', '3': 3, '4': 1, '5': 9, '10': 'provider'},
     {'1': 'model', '3': 4, '4': 1, '5': 9, '10': 'model'},
+    {'1': 'role', '3': 5, '4': 1, '5': 9, '10': 'role'},
+    {'1': 'effort', '3': 6, '4': 1, '5': 9, '10': 'effort'},
   ],
 };
 
@@ -131,7 +157,8 @@ const CreateSessionRequest$json = {
 final $typed_data.Uint8List createSessionRequestDescriptor = $convert.base64Decode(
     'ChRDcmVhdGVTZXNzaW9uUmVxdWVzdBIfCgt3b3JraW5nX2RpchgBIAEoCVIKd29ya2luZ0Rpch'
     'IUCgV0aXRsZRgCIAEoCVIFdGl0bGUSGgoIcHJvdmlkZXIYAyABKAlSCHByb3ZpZGVyEhQKBW1v'
-    'ZGVsGAQgASgJUgVtb2RlbA==');
+    'ZGVsGAQgASgJUgVtb2RlbBISCgRyb2xlGAUgASgJUgRyb2xlEhYKBmVmZm9ydBgGIAEoCVIGZW'
+    'Zmb3J0');
 
 @$core.Deprecated('Use createSessionResponseDescriptor instead')
 const CreateSessionResponse$json = {
@@ -371,6 +398,40 @@ final $typed_data.Uint8List setModelResponseDescriptor = $convert.base64Decode(
     'ChBTZXRNb2RlbFJlc3BvbnNlEioKB3Nlc3Npb24YASABKAsyEC5mbGl0LnYxLlNlc3Npb25SB3'
     'Nlc3Npb24=');
 
+@$core.Deprecated('Use setEffortRequestDescriptor instead')
+const SetEffortRequest$json = {
+  '1': 'SetEffortRequest',
+  '2': [
+    {'1': 'session_id', '3': 1, '4': 1, '5': 9, '10': 'sessionId'},
+    {'1': 'effort', '3': 2, '4': 1, '5': 9, '10': 'effort'},
+  ],
+};
+
+/// Descriptor for `SetEffortRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List setEffortRequestDescriptor = $convert.base64Decode(
+    'ChBTZXRFZmZvcnRSZXF1ZXN0Eh0KCnNlc3Npb25faWQYASABKAlSCXNlc3Npb25JZBIWCgZlZm'
+    'ZvcnQYAiABKAlSBmVmZm9ydA==');
+
+@$core.Deprecated('Use setEffortResponseDescriptor instead')
+const SetEffortResponse$json = {
+  '1': 'SetEffortResponse',
+  '2': [
+    {
+      '1': 'session',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.Session',
+      '10': 'session'
+    },
+  ],
+};
+
+/// Descriptor for `SetEffortResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List setEffortResponseDescriptor = $convert.base64Decode(
+    'ChFTZXRFZmZvcnRSZXNwb25zZRIqCgdzZXNzaW9uGAEgASgLMhAuZmxpdC52MS5TZXNzaW9uUg'
+    'dzZXNzaW9u');
+
 @$core.Deprecated('Use eventDescriptor instead')
 const Event$json = {
   '1': 'Event',
@@ -502,6 +563,15 @@ const Event$json = {
       '9': 0,
       '10': 'error'
     },
+    {
+      '1': 'todo_updated',
+      '3': 23,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.TodoUpdated',
+      '9': 0,
+      '10': 'todoUpdated'
+    },
   ],
   '8': [
     {'1': 'payload'},
@@ -526,7 +596,8 @@ final $typed_data.Uint8List eventDescriptor = $convert.base64Decode(
     'Rhc2tTdGF0ZUNoYW5nZWRIAFIQdGFza1N0YXRlQ2hhbmdlZBI8Cg1tb2RlbF9jaGFuZ2VkGBQg'
     'ASgLMhUuZmxpdC52MS5Nb2RlbENoYW5nZWRIAFIMbW9kZWxDaGFuZ2VkEiYKBXVzYWdlGBUgAS'
     'gLMg4uZmxpdC52MS5Vc2FnZUgAUgV1c2FnZRIqCgVlcnJvchgWIAEoCzISLmZsaXQudjEuVHVy'
-    'bkVycm9ySABSBWVycm9yQgkKB3BheWxvYWQ=');
+    'bkVycm9ySABSBWVycm9yEjkKDHRvZG9fdXBkYXRlZBgXIAEoCzIULmZsaXQudjEuVG9kb1VwZG'
+    'F0ZWRIAFILdG9kb1VwZGF0ZWRCCQoHcGF5bG9hZA==');
 
 @$core.Deprecated('Use messageStartedDescriptor instead')
 const MessageStarted$json = {
@@ -705,13 +776,16 @@ const ModelChanged$json = {
   '2': [
     {'1': 'provider', '3': 1, '4': 1, '5': 9, '10': 'provider'},
     {'1': 'model', '3': 2, '4': 1, '5': 9, '10': 'model'},
+    {'1': 'effort', '3': 3, '4': 1, '5': 9, '10': 'effort'},
+    {'1': 'context_length', '3': 4, '4': 1, '5': 3, '10': 'contextLength'},
   ],
 };
 
 /// Descriptor for `ModelChanged`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List modelChangedDescriptor = $convert.base64Decode(
     'CgxNb2RlbENoYW5nZWQSGgoIcHJvdmlkZXIYASABKAlSCHByb3ZpZGVyEhQKBW1vZGVsGAIgAS'
-    'gJUgVtb2RlbA==');
+    'gJUgVtb2RlbBIWCgZlZmZvcnQYAyABKAlSBmVmZm9ydBIlCg5jb250ZXh0X2xlbmd0aBgEIAEo'
+    'A1INY29udGV4dExlbmd0aA==');
 
 @$core.Deprecated('Use usageDescriptor instead')
 const Usage$json = {
@@ -721,6 +795,29 @@ const Usage$json = {
     {'1': 'input_tokens', '3': 2, '4': 1, '5': 3, '10': 'inputTokens'},
     {'1': 'output_tokens', '3': 3, '4': 1, '5': 3, '10': 'outputTokens'},
     {'1': 'total_tokens', '3': 4, '4': 1, '5': 3, '10': 'totalTokens'},
+    {'1': 'context_length', '3': 5, '4': 1, '5': 3, '10': 'contextLength'},
+    {
+      '1': 'time_to_first_token_ms',
+      '3': 6,
+      '4': 1,
+      '5': 3,
+      '10': 'timeToFirstTokenMs'
+    },
+    {
+      '1': 'prompt_tokens_per_second',
+      '3': 7,
+      '4': 1,
+      '5': 1,
+      '10': 'promptTokensPerSecond'
+    },
+    {
+      '1': 'generation_tokens_per_second',
+      '3': 8,
+      '4': 1,
+      '5': 1,
+      '10': 'generationTokensPerSecond'
+    },
+    {'1': 'timing_source', '3': 9, '4': 1, '5': 9, '10': 'timingSource'},
   ],
 };
 
@@ -728,7 +825,52 @@ const Usage$json = {
 final $typed_data.Uint8List usageDescriptor = $convert.base64Decode(
     'CgVVc2FnZRIdCgptZXNzYWdlX2lkGAEgASgJUgltZXNzYWdlSWQSIQoMaW5wdXRfdG9rZW5zGA'
     'IgASgDUgtpbnB1dFRva2VucxIjCg1vdXRwdXRfdG9rZW5zGAMgASgDUgxvdXRwdXRUb2tlbnMS'
-    'IQoMdG90YWxfdG9rZW5zGAQgASgDUgt0b3RhbFRva2Vucw==');
+    'IQoMdG90YWxfdG9rZW5zGAQgASgDUgt0b3RhbFRva2VucxIlCg5jb250ZXh0X2xlbmd0aBgFIA'
+    'EoA1INY29udGV4dExlbmd0aBIyChZ0aW1lX3RvX2ZpcnN0X3Rva2VuX21zGAYgASgDUhJ0aW1l'
+    'VG9GaXJzdFRva2VuTXMSNwoYcHJvbXB0X3Rva2Vuc19wZXJfc2Vjb25kGAcgASgBUhVwcm9tcH'
+    'RUb2tlbnNQZXJTZWNvbmQSPwocZ2VuZXJhdGlvbl90b2tlbnNfcGVyX3NlY29uZBgIIAEoAVIZ'
+    'Z2VuZXJhdGlvblRva2Vuc1BlclNlY29uZBIjCg10aW1pbmdfc291cmNlGAkgASgJUgx0aW1pbm'
+    'dTb3VyY2U=');
+
+@$core.Deprecated('Use todoUpdatedDescriptor instead')
+const TodoUpdated$json = {
+  '1': 'TodoUpdated',
+  '2': [
+    {
+      '1': 'items',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.flit.v1.TodoItem',
+      '10': 'items'
+    },
+  ],
+};
+
+/// Descriptor for `TodoUpdated`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List todoUpdatedDescriptor = $convert.base64Decode(
+    'CgtUb2RvVXBkYXRlZBInCgVpdGVtcxgBIAMoCzIRLmZsaXQudjEuVG9kb0l0ZW1SBWl0ZW1z');
+
+@$core.Deprecated('Use todoItemDescriptor instead')
+const TodoItem$json = {
+  '1': 'TodoItem',
+  '2': [
+    {'1': 'content', '3': 1, '4': 1, '5': 9, '10': 'content'},
+    {
+      '1': 'status',
+      '3': 2,
+      '4': 1,
+      '5': 14,
+      '6': '.flit.v1.TodoStatus',
+      '10': 'status'
+    },
+  ],
+};
+
+/// Descriptor for `TodoItem`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List todoItemDescriptor = $convert.base64Decode(
+    'CghUb2RvSXRlbRIYCgdjb250ZW50GAEgASgJUgdjb250ZW50EisKBnN0YXR1cxgCIAEoDjITLm'
+    'ZsaXQudjEuVG9kb1N0YXR1c1IGc3RhdHVz');
 
 @$core.Deprecated('Use turnErrorDescriptor instead')
 const TurnError$json = {
@@ -786,6 +928,11 @@ const $core.Map<$core.String, $core.dynamic> SessionServiceBase$json = {
       '2': '.flit.v1.SetModelRequest',
       '3': '.flit.v1.SetModelResponse'
     },
+    {
+      '1': 'SetEffort',
+      '2': '.flit.v1.SetEffortRequest',
+      '3': '.flit.v1.SetEffortResponse'
+    },
   ],
 };
 
@@ -816,6 +963,8 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.flit.v1.ModelChanged': ModelChanged$json,
   '.flit.v1.Usage': Usage$json,
   '.flit.v1.TurnError': TurnError$json,
+  '.flit.v1.TodoUpdated': TodoUpdated$json,
+  '.flit.v1.TodoItem': TodoItem$json,
   '.flit.v1.SendRequest': SendRequest$json,
   '.flit.v1.SendResponse': SendResponse$json,
   '.flit.v1.InterruptRequest': InterruptRequest$json,
@@ -824,6 +973,8 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.flit.v1.AnswerPromptResponse': AnswerPromptResponse$json,
   '.flit.v1.SetModelRequest': SetModelRequest$json,
   '.flit.v1.SetModelResponse': SetModelResponse$json,
+  '.flit.v1.SetEffortRequest': SetEffortRequest$json,
+  '.flit.v1.SetEffortResponse': SetEffortResponse$json,
 };
 
 /// Descriptor for `SessionService`. Decode as a `google.protobuf.ServiceDescriptorProto`.
@@ -838,4 +989,5 @@ final $typed_data.Uint8List sessionServiceDescriptor = $convert.base64Decode(
     '52MS5JbnRlcnJ1cHRSZXF1ZXN0GhouZmxpdC52MS5JbnRlcnJ1cHRSZXNwb25zZRJLCgxBbnN3'
     'ZXJQcm9tcHQSHC5mbGl0LnYxLkFuc3dlclByb21wdFJlcXVlc3QaHS5mbGl0LnYxLkFuc3dlcl'
     'Byb21wdFJlc3BvbnNlEj8KCFNldE1vZGVsEhguZmxpdC52MS5TZXRNb2RlbFJlcXVlc3QaGS5m'
-    'bGl0LnYxLlNldE1vZGVsUmVzcG9uc2U=');
+    'bGl0LnYxLlNldE1vZGVsUmVzcG9uc2USQgoJU2V0RWZmb3J0EhkuZmxpdC52MS5TZXRFZmZvcn'
+    'RSZXF1ZXN0GhouZmxpdC52MS5TZXRFZmZvcnRSZXNwb25zZQ==');

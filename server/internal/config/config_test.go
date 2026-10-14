@@ -166,3 +166,25 @@ shell:
 		t.Fatalf("agent defaults not applied: %+v", cfg.Agent)
 	}
 }
+
+func TestChatModel(t *testing.T) {
+	cfg, err := Parse([]byte(`
+providers:
+  - {name: a, base_url: http://a/v1, kind: llamacpp}
+  - {name: b, base_url: http://b/v1}
+agent:
+  provider: a
+  model: small
+  effort: low
+`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := cfg.ChatModel(); got != (TaskModel{Provider: "a", Model: "small", Effort: "low"}) {
+		t.Fatalf("ChatModel = %+v", got)
+	}
+	cfg.Agent.Tasks = map[string]TaskModel{"chat": {Provider: "b", Model: "big", Effort: "high"}}
+	if got := cfg.ChatModel(); got.Provider != "b" || got.Model != "big" {
+		t.Fatalf("ChatModel with tasks.chat = %+v", got)
+	}
+}

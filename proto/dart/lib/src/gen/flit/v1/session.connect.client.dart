@@ -160,4 +160,22 @@ extension type SessionServiceClient (connect.Transport _transport) {
       onTrailer: onTrailer,
     );
   }
+
+  /// SetEffort changes the reasoning effort used from the next model call.
+  Future<flitv1session.SetEffortResponse> setEffort(
+    flitv1session.SetEffortRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.SessionService.setEffort,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
 }

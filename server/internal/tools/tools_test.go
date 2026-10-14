@@ -283,3 +283,26 @@ func TestTruncate(t *testing.T) {
 		}
 	}
 }
+
+func TestTodo(t *testing.T) {
+	env := newEnv(t)
+	var got []TodoItem
+	env.Todo = func(items []TodoItem) { got = items }
+	r := run(t, env, "todo", map[string]any{"items": []any{
+		map[string]any{"content": " write tests ", "status": "completed"},
+		map[string]any{"content": "fix bug", "status": "in_progress"},
+		map[string]any{"content": "ship", "status": "pending"},
+	}})
+	if r.IsError || !strings.Contains(r.Text, "1 pending, 1 in progress, 1 completed") {
+		t.Fatalf("todo = %+v", r)
+	}
+	if len(got) != 3 || got[0].Content != "write tests" || got[1].Status != "in_progress" {
+		t.Fatalf("items = %+v", got)
+	}
+	if r := run(t, env, "todo", map[string]any{"items": []any{map[string]any{"content": "x", "status": "done"}}}); !r.IsError {
+		t.Fatal("bad status accepted")
+	}
+	if r := run(t, env, "todo", map[string]any{"items": []any{map[string]any{"content": " ", "status": "pending"}}}); !r.IsError {
+		t.Fatal("empty content accepted")
+	}
+}

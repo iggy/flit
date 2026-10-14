@@ -23,6 +23,8 @@ import (
 
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
 	"github.com/iggy/flit/server/internal/config"
+	"github.com/iggy/flit/server/internal/models"
+	"github.com/iggy/flit/server/internal/roles"
 	"github.com/iggy/flit/server/internal/store"
 )
 
@@ -46,6 +48,11 @@ type Manager struct {
 	cfg   func() config.Config
 	log   *slog.Logger
 	http  *http.Client
+
+	// Catalog, if set, supplies context windows for models. Set before use.
+	Catalog *models.Catalog
+	// RolesDir, if set, returns the roles directory. Set before use.
+	RolesDir func() string
 
 	mu       sync.Mutex
 	sessions map[string]*session
@@ -113,6 +120,35 @@ type CreateOptions struct {
 	Title      string
 	Provider   string
 	Model      string
+	Effort     string
+	// Role names a role file; its model and effort are defaults.
+	Role string
+}
+
+// contextLength is the model's context window, if the catalog knows it.
+func (m *Manager) contextLength(provider, model string) int64 {
+	if m.Catalog == nil || provider == "" || model == "" {
+		return 0
+	}
+	if info, ok := m.Catalog.Lookup(provider, model); ok {
+		return info.ContextLength
+	}
+	return 0
+}
+
+// role loads a role by name.
+func (m *Manager) role(name string) (*roles.Role, error) {
+	if name == "" {
+		return nil, nil
+	}
+	if m.RolesDir == nil {
+		return nil, invalid("roles are not enabled")
+	}
+	r, err := roles.Get(m.RolesDir(), name)
+	if err != nil {
+		return nil, invalid("%v", err)
+	}
+	return &r, nil
 }
 
 // Create starts a new idle session in the default team and project.
@@ -127,7 +163,27 @@ func (m *Manager) Create(ctx context.Context, o CreateOptions) (store.Session, e
 	if fi, err := os.Stat(dir); err != nil || !fi.IsDir() {
 		return store.Session{}, invalid("working_dir %s is not an existing directory", dir)
 	}
-	provider, model, err := m.resolveModel(o.Provider, o.Model)
+	role, err := m.role(o.Role)
+	if err != nil {
+		return store.Session{}, err
+	}
+	provider, model, effort := o.Provider, o.Model, o.Effort
+	if provider == "" && role != nil && role.Provider != "" {
+		provider, model = role.Provider, role.Model
+	}
+	if effort == "" && role != nil {
+		effort = role.Effort
+	}
+	if provider == "" {
+		chat := m.cfg().ChatModel()
+		if chat.Provider != "" {
+			provider, model = chat.Provider, chat.Model
+			if effort == "" {
+				effort = chat.Effort
+			}
+		}
+	}
+	provider, model, err = m.resolveModel(provider, model)
 	if err != nil {
 		return store.Session{}, err
 	}
@@ -140,7 +196,10 @@ func (m *Manager) Create(ctx context.Context, o CreateOptions) (store.Session, e
 		Provider:   provider,
 		Model:      model,
 		State:      flitv1.TaskState_TASK_STATE_IDLE,
+		Effort:     effort,
+		Role:       o.Role,
 	}
+	info.ContextLength = m.contextLength(provider, model)
 	if err := m.store.CreateSession(ctx, &info); err != nil {
 		return store.Session{}, err
 	}
@@ -257,4 +316,14 @@ func (m *Manager) SetModel(ctx context.Context, id, provider, model string) (sto
 		return store.Session{}, err
 	}
 	return s.setModel(ctx, provider, model)
+}
+
+// SetEffort changes the session's reasoning effort, effective from its next
+// model call. Empty means the model's default.
+func (m *Manager) SetEffort(ctx context.Context, id, effort string) (store.Session, error) {
+	s, err := m.session(ctx, id)
+	if err != nil {
+		return store.Session{}, err
+	}
+	return s.setEffort(ctx, effort)
 }

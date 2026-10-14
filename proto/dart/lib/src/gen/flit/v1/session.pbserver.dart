@@ -37,6 +37,8 @@ abstract class SessionServiceBase extends $pb.GeneratedService {
       $pb.ServerContext ctx, $1.AnswerPromptRequest request);
   $async.Future<$1.SetModelResponse> setModel(
       $pb.ServerContext ctx, $1.SetModelRequest request);
+  $async.Future<$1.SetEffortResponse> setEffort(
+      $pb.ServerContext ctx, $1.SetEffortRequest request);
 
   $pb.GeneratedMessage createRequest($core.String methodName) {
     switch (methodName) {
@@ -56,6 +58,8 @@ abstract class SessionServiceBase extends $pb.GeneratedService {
         return $1.AnswerPromptRequest();
       case 'SetModel':
         return $1.SetModelRequest();
+      case 'SetEffort':
+        return $1.SetEffortRequest();
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }
@@ -80,6 +84,8 @@ abstract class SessionServiceBase extends $pb.GeneratedService {
         return answerPrompt(ctx, request as $1.AnswerPromptRequest);
       case 'SetModel':
         return setModel(ctx, request as $1.SetModelRequest);
+      case 'SetEffort':
+        return setEffort(ctx, request as $1.SetEffortRequest);
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }

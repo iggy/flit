@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"time"
 )
 
 // Message is a chat message in OpenAI wire format.
@@ -55,6 +56,9 @@ type Request struct {
 	Model    string    `json:"model"`
 	Messages []Message `json:"messages"`
 	Tools    []Tool    `json:"tools,omitempty"`
+	// ReasoningEffort ("low", "medium", "high", …) is sent as
+	// reasoning_effort when set; OpenAI, OpenRouter and llama.cpp accept it.
+	ReasoningEffort string `json:"reasoning_effort,omitempty"`
 }
 
 // Usage is token usage reported by the endpoint.
@@ -72,6 +76,33 @@ type Result struct {
 	FinishReason string
 	// Usage is nil if the endpoint didn't report it.
 	Usage *Usage
+	// Metrics is how fast the call was.
+	Metrics Metrics
+}
+
+// Metrics is the speed of one call.
+type Metrics struct {
+	// TimeToFirstToken is from sending the request to the first streamed
+	// token (text, reasoning or tool call).
+	TimeToFirstToken time.Duration
+	// Tokens per second for reading the prompt and for generating; 0 when
+	// unknown.
+	PromptPerSecond     float64
+	GenerationPerSecond float64
+	// Source is "llama.cpp" when the server reported its own timings,
+	// "measured" when flit timed the stream, "" when neither worked.
+	Source string
+}
+
+// llamaTimings is the timings block llama.cpp's server adds to the last
+// streamed chunk.
+type llamaTimings struct {
+	PromptN            int64   `json:"prompt_n"`
+	PromptMS           float64 `json:"prompt_ms"`
+	PromptPerSecond    float64 `json:"prompt_per_second"`
+	PredictedN         int64   `json:"predicted_n"`
+	PredictedMS        float64 `json:"predicted_ms"`
+	PredictedPerSecond float64 `json:"predicted_per_second"`
 }
 
 // Handler receives deltas as they stream in. Either func may be nil.
@@ -134,6 +165,7 @@ func (c *Client) Stream(ctx context.Context, req Request, h Handler) (*Result, e
 	if hc == nil {
 		hc = http.DefaultClient
 	}
+	start := time.Now()
 	resp, err := hc.Do(httpReq)
 	if err != nil {
 		return nil, err
@@ -143,7 +175,7 @@ func (c *Client) Stream(ctx context.Context, req Request, h Handler) (*Result, e
 		b, _ := io.ReadAll(io.LimitReader(resp.Body, 64<<10))
 		return nil, &APIError{StatusCode: resp.StatusCode, Message: errorMessage(b)}
 	}
-	return readStream(resp.Body, h)
+	return readStream(resp.Body, h, start)
 }
 
 type chunk struct {
@@ -164,14 +196,23 @@ type chunk struct {
 		} `json:"delta"`
 		FinishReason *string `json:"finish_reason"`
 	} `json:"choices"`
-	Usage *Usage          `json:"usage"`
-	Error json.RawMessage `json:"error"`
+	Usage   *Usage          `json:"usage"`
+	Timings *llamaTimings   `json:"timings"`
+	Error   json.RawMessage `json:"error"`
 }
 
-func readStream(r io.Reader, h Handler) (*Result, error) {
+func readStream(r io.Reader, h Handler, start time.Time) (*Result, error) {
 	var res Result
 	var text, reasoning strings.Builder
 	calls := map[int]*ToolCall{}
+	var firstToken, lastToken time.Time
+	var timings *llamaTimings
+	token := func() {
+		lastToken = time.Now()
+		if firstToken.IsZero() {
+			firstToken = lastToken
+		}
+	}
 
 	sc := bufio.NewScanner(r)
 	sc.Buffer(make([]byte, 64<<10), 16<<20)
@@ -197,8 +238,14 @@ func readStream(r io.Reader, h Handler) (*Result, error) {
 		if c.Usage != nil {
 			res.Usage = c.Usage
 		}
+		if c.Timings != nil {
+			timings = c.Timings
+		}
 		for _, ch := range c.Choices {
 			d := ch.Delta
+			if d.Content != "" || d.ReasoningContent != "" || d.Reasoning != "" || len(d.ToolCalls) > 0 {
+				token()
+			}
 			if d.Content != "" {
 				text.WriteString(d.Content)
 				if h.Text != nil {
@@ -236,6 +283,7 @@ func readStream(r io.Reader, h Handler) (*Result, error) {
 	}
 
 	res.Text, res.Reasoning = text.String(), reasoning.String()
+	res.Metrics = metrics(start, firstToken, lastToken, res.Usage, timings)
 	idx := make([]int, 0, len(calls))
 	for i := range calls {
 		idx = append(idx, i)
@@ -279,4 +327,32 @@ func errorMessage(b []byte) string {
 		msg = "(empty body)"
 	}
 	return msg
+}
+
+// metrics prefers llama.cpp's own timings (server-side, so no network time)
+// and otherwise times the stream: prompt speed is prompt tokens over the
+// time to the first token, generation speed is the remaining tokens over
+// the time from the first to the last token.
+func metrics(start, first, last time.Time, u *Usage, t *llamaTimings) Metrics {
+	var m Metrics
+	if !first.IsZero() {
+		m.TimeToFirstToken = first.Sub(start)
+	}
+	if t != nil && (t.PromptPerSecond > 0 || t.PredictedPerSecond > 0) {
+		m.Source = "llama.cpp"
+		m.PromptPerSecond = t.PromptPerSecond
+		m.GenerationPerSecond = t.PredictedPerSecond
+		return m
+	}
+	if first.IsZero() || u == nil {
+		return m
+	}
+	m.Source = "measured"
+	if s := m.TimeToFirstToken.Seconds(); s > 0 && u.PromptTokens > 0 {
+		m.PromptPerSecond = float64(u.PromptTokens) / s
+	}
+	if s := last.Sub(first).Seconds(); s > 0 && u.CompletionTokens > 1 {
+		m.GenerationPerSecond = float64(u.CompletionTokens-1) / s
+	}
+	return m
 }
