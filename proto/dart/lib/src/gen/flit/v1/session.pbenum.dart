@@ -1,0 +1,103 @@
+// This is a generated file - do not edit.
+//
+// Generated from flit/v1/session.proto.
+
+// @dart = 3.3
+
+// ignore_for_file: annotate_overrides, camel_case_types, comment_references
+// ignore_for_file: constant_identifier_names
+// ignore_for_file: curly_braces_in_flow_control_structures
+// ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
+// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
+
+import 'dart:core' as $core;
+
+import 'package:protobuf/protobuf.dart' as $pb;
+
+/// TaskState is what a session's agent is doing.
+class TaskState extends $pb.ProtobufEnum {
+  static const TaskState TASK_STATE_UNSPECIFIED =
+      TaskState._(0, _omitEnumNames ? '' : 'TASK_STATE_UNSPECIFIED');
+
+  /// Created, no turn has run yet.
+  static const TaskState TASK_STATE_IDLE =
+      TaskState._(1, _omitEnumNames ? '' : 'TASK_STATE_IDLE');
+
+  /// A turn is running.
+  static const TaskState TASK_STATE_WORKING =
+      TaskState._(2, _omitEnumNames ? '' : 'TASK_STATE_WORKING');
+
+  /// The turn is waiting for a client to answer a prompt.
+  static const TaskState TASK_STATE_WAITING =
+      TaskState._(3, _omitEnumNames ? '' : 'TASK_STATE_WAITING');
+
+  /// The turn stopped on an error it could not get past.
+  static const TaskState TASK_STATE_STUCK =
+      TaskState._(4, _omitEnumNames ? '' : 'TASK_STATE_STUCK');
+
+  /// The turn finished (or was interrupted); waiting for the next message.
+  static const TaskState TASK_STATE_DONE =
+      TaskState._(5, _omitEnumNames ? '' : 'TASK_STATE_DONE');
+
+  static const $core.List<TaskState> values = <TaskState>[
+    TASK_STATE_UNSPECIFIED,
+    TASK_STATE_IDLE,
+    TASK_STATE_WORKING,
+    TASK_STATE_WAITING,
+    TASK_STATE_STUCK,
+    TASK_STATE_DONE,
+  ];
+
+  static final $core.List<TaskState?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 5);
+  static TaskState? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const TaskState._(super.value, super.name);
+}
+
+class Role extends $pb.ProtobufEnum {
+  static const Role ROLE_UNSPECIFIED =
+      Role._(0, _omitEnumNames ? '' : 'ROLE_UNSPECIFIED');
+  static const Role ROLE_USER = Role._(1, _omitEnumNames ? '' : 'ROLE_USER');
+  static const Role ROLE_ASSISTANT =
+      Role._(2, _omitEnumNames ? '' : 'ROLE_ASSISTANT');
+
+  static const $core.List<Role> values = <Role>[
+    ROLE_UNSPECIFIED,
+    ROLE_USER,
+    ROLE_ASSISTANT,
+  ];
+
+  static final $core.List<Role?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 2);
+  static Role? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const Role._(super.value, super.name);
+}
+
+class PromptDecision extends $pb.ProtobufEnum {
+  static const PromptDecision PROMPT_DECISION_UNSPECIFIED =
+      PromptDecision._(0, _omitEnumNames ? '' : 'PROMPT_DECISION_UNSPECIFIED');
+  static const PromptDecision PROMPT_DECISION_ALLOW =
+      PromptDecision._(1, _omitEnumNames ? '' : 'PROMPT_DECISION_ALLOW');
+  static const PromptDecision PROMPT_DECISION_DENY =
+      PromptDecision._(2, _omitEnumNames ? '' : 'PROMPT_DECISION_DENY');
+
+  static const $core.List<PromptDecision> values = <PromptDecision>[
+    PROMPT_DECISION_UNSPECIFIED,
+    PROMPT_DECISION_ALLOW,
+    PROMPT_DECISION_DENY,
+  ];
+
+  static final $core.List<PromptDecision?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 2);
+  static PromptDecision? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const PromptDecision._(super.value, super.name);
+}
+
+const $core.bool _omitEnumNames =
+    $core.bool.fromEnvironment('protobuf.omit_enum_names');

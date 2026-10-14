@@ -1,0 +1,323 @@
+// Package store keeps flit's state in SQLite (pure Go, no cgo): teams,
+// projects, sessions and each session's append-only event log.
+package store
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"fmt"
+	"net/url"
+	"strings"
+	"time"
+
+	"google.golang.org/protobuf/proto"
+	_ "modernc.org/sqlite" // registers the "sqlite" driver
+
+	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
+)
+
+// FileName is the database's file name inside the data dir.
+const FileName = "flit.db"
+
+// The default team and project. Every session belongs to them until teams
+// and projects can be managed.
+const (
+	DefaultTeamID      = "team_personal"
+	DefaultTeamName    = "Personal"
+	DefaultProjectID   = "proj_scratch"
+	DefaultProjectName = "Scratch"
+)
+
+// ErrNotFound is returned when a session doesn't exist.
+var ErrNotFound = errors.New("not found")
+
+// Store is flit's database.
+type Store struct {
+	db *sql.DB
+}
+
+// Open opens (creating if needed) the database at path and migrates it to
+// the current schema.
+func Open(ctx context.Context, path string) (*Store, error) {
+	q := url.Values{}
+	for _, p := range []string{"journal_mode(WAL)", "synchronous(NORMAL)", "foreign_keys(1)", "busy_timeout(5000)"} {
+		q.Add("_pragma", p)
+	}
+	db, err := sql.Open("sqlite", path+"?"+q.Encode())
+	if err != nil {
+		return nil, err
+	}
+	s := &Store{db: db}
+	if err := s.migrate(ctx); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("migrate %s: %w", path, err)
+	}
+	return s, nil
+}
+
+// Close closes the database.
+func (s *Store) Close() error { return s.db.Close() }
+
+// migrations are applied in order; PRAGMA user_version records how many ran.
+// Only ever append to this list.
+var migrations = []string{
+	`
+CREATE TABLE teams (
+	id         TEXT PRIMARY KEY,
+	name       TEXT NOT NULL,
+	created_at INTEGER NOT NULL
+);
+CREATE TABLE projects (
+	id         TEXT PRIMARY KEY,
+	team_id    TEXT NOT NULL REFERENCES teams(id),
+	name       TEXT NOT NULL,
+	created_at INTEGER NOT NULL
+);
+CREATE TABLE sessions (
+	id          TEXT PRIMARY KEY,
+	team_id     TEXT NOT NULL REFERENCES teams(id),
+	project_id  TEXT NOT NULL REFERENCES projects(id),
+	title       TEXT NOT NULL,
+	working_dir TEXT NOT NULL,
+	provider    TEXT NOT NULL,
+	model       TEXT NOT NULL,
+	state       INTEGER NOT NULL,
+	last_seq    INTEGER NOT NULL DEFAULT 0,
+	created_at  INTEGER NOT NULL,
+	updated_at  INTEGER NOT NULL
+);
+CREATE INDEX sessions_by_project ON sessions (team_id, project_id, updated_at);
+CREATE INDEX sessions_by_updated ON sessions (updated_at);
+CREATE INDEX sessions_by_state ON sessions (state);
+CREATE TABLE events (
+	session_id TEXT NOT NULL REFERENCES sessions(id),
+	seq        INTEGER NOT NULL,
+	team_id    TEXT NOT NULL,
+	project_id TEXT NOT NULL,
+	kind       TEXT NOT NULL,
+	created_at INTEGER NOT NULL,
+	payload    BLOB NOT NULL,
+	PRIMARY KEY (session_id, seq)
+) WITHOUT ROWID;
+CREATE INDEX events_by_kind ON events (session_id, kind, seq);
+`,
+}
+
+func (s *Store) migrate(ctx context.Context) error {
+	var version int
+	if err := s.db.QueryRowContext(ctx, `PRAGMA user_version`).Scan(&version); err != nil {
+		return err
+	}
+	for i := version; i < len(migrations); i++ {
+		tx, err := s.db.BeginTx(ctx, nil)
+		if err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, migrations[i]); err != nil {
+			tx.Rollback()
+			return fmt.Errorf("migration %d: %w", i+1, err)
+		}
+		if _, err := tx.ExecContext(ctx, fmt.Sprintf(`PRAGMA user_version = %d`, i+1)); err != nil {
+			tx.Rollback()
+			return err
+		}
+		if err := tx.Commit(); err != nil {
+			return err
+		}
+	}
+	now := time.Now().UnixNano()
+	if _, err := s.db.ExecContext(ctx, `INSERT OR IGNORE INTO teams (id, name, created_at) VALUES (?, ?, ?)`,
+		DefaultTeamID, DefaultTeamName, now); err != nil {
+		return err
+	}
+	_, err := s.db.ExecContext(ctx, `INSERT OR IGNORE INTO projects (id, team_id, name, created_at) VALUES (?, ?, ?, ?)`,
+		DefaultProjectID, DefaultTeamID, DefaultProjectName, now)
+	return err
+}
+
+// Session is a stored session.
+type Session struct {
+	ID         string
+	TeamID     string
+	ProjectID  string
+	Title      string
+	WorkingDir string
+	Provider   string
+	Model      string
+	State      flitv1.TaskState
+	LastSeq    int64
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+}
+
+const sessionCols = `id, team_id, project_id, title, working_dir, provider, model, state, last_seq, created_at, updated_at`
+
+func scanSession(row interface{ Scan(...any) error }) (Session, error) {
+	var s Session
+	var created, updated int64
+	err := row.Scan(&s.ID, &s.TeamID, &s.ProjectID, &s.Title, &s.WorkingDir, &s.Provider, &s.Model,
+		&s.State, &s.LastSeq, &created, &updated)
+	if errors.Is(err, sql.ErrNoRows) {
+		return Session{}, ErrNotFound
+	}
+	s.CreatedAt, s.UpdatedAt = time.Unix(0, created), time.Unix(0, updated)
+	return s, err
+}
+
+// CreateSession stores a new session. CreatedAt and UpdatedAt are set to now.
+func (s *Store) CreateSession(ctx context.Context, sess *Session) error {
+	now := time.Now()
+	sess.CreatedAt, sess.UpdatedAt = now, now
+	_, err := s.db.ExecContext(ctx, `INSERT INTO sessions (`+sessionCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		sess.ID, sess.TeamID, sess.ProjectID, sess.Title, sess.WorkingDir, sess.Provider, sess.Model,
+		sess.State, sess.LastSeq, now.UnixNano(), now.UnixNano())
+	return err
+}
+
+// GetSession returns the session with the given id, or ErrNotFound.
+func (s *Store) GetSession(ctx context.Context, id string) (Session, error) {
+	return scanSession(s.db.QueryRowContext(ctx, `SELECT `+sessionCols+` FROM sessions WHERE id = ?`, id))
+}
+
+// ListSessions returns up to limit sessions, most recently updated first,
+// skipping the first offset.
+func (s *Store) ListSessions(ctx context.Context, limit, offset int) ([]Session, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT `+sessionCols+` FROM sessions ORDER BY updated_at DESC, id LIMIT ? OFFSET ?`, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Session
+	for rows.Next() {
+		sess, err := scanSession(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, sess)
+	}
+	return out, rows.Err()
+}
+
+// SetModel changes a session's provider and model.
+func (s *Store) SetModel(ctx context.Context, id, provider, model string) error {
+	res, err := s.db.ExecContext(ctx, `UPDATE sessions SET provider = ?, model = ?, updated_at = ? WHERE id = ?`,
+		provider, model, time.Now().UnixNano(), id)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// SetTitle changes a session's title.
+func (s *Store) SetTitle(ctx context.Context, id, title string) error {
+	_, err := s.db.ExecContext(ctx, `UPDATE sessions SET title = ? WHERE id = ?`, title, id)
+	return err
+}
+
+// SessionIDsInStates returns the ids of sessions in any of the given states.
+func (s *Store) SessionIDsInStates(ctx context.Context, states ...flitv1.TaskState) ([]string, error) {
+	var ids []string
+	for _, st := range states {
+		rows, err := s.db.QueryContext(ctx, `SELECT id FROM sessions WHERE state = ?`, st)
+		if err != nil {
+			return nil, err
+		}
+		for rows.Next() {
+			var id string
+			if err := rows.Scan(&id); err != nil {
+				rows.Close()
+				return nil, err
+			}
+			ids = append(ids, id)
+		}
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
+	}
+	return ids, nil
+}
+
+// AppendEvent stores ev, which must carry the session's next sequence
+// number, and advances the session's last_seq (and state, for
+// TaskStateChanged events) in the same transaction.
+func (s *Store) AppendEvent(ctx context.Context, sess Session, ev *flitv1.Event) error {
+	payload, err := proto.Marshal(ev)
+	if err != nil {
+		return err
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	at := ev.GetTime().AsTime().UnixNano()
+	if _, err := tx.ExecContext(ctx, `INSERT INTO events (session_id, seq, team_id, project_id, kind, created_at, payload) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		ev.SessionId, ev.Seq, sess.TeamID, sess.ProjectID, Kind(ev), at, payload); err != nil {
+		return err
+	}
+	q := `UPDATE sessions SET last_seq = ?, updated_at = ? WHERE id = ? AND last_seq = ?`
+	args := []any{ev.Seq, at, ev.SessionId, ev.Seq - 1}
+	if st := ev.GetTaskStateChanged(); st != nil {
+		q = `UPDATE sessions SET last_seq = ?, updated_at = ?, state = ? WHERE id = ? AND last_seq = ?`
+		args = []any{ev.Seq, at, st.State, ev.SessionId, ev.Seq - 1}
+	}
+	res, err := tx.ExecContext(ctx, q, args...)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n != 1 {
+		return fmt.Errorf("append event %d to session %s: sequence out of order", ev.Seq, ev.SessionId)
+	}
+	return tx.Commit()
+}
+
+// Events returns a session's events with fromSeq <= seq <= toSeq, in order.
+func (s *Store) Events(ctx context.Context, sessionID string, fromSeq, toSeq int64) ([]*flitv1.Event, error) {
+	return s.queryEvents(ctx, `SELECT payload FROM events WHERE session_id = ? AND seq >= ? AND seq <= ? ORDER BY seq`,
+		sessionID, fromSeq, toSeq)
+}
+
+// EventsOfKinds returns all of a session's events of the given kinds (see
+// Kind), in order.
+func (s *Store) EventsOfKinds(ctx context.Context, sessionID string, kinds ...string) ([]*flitv1.Event, error) {
+	q := `SELECT payload FROM events WHERE session_id = ? AND kind IN (?` + strings.Repeat(",?", len(kinds)-1) + `) ORDER BY seq`
+	args := []any{sessionID}
+	for _, k := range kinds {
+		args = append(args, k)
+	}
+	return s.queryEvents(ctx, q, args...)
+}
+
+func (s *Store) queryEvents(ctx context.Context, q string, args ...any) ([]*flitv1.Event, error) {
+	rows, err := s.db.QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []*flitv1.Event
+	for rows.Next() {
+		var payload []byte
+		if err := rows.Scan(&payload); err != nil {
+			return nil, err
+		}
+		ev := new(flitv1.Event)
+		if err := proto.Unmarshal(payload, ev); err != nil {
+			return nil, err
+		}
+		out = append(out, ev)
+	}
+	return out, rows.Err()
+}
+
+// Kind names an event's payload type, e.g. "text_delta".
+func Kind(ev *flitv1.Event) string {
+	if f := ev.ProtoReflect().WhichOneof(ev.ProtoReflect().Descriptor().Oneofs().ByName("payload")); f != nil {
+		return string(f.Name())
+	}
+	return "unknown"
+}

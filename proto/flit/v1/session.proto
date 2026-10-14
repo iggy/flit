@@ -1,0 +1,300 @@
+syntax = "proto3";
+
+package flit.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/iggy/flit/server/gen/flit/v1;flitv1";
+
+// SessionService runs agent sessions. A session is a conversation with the
+// agent in a working directory. Everything that happens in it is recorded as
+// an append-only, numbered event log, so a client can attach at any point,
+// replay from any sequence number and then follow live.
+service SessionService {
+  // CreateSession starts a new, idle session.
+  rpc CreateSession(CreateSessionRequest) returns (CreateSessionResponse);
+
+  // ListSessions lists sessions, most recently updated first.
+  rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+
+  // GetSession returns one session.
+  rpc GetSession(GetSessionRequest) returns (GetSessionResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+
+  // Attach streams a session's events with seq >= from_seq, then follows new
+  // events live until the client disconnects. Replayed events are identical
+  // to what a live client saw, deltas included.
+  rpc Attach(AttachRequest) returns (stream AttachResponse);
+
+  // Send adds a user message and starts a turn. Fails with
+  // FAILED_PRECONDITION while a turn is already running.
+  rpc Send(SendRequest) returns (SendResponse);
+
+  // Interrupt stops the running turn, if any. Pending prompts are resolved
+  // as denied.
+  rpc Interrupt(InterruptRequest) returns (InterruptResponse);
+
+  // AnswerPrompt answers a prompt the agent is waiting on. The first answer
+  // wins; later answers fail with FAILED_PRECONDITION.
+  rpc AnswerPrompt(AnswerPromptRequest) returns (AnswerPromptResponse);
+
+  // SetModel changes the provider and model used from the next model call.
+  rpc SetModel(SetModelRequest) returns (SetModelResponse);
+}
+
+// TaskState is what a session's agent is doing.
+enum TaskState {
+  TASK_STATE_UNSPECIFIED = 0;
+  // Created, no turn has run yet.
+  TASK_STATE_IDLE = 1;
+  // A turn is running.
+  TASK_STATE_WORKING = 2;
+  // The turn is waiting for a client to answer a prompt.
+  TASK_STATE_WAITING = 3;
+  // The turn stopped on an error it could not get past.
+  TASK_STATE_STUCK = 4;
+  // The turn finished (or was interrupted); waiting for the next message.
+  TASK_STATE_DONE = 5;
+}
+
+message Session {
+  string id = 1;
+  string team_id = 2;
+  string project_id = 3;
+  string title = 4;
+  // Absolute path the agent works in.
+  string working_dir = 5;
+  // Name of the configured provider endpoint, and the model on it.
+  string provider = 6;
+  string model = 7;
+  TaskState state = 8;
+  // Sequence number of the newest event; 0 if there are none.
+  int64 last_seq = 9;
+  google.protobuf.Timestamp create_time = 10;
+  google.protobuf.Timestamp update_time = 11;
+}
+
+message CreateSessionRequest {
+  // Directory the agent works in. Must exist. Required.
+  string working_dir = 1;
+  string title = 2;
+  // Provider and model. Empty means the config's agent defaults.
+  string provider = 3;
+  string model = 4;
+}
+
+message CreateSessionResponse {
+  Session session = 1;
+}
+
+message ListSessionsRequest {
+  // Maximum sessions to return; 0 means a server default.
+  int32 page_size = 1;
+  // From a previous response's next_page_token.
+  string page_token = 2;
+}
+
+message ListSessionsResponse {
+  repeated Session sessions = 1;
+  // Empty when there are no more.
+  string next_page_token = 2;
+}
+
+message GetSessionRequest {
+  string session_id = 1;
+}
+
+message GetSessionResponse {
+  Session session = 1;
+}
+
+message AttachRequest {
+  string session_id = 1;
+  // First sequence number to send. 0 or 1 replays everything; last_seq + 1
+  // sends only new events.
+  int64 from_seq = 2;
+}
+
+message AttachResponse {
+  Event event = 1;
+}
+
+message SendRequest {
+  string session_id = 1;
+  string text = 2;
+}
+
+message SendResponse {
+  // Sequence number of the user message's first event.
+  int64 seq = 1;
+}
+
+message InterruptRequest {
+  string session_id = 1;
+}
+
+message InterruptResponse {
+  // Whether a turn was running.
+  bool interrupted = 1;
+}
+
+message AnswerPromptRequest {
+  string session_id = 1;
+  string prompt_id = 2;
+  PromptDecision decision = 3;
+  // Free-form name of the answering client, e.g. "flit-app/ios". Recorded in
+  // the PromptResolved event.
+  string client = 4;
+}
+
+message AnswerPromptResponse {}
+
+message SetModelRequest {
+  string session_id = 1;
+  string provider = 2;
+  string model = 3;
+}
+
+message SetModelResponse {
+  Session session = 1;
+}
+
+// Event is one entry in a session's event log.
+message Event {
+  string session_id = 1;
+  // Per-session sequence number, starting at 1, with no gaps.
+  int64 seq = 2;
+  google.protobuf.Timestamp time = 3;
+
+  oneof payload {
+    MessageStarted message_started = 10;
+    TextDelta text_delta = 11;
+    ReasoningDelta reasoning_delta = 12;
+    MessageDone message_done = 13;
+    ToolCallStarted tool_call_started = 14;
+    ToolOutput tool_output = 15;
+    ToolCallDone tool_call_done = 16;
+    PromptRequested prompt_requested = 17;
+    PromptResolved prompt_resolved = 18;
+    TaskStateChanged task_state_changed = 19;
+    ModelChanged model_changed = 20;
+    Usage usage = 21;
+    TurnError error = 22;
+  }
+}
+
+enum Role {
+  ROLE_UNSPECIFIED = 0;
+  ROLE_USER = 1;
+  ROLE_ASSISTANT = 2;
+}
+
+// MessageStarted opens a message. Its text arrives as TextDelta events and
+// it ends with MessageDone.
+message MessageStarted {
+  string message_id = 1;
+  Role role = 2;
+}
+
+message TextDelta {
+  string message_id = 1;
+  string text = 2;
+}
+
+// ReasoningDelta is model reasoning ("thinking") text, for models that
+// expose it.
+message ReasoningDelta {
+  string message_id = 1;
+  string text = 2;
+}
+
+// MessageDone closes a message and repeats its full text.
+message MessageDone {
+  string message_id = 1;
+  string text = 2;
+  string reasoning = 3;
+  // Why the model stopped: "stop", "tool_calls", "length", "interrupted", ...
+  string finish_reason = 4;
+}
+
+// ToolCallStarted is a tool call the model made in message message_id.
+message ToolCallStarted {
+  string message_id = 1;
+  string tool_call_id = 2;
+  string name = 3;
+  // Arguments as the JSON text the model produced.
+  string arguments = 4;
+}
+
+// ToolOutput is live output from a running tool (e.g. shell stdout/stderr).
+// The model sees ToolCallDone.result, not these chunks.
+message ToolOutput {
+  string tool_call_id = 1;
+  string text = 2;
+}
+
+message ToolCallDone {
+  string tool_call_id = 1;
+  // What the model sees, after truncation.
+  string result = 2;
+  bool is_error = 3;
+  // Whether result was shortened, and by how many bytes.
+  bool truncated = 4;
+  int64 omitted_bytes = 5;
+}
+
+enum PromptDecision {
+  PROMPT_DECISION_UNSPECIFIED = 0;
+  PROMPT_DECISION_ALLOW = 1;
+  PROMPT_DECISION_DENY = 2;
+}
+
+// PromptRequested asks the user to allow or deny something, such as a shell
+// command. The turn waits until a client calls AnswerPrompt.
+message PromptRequested {
+  string prompt_id = 1;
+  string tool_call_id = 2;
+  // Short description, e.g. "Run shell command".
+  string title = 3;
+  // What exactly would happen, e.g. the command line.
+  string detail = 4;
+}
+
+message PromptResolved {
+  string prompt_id = 1;
+  PromptDecision decision = 2;
+  // Client that answered (AnswerPromptRequest.client), or empty if the
+  // server resolved it, e.g. on interrupt.
+  string client = 3;
+  // Why the server resolved it, when it did.
+  string reason = 4;
+}
+
+message TaskStateChanged {
+  TaskState state = 1;
+  // Human-readable detail, e.g. "interrupted".
+  string reason = 2;
+}
+
+message ModelChanged {
+  string provider = 1;
+  string model = 2;
+}
+
+// Usage is token usage for one model call.
+message Usage {
+  string message_id = 1;
+  int64 input_tokens = 2;
+  int64 output_tokens = 3;
+  int64 total_tokens = 4;
+}
+
+message TurnError {
+  string message = 1;
+  // Whether the session can go on: true means a new Send may succeed (e.g. a
+  // network blip); false means something must change first (e.g. config).
+  bool turn_can_continue = 2;
+}

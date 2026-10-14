@@ -46,7 +46,22 @@ Rules:
   design anything that assumes a single user or project.
 - Layout: `cmd/flit` (CLI), `internal/config`, `internal/auth`,
   `internal/server` (HTTP server + rebind), `internal/system`
-  (SystemService), `gen/` (generated, don't edit).
+  (SystemService), `internal/sessionsvc` (SessionService, maps errors to
+  Connect codes), `internal/agent` (session runtime + agent loop),
+  `internal/llm` (OpenAI-compatible client; `llmtest` is a scripted fake
+  endpoint), `internal/tools` (built-in tools, shell rules, truncation),
+  `internal/store` (SQLite), `gen/` (generated, don't edit).
+- **The event log is the source of truth.** Every observable step of a
+  turn is appended (persisted) and only then published to attached
+  clients, under the session lock, so replay from any seq equals what a
+  live client saw. Don't publish anything that isn't in the log, and
+  rebuild model context from the log (`agent/history.go`).
+- Schema changes: append a migration to `store.migrations`; never edit one
+  that has shipped.
+- Test agent behaviour against `llmtest`, not a real model. The real-model
+  test (`TestLlamaCppCodingTask`) runs only with
+  `FLIT_TEST_LLAMA_URL=http://host:8080/v1` (optional
+  `FLIT_TEST_LLAMA_MODEL`, `FLIT_TEST_LLAMA_KEY`).
 
 ## API (`proto/`)
 

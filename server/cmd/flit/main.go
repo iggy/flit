@@ -16,14 +16,18 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"sync/atomic"
 	"syscall"
 	"time"
 
+	"github.com/iggy/flit/server/internal/agent"
 	"github.com/iggy/flit/server/internal/auth"
 	"github.com/iggy/flit/server/internal/buildinfo"
 	"github.com/iggy/flit/server/internal/config"
 	"github.com/iggy/flit/server/internal/paths"
 	"github.com/iggy/flit/server/internal/server"
+	"github.com/iggy/flit/server/internal/store"
 )
 
 const usage = `flit is an open source coding agent.
@@ -169,7 +173,27 @@ func serve(ctx context.Context, stderr io.Writer, configPath, dataDirFlag string
 	bi := buildinfo.Get()
 	log.Info("starting flit", "version", bi.Version, "config", configPath, "data_dir", dataDir)
 
-	srv := server.New(server.NewHandler(token), log)
+	// The live config. Reloads swap it; readers see the latest on their next
+	// call (the agent reads it per model call and tool run).
+	var live atomic.Pointer[config.Config]
+	live.Store(&cfg)
+	current := func() config.Config { return *live.Load() }
+
+	st, err := store.Open(ctx, filepath.Join(dataDir, store.FileName))
+	if err != nil {
+		return fmt.Errorf("open database: %w", err)
+	}
+	defer st.Close()
+	sessions, err := agent.NewManager(ctx, st, current, log)
+	if err != nil {
+		return fmt.Errorf("load sessions: %w", err)
+	}
+	defer sessions.Close()
+	if len(cfg.Providers) == 0 {
+		log.Warn("no providers configured; add one under providers in the config to run sessions", "config", configPath)
+	}
+
+	srv := server.New(server.NewHandler(token, sessions), log)
 	if err := srv.Apply(cfg); err != nil {
 		return err
 	}
@@ -177,6 +201,7 @@ func serve(ctx context.Context, stderr io.Writer, configPath, dataDirFlag string
 	watchErr := make(chan error, 1)
 	go func() {
 		watchErr <- config.Watch(ctx, configPath, log, func(next config.Config) {
+			live.Store(&next)
 			level.Set(next.Log.SlogLevel())
 			if next.DataDir != cfg.DataDir && dataDirFlag == "" {
 				log.Warn("data_dir changed; it takes effect the next time flit starts", "in_use", dataDir)

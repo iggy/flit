@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -16,7 +17,7 @@ func TestParseEmptyUsesDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg != Default() {
+	if !reflect.DeepEqual(cfg, Default()) {
 		t.Fatalf("got %+v, want defaults %+v", cfg, Default())
 	}
 }
@@ -33,11 +34,18 @@ func TestParse(t *testing.T) {
 
 func TestParseErrors(t *testing.T) {
 	for name, in := range map[string]string{
-		"unknown key":  "lisen: 127.0.0.1:1\n",
-		"bad listen":   "listen: nope\n",
-		"half tls":     "tls:\n  cert_file: a.pem\n",
-		"bad level":    "log:\n  level: loud\n",
-		"invalid yaml": "listen: [\n",
+		"unknown key":            "lisen: 127.0.0.1:1\n",
+		"bad listen":             "listen: nope\n",
+		"half tls":               "tls:\n  cert_file: a.pem\n",
+		"bad level":              "log:\n  level: loud\n",
+		"invalid yaml":           "listen: [\n",
+		"no provider name":       "providers:\n  - base_url: http://x/v1\n",
+		"bad base_url":           "providers:\n  - name: a\n    base_url: localhost:8080\n",
+		"dup provider":           "providers:\n  - {name: a, base_url: http://x}\n  - {name: a, base_url: http://y}\n",
+		"both keys":              "providers:\n  - {name: a, base_url: http://x, api_key: k, api_key_env: K}\n",
+		"unknown agent provider": "agent:\n  provider: nope\n",
+		"bad shell default":      "shell:\n  default: maybe\n",
+		"timeout over max":       "shell:\n  timeout: 1h\n  max_timeout: 1m\n",
 	} {
 		t.Run(name, func(t *testing.T) {
 			if _, err := Parse([]byte(in)); err == nil {
@@ -57,7 +65,7 @@ func TestDefaultFileParsesToDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg != Default() {
+	if !reflect.DeepEqual(cfg, Default()) {
 		t.Fatalf("default file parsed to %+v, want %+v", cfg, Default())
 	}
 	if created, err := EnsureFile(path); err != nil || created {
@@ -122,5 +130,39 @@ func TestLoadNamesFile(t *testing.T) {
 	_, err := Load(path)
 	if err == nil || !strings.Contains(err.Error(), path) {
 		t.Fatalf("err = %v, want it to name %s", err, path)
+	}
+}
+
+func TestParseProvidersAndShell(t *testing.T) {
+	t.Setenv("FLIT_TEST_KEY", "secret")
+	cfg, err := Parse([]byte(`
+providers:
+  - name: local
+    base_url: http://localhost:8080/v1
+  - name: cloud
+    base_url: https://api.example.com/v1
+    api_key_env: FLIT_TEST_KEY
+agent:
+  provider: local
+  model: qwen
+shell:
+  timeout: 10s
+  allow: ["go test*"]
+`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, ok := cfg.Provider("cloud")
+	if !ok || p.Key() != "secret" {
+		t.Fatalf("cloud provider = %+v, %v", p, ok)
+	}
+	if cfg.Shell.Timeout != 10*time.Second || cfg.Shell.MaxTimeout != Default().Shell.MaxTimeout {
+		t.Fatalf("shell = %+v", cfg.Shell)
+	}
+	if !reflect.DeepEqual(cfg.Shell.Allow, []string{"go test*"}) {
+		t.Fatalf("shell.allow = %q; a configured list must replace the default", cfg.Shell.Allow)
+	}
+	if cfg.Agent.MaxSteps != Default().Agent.MaxSteps {
+		t.Fatalf("agent defaults not applied: %+v", cfg.Agent)
 	}
 }

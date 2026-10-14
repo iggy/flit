@@ -17,8 +17,10 @@ import (
 	"connectrpc.com/connect"
 
 	"github.com/iggy/flit/server/gen/flit/v1/flitv1connect"
+	"github.com/iggy/flit/server/internal/agent"
 	"github.com/iggy/flit/server/internal/auth"
 	"github.com/iggy/flit/server/internal/config"
+	"github.com/iggy/flit/server/internal/sessionsvc"
 	"github.com/iggy/flit/server/internal/system"
 )
 
@@ -26,11 +28,15 @@ import (
 // after a rebind.
 const drainTimeout = 30 * time.Second
 
-// NewHandler returns the API handler. Every RPC requires token.
-func NewHandler(token string) http.Handler {
+// NewHandler returns the API handler. Every RPC requires token. sessions
+// may be nil, in which case SessionService is not served.
+func NewHandler(token string, sessions *agent.Manager) http.Handler {
 	opts := connect.WithInterceptors(auth.NewInterceptor(token))
 	mux := http.NewServeMux()
 	mux.Handle(flitv1connect.NewSystemServiceHandler(system.Service{}, opts))
+	if sessions != nil {
+		mux.Handle(flitv1connect.NewSessionServiceHandler(&sessionsvc.Service{M: sessions}, opts))
+	}
 	return mux
 }
 
@@ -96,6 +102,12 @@ func (s *Server) start(cfg config.Config) (*instance, error) {
 		ReadHeaderTimeout: 10 * time.Second,
 		ErrorLog:          slog.NewLogLogger(s.log.Handler(), slog.LevelWarn),
 	}
+	// Streams (Attach) never finish on their own; end them when this
+	// listener shuts down so Shutdown doesn't wait out its timeout. Clients
+	// reattach from the last seq they saw.
+	base, cancelStreams := context.WithCancel(context.Background())
+	srv.BaseContext = func(net.Listener) context.Context { return base }
+	srv.RegisterOnShutdown(cancelStreams)
 	scheme := "http"
 	if cfg.TLS.Enabled() {
 		certs := &certLoader{certFile: cfg.TLS.CertFile, keyFile: cfg.TLS.KeyFile}
