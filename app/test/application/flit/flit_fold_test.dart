@@ -310,4 +310,23 @@ void main() {
     expect(state.mcpServers, <String>['fs']);
     expect(state.projectId, 'proj_x');
   });
+
+  test('flitSessionNeedsRefresh', () {
+    final events = turn();
+    FlitFoldState at(int n) =>
+        foldFlitEvents(const FlitFoldState(), events.take(n));
+    expect(flitSessionNeedsRefresh(null, at(1)), isFalse);
+    expect(
+      flitSessionNeedsRefresh(at(0), at(1)),
+      isTrue,
+      reason: 'first message',
+    );
+    expect(flitSessionNeedsRefresh(at(5), at(6)), isFalse, reason: 'mid-turn');
+    expect(
+      flitSessionNeedsRefresh(at(19), at(20)),
+      isTrue,
+      reason: 'turn ended',
+    );
+    expect(flitSessionNeedsRefresh(at(20), at(20)), isFalse);
+  });
 }

@@ -7,6 +7,7 @@ library;
 import 'dart:convert';
 
 import 'package:flit/domain/models/tool_call.dart';
+import 'package:flit/presentation/chat/collapse_footer.dart';
 import 'package:flutter/material.dart';
 
 /// Renders one [ToolCall] attached to an assistant message (protocol §7:
@@ -160,6 +161,14 @@ class _ToolCallCardState extends State<ToolCallCard> {
                     Text('Diff', style: theme.textTheme.labelSmall),
                     const SizedBox(height: 4),
                     _MonospaceBox(text: tool.inlineDiff!),
+                  ],
+                  if (needsCollapseFooter(
+                    '${tool.result ?? ''}${tool.inlineDiff ?? ''}',
+                  )) ...<Widget>[
+                    const SizedBox(height: 4),
+                    CollapseFooter(
+                      onCollapse: () => setState(() => _expanded = false),
+                    ),
                   ],
                 ],
               ),

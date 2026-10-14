@@ -508,3 +508,21 @@ String? toolContext(String name, String arguments) {
     _ => str('path'),
   };
 }
+
+/// Whether a session's stored details (title, state) are likely stale after
+/// going from [prev] to [next]: the first message arrived, or a turn ended.
+/// Replays of an already-finished history don't count as turns ending.
+bool flitSessionNeedsRefresh(FlitFoldState? prev, FlitFoldState next) {
+  if (prev == null) {
+    return false;
+  }
+  if (prev.messages.isEmpty && next.messages.isNotEmpty) {
+    return true;
+  }
+  final ended =
+      prev.busy &&
+      !next.busy &&
+      (next.taskState == FlitTaskState.done ||
+          next.taskState == FlitTaskState.stuck);
+  return ended;
+}

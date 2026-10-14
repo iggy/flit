@@ -206,32 +206,53 @@ class _PickerState extends ConsumerState<_Picker> {
                     ),
             ),
           ),
-          if (efforts.isNotEmpty) ...<Widget>[
-            const SizedBox(height: 8),
-            Text('Reasoning effort', style: theme.textTheme.labelLarge),
-            const SizedBox(height: 4),
-            SegmentedButton<String>(
-              segments: <ButtonSegment<String>>[
-                const ButtonSegment<String>(value: '', label: Text('Default')),
-                for (final e in efforts)
-                  ButtonSegment<String>(value: e, label: Text(e)),
-              ],
-              selected: <String>{_effort},
-              onSelectionChanged: (s) => setState(() => _effort = s.first),
+          const Divider(height: 1),
+          // The footer is set apart from the list so the action is easy to
+          // find and hit, on phones especially.
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 12, bottom: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  if (efforts.isNotEmpty) ...<Widget>[
+                    Text('Reasoning effort', style: theme.textTheme.labelLarge),
+                    const SizedBox(height: 6),
+                    SegmentedButton<String>(
+                      segments: <ButtonSegment<String>>[
+                        const ButtonSegment<String>(
+                          value: '',
+                          label: Text('Default'),
+                        ),
+                        for (final e in efforts)
+                          ButtonSegment<String>(value: e, label: Text(e)),
+                      ],
+                      selected: <String>{_effort},
+                      onSelectionChanged: (s) =>
+                          setState(() => _effort = s.first),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(52),
+                      textStyle: theme.textTheme.titleMedium,
+                    ),
+                    onPressed: _model.isEmpty
+                        ? null
+                        : () => Navigator.pop<FlitModelChoice>(context, (
+                            provider: _provider,
+                            model: _model,
+                            effort: _effort,
+                          )),
+                    icon: const Icon(Icons.check),
+                    label: const Text('Use this model'),
+                  ),
+                ],
+              ),
             ),
-          ],
-          const SizedBox(height: 8),
-          FilledButton(
-            onPressed: _model.isEmpty
-                ? null
-                : () => Navigator.pop<FlitModelChoice>(context, (
-                    provider: _provider,
-                    model: _model,
-                    effort: _effort,
-                  )),
-            child: const Text('Use this model'),
           ),
-          const SizedBox(height: 16),
         ],
       ),
     );
