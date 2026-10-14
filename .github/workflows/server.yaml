@@ -56,7 +56,7 @@ jobs:
       - name: Set up Dart
         uses: dart-lang/setup-dart@v1
         with:
-          sdk: 3.13.4
+          sdk: 3.13.5
 
       - name: Analyze Dart client
         working-directory: proto/dart
