@@ -140,6 +140,35 @@ generation speed (llama.cpp's own timings when it sends them, otherwise
 measured by flit). The app shows these along with the model, effort and task
 state, and the agent's todo list.
 
+### Projects, MCP, skills and more tools
+
+- **Projects** group sessions by directory: create one from a directory on
+  the server, switch between them in the app, and move sessions out of
+  Scratch.
+- **MCP servers** (stdio) are configured in the YAML config, never an
+  `mcp.json`:
+
+  ```yaml
+  mcp_servers:
+    - name: fetch
+      command: uvx
+      args: [mcp-server-fetch]
+      enabled: true    # on for new sessions
+  ```
+
+  Each session turns servers on or off at runtime; only enabled servers'
+  tools are sent to the model.
+- **Skills** in the [Agent Skills](https://agentskills.io) format live in
+  `skills/` next to the config (`skills_dirs`). The model sees their names
+  and descriptions and loads a skill's instructions and files when needed.
+- **git** tools (status, diff, log, commit; nothing pushes), **web_fetch**,
+  and **web_search** through a SearXNG instance (`web.search`); paid search
+  APIs aren't supported.
+- **Prompt appends** per provider (`providers[].prompt_append`) and per model
+  (`agent.model_prompt_appends`).
+- **Ratings**: mark a reply or a model choice good or bad in the app; they're
+  stored as events in the session log, naming the model that answered.
+
 ### Sessions and tools
 
 A session is a conversation with the agent in one working directory. The
