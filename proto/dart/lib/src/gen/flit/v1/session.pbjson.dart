@@ -37,6 +37,36 @@ final $typed_data.Uint8List taskStateDescriptor = $convert.base64Decode(
     'RMRRABEhYKElRBU0tfU1RBVEVfV09SS0lORxACEhYKElRBU0tfU1RBVEVfV0FJVElORxADEhQK'
     'EFRBU0tfU1RBVEVfU1RVQ0sQBBITCg9UQVNLX1NUQVRFX0RPTkUQBQ==');
 
+@$core.Deprecated('Use ratingTargetDescriptor instead')
+const RatingTarget$json = {
+  '1': 'RatingTarget',
+  '2': [
+    {'1': 'RATING_TARGET_UNSPECIFIED', '2': 0},
+    {'1': 'RATING_TARGET_TURN', '2': 1},
+    {'1': 'RATING_TARGET_MODEL', '2': 2},
+  ],
+};
+
+/// Descriptor for `RatingTarget`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List ratingTargetDescriptor = $convert.base64Decode(
+    'CgxSYXRpbmdUYXJnZXQSHQoZUkFUSU5HX1RBUkdFVF9VTlNQRUNJRklFRBAAEhYKElJBVElOR1'
+    '9UQVJHRVRfVFVSThABEhcKE1JBVElOR19UQVJHRVRfTU9ERUwQAg==');
+
+@$core.Deprecated('Use ratingDescriptor instead')
+const Rating$json = {
+  '1': 'Rating',
+  '2': [
+    {'1': 'RATING_UNSPECIFIED', '2': 0},
+    {'1': 'RATING_GOOD', '2': 1},
+    {'1': 'RATING_BAD', '2': 2},
+  ],
+};
+
+/// Descriptor for `Rating`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List ratingDescriptor = $convert.base64Decode(
+    'CgZSYXRpbmcSFgoSUkFUSU5HX1VOU1BFQ0lGSUVEEAASDwoLUkFUSU5HX0dPT0QQARIOCgpSQV'
+    'RJTkdfQkFEEAI=');
+
 @$core.Deprecated('Use roleDescriptor instead')
 const Role$json = {
   '1': 'Role',
@@ -124,6 +154,7 @@ const Session$json = {
     {'1': 'role', '3': 13, '4': 1, '5': 9, '10': 'role'},
     {'1': 'context_tokens', '3': 14, '4': 1, '5': 3, '10': 'contextTokens'},
     {'1': 'context_length', '3': 15, '4': 1, '5': 3, '10': 'contextLength'},
+    {'1': 'mcp_servers', '3': 16, '4': 3, '5': 9, '10': 'mcpServers'},
   ],
 };
 
@@ -137,8 +168,8 @@ final $typed_data.Uint8List sessionDescriptor = $convert.base64Decode(
     'ouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIKY3JlYXRlVGltZRI7Cgt1cGRhdGVfdGltZRgL'
     'IAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCnVwZGF0ZVRpbWUSFgoGZWZmb3J0GA'
     'wgASgJUgZlZmZvcnQSEgoEcm9sZRgNIAEoCVIEcm9sZRIlCg5jb250ZXh0X3Rva2VucxgOIAEo'
-    'A1INY29udGV4dFRva2VucxIlCg5jb250ZXh0X2xlbmd0aBgPIAEoA1INY29udGV4dExlbmd0aA'
-    '==');
+    'A1INY29udGV4dFRva2VucxIlCg5jb250ZXh0X2xlbmd0aBgPIAEoA1INY29udGV4dExlbmd0aB'
+    'IfCgttY3Bfc2VydmVycxgQIAMoCVIKbWNwU2VydmVycw==');
 
 @$core.Deprecated('Use createSessionRequestDescriptor instead')
 const CreateSessionRequest$json = {
@@ -150,6 +181,7 @@ const CreateSessionRequest$json = {
     {'1': 'model', '3': 4, '4': 1, '5': 9, '10': 'model'},
     {'1': 'role', '3': 5, '4': 1, '5': 9, '10': 'role'},
     {'1': 'effort', '3': 6, '4': 1, '5': 9, '10': 'effort'},
+    {'1': 'project_id', '3': 7, '4': 1, '5': 9, '10': 'projectId'},
   ],
 };
 
@@ -158,7 +190,7 @@ final $typed_data.Uint8List createSessionRequestDescriptor = $convert.base64Deco
     'ChRDcmVhdGVTZXNzaW9uUmVxdWVzdBIfCgt3b3JraW5nX2RpchgBIAEoCVIKd29ya2luZ0Rpch'
     'IUCgV0aXRsZRgCIAEoCVIFdGl0bGUSGgoIcHJvdmlkZXIYAyABKAlSCHByb3ZpZGVyEhQKBW1v'
     'ZGVsGAQgASgJUgVtb2RlbBISCgRyb2xlGAUgASgJUgRyb2xlEhYKBmVmZm9ydBgGIAEoCVIGZW'
-    'Zmb3J0');
+    'Zmb3J0Eh0KCnByb2plY3RfaWQYByABKAlSCXByb2plY3RJZA==');
 
 @$core.Deprecated('Use createSessionResponseDescriptor instead')
 const CreateSessionResponse$json = {
@@ -186,13 +218,15 @@ const ListSessionsRequest$json = {
   '2': [
     {'1': 'page_size', '3': 1, '4': 1, '5': 5, '10': 'pageSize'},
     {'1': 'page_token', '3': 2, '4': 1, '5': 9, '10': 'pageToken'},
+    {'1': 'project_id', '3': 3, '4': 1, '5': 9, '10': 'projectId'},
   ],
 };
 
 /// Descriptor for `ListSessionsRequest`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List listSessionsRequestDescriptor = $convert.base64Decode(
     'ChNMaXN0U2Vzc2lvbnNSZXF1ZXN0EhsKCXBhZ2Vfc2l6ZRgBIAEoBVIIcGFnZVNpemUSHQoKcG'
-    'FnZV90b2tlbhgCIAEoCVIJcGFnZVRva2Vu');
+    'FnZV90b2tlbhgCIAEoCVIJcGFnZVRva2VuEh0KCnByb2plY3RfaWQYAyABKAlSCXByb2plY3RJ'
+    'ZA==');
 
 @$core.Deprecated('Use listSessionsResponseDescriptor instead')
 const ListSessionsResponse$json = {
@@ -398,6 +432,168 @@ final $typed_data.Uint8List setModelResponseDescriptor = $convert.base64Decode(
     'ChBTZXRNb2RlbFJlc3BvbnNlEioKB3Nlc3Npb24YASABKAsyEC5mbGl0LnYxLlNlc3Npb25SB3'
     'Nlc3Npb24=');
 
+@$core.Deprecated('Use moveSessionRequestDescriptor instead')
+const MoveSessionRequest$json = {
+  '1': 'MoveSessionRequest',
+  '2': [
+    {'1': 'session_id', '3': 1, '4': 1, '5': 9, '10': 'sessionId'},
+    {'1': 'project_id', '3': 2, '4': 1, '5': 9, '10': 'projectId'},
+  ],
+};
+
+/// Descriptor for `MoveSessionRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List moveSessionRequestDescriptor = $convert.base64Decode(
+    'ChJNb3ZlU2Vzc2lvblJlcXVlc3QSHQoKc2Vzc2lvbl9pZBgBIAEoCVIJc2Vzc2lvbklkEh0KCn'
+    'Byb2plY3RfaWQYAiABKAlSCXByb2plY3RJZA==');
+
+@$core.Deprecated('Use moveSessionResponseDescriptor instead')
+const MoveSessionResponse$json = {
+  '1': 'MoveSessionResponse',
+  '2': [
+    {
+      '1': 'session',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.Session',
+      '10': 'session'
+    },
+  ],
+};
+
+/// Descriptor for `MoveSessionResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List moveSessionResponseDescriptor = $convert.base64Decode(
+    'ChNNb3ZlU2Vzc2lvblJlc3BvbnNlEioKB3Nlc3Npb24YASABKAsyEC5mbGl0LnYxLlNlc3Npb2'
+    '5SB3Nlc3Npb24=');
+
+@$core.Deprecated('Use rateRequestDescriptor instead')
+const RateRequest$json = {
+  '1': 'RateRequest',
+  '2': [
+    {'1': 'session_id', '3': 1, '4': 1, '5': 9, '10': 'sessionId'},
+    {
+      '1': 'target',
+      '3': 2,
+      '4': 1,
+      '5': 14,
+      '6': '.flit.v1.RatingTarget',
+      '10': 'target'
+    },
+    {
+      '1': 'rating',
+      '3': 3,
+      '4': 1,
+      '5': 14,
+      '6': '.flit.v1.Rating',
+      '10': 'rating'
+    },
+    {'1': 'message_id', '3': 4, '4': 1, '5': 9, '10': 'messageId'},
+    {'1': 'note', '3': 5, '4': 1, '5': 9, '10': 'note'},
+  ],
+};
+
+/// Descriptor for `RateRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List rateRequestDescriptor = $convert.base64Decode(
+    'CgtSYXRlUmVxdWVzdBIdCgpzZXNzaW9uX2lkGAEgASgJUglzZXNzaW9uSWQSLQoGdGFyZ2V0GA'
+    'IgASgOMhUuZmxpdC52MS5SYXRpbmdUYXJnZXRSBnRhcmdldBInCgZyYXRpbmcYAyABKA4yDy5m'
+    'bGl0LnYxLlJhdGluZ1IGcmF0aW5nEh0KCm1lc3NhZ2VfaWQYBCABKAlSCW1lc3NhZ2VJZBISCg'
+    'Rub3RlGAUgASgJUgRub3Rl');
+
+@$core.Deprecated('Use rateResponseDescriptor instead')
+const RateResponse$json = {
+  '1': 'RateResponse',
+};
+
+/// Descriptor for `RateResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List rateResponseDescriptor =
+    $convert.base64Decode('CgxSYXRlUmVzcG9uc2U=');
+
+@$core.Deprecated('Use mcpServerDescriptor instead')
+const McpServer$json = {
+  '1': 'McpServer',
+  '2': [
+    {'1': 'name', '3': 1, '4': 1, '5': 9, '10': 'name'},
+    {'1': 'enabled', '3': 2, '4': 1, '5': 8, '10': 'enabled'},
+    {'1': 'running', '3': 3, '4': 1, '5': 8, '10': 'running'},
+    {'1': 'tool_count', '3': 4, '4': 1, '5': 5, '10': 'toolCount'},
+    {'1': 'error', '3': 5, '4': 1, '5': 9, '10': 'error'},
+  ],
+};
+
+/// Descriptor for `McpServer`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List mcpServerDescriptor = $convert.base64Decode(
+    'CglNY3BTZXJ2ZXISEgoEbmFtZRgBIAEoCVIEbmFtZRIYCgdlbmFibGVkGAIgASgIUgdlbmFibG'
+    'VkEhgKB3J1bm5pbmcYAyABKAhSB3J1bm5pbmcSHQoKdG9vbF9jb3VudBgEIAEoBVIJdG9vbENv'
+    'dW50EhQKBWVycm9yGAUgASgJUgVlcnJvcg==');
+
+@$core.Deprecated('Use listMcpServersRequestDescriptor instead')
+const ListMcpServersRequest$json = {
+  '1': 'ListMcpServersRequest',
+  '2': [
+    {'1': 'session_id', '3': 1, '4': 1, '5': 9, '10': 'sessionId'},
+  ],
+};
+
+/// Descriptor for `ListMcpServersRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List listMcpServersRequestDescriptor = $convert.base64Decode(
+    'ChVMaXN0TWNwU2VydmVyc1JlcXVlc3QSHQoKc2Vzc2lvbl9pZBgBIAEoCVIJc2Vzc2lvbklk');
+
+@$core.Deprecated('Use listMcpServersResponseDescriptor instead')
+const ListMcpServersResponse$json = {
+  '1': 'ListMcpServersResponse',
+  '2': [
+    {
+      '1': 'servers',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.flit.v1.McpServer',
+      '10': 'servers'
+    },
+  ],
+};
+
+/// Descriptor for `ListMcpServersResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List listMcpServersResponseDescriptor =
+    $convert.base64Decode(
+        'ChZMaXN0TWNwU2VydmVyc1Jlc3BvbnNlEiwKB3NlcnZlcnMYASADKAsyEi5mbGl0LnYxLk1jcF'
+        'NlcnZlclIHc2VydmVycw==');
+
+@$core.Deprecated('Use setMcpServerRequestDescriptor instead')
+const SetMcpServerRequest$json = {
+  '1': 'SetMcpServerRequest',
+  '2': [
+    {'1': 'session_id', '3': 1, '4': 1, '5': 9, '10': 'sessionId'},
+    {'1': 'server', '3': 2, '4': 1, '5': 9, '10': 'server'},
+    {'1': 'enabled', '3': 3, '4': 1, '5': 8, '10': 'enabled'},
+  ],
+};
+
+/// Descriptor for `SetMcpServerRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List setMcpServerRequestDescriptor = $convert.base64Decode(
+    'ChNTZXRNY3BTZXJ2ZXJSZXF1ZXN0Eh0KCnNlc3Npb25faWQYASABKAlSCXNlc3Npb25JZBIWCg'
+    'ZzZXJ2ZXIYAiABKAlSBnNlcnZlchIYCgdlbmFibGVkGAMgASgIUgdlbmFibGVk');
+
+@$core.Deprecated('Use setMcpServerResponseDescriptor instead')
+const SetMcpServerResponse$json = {
+  '1': 'SetMcpServerResponse',
+  '2': [
+    {
+      '1': 'session',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.Session',
+      '10': 'session'
+    },
+  ],
+};
+
+/// Descriptor for `SetMcpServerResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List setMcpServerResponseDescriptor = $convert.base64Decode(
+    'ChRTZXRNY3BTZXJ2ZXJSZXNwb25zZRIqCgdzZXNzaW9uGAEgASgLMhAuZmxpdC52MS5TZXNzaW'
+    '9uUgdzZXNzaW9u');
+
 @$core.Deprecated('Use setEffortRequestDescriptor instead')
 const SetEffortRequest$json = {
   '1': 'SetEffortRequest',
@@ -572,6 +768,33 @@ const Event$json = {
       '9': 0,
       '10': 'todoUpdated'
     },
+    {
+      '1': 'feedback',
+      '3': 24,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.Feedback',
+      '9': 0,
+      '10': 'feedback'
+    },
+    {
+      '1': 'mcp_servers_changed',
+      '3': 25,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.McpServersChanged',
+      '9': 0,
+      '10': 'mcpServersChanged'
+    },
+    {
+      '1': 'session_moved',
+      '3': 26,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.SessionMoved',
+      '9': 0,
+      '10': 'sessionMoved'
+    },
   ],
   '8': [
     {'1': 'payload'},
@@ -597,7 +820,10 @@ final $typed_data.Uint8List eventDescriptor = $convert.base64Decode(
     'ASgLMhUuZmxpdC52MS5Nb2RlbENoYW5nZWRIAFIMbW9kZWxDaGFuZ2VkEiYKBXVzYWdlGBUgAS'
     'gLMg4uZmxpdC52MS5Vc2FnZUgAUgV1c2FnZRIqCgVlcnJvchgWIAEoCzISLmZsaXQudjEuVHVy'
     'bkVycm9ySABSBWVycm9yEjkKDHRvZG9fdXBkYXRlZBgXIAEoCzIULmZsaXQudjEuVG9kb1VwZG'
-    'F0ZWRIAFILdG9kb1VwZGF0ZWRCCQoHcGF5bG9hZA==');
+    'F0ZWRIAFILdG9kb1VwZGF0ZWQSLwoIZmVlZGJhY2sYGCABKAsyES5mbGl0LnYxLkZlZWRiYWNr'
+    'SABSCGZlZWRiYWNrEkwKE21jcF9zZXJ2ZXJzX2NoYW5nZWQYGSABKAsyGi5mbGl0LnYxLk1jcF'
+    'NlcnZlcnNDaGFuZ2VkSABSEW1jcFNlcnZlcnNDaGFuZ2VkEjwKDXNlc3Npb25fbW92ZWQYGiAB'
+    'KAsyFS5mbGl0LnYxLlNlc3Npb25Nb3ZlZEgAUgxzZXNzaW9uTW92ZWRCCQoHcGF5bG9hZA==');
 
 @$core.Deprecated('Use messageStartedDescriptor instead')
 const MessageStarted$json = {
@@ -605,13 +831,16 @@ const MessageStarted$json = {
   '2': [
     {'1': 'message_id', '3': 1, '4': 1, '5': 9, '10': 'messageId'},
     {'1': 'role', '3': 2, '4': 1, '5': 14, '6': '.flit.v1.Role', '10': 'role'},
+    {'1': 'provider', '3': 3, '4': 1, '5': 9, '10': 'provider'},
+    {'1': 'model', '3': 4, '4': 1, '5': 9, '10': 'model'},
   ],
 };
 
 /// Descriptor for `MessageStarted`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List messageStartedDescriptor = $convert.base64Decode(
     'Cg5NZXNzYWdlU3RhcnRlZBIdCgptZXNzYWdlX2lkGAEgASgJUgltZXNzYWdlSWQSIQoEcm9sZR'
-    'gCIAEoDjINLmZsaXQudjEuUm9sZVIEcm9sZQ==');
+    'gCIAEoDjINLmZsaXQudjEuUm9sZVIEcm9sZRIaCghwcm92aWRlchgDIAEoCVIIcHJvdmlkZXIS'
+    'FAoFbW9kZWwYBCABKAlSBW1vZGVs');
 
 @$core.Deprecated('Use textDeltaDescriptor instead')
 const TextDelta$json = {
@@ -886,6 +1115,66 @@ final $typed_data.Uint8List turnErrorDescriptor = $convert.base64Decode(
     'CglUdXJuRXJyb3ISGAoHbWVzc2FnZRgBIAEoCVIHbWVzc2FnZRIqChF0dXJuX2Nhbl9jb250aW'
     '51ZRgCIAEoCFIPdHVybkNhbkNvbnRpbnVl');
 
+@$core.Deprecated('Use feedbackDescriptor instead')
+const Feedback$json = {
+  '1': 'Feedback',
+  '2': [
+    {
+      '1': 'target',
+      '3': 1,
+      '4': 1,
+      '5': 14,
+      '6': '.flit.v1.RatingTarget',
+      '10': 'target'
+    },
+    {
+      '1': 'rating',
+      '3': 2,
+      '4': 1,
+      '5': 14,
+      '6': '.flit.v1.Rating',
+      '10': 'rating'
+    },
+    {'1': 'message_id', '3': 3, '4': 1, '5': 9, '10': 'messageId'},
+    {'1': 'note', '3': 4, '4': 1, '5': 9, '10': 'note'},
+    {'1': 'provider', '3': 5, '4': 1, '5': 9, '10': 'provider'},
+    {'1': 'model', '3': 6, '4': 1, '5': 9, '10': 'model'},
+    {'1': 'client', '3': 7, '4': 1, '5': 9, '10': 'client'},
+  ],
+};
+
+/// Descriptor for `Feedback`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List feedbackDescriptor = $convert.base64Decode(
+    'CghGZWVkYmFjaxItCgZ0YXJnZXQYASABKA4yFS5mbGl0LnYxLlJhdGluZ1RhcmdldFIGdGFyZ2'
+    'V0EicKBnJhdGluZxgCIAEoDjIPLmZsaXQudjEuUmF0aW5nUgZyYXRpbmcSHQoKbWVzc2FnZV9p'
+    'ZBgDIAEoCVIJbWVzc2FnZUlkEhIKBG5vdGUYBCABKAlSBG5vdGUSGgoIcHJvdmlkZXIYBSABKA'
+    'lSCHByb3ZpZGVyEhQKBW1vZGVsGAYgASgJUgVtb2RlbBIWCgZjbGllbnQYByABKAlSBmNsaWVu'
+    'dA==');
+
+@$core.Deprecated('Use mcpServersChangedDescriptor instead')
+const McpServersChanged$json = {
+  '1': 'McpServersChanged',
+  '2': [
+    {'1': 'enabled', '3': 1, '4': 3, '5': 9, '10': 'enabled'},
+  ],
+};
+
+/// Descriptor for `McpServersChanged`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List mcpServersChangedDescriptor = $convert.base64Decode(
+    'ChFNY3BTZXJ2ZXJzQ2hhbmdlZBIYCgdlbmFibGVkGAEgAygJUgdlbmFibGVk');
+
+@$core.Deprecated('Use sessionMovedDescriptor instead')
+const SessionMoved$json = {
+  '1': 'SessionMoved',
+  '2': [
+    {'1': 'project_id', '3': 1, '4': 1, '5': 9, '10': 'projectId'},
+  ],
+};
+
+/// Descriptor for `SessionMoved`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List sessionMovedDescriptor = $convert.base64Decode(
+    'CgxTZXNzaW9uTW92ZWQSHQoKcHJvamVjdF9pZBgBIAEoCVIJcHJvamVjdElk');
+
 const $core.Map<$core.String, $core.dynamic> SessionServiceBase$json = {
   '1': 'SessionService',
   '2': [
@@ -933,6 +1222,23 @@ const $core.Map<$core.String, $core.dynamic> SessionServiceBase$json = {
       '2': '.flit.v1.SetEffortRequest',
       '3': '.flit.v1.SetEffortResponse'
     },
+    {
+      '1': 'MoveSession',
+      '2': '.flit.v1.MoveSessionRequest',
+      '3': '.flit.v1.MoveSessionResponse'
+    },
+    {'1': 'Rate', '2': '.flit.v1.RateRequest', '3': '.flit.v1.RateResponse'},
+    {
+      '1': 'ListMcpServers',
+      '2': '.flit.v1.ListMcpServersRequest',
+      '3': '.flit.v1.ListMcpServersResponse',
+      '4': {'34': 1},
+    },
+    {
+      '1': 'SetMcpServer',
+      '2': '.flit.v1.SetMcpServerRequest',
+      '3': '.flit.v1.SetMcpServerResponse'
+    },
   ],
 };
 
@@ -965,6 +1271,9 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.flit.v1.TurnError': TurnError$json,
   '.flit.v1.TodoUpdated': TodoUpdated$json,
   '.flit.v1.TodoItem': TodoItem$json,
+  '.flit.v1.Feedback': Feedback$json,
+  '.flit.v1.McpServersChanged': McpServersChanged$json,
+  '.flit.v1.SessionMoved': SessionMoved$json,
   '.flit.v1.SendRequest': SendRequest$json,
   '.flit.v1.SendResponse': SendResponse$json,
   '.flit.v1.InterruptRequest': InterruptRequest$json,
@@ -975,6 +1284,15 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.flit.v1.SetModelResponse': SetModelResponse$json,
   '.flit.v1.SetEffortRequest': SetEffortRequest$json,
   '.flit.v1.SetEffortResponse': SetEffortResponse$json,
+  '.flit.v1.MoveSessionRequest': MoveSessionRequest$json,
+  '.flit.v1.MoveSessionResponse': MoveSessionResponse$json,
+  '.flit.v1.RateRequest': RateRequest$json,
+  '.flit.v1.RateResponse': RateResponse$json,
+  '.flit.v1.ListMcpServersRequest': ListMcpServersRequest$json,
+  '.flit.v1.ListMcpServersResponse': ListMcpServersResponse$json,
+  '.flit.v1.McpServer': McpServer$json,
+  '.flit.v1.SetMcpServerRequest': SetMcpServerRequest$json,
+  '.flit.v1.SetMcpServerResponse': SetMcpServerResponse$json,
 };
 
 /// Descriptor for `SessionService`. Decode as a `google.protobuf.ServiceDescriptorProto`.
@@ -990,4 +1308,9 @@ final $typed_data.Uint8List sessionServiceDescriptor = $convert.base64Decode(
     'ZXJQcm9tcHQSHC5mbGl0LnYxLkFuc3dlclByb21wdFJlcXVlc3QaHS5mbGl0LnYxLkFuc3dlcl'
     'Byb21wdFJlc3BvbnNlEj8KCFNldE1vZGVsEhguZmxpdC52MS5TZXRNb2RlbFJlcXVlc3QaGS5m'
     'bGl0LnYxLlNldE1vZGVsUmVzcG9uc2USQgoJU2V0RWZmb3J0EhkuZmxpdC52MS5TZXRFZmZvcn'
-    'RSZXF1ZXN0GhouZmxpdC52MS5TZXRFZmZvcnRSZXNwb25zZQ==');
+    'RSZXF1ZXN0GhouZmxpdC52MS5TZXRFZmZvcnRSZXNwb25zZRJICgtNb3ZlU2Vzc2lvbhIbLmZs'
+    'aXQudjEuTW92ZVNlc3Npb25SZXF1ZXN0GhwuZmxpdC52MS5Nb3ZlU2Vzc2lvblJlc3BvbnNlEj'
+    'MKBFJhdGUSFC5mbGl0LnYxLlJhdGVSZXF1ZXN0GhUuZmxpdC52MS5SYXRlUmVzcG9uc2USVgoO'
+    'TGlzdE1jcFNlcnZlcnMSHi5mbGl0LnYxLkxpc3RNY3BTZXJ2ZXJzUmVxdWVzdBofLmZsaXQudj'
+    'EuTGlzdE1jcFNlcnZlcnNSZXNwb25zZSIDkAIBEksKDFNldE1jcFNlcnZlchIcLmZsaXQudjEu'
+    'U2V0TWNwU2VydmVyUmVxdWVzdBodLmZsaXQudjEuU2V0TWNwU2VydmVyUmVzcG9uc2U=');

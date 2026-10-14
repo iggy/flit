@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -307,4 +308,72 @@ func stateChanged(state flitv1.TaskState, reason string) *flitv1.Event {
 	return &flitv1.Event{Payload: &flitv1.Event_TaskStateChanged{TaskStateChanged: &flitv1.TaskStateChanged{
 		State: state, Reason: reason,
 	}}}
+}
+
+func (s *session) move(ctx context.Context, projectID string) (store.Session, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := s.m.store.MoveSession(ctx, s.info.ID, projectID); err != nil {
+		return store.Session{}, err
+	}
+	s.info.ProjectID = projectID
+	if _, err := s.appendLocked(&flitv1.Event{Payload: &flitv1.Event_SessionMoved{SessionMoved: &flitv1.SessionMoved{
+		ProjectId: projectID,
+	}}}); err != nil {
+		return store.Session{}, err
+	}
+	return s.info, nil
+}
+
+func (s *session) setMCPServer(ctx context.Context, server string, enabled bool) (store.Session, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	names := slices.DeleteFunc(slices.Clone(s.info.MCPServers), func(n string) bool { return n == server })
+	if enabled {
+		names = append(names, server)
+		slices.Sort(names)
+	}
+	if err := s.m.store.SetMCPServers(ctx, s.info.ID, names); err != nil {
+		return store.Session{}, err
+	}
+	s.info.MCPServers = names
+	if _, err := s.appendLocked(&flitv1.Event{Payload: &flitv1.Event_McpServersChanged{McpServersChanged: &flitv1.McpServersChanged{
+		Enabled: slices.Clone(names),
+	}}}); err != nil {
+		return store.Session{}, err
+	}
+	return s.info, nil
+}
+
+func (s *session) rate(ctx context.Context, r Rating) error {
+	fb := &flitv1.Feedback{Target: r.Target, MessageId: r.MessageID, Note: r.Note, Client: r.Client,
+		Rating: flitv1.Rating_RATING_BAD}
+	if r.Good {
+		fb.Rating = flitv1.Rating_RATING_GOOD
+	}
+	info := s.snapshot()
+	fb.Provider, fb.Model = info.Provider, info.Model
+	if r.MessageID != "" {
+		evs, err := s.m.store.EventsOfKinds(ctx, info.ID, "message_started")
+		if err != nil {
+			return err
+		}
+		found := false
+		for _, ev := range evs {
+			if ms := ev.GetMessageStarted(); ms.GetMessageId() == r.MessageID {
+				if ms.Role != flitv1.Role_ROLE_ASSISTANT {
+					return invalid("message %s is not an assistant message", r.MessageID)
+				}
+				found = true
+				if ms.Model != "" {
+					fb.Provider, fb.Model = ms.Provider, ms.Model
+				}
+			}
+		}
+		if !found {
+			return invalid("no message %s in this session", r.MessageID)
+		}
+	}
+	_, err := s.append(&flitv1.Event{Payload: &flitv1.Event_Feedback{Feedback: fb}})
+	return err
 }

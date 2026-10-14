@@ -16,7 +16,9 @@ import (
 
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
 	"github.com/iggy/flit/server/internal/config"
+	"github.com/iggy/flit/server/internal/llm"
 	"github.com/iggy/flit/server/internal/llm/llmtest"
+	"github.com/iggy/flit/server/internal/mcpclient"
 	"github.com/iggy/flit/server/internal/store"
 )
 
@@ -237,7 +239,7 @@ func TestTurnWithToolCall(t *testing.T) {
 	if sys.Role != "system" || !strings.Contains(sys.Content, "Always say please.") || !strings.Contains(sys.Content, h.dir) {
 		t.Fatalf("system prompt: %s", sys.Content)
 	}
-	if len(reqs[0].Tools) != 7 || reqs[0].Model != "test-model" {
+	if len(reqs[0].Tools) != 12 || reqs[0].Model != "test-model" {
 		t.Fatalf("first request tools=%d model=%s", len(reqs[0].Tools), reqs[0].Model)
 	}
 	second := reqs[1].Messages
@@ -693,3 +695,154 @@ func TestChatTaskDefaults(t *testing.T) {
 		t.Fatalf("session = %+v", sess)
 	}
 }
+
+func toolNames(req llm.Request) []string {
+	var out []string
+	for _, t := range req.Tools {
+		out = append(out, t.Function.Name)
+	}
+	return out
+}
+
+func TestProjectsMoveAndRate(t *testing.T) {
+	h := newHarness(t)
+	ctx := context.Background()
+	if _, err := h.m.CreateProject(ctx, "relative", ""); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("relative dir: %v", err)
+	}
+	p, err := h.m.CreateProject(ctx, h.dir, "")
+	if err != nil || p.Name != filepath.Base(h.dir) || p.Directory != h.dir {
+		t.Fatalf("project = %+v, %v", p, err)
+	}
+	if _, err := h.m.CreateProject(ctx, h.dir, "again"); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("duplicate project: %v", err)
+	}
+
+	// A session in a project with a directory needs no working_dir.
+	sess, err := h.m.Create(ctx, CreateOptions{ProjectID: p.ID})
+	if err != nil || sess.WorkingDir != h.dir || sess.ProjectID != p.ID {
+		t.Fatalf("session in project = %+v, %v", sess, err)
+	}
+	if _, err := h.m.Create(ctx, CreateOptions{}); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("scratch without dir: %v", err)
+	}
+	scratch := h.create()
+	if scratch.ProjectID != store.DefaultProjectID {
+		t.Fatalf("scratch session = %+v", scratch)
+	}
+	w := h.watch(scratch.ID, 0)
+	moved, err := h.m.MoveSession(ctx, scratch.ID, p.ID)
+	if err != nil || moved.ProjectID != p.ID {
+		t.Fatalf("move = %+v, %v", moved, err)
+	}
+	w.waitFor("moved", func(ev *flitv1.Event) bool { return ev.GetSessionMoved().GetProjectId() == p.ID })
+	if list, _ := h.m.List(ctx, p.ID, 10, 0); len(list) != 2 {
+		t.Fatalf("project sessions = %d", len(list))
+	}
+	if list, _ := h.m.Projects(ctx); len(list) != 2 || list[1].SessionCount != 2 {
+		t.Fatalf("projects = %+v", list)
+	}
+
+	// Ratings name the model that wrote the message, even after a switch.
+	h.llm.Push(llmtest.Response{Chunks: llmtest.Text("answer")})
+	if _, err := h.m.Send(ctx, scratch.ID, "q"); err != nil {
+		t.Fatal(err)
+	}
+	w.waitTurnEnd()
+	var msgID string
+	for _, ev := range w.snapshot() {
+		if ms := ev.GetMessageStarted(); ms != nil && ms.Role == flitv1.Role_ROLE_ASSISTANT {
+			msgID = ms.MessageId
+			if ms.Model != "test-model" || ms.Provider != "fake" {
+				t.Fatalf("message started = %v", ms)
+			}
+		}
+	}
+	if _, err := h.m.SetModel(ctx, scratch.ID, "other", "newer"); err != nil {
+		t.Fatal(err)
+	}
+	if err := h.m.Rate(ctx, scratch.ID, Rating{Target: flitv1.RatingTarget_RATING_TARGET_TURN, Good: true, MessageID: msgID, Note: "nice", Client: "phone"}); err != nil {
+		t.Fatal(err)
+	}
+	fb := w.waitFor("feedback", func(ev *flitv1.Event) bool { return ev.GetFeedback() != nil }).GetFeedback()
+	if fb.Rating != flitv1.Rating_RATING_GOOD || fb.Model != "test-model" || fb.Client != "phone" || fb.Note != "nice" {
+		t.Fatalf("feedback = %v", fb)
+	}
+	if err := h.m.Rate(ctx, scratch.ID, Rating{Target: flitv1.RatingTarget_RATING_TARGET_MODEL}); err != nil {
+		t.Fatalf("model rating: %v", err)
+	}
+	for _, bad := range []Rating{
+		{Target: flitv1.RatingTarget_RATING_TARGET_TURN},
+		{Target: flitv1.RatingTarget_RATING_TARGET_TURN, MessageID: "msg_nope"},
+		{},
+	} {
+		if err := h.m.Rate(ctx, scratch.ID, bad); !errors.Is(err, ErrInvalid) {
+			t.Errorf("rating %+v: %v", bad, err)
+		}
+	}
+}
+
+func TestToolSetSkillsAppendsAndMCPToggle(t *testing.T) {
+	h := newHarness(t)
+	ctx := context.Background()
+	skillsDir := t.TempDir()
+	os.MkdirAll(filepath.Join(skillsDir, "deploy"), 0o755)
+	os.WriteFile(filepath.Join(skillsDir, "deploy", "SKILL.md"), []byte("---\nname: deploy\ndescription: How to deploy this app.\n---\nRun make deploy."), 0o644)
+	h.m.SkillsDirs = func() []string { return []string{skillsDir} }
+	h.cfg.Providers[0].PromptAppend = "Provider note."
+	h.cfg.Agent.ModelPromptAppends = map[string]string{"fake/test-model": "Model note."}
+	h.cfg.Web.Search = config.WebSearch{Provider: "searxng", URL: "http://127.0.0.1:1"}
+	h.cfg.MCPServers = []config.MCPServer{{Name: "off", Command: "/nonexistent", Enabled: ptrBool(false)}, {Name: "on", Command: "/nonexistent"}}
+	h.m.MCP = mcpclient.New(h.config, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	defer h.m.MCP.Close()
+
+	sess := h.create()
+	if len(sess.MCPServers) != 1 || sess.MCPServers[0] != "on" {
+		t.Fatalf("default MCP servers = %v", sess.MCPServers)
+	}
+	h.llm.Push(llmtest.Response{Chunks: llmtest.Text("ok")})
+	w := h.watch(sess.ID, 0)
+	if _, err := h.m.Send(ctx, sess.ID, "hi"); err != nil {
+		t.Fatal(err)
+	}
+	w.waitTurnEnd()
+	req := h.llm.Requests()[0]
+	names := strings.Join(toolNames(req), ",")
+	for _, want := range []string{"git_commit", "web_fetch", "web_search", "skill"} {
+		if !strings.Contains(names, want) {
+			t.Errorf("tools lack %s: %s", want, names)
+		}
+	}
+	sys := req.Messages[0].Content
+	for _, want := range []string{"- deploy: How to deploy this app.", "Provider note.", "Model note.", "could not be started"} {
+		if !strings.Contains(sys, want) {
+			t.Errorf("system prompt lacks %q", want)
+		}
+	}
+	if strings.Contains(sys, "Run make deploy.") {
+		t.Error("skill body in the prompt; it should load on demand")
+	}
+
+	// Toggle servers per session.
+	if _, err := h.m.SetMCPServer(ctx, sess.ID, "missing", true); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("unknown server: %v", err)
+	}
+	got, err := h.m.SetMCPServer(ctx, sess.ID, "on", false)
+	if err != nil || len(got.MCPServers) != 0 {
+		t.Fatalf("disable = %+v, %v", got, err)
+	}
+	got, _ = h.m.SetMCPServer(ctx, sess.ID, "off", true)
+	if len(got.MCPServers) != 1 || got.MCPServers[0] != "off" {
+		t.Fatalf("enable = %v", got.MCPServers)
+	}
+	st, err := h.m.MCPServers(ctx, sess.ID)
+	if err != nil || len(st) != 2 || !st[0].Enabled || st[1].Enabled {
+		t.Fatalf("status = %+v, %v", st, err)
+	}
+	w.waitFor("mcp change", func(ev *flitv1.Event) bool {
+		c := ev.GetMcpServersChanged()
+		return c != nil && len(c.Enabled) == 1 && c.Enabled[0] == "off"
+	})
+}
+
+func ptrBool(b bool) *bool { return &b }

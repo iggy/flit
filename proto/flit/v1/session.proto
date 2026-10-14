@@ -11,7 +11,8 @@ option go_package = "github.com/iggy/flit/server/gen/flit/v1;flitv1";
 // an append-only, numbered event log, so a client can attach at any point,
 // replay from any sequence number and then follow live.
 service SessionService {
-  // CreateSession starts a new, idle session.
+  // CreateSession starts a new, idle session. Give working_dir, or a
+  // project_id whose project has a directory.
   rpc CreateSession(CreateSessionRequest) returns (CreateSessionResponse);
 
   // ListSessions lists sessions, most recently updated first.
@@ -46,6 +47,24 @@ service SessionService {
 
   // SetEffort changes the reasoning effort used from the next model call.
   rpc SetEffort(SetEffortRequest) returns (SetEffortResponse);
+
+  // MoveSession moves a session to another project. Its working directory
+  // stays the same.
+  rpc MoveSession(MoveSessionRequest) returns (MoveSessionResponse);
+
+  // Rate records whether a turn's result or the model choice was good or
+  // bad. Ratings are events in the session log.
+  rpc Rate(RateRequest) returns (RateResponse);
+
+  // ListMcpServers lists the configured MCP servers and whether each is
+  // enabled for the session. Only enabled servers' tools reach the model.
+  rpc ListMcpServers(ListMcpServersRequest) returns (ListMcpServersResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+
+  // SetMcpServer enables or disables an MCP server for the session, from
+  // its next model call.
+  rpc SetMcpServer(SetMcpServerRequest) returns (SetMcpServerResponse);
 }
 
 // TaskState is what a session's agent is doing.
@@ -87,6 +106,8 @@ message Session {
   // reply, and the model's context window (0 if unknown).
   int64 context_tokens = 14;
   int64 context_length = 15;
+  // MCP servers enabled for the session.
+  repeated string mcp_servers = 16;
 }
 
 message CreateSessionRequest {
@@ -101,6 +122,9 @@ message CreateSessionRequest {
   string role = 5;
   // Reasoning effort; empty means the role's, then the config's.
   string effort = 6;
+  // Project to create the session in; empty means Scratch. If
+  // working_dir is empty, the project's directory is used.
+  string project_id = 7;
 }
 
 message CreateSessionResponse {
@@ -112,6 +136,8 @@ message ListSessionsRequest {
   int32 page_size = 1;
   // From a previous response's next_page_token.
   string page_token = 2;
+  // Only sessions in this project; empty means all.
+  string project_id = 3;
 }
 
 message ListSessionsResponse {
@@ -179,6 +205,70 @@ message SetModelResponse {
   Session session = 1;
 }
 
+message MoveSessionRequest {
+  string session_id = 1;
+  string project_id = 2;
+}
+
+message MoveSessionResponse {
+  Session session = 1;
+}
+
+enum RatingTarget {
+  RATING_TARGET_UNSPECIFIED = 0;
+  // The result of the turn that produced message_id.
+  RATING_TARGET_TURN = 1;
+  // The model that produced message_id (or the session's current model).
+  RATING_TARGET_MODEL = 2;
+}
+
+enum Rating {
+  RATING_UNSPECIFIED = 0;
+  RATING_GOOD = 1;
+  RATING_BAD = 2;
+}
+
+message RateRequest {
+  string session_id = 1;
+  RatingTarget target = 2;
+  Rating rating = 3;
+  // The assistant message rated; empty rates the model in general.
+  string message_id = 4;
+  // Optional free-text reason.
+  string note = 5;
+}
+
+message RateResponse {}
+
+message McpServer {
+  string name = 1;
+  // Enabled for this session.
+  bool enabled = 2;
+  // Started and answering; tool_count is how many tools it offers.
+  bool running = 3;
+  int32 tool_count = 4;
+  // Why it failed to start or list tools, if it did.
+  string error = 5;
+}
+
+message ListMcpServersRequest {
+  string session_id = 1;
+}
+
+message ListMcpServersResponse {
+  repeated McpServer servers = 1;
+}
+
+message SetMcpServerRequest {
+  string session_id = 1;
+  string server = 2;
+  bool enabled = 3;
+}
+
+message SetMcpServerResponse {
+  Session session = 1;
+}
+
 message SetEffortRequest {
   string session_id = 1;
   // E.g. "low", "medium", "high"; empty means the model's default.
@@ -211,6 +301,9 @@ message Event {
     Usage usage = 21;
     TurnError error = 22;
     TodoUpdated todo_updated = 23;
+    Feedback feedback = 24;
+    McpServersChanged mcp_servers_changed = 25;
+    SessionMoved session_moved = 26;
   }
 }
 
@@ -225,6 +318,9 @@ enum Role {
 message MessageStarted {
   string message_id = 1;
   Role role = 2;
+  // For assistant messages, the model writing it.
+  string provider = 3;
+  string model = 4;
 }
 
 message TextDelta {
@@ -358,4 +454,29 @@ message TurnError {
   // Whether the session can go on: true means a new Send may succeed (e.g. a
   // network blip); false means something must change first (e.g. config).
   bool turn_can_continue = 2;
+}
+
+// Feedback is a rating someone gave a turn or a model.
+message Feedback {
+  RatingTarget target = 1;
+  Rating rating = 2;
+  string message_id = 3;
+  string note = 4;
+  // The model in use for the rated message (or at the time, for a model
+  // rating without a message).
+  string provider = 5;
+  string model = 6;
+  // The client that rated.
+  string client = 7;
+}
+
+// McpServersChanged lists the MCP servers enabled for the session after a
+// change.
+message McpServersChanged {
+  repeated string enabled = 1;
+}
+
+// SessionMoved says the session moved to another project.
+message SessionMoved {
+  string project_id = 1;
 }

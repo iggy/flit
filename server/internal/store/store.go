@@ -118,6 +118,11 @@ ALTER TABLE sessions ADD COLUMN role TEXT NOT NULL DEFAULT '';
 ALTER TABLE sessions ADD COLUMN context_tokens INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE sessions ADD COLUMN context_length INTEGER NOT NULL DEFAULT 0;
 `,
+	`
+ALTER TABLE projects ADD COLUMN directory TEXT NOT NULL DEFAULT '';
+ALTER TABLE sessions ADD COLUMN mcp_servers TEXT NOT NULL DEFAULT '';
+CREATE UNIQUE INDEX projects_by_directory ON projects (team_id, directory) WHERE directory != '';
+`,
 }
 
 func (s *Store) migrate(ctx context.Context) error {
@@ -170,15 +175,28 @@ type Session struct {
 	// Context use after the last model call, and the model's window.
 	ContextTokens int64
 	ContextLength int64
+	// MCPServers are the MCP servers enabled for the session.
+	MCPServers []string
 }
 
-const sessionCols = `id, team_id, project_id, title, working_dir, provider, model, state, last_seq, created_at, updated_at, effort, role, context_tokens, context_length`
+const sessionCols = `id, team_id, project_id, title, working_dir, provider, model, state, last_seq, created_at, updated_at, effort, role, context_tokens, context_length, mcp_servers`
+
+func joinNames(names []string) string { return strings.Join(names, "\n") }
+
+func splitNames(s string) []string {
+	if s == "" {
+		return nil
+	}
+	return strings.Split(s, "\n")
+}
 
 func scanSession(row interface{ Scan(...any) error }) (Session, error) {
 	var s Session
 	var created, updated int64
+	var mcp string
 	err := row.Scan(&s.ID, &s.TeamID, &s.ProjectID, &s.Title, &s.WorkingDir, &s.Provider, &s.Model,
-		&s.State, &s.LastSeq, &created, &updated, &s.Effort, &s.Role, &s.ContextTokens, &s.ContextLength)
+		&s.State, &s.LastSeq, &created, &updated, &s.Effort, &s.Role, &s.ContextTokens, &s.ContextLength, &mcp)
+	s.MCPServers = splitNames(mcp)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Session{}, ErrNotFound
 	}
@@ -190,9 +208,10 @@ func scanSession(row interface{ Scan(...any) error }) (Session, error) {
 func (s *Store) CreateSession(ctx context.Context, sess *Session) error {
 	now := time.Now()
 	sess.CreatedAt, sess.UpdatedAt = now, now
-	_, err := s.db.ExecContext(ctx, `INSERT INTO sessions (`+sessionCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	_, err := s.db.ExecContext(ctx, `INSERT INTO sessions (`+sessionCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		sess.ID, sess.TeamID, sess.ProjectID, sess.Title, sess.WorkingDir, sess.Provider, sess.Model,
-		sess.State, sess.LastSeq, now.UnixNano(), now.UnixNano(), sess.Effort, sess.Role, sess.ContextTokens, sess.ContextLength)
+		sess.State, sess.LastSeq, now.UnixNano(), now.UnixNano(), sess.Effort, sess.Role, sess.ContextTokens, sess.ContextLength,
+		joinNames(sess.MCPServers))
 	return err
 }
 
@@ -202,9 +221,10 @@ func (s *Store) GetSession(ctx context.Context, id string) (Session, error) {
 }
 
 // ListSessions returns up to limit sessions, most recently updated first,
-// skipping the first offset.
-func (s *Store) ListSessions(ctx context.Context, limit, offset int) ([]Session, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT `+sessionCols+` FROM sessions ORDER BY updated_at DESC, id LIMIT ? OFFSET ?`, limit, offset)
+// skipping the first offset; only those in projectID unless it is empty.
+func (s *Store) ListSessions(ctx context.Context, projectID string, limit, offset int) ([]Session, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT `+sessionCols+` FROM sessions WHERE ? = '' OR project_id = ? ORDER BY updated_at DESC, id LIMIT ? OFFSET ?`,
+		projectID, projectID, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -231,6 +251,93 @@ func (s *Store) SetModel(ctx context.Context, id, provider, model string) error 
 		return ErrNotFound
 	}
 	return nil
+}
+
+// MoveSession moves a session to another project.
+func (s *Store) MoveSession(ctx context.Context, id, projectID string) error {
+	res, err := s.db.ExecContext(ctx, `UPDATE sessions SET project_id = ? WHERE id = ?`, projectID, id)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// SetMCPServers changes which MCP servers are enabled for a session.
+func (s *Store) SetMCPServers(ctx context.Context, id string, names []string) error {
+	res, err := s.db.ExecContext(ctx, `UPDATE sessions SET mcp_servers = ? WHERE id = ?`, joinNames(names), id)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// Project is a group of sessions, usually for one directory.
+type Project struct {
+	ID           string
+	TeamID       string
+	Name         string
+	Directory    string
+	CreatedAt    time.Time
+	SessionCount int
+}
+
+// ErrExists is returned when creating something that already exists.
+var ErrExists = errors.New("already exists")
+
+// CreateProject stores a new project. A team can't have two projects for
+// the same directory.
+func (s *Store) CreateProject(ctx context.Context, p *Project) error {
+	p.CreatedAt = time.Now()
+	_, err := s.db.ExecContext(ctx, `INSERT INTO projects (id, team_id, name, directory, created_at) VALUES (?, ?, ?, ?, ?)`,
+		p.ID, p.TeamID, p.Name, p.Directory, p.CreatedAt.UnixNano())
+	if err != nil && strings.Contains(err.Error(), "UNIQUE") {
+		return fmt.Errorf("%w: a project for %s", ErrExists, p.Directory)
+	}
+	return err
+}
+
+const projectQuery = `SELECT p.id, p.team_id, p.name, p.directory, p.created_at,
+	(SELECT count(*) FROM sessions s WHERE s.project_id = p.id) FROM projects p`
+
+func scanProject(row interface{ Scan(...any) error }) (Project, error) {
+	var p Project
+	var created int64
+	err := row.Scan(&p.ID, &p.TeamID, &p.Name, &p.Directory, &created, &p.SessionCount)
+	if errors.Is(err, sql.ErrNoRows) {
+		return Project{}, ErrNotFound
+	}
+	p.CreatedAt = time.Unix(0, created)
+	return p, err
+}
+
+// GetProject returns one project.
+func (s *Store) GetProject(ctx context.Context, id string) (Project, error) {
+	return scanProject(s.db.QueryRowContext(ctx, projectQuery+` WHERE p.id = ?`, id))
+}
+
+// ListProjects returns a team's projects: Scratch first, then by name.
+func (s *Store) ListProjects(ctx context.Context, teamID string) ([]Project, error) {
+	rows, err := s.db.QueryContext(ctx, projectQuery+` WHERE p.team_id = ? ORDER BY p.id != ?, lower(p.name), p.id`,
+		teamID, DefaultProjectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Project
+	for rows.Next() {
+		p, err := scanProject(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, p)
+	}
+	return out, rows.Err()
 }
 
 // SetEffort changes a session's reasoning effort.

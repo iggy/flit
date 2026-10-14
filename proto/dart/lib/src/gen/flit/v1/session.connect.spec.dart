@@ -14,7 +14,8 @@ abstract final class SessionService {
   /// Fully-qualified name of the SessionService service.
   static const name = 'flit.v1.SessionService';
 
-  /// CreateSession starts a new, idle session.
+  /// CreateSession starts a new, idle session. Give working_dir, or a
+  /// project_id whose project has a directory.
   static const createSession = connect.Spec(
     '/$name/CreateSession',
     connect.StreamType.unary,
@@ -91,5 +92,42 @@ abstract final class SessionService {
     connect.StreamType.unary,
     flitv1session.SetEffortRequest.new,
     flitv1session.SetEffortResponse.new,
+  );
+
+  /// MoveSession moves a session to another project. Its working directory
+  /// stays the same.
+  static const moveSession = connect.Spec(
+    '/$name/MoveSession',
+    connect.StreamType.unary,
+    flitv1session.MoveSessionRequest.new,
+    flitv1session.MoveSessionResponse.new,
+  );
+
+  /// Rate records whether a turn's result or the model choice was good or
+  /// bad. Ratings are events in the session log.
+  static const rate = connect.Spec(
+    '/$name/Rate',
+    connect.StreamType.unary,
+    flitv1session.RateRequest.new,
+    flitv1session.RateResponse.new,
+  );
+
+  /// ListMcpServers lists the configured MCP servers and whether each is
+  /// enabled for the session. Only enabled servers' tools reach the model.
+  static const listMcpServers = connect.Spec(
+    '/$name/ListMcpServers',
+    connect.StreamType.unary,
+    flitv1session.ListMcpServersRequest.new,
+    flitv1session.ListMcpServersResponse.new,
+    idempotency: connect.Idempotency.noSideEffects,
+  );
+
+  /// SetMcpServer enables or disables an MCP server for the session, from
+  /// its next model call.
+  static const setMcpServer = connect.Spec(
+    '/$name/SetMcpServer',
+    connect.StreamType.unary,
+    flitv1session.SetMcpServerRequest.new,
+    flitv1session.SetMcpServerResponse.new,
   );
 }

@@ -39,6 +39,14 @@ abstract class SessionServiceBase extends $pb.GeneratedService {
       $pb.ServerContext ctx, $1.SetModelRequest request);
   $async.Future<$1.SetEffortResponse> setEffort(
       $pb.ServerContext ctx, $1.SetEffortRequest request);
+  $async.Future<$1.MoveSessionResponse> moveSession(
+      $pb.ServerContext ctx, $1.MoveSessionRequest request);
+  $async.Future<$1.RateResponse> rate(
+      $pb.ServerContext ctx, $1.RateRequest request);
+  $async.Future<$1.ListMcpServersResponse> listMcpServers(
+      $pb.ServerContext ctx, $1.ListMcpServersRequest request);
+  $async.Future<$1.SetMcpServerResponse> setMcpServer(
+      $pb.ServerContext ctx, $1.SetMcpServerRequest request);
 
   $pb.GeneratedMessage createRequest($core.String methodName) {
     switch (methodName) {
@@ -60,6 +68,14 @@ abstract class SessionServiceBase extends $pb.GeneratedService {
         return $1.SetModelRequest();
       case 'SetEffort':
         return $1.SetEffortRequest();
+      case 'MoveSession':
+        return $1.MoveSessionRequest();
+      case 'Rate':
+        return $1.RateRequest();
+      case 'ListMcpServers':
+        return $1.ListMcpServersRequest();
+      case 'SetMcpServer':
+        return $1.SetMcpServerRequest();
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }
@@ -86,6 +102,14 @@ abstract class SessionServiceBase extends $pb.GeneratedService {
         return setModel(ctx, request as $1.SetModelRequest);
       case 'SetEffort':
         return setEffort(ctx, request as $1.SetEffortRequest);
+      case 'MoveSession':
+        return moveSession(ctx, request as $1.MoveSessionRequest);
+      case 'Rate':
+        return rate(ctx, request as $1.RateRequest);
+      case 'ListMcpServers':
+        return listMcpServers(ctx, request as $1.ListMcpServersRequest);
+      case 'SetMcpServer':
+        return setMcpServer(ctx, request as $1.SetMcpServerRequest);
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }

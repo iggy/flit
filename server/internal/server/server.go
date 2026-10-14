@@ -52,6 +52,7 @@ func NewHandler(adminToken string, d Deps) http.Handler {
 	mux.Handle(flitv1connect.NewSystemServiceHandler(&system.Service{Devices: d.Devices, Config: d.Config}, opts))
 	if d.Sessions != nil {
 		mux.Handle(flitv1connect.NewSessionServiceHandler(&sessionsvc.Service{M: d.Sessions}, opts))
+		mux.Handle(flitv1connect.NewProjectServiceHandler(&sessionsvc.Projects{M: d.Sessions}, opts))
 	}
 	if d.Catalog != nil {
 		mux.Handle(flitv1connect.NewModelServiceHandler(&modelsvc.Models{Catalog: d.Catalog}, opts))

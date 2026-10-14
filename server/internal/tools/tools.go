@@ -50,15 +50,15 @@ type Tool struct {
 	Run         func(ctx context.Context, env *Env, args json.RawMessage) Result
 }
 
-// All returns the built-in tools.
+// All returns the core built-in tools, always offered.
 func All() []Tool {
 	return []Tool{readTool, writeTool, patchTool, listTool, grepTool, shellTool, todoTool}
 }
 
-// Definitions returns the tools in chat completions format.
-func Definitions() []llm.Tool {
+// Definitions returns set in chat completions format.
+func Definitions(set []Tool) []llm.Tool {
 	var out []llm.Tool
-	for _, t := range All() {
+	for _, t := range set {
 		out = append(out, llm.Tool{Type: "function", Function: llm.ToolFunction{
 			Name: t.Name, Description: t.Description, Parameters: json.RawMessage(t.Schema),
 		}})
@@ -66,10 +66,10 @@ func Definitions() []llm.Tool {
 	return out
 }
 
-// Run runs the named tool. Unknown tools and malformed arguments are
-// reported to the model as errors rather than failing the turn.
-func Run(ctx context.Context, env *Env, name, args string) Result {
-	for _, t := range All() {
+// Run runs the named tool from set. Unknown tools and malformed arguments
+// are reported to the model as errors rather than failing the turn.
+func Run(ctx context.Context, env *Env, set []Tool, name, args string) Result {
+	for _, t := range set {
 		if t.Name == name {
 			if strings.TrimSpace(args) == "" {
 				args = "{}"

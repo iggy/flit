@@ -29,6 +29,7 @@ import (
 	"github.com/iggy/flit/server/internal/buildinfo"
 	"github.com/iggy/flit/server/internal/config"
 	"github.com/iggy/flit/server/internal/devices"
+	"github.com/iggy/flit/server/internal/mcpclient"
 	"github.com/iggy/flit/server/internal/models"
 	"github.com/iggy/flit/server/internal/paths"
 	"github.com/iggy/flit/server/internal/server"
@@ -225,6 +226,16 @@ func serve(ctx context.Context, stderr io.Writer, configPath, dataDirFlag string
 	rolesDir := func() string { return relToConfig(current().RolesDir) }
 	catalog := models.NewCatalog(current, func() string { return relToConfig(current().ModelOverridesFile) }, log)
 	sessions.Catalog, sessions.RolesDir = catalog, rolesDir
+	sessions.SkillsDirs = func() []string {
+		var dirs []string
+		for _, d := range current().SkillsDirs {
+			dirs = append(dirs, relToConfig(d))
+		}
+		return dirs
+	}
+	mcpServers := mcpclient.New(current, log)
+	defer mcpServers.Close()
+	sessions.MCP = mcpServers
 	go func() {
 		if err := catalog.Refresh(ctx, ""); err != nil {
 			log.Warn("model discovery", "err", err)

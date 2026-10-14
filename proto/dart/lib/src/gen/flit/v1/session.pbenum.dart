@@ -56,6 +56,54 @@ class TaskState extends $pb.ProtobufEnum {
   const TaskState._(super.value, super.name);
 }
 
+class RatingTarget extends $pb.ProtobufEnum {
+  static const RatingTarget RATING_TARGET_UNSPECIFIED =
+      RatingTarget._(0, _omitEnumNames ? '' : 'RATING_TARGET_UNSPECIFIED');
+
+  /// The result of the turn that produced message_id.
+  static const RatingTarget RATING_TARGET_TURN =
+      RatingTarget._(1, _omitEnumNames ? '' : 'RATING_TARGET_TURN');
+
+  /// The model that produced message_id (or the session's current model).
+  static const RatingTarget RATING_TARGET_MODEL =
+      RatingTarget._(2, _omitEnumNames ? '' : 'RATING_TARGET_MODEL');
+
+  static const $core.List<RatingTarget> values = <RatingTarget>[
+    RATING_TARGET_UNSPECIFIED,
+    RATING_TARGET_TURN,
+    RATING_TARGET_MODEL,
+  ];
+
+  static final $core.List<RatingTarget?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 2);
+  static RatingTarget? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const RatingTarget._(super.value, super.name);
+}
+
+class Rating extends $pb.ProtobufEnum {
+  static const Rating RATING_UNSPECIFIED =
+      Rating._(0, _omitEnumNames ? '' : 'RATING_UNSPECIFIED');
+  static const Rating RATING_GOOD =
+      Rating._(1, _omitEnumNames ? '' : 'RATING_GOOD');
+  static const Rating RATING_BAD =
+      Rating._(2, _omitEnumNames ? '' : 'RATING_BAD');
+
+  static const $core.List<Rating> values = <Rating>[
+    RATING_UNSPECIFIED,
+    RATING_GOOD,
+    RATING_BAD,
+  ];
+
+  static final $core.List<Rating?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 2);
+  static Rating? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const Rating._(super.value, super.name);
+}
+
 class Role extends $pb.ProtobufEnum {
   static const Role ROLE_UNSPECIFIED =
       Role._(0, _omitEnumNames ? '' : 'ROLE_UNSPECIFIED');

@@ -49,6 +49,25 @@ type Config struct {
 	// RolesDir holds role files (*.md with YAML frontmatter). Relative
 	// paths are relative to the config file.
 	RolesDir string `yaml:"roles_dir"`
+	// MCPServers are MCP servers (stdio). Configured here, never in an
+	// mcp.json.
+	MCPServers []MCPServer `yaml:"mcp_servers"`
+	// SkillsDirs hold skills in the Agent Skills format (one directory per
+	// skill with a SKILL.md). Relative paths are relative to the config
+	// file.
+	SkillsDirs []string `yaml:"skills_dirs"`
+	Web        Web      `yaml:"web"`
+	Git        Git      `yaml:"git"`
+}
+
+// MCPServer returns the MCP server named name.
+func (c Config) MCPServer(name string) (MCPServer, bool) {
+	for _, m := range c.MCPServers {
+		if m.Name == name {
+			return m, true
+		}
+	}
+	return MCPServer{}, false
 }
 
 // ChatModel is the default model for new sessions: tasks.chat if set,
@@ -75,7 +94,57 @@ type Provider struct {
 	// default: guess from the URL and the response), openai, openrouter,
 	// llamacpp or gomodel.
 	Kind string `yaml:"kind"`
+	// PromptAppend is added to the system prompt for every model on this
+	// provider.
+	PromptAppend string `yaml:"prompt_append"`
 }
+
+// MCPServer is an MCP server flit starts as a subprocess and talks to over
+// stdio.
+type MCPServer struct {
+	Name    string            `yaml:"name"`
+	Command string            `yaml:"command"`
+	Args    []string          `yaml:"args"`
+	Env     map[string]string `yaml:"env"`
+	// Dir is the working directory for the process; empty means flit's.
+	Dir string `yaml:"dir"`
+	// Enabled is whether new sessions start with it on. Default true.
+	Enabled *bool `yaml:"enabled"`
+}
+
+// EnabledByDefault reports whether new sessions get this server.
+func (m MCPServer) EnabledByDefault() bool { return m.Enabled == nil || *m.Enabled }
+
+// Web configures the web tools.
+type Web struct {
+	// Fetch enables the web_fetch tool. Default true.
+	Fetch *bool `yaml:"fetch"`
+	// Search configures web_search; without a provider there is no search
+	// tool.
+	Search WebSearch `yaml:"search"`
+}
+
+// FetchEnabled reports whether web_fetch is offered.
+func (w Web) FetchEnabled() bool { return w.Fetch == nil || *w.Fetch }
+
+// WebSearch configures the web_search tool.
+type WebSearch struct {
+	// Provider is "searxng" (free, self-hostable) or empty for none.
+	Provider string `yaml:"provider"`
+	// URL is the SearXNG instance, e.g. http://localhost:8888. Its JSON
+	// output format must be enabled.
+	URL string `yaml:"url"`
+}
+
+// Git configures the git tools.
+type Git struct {
+	// Enabled offers git_status, git_diff, git_log and git_commit. Default
+	// true. Nothing ever pushes.
+	Enabled *bool `yaml:"enabled"`
+}
+
+// IsEnabled reports whether the git tools are offered.
+func (g Git) IsEnabled() bool { return g.Enabled == nil || *g.Enabled }
 
 // ProviderKinds are the accepted Provider.Kind values.
 var ProviderKinds = []string{"auto", "openai", "openrouter", "llamacpp", "gomodel"}
@@ -111,6 +180,9 @@ type Agent struct {
 	// so far; the others are for planning, cron jobs, compaction and search
 	// as those features arrive.
 	Tasks map[string]TaskModel `yaml:"tasks"`
+	// ModelPromptAppends adds text to the system prompt for specific
+	// models, keyed "provider/model".
+	ModelPromptAppends map[string]string `yaml:"model_prompt_appends"`
 	// MaxSteps caps model calls per turn.
 	MaxSteps int `yaml:"max_steps"`
 	// Tool output longer than this is cut down to its head and tail before
@@ -175,8 +247,13 @@ func Default() Config {
 		Providers:          []Provider{},
 		ModelOverridesFile: "models.yaml",
 		RolesDir:           "roles",
+		MCPServers:         []MCPServer{},
+		SkillsDirs:         []string{"skills"},
+		Web:                Web{Fetch: ptr(true)},
+		Git:                Git{Enabled: ptr(true)},
 		Agent: Agent{
 			Tasks:              map[string]TaskModel{},
+			ModelPromptAppends: map[string]string{},
 			MaxSteps:           50,
 			ToolOutputMaxBytes: 32 * 1024,
 			ToolOutputMaxLines: 500,
@@ -296,6 +373,29 @@ func (c Config) Validate() error {
 	if c.Agent.Provider != "" && !seen[c.Agent.Provider] {
 		return fmt.Errorf("agent.provider %q is not in providers", c.Agent.Provider)
 	}
+	mcpSeen := map[string]bool{}
+	for i, m := range c.MCPServers {
+		switch {
+		case m.Name == "":
+			return fmt.Errorf("mcp_servers[%d]: name is required", i)
+		case !validToolPart(m.Name):
+			return fmt.Errorf("mcp_servers %q: name may only use letters, digits, - and _", m.Name)
+		case mcpSeen[m.Name]:
+			return fmt.Errorf("mcp_servers: duplicate name %q", m.Name)
+		case m.Command == "":
+			return fmt.Errorf("mcp_servers %q: command is required", m.Name)
+		}
+		mcpSeen[m.Name] = true
+	}
+	switch c.Web.Search.Provider {
+	case "":
+	case "searxng":
+		if u, err := url.Parse(c.Web.Search.URL); err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			return fmt.Errorf("web.search.url %q must be an http(s) URL", c.Web.Search.URL)
+		}
+	default:
+		return fmt.Errorf("web.search.provider %q: only searxng is supported", c.Web.Search.Provider)
+	}
 	for task, t := range c.Agent.Tasks {
 		if !slices.Contains(Tasks, task) {
 			return fmt.Errorf("agent.tasks: unknown task %q: want one of %s", task, strings.Join(Tasks, ", "))
@@ -369,6 +469,34 @@ model_overrides_file: models.yaml
 # Role files (*.md with YAML frontmatter), relative to this file.
 roles_dir: roles
 
+# Skills in the Agent Skills format (a directory per skill with SKILL.md),
+# relative to this file. The agent sees names and descriptions and loads a
+# skill when it needs it.
+skills_dirs: [skills]
+
+# MCP servers, started on demand and spoken to over stdio. Sessions can turn
+# each one on or off; enabled says whether new sessions start with it on.
+mcp_servers: []
+#  - name: fetch
+#    command: uvx
+#    args: [mcp-server-fetch]
+#    env: {}
+#    enabled: true
+
+web:
+  # web_fetch: read a web page as text.
+  fetch: true
+  # web_search needs a search provider. Only SearXNG (free, self-hosted,
+  # with its JSON format enabled) is supported.
+  search:
+    provider: ""
+    url: ""
+
+git:
+  # git_status, git_diff, git_log and git_commit on the session's repo.
+  # Nothing pushes.
+  enabled: true
+
 agent:
   # Defaults for sessions that don't choose their own (or get one from
   # their role).
@@ -380,6 +508,9 @@ agent:
   tasks: {}
   #   chat:     {provider: local, model: qwen3-coder, effort: medium}
   #   planning: {provider: openrouter, model: some/bigger-model, effort: high}
+  # Extra system prompt text for specific models ("provider/model"); a
+  # provider's prompt_append applies to all its models.
+  model_prompt_appends: {}
   # Maximum model calls in one turn.
   max_steps: 50
   # Longer tool output is cut to its head and tail before the model sees it.
@@ -427,3 +558,16 @@ func EnsureFile(path string) (bool, error) {
 	}
 	return true, f.Close()
 }
+
+// validToolPart reports whether s can be part of a tool name sent to the
+// model (letters, digits, - and _).
+func validToolPart(s string) bool {
+	for _, r := range s {
+		if !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '-' || r == '_') {
+			return false
+		}
+	}
+	return s != ""
+}
+
+func ptr[T any](v T) *T { return &v }

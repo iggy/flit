@@ -1,0 +1,394 @@
+// This is a generated file - do not edit.
+//
+// Generated from flit/v1/project.proto.
+
+// @dart = 3.3
+
+// ignore_for_file: annotate_overrides, camel_case_types, comment_references
+// ignore_for_file: constant_identifier_names
+// ignore_for_file: curly_braces_in_flow_control_structures
+// ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
+// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
+
+import 'dart:async' as $async;
+import 'dart:core' as $core;
+
+import 'package:protobuf/protobuf.dart' as $pb;
+import 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart'
+    as $0;
+
+export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
+
+class Project extends $pb.GeneratedMessage {
+  factory Project({
+    $core.String? id,
+    $core.String? teamId,
+    $core.String? name,
+    $core.String? directory,
+    $core.int? sessionCount,
+    $0.Timestamp? createTime,
+  }) {
+    final result = Project._();
+    if (id != null) result.id = id;
+    if (teamId != null) result.teamId = teamId;
+    if (name != null) result.name = name;
+    if (directory != null) result.directory = directory;
+    if (sessionCount != null) result.sessionCount = sessionCount;
+    if (createTime != null) result.createTime = createTime;
+    return result;
+  }
+
+  Project._();
+
+  factory Project.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Project()..mergeFromBuffer(data, registry);
+  factory Project.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Project()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'Project',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: Project.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..aOS(2, _omitFieldNames ? '' : 'teamId')
+    ..aOS(3, _omitFieldNames ? '' : 'name')
+    ..aOS(4, _omitFieldNames ? '' : 'directory')
+    ..aI(5, _omitFieldNames ? '' : 'sessionCount')
+    ..aOM<$0.Timestamp>(6, _omitFieldNames ? '' : 'createTime',
+        subBuilder: $0.Timestamp.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Project clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Project copyWith(void Function(Project) updates) =>
+      super.copyWith((message) => updates(message as Project)) as Project;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use Project() / Project.new instead')
+  static Project create() => Project._();
+  static $pb.GeneratedMessage $_createMessage() => Project._();
+  @$core.override
+  Project createEmptyInstance() => Project._();
+  @$core.pragma('dart2js:noInline')
+  static Project getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<Project>(Project.$_createMessage);
+  static Project? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get id => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set id($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get teamId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set teamId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasTeamId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearTeamId() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get name => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set name($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasName() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearName() => $_clearField(3);
+
+  /// Absolute directory on the server; empty for Scratch.
+  @$pb.TagNumber(4)
+  $core.String get directory => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set directory($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasDirectory() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearDirectory() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.int get sessionCount => $_getIZ(4);
+  @$pb.TagNumber(5)
+  set sessionCount($core.int value) => $_setSignedInt32(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasSessionCount() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearSessionCount() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $0.Timestamp get createTime => $_getN(5);
+  @$pb.TagNumber(6)
+  set createTime($0.Timestamp value) => $_setField(6, value);
+  @$pb.TagNumber(6)
+  $core.bool hasCreateTime() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearCreateTime() => $_clearField(6);
+  @$pb.TagNumber(6)
+  $0.Timestamp ensureCreateTime() => $_ensure(5);
+}
+
+class ListProjectsRequest extends $pb.GeneratedMessage {
+  factory ListProjectsRequest() => ListProjectsRequest._();
+
+  ListProjectsRequest._();
+
+  factory ListProjectsRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListProjectsRequest()..mergeFromBuffer(data, registry);
+  factory ListProjectsRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListProjectsRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListProjectsRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: ListProjectsRequest.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListProjectsRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListProjectsRequest copyWith(void Function(ListProjectsRequest) updates) =>
+      super.copyWith((message) => updates(message as ListProjectsRequest))
+          as ListProjectsRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core
+      .Deprecated('Use ListProjectsRequest() / ListProjectsRequest.new instead')
+  static ListProjectsRequest create() => ListProjectsRequest._();
+  static $pb.GeneratedMessage $_createMessage() => ListProjectsRequest._();
+  @$core.override
+  ListProjectsRequest createEmptyInstance() => ListProjectsRequest._();
+  @$core.pragma('dart2js:noInline')
+  static ListProjectsRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListProjectsRequest>(
+          ListProjectsRequest.$_createMessage);
+  static ListProjectsRequest? _defaultInstance;
+}
+
+class ListProjectsResponse extends $pb.GeneratedMessage {
+  factory ListProjectsResponse({
+    $core.Iterable<Project>? projects,
+  }) {
+    final result = ListProjectsResponse._();
+    if (projects != null) result.projects.addAll(projects);
+    return result;
+  }
+
+  ListProjectsResponse._();
+
+  factory ListProjectsResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListProjectsResponse()..mergeFromBuffer(data, registry);
+  factory ListProjectsResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListProjectsResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListProjectsResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: ListProjectsResponse.$_createMessage)
+    ..pPM<Project>(1, _omitFieldNames ? '' : 'projects',
+        subBuilder: Project.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListProjectsResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListProjectsResponse copyWith(void Function(ListProjectsResponse) updates) =>
+      super.copyWith((message) => updates(message as ListProjectsResponse))
+          as ListProjectsResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ListProjectsResponse() / ListProjectsResponse.new instead')
+  static ListProjectsResponse create() => ListProjectsResponse._();
+  static $pb.GeneratedMessage $_createMessage() => ListProjectsResponse._();
+  @$core.override
+  ListProjectsResponse createEmptyInstance() => ListProjectsResponse._();
+  @$core.pragma('dart2js:noInline')
+  static ListProjectsResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListProjectsResponse>(
+          ListProjectsResponse.$_createMessage);
+  static ListProjectsResponse? _defaultInstance;
+
+  /// Scratch first, then by name.
+  @$pb.TagNumber(1)
+  $pb.PbList<Project> get projects => $_getList(0);
+}
+
+class CreateProjectRequest extends $pb.GeneratedMessage {
+  factory CreateProjectRequest({
+    $core.String? directory,
+    $core.String? name,
+  }) {
+    final result = CreateProjectRequest._();
+    if (directory != null) result.directory = directory;
+    if (name != null) result.name = name;
+    return result;
+  }
+
+  CreateProjectRequest._();
+
+  factory CreateProjectRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreateProjectRequest()..mergeFromBuffer(data, registry);
+  factory CreateProjectRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreateProjectRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CreateProjectRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: CreateProjectRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'directory')
+    ..aOS(2, _omitFieldNames ? '' : 'name')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateProjectRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateProjectRequest copyWith(void Function(CreateProjectRequest) updates) =>
+      super.copyWith((message) => updates(message as CreateProjectRequest))
+          as CreateProjectRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use CreateProjectRequest() / CreateProjectRequest.new instead')
+  static CreateProjectRequest create() => CreateProjectRequest._();
+  static $pb.GeneratedMessage $_createMessage() => CreateProjectRequest._();
+  @$core.override
+  CreateProjectRequest createEmptyInstance() => CreateProjectRequest._();
+  @$core.pragma('dart2js:noInline')
+  static CreateProjectRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CreateProjectRequest>(
+          CreateProjectRequest.$_createMessage);
+  static CreateProjectRequest? _defaultInstance;
+
+  /// Directory on the server; must exist. Required.
+  @$pb.TagNumber(1)
+  $core.String get directory => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set directory($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasDirectory() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearDirectory() => $_clearField(1);
+
+  /// Empty means the directory's base name.
+  @$pb.TagNumber(2)
+  $core.String get name => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set name($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasName() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearName() => $_clearField(2);
+}
+
+class CreateProjectResponse extends $pb.GeneratedMessage {
+  factory CreateProjectResponse({
+    Project? project,
+  }) {
+    final result = CreateProjectResponse._();
+    if (project != null) result.project = project;
+    return result;
+  }
+
+  CreateProjectResponse._();
+
+  factory CreateProjectResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreateProjectResponse()..mergeFromBuffer(data, registry);
+  factory CreateProjectResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CreateProjectResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CreateProjectResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: CreateProjectResponse.$_createMessage)
+    ..aOM<Project>(1, _omitFieldNames ? '' : 'project',
+        subBuilder: Project.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateProjectResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CreateProjectResponse copyWith(
+          void Function(CreateProjectResponse) updates) =>
+      super.copyWith((message) => updates(message as CreateProjectResponse))
+          as CreateProjectResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use CreateProjectResponse() / CreateProjectResponse.new instead')
+  static CreateProjectResponse create() => CreateProjectResponse._();
+  static $pb.GeneratedMessage $_createMessage() => CreateProjectResponse._();
+  @$core.override
+  CreateProjectResponse createEmptyInstance() => CreateProjectResponse._();
+  @$core.pragma('dart2js:noInline')
+  static CreateProjectResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CreateProjectResponse>(
+          CreateProjectResponse.$_createMessage);
+  static CreateProjectResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  Project get project => $_getN(0);
+  @$pb.TagNumber(1)
+  set project(Project value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasProject() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearProject() => $_clearField(1);
+  @$pb.TagNumber(1)
+  Project ensureProject() => $_ensure(0);
+}
+
+/// ProjectService manages projects. A project groups sessions and usually
+/// points at a directory on the server, which new sessions in it work in.
+/// Every team starts with a project called "Scratch" that has no directory.
+class ProjectServiceApi {
+  final $pb.RpcClient _client;
+
+  ProjectServiceApi(this._client);
+
+  $async.Future<ListProjectsResponse> listProjects(
+          $pb.ClientContext? ctx, ListProjectsRequest request) =>
+      _client.invoke<ListProjectsResponse>(ctx, 'ProjectService',
+          'ListProjects', request, ListProjectsResponse());
+
+  /// CreateProject adds a project for a directory on the server.
+  $async.Future<CreateProjectResponse> createProject(
+          $pb.ClientContext? ctx, CreateProjectRequest request) =>
+      _client.invoke<CreateProjectResponse>(ctx, 'ProjectService',
+          'CreateProject', request, CreateProjectResponse());
+}
+
+const $core.bool _omitFieldNames =
+    $core.bool.fromEnvironment('protobuf.omit_field_names');
+const $core.bool _omitMessageNames =
+    $core.bool.fromEnvironment('protobuf.omit_message_names');
