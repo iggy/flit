@@ -377,13 +377,13 @@ func TestPromptAllowAndDeny(t *testing.T) {
 				t.Fatalf("state while waiting = %v", got.State)
 			}
 
-			if err := h.m.AnswerPrompt(context.Background(), sess.ID, "prm_bogus", true, "x"); !errors.Is(err, ErrPromptGone) {
+			if err := h.m.AnswerPrompt(context.Background(), sess.ID, "prm_bogus", Answer{Allow: true, Client: "x"}); !errors.Is(err, ErrPromptGone) {
 				t.Fatalf("bogus prompt: %v", err)
 			}
-			if err := h.m.AnswerPrompt(context.Background(), sess.ID, req.PromptId, allow, "test-client"); err != nil {
+			if err := h.m.AnswerPrompt(context.Background(), sess.ID, req.PromptId, Answer{Allow: allow, Client: "test-client"}); err != nil {
 				t.Fatal(err)
 			}
-			if err := h.m.AnswerPrompt(context.Background(), sess.ID, req.PromptId, allow, "late-client"); !errors.Is(err, ErrPromptGone) {
+			if err := h.m.AnswerPrompt(context.Background(), sess.ID, req.PromptId, Answer{Allow: allow, Client: "late-client"}); !errors.Is(err, ErrPromptGone) {
 				t.Fatalf("second answer: %v", err)
 			}
 			w.waitTurnEnd()
@@ -434,7 +434,7 @@ func TestInterruptWhileWaitingForPrompt(t *testing.T) {
 	if res.Decision != flitv1.PromptDecision_PROMPT_DECISION_DENY || res.Reason != "interrupted" || res.Client != "" {
 		t.Fatalf("resolved %+v", res)
 	}
-	if err := h.m.AnswerPrompt(context.Background(), sess.ID, req.PromptId, true, "c"); !errors.Is(err, ErrPromptGone) {
+	if err := h.m.AnswerPrompt(context.Background(), sess.ID, req.PromptId, Answer{Allow: true, Client: "c"}); !errors.Is(err, ErrPromptGone) {
 		t.Fatalf("answer after interrupt: %v", err)
 	}
 	if _, ok := find(evs, (*flitv1.Event).GetToolCallDone, notNil); !ok {
@@ -902,5 +902,69 @@ func TestModelCallsRecordedForCorpus(t *testing.T) {
 	rs, err := h.st.RatingsFor(ctx, []string{sess.ID})
 	if err != nil || len(rs) != 1 || rs[0].ModelCallID != assistant[1] || rs[0].TurnID != userID || rs[0].Note != "right files" || !rs[0].Good {
 		t.Fatalf("ratings = %+v, %v", rs, err)
+	}
+}
+
+func TestAllowForSession(t *testing.T) {
+	h := newHarness(t)
+	ctx := context.Background()
+	h.llm.Push(
+		shellCall("cd sub && go version"),
+		shellCall("go version"),
+		shellCall("go env GOOS"),
+		llmtest.Response{Chunks: llmtest.Text("done")},
+	)
+	if err := os.MkdirAll(filepath.Join(h.dir, "sub"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	sess := h.create()
+	w := h.watch(sess.ID, 0)
+	if _, err := h.m.Send(ctx, sess.ID, "go"); err != nil {
+		t.Fatal(err)
+	}
+	req := w.waitFor("prompt", func(ev *flitv1.Event) bool { return ev.GetPromptRequested() != nil }).GetPromptRequested()
+	if strings.Join(req.SessionPatterns, ",") != "go version *" {
+		t.Fatalf("offered patterns = %v", req.SessionPatterns)
+	}
+	if err := h.m.AnswerPrompt(ctx, sess.ID, req.PromptId, Answer{ForSession: true, Client: "laptop"}); err != nil {
+		t.Fatal(err)
+	}
+	second := w.waitFor("second prompt", func(ev *flitv1.Event) bool {
+		p := ev.GetPromptRequested()
+		return p != nil && p.PromptId != req.PromptId
+	}).GetPromptRequested()
+	if err := h.m.AnswerPrompt(ctx, sess.ID, second.PromptId, Answer{Allow: false}); err != nil {
+		t.Fatal(err)
+	}
+	w.waitTurnEnd()
+	evs := w.snapshot()
+
+	// The second "go version" ran without asking; "go env" asked again.
+	var prompts []*flitv1.PromptRequested
+	for _, ev := range evs {
+		if p := ev.GetPromptRequested(); p != nil {
+			prompts = append(prompts, p)
+		}
+	}
+	if len(prompts) != 2 || prompts[1].Detail != "go env GOOS" {
+		t.Fatalf("prompts = %v", prompts)
+	}
+	res, _ := find(evs, (*flitv1.Event).GetPromptResolved, notNil)
+	if res.Decision != flitv1.PromptDecision_PROMPT_DECISION_ALLOW_SESSION || strings.Join(res.SessionPatterns, ",") != "go version *" {
+		t.Fatalf("resolved = %v", res)
+	}
+
+	// After a restart the allowance comes back from the log.
+	m2, err := NewManager(ctx, h.st, h.config, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer m2.Close()
+	s2, err := m2.session(ctx, sess.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := s2.sessionAllowed(); len(got) != 1 || got[0] != "go version *" {
+		t.Fatalf("reloaded allowances = %v", got)
 	}
 }

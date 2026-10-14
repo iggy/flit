@@ -27,6 +27,7 @@ final class FlitPendingPrompt {
     required this.toolCallId,
     required this.title,
     required this.detail,
+    this.sessionPatterns = const <String>[],
   });
 
   final String promptId;
@@ -34,17 +35,27 @@ final class FlitPendingPrompt {
   final String title;
   final String detail;
 
+  /// Offered for "allow for this session".
+  final List<String> sessionPatterns;
+
   @override
   bool operator ==(Object other) {
     return other is FlitPendingPrompt &&
         other.promptId == promptId &&
         other.toolCallId == toolCallId &&
         other.title == title &&
-        other.detail == detail;
+        other.detail == detail &&
+        deepListEquals(other.sessionPatterns, sessionPatterns);
   }
 
   @override
-  int get hashCode => Object.hash(promptId, toolCallId, title, detail);
+  int get hashCode => Object.hash(
+    promptId,
+    toolCallId,
+    title,
+    detail,
+    Object.hashAll(sessionPatterns),
+  );
 
   @override
   String toString() => 'FlitPendingPrompt($promptId, $title: $detail)';
@@ -314,6 +325,7 @@ FlitFoldState foldFlitEvent(FlitFoldState state, FlitEvent event) {
           toolCallId: event.toolCallId,
           title: event.title,
           detail: event.detail,
+          sessionPatterns: event.sessionPatterns,
         ),
       ],
     ),

@@ -241,6 +241,10 @@ const (
 	PromptDecision_PROMPT_DECISION_UNSPECIFIED PromptDecision = 0
 	PromptDecision_PROMPT_DECISION_ALLOW       PromptDecision = 1
 	PromptDecision_PROMPT_DECISION_DENY        PromptDecision = 2
+	// Allow, and allow the prompt's session_patterns for the rest of the
+	// session without asking again. Only valid when the prompt offered
+	// session_patterns.
+	PromptDecision_PROMPT_DECISION_ALLOW_SESSION PromptDecision = 3
 )
 
 // Enum value maps for PromptDecision.
@@ -249,11 +253,13 @@ var (
 		0: "PROMPT_DECISION_UNSPECIFIED",
 		1: "PROMPT_DECISION_ALLOW",
 		2: "PROMPT_DECISION_DENY",
+		3: "PROMPT_DECISION_ALLOW_SESSION",
 	}
 	PromptDecision_value = map[string]int32{
-		"PROMPT_DECISION_UNSPECIFIED": 0,
-		"PROMPT_DECISION_ALLOW":       1,
-		"PROMPT_DECISION_DENY":        2,
+		"PROMPT_DECISION_UNSPECIFIED":   0,
+		"PROMPT_DECISION_ALLOW":         1,
+		"PROMPT_DECISION_DENY":          2,
+		"PROMPT_DECISION_ALLOW_SESSION": 3,
 	}
 )
 
@@ -2884,9 +2890,14 @@ type PromptRequested struct {
 	// Short description, e.g. "Run shell command".
 	Title string `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
 	// What exactly would happen, e.g. the command line.
-	Detail        string `protobuf:"bytes,4,opt,name=detail,proto3" json:"detail,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Detail string `protobuf:"bytes,4,opt,name=detail,proto3" json:"detail,omitempty"`
+	// What "allow for this session" would allow from now on, e.g.
+	// ["go test *"]: each command's program and subcommand, ignoring a
+	// leading "cd ... &&" and variable assignments. Empty when it isn't
+	// offered.
+	SessionPatterns []string `protobuf:"bytes,5,rep,name=session_patterns,json=sessionPatterns,proto3" json:"session_patterns,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *PromptRequested) Reset() {
@@ -2947,6 +2958,13 @@ func (x *PromptRequested) GetDetail() string {
 	return ""
 }
 
+func (x *PromptRequested) GetSessionPatterns() []string {
+	if x != nil {
+		return x.SessionPatterns
+	}
+	return nil
+}
+
 type PromptResolved struct {
 	state    protoimpl.MessageState `protogen:"open.v1"`
 	PromptId string                 `protobuf:"bytes,1,opt,name=prompt_id,json=promptId,proto3" json:"prompt_id,omitempty"`
@@ -2955,9 +2973,12 @@ type PromptResolved struct {
 	// server resolved it, e.g. on interrupt.
 	Client string `protobuf:"bytes,3,opt,name=client,proto3" json:"client,omitempty"`
 	// Why the server resolved it, when it did.
-	Reason        string `protobuf:"bytes,4,opt,name=reason,proto3" json:"reason,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Reason string `protobuf:"bytes,4,opt,name=reason,proto3" json:"reason,omitempty"`
+	// With PROMPT_DECISION_ALLOW_SESSION: the patterns now allowed for the
+	// rest of the session.
+	SessionPatterns []string `protobuf:"bytes,5,rep,name=session_patterns,json=sessionPatterns,proto3" json:"session_patterns,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *PromptResolved) Reset() {
@@ -3016,6 +3037,13 @@ func (x *PromptResolved) GetReason() string {
 		return x.Reason
 	}
 	return ""
+}
+
+func (x *PromptResolved) GetSessionPatterns() []string {
+	if x != nil {
+		return x.SessionPatterns
+	}
+	return nil
 }
 
 type TaskStateChanged struct {
@@ -3804,18 +3832,20 @@ const file_flit_v1_session_proto_rawDesc = "" +
 	"\x06result\x18\x02 \x01(\tR\x06result\x12\x19\n" +
 	"\bis_error\x18\x03 \x01(\bR\aisError\x12\x1c\n" +
 	"\ttruncated\x18\x04 \x01(\bR\ttruncated\x12#\n" +
-	"\romitted_bytes\x18\x05 \x01(\x03R\fomittedBytes\"~\n" +
+	"\romitted_bytes\x18\x05 \x01(\x03R\fomittedBytes\"\xa9\x01\n" +
 	"\x0fPromptRequested\x12\x1b\n" +
 	"\tprompt_id\x18\x01 \x01(\tR\bpromptId\x12 \n" +
 	"\ftool_call_id\x18\x02 \x01(\tR\n" +
 	"toolCallId\x12\x14\n" +
 	"\x05title\x18\x03 \x01(\tR\x05title\x12\x16\n" +
-	"\x06detail\x18\x04 \x01(\tR\x06detail\"\x92\x01\n" +
+	"\x06detail\x18\x04 \x01(\tR\x06detail\x12)\n" +
+	"\x10session_patterns\x18\x05 \x03(\tR\x0fsessionPatterns\"\xbd\x01\n" +
 	"\x0ePromptResolved\x12\x1b\n" +
 	"\tprompt_id\x18\x01 \x01(\tR\bpromptId\x123\n" +
 	"\bdecision\x18\x02 \x01(\x0e2\x17.flit.v1.PromptDecisionR\bdecision\x12\x16\n" +
 	"\x06client\x18\x03 \x01(\tR\x06client\x12\x16\n" +
-	"\x06reason\x18\x04 \x01(\tR\x06reason\"T\n" +
+	"\x06reason\x18\x04 \x01(\tR\x06reason\x12)\n" +
+	"\x10session_patterns\x18\x05 \x03(\tR\x0fsessionPatterns\"T\n" +
 	"\x10TaskStateChanged\x12(\n" +
 	"\x05state\x18\x01 \x01(\x0e2\x12.flit.v1.TaskStateR\x05state\x12\x16\n" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\"\x7f\n" +
@@ -3877,11 +3907,12 @@ const file_flit_v1_session_proto_rawDesc = "" +
 	"\x04Role\x12\x14\n" +
 	"\x10ROLE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tROLE_USER\x10\x01\x12\x12\n" +
-	"\x0eROLE_ASSISTANT\x10\x02*f\n" +
+	"\x0eROLE_ASSISTANT\x10\x02*\x89\x01\n" +
 	"\x0ePromptDecision\x12\x1f\n" +
 	"\x1bPROMPT_DECISION_UNSPECIFIED\x10\x00\x12\x19\n" +
 	"\x15PROMPT_DECISION_ALLOW\x10\x01\x12\x18\n" +
-	"\x14PROMPT_DECISION_DENY\x10\x02*z\n" +
+	"\x14PROMPT_DECISION_DENY\x10\x02\x12!\n" +
+	"\x1dPROMPT_DECISION_ALLOW_SESSION\x10\x03*z\n" +
 	"\n" +
 	"TodoStatus\x12\x1b\n" +
 	"\x17TODO_STATUS_UNSPECIFIED\x10\x00\x12\x17\n" +

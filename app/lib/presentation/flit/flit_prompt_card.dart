@@ -6,6 +6,9 @@ library;
 import 'package:flit/application/flit/flit_fold.dart';
 import 'package:flutter/material.dart';
 
+/// The "allow for this session" button.
+const Key flitAllowSessionButtonKey = Key('flit_allow_session');
+
 class FlitPromptCard extends StatefulWidget {
   const FlitPromptCard({
     required this.prompt,
@@ -16,7 +19,8 @@ class FlitPromptCard extends StatefulWidget {
   final FlitPendingPrompt prompt;
 
   /// Answers the prompt; returns an error message or null.
-  final Future<String?> Function({required bool allow}) onAnswer;
+  final Future<String?> Function({required bool allow, bool forSession})
+  onAnswer;
 
   @override
   State<FlitPromptCard> createState() => _FlitPromptCardState();
@@ -25,9 +29,9 @@ class FlitPromptCard extends StatefulWidget {
 class _FlitPromptCardState extends State<FlitPromptCard> {
   bool _busy = false;
 
-  Future<void> _answer({required bool allow}) async {
+  Future<void> _answer({required bool allow, bool forSession = false}) async {
     setState(() => _busy = true);
-    final error = await widget.onAnswer(allow: allow);
+    final error = await widget.onAnswer(allow: allow, forSession: forSession);
     if (!mounted) {
       return;
     }
@@ -88,11 +92,22 @@ class _FlitPromptCardState extends State<FlitPromptCard> {
             Wrap(
               alignment: WrapAlignment.end,
               spacing: 8,
+              runSpacing: 4,
               children: <Widget>[
                 TextButton(
                   onPressed: _busy ? null : () => _answer(allow: false),
                   child: const Text('Deny'),
                 ),
+                if (widget.prompt.sessionPatterns.isNotEmpty)
+                  OutlinedButton(
+                    key: flitAllowSessionButtonKey,
+                    onPressed: _busy
+                        ? null
+                        : () => _answer(allow: true, forSession: true),
+                    child: Text(
+                      'Allow ${widget.prompt.sessionPatterns.map((p) => '"$p"').join(', ')} for this session',
+                    ),
+                  ),
                 FilledButton(
                   onPressed: _busy ? null : () => _answer(allow: true),
                   child: const Text('Allow'),

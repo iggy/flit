@@ -117,6 +117,9 @@ func (m *Manager) session(ctx context.Context, id string) (*session, error) {
 		return nil, err
 	}
 	s := newSession(m, info)
+	if err := s.loadAllowed(ctx); err != nil {
+		return nil, err
+	}
 	m.sessions[id] = s
 	return s, nil
 }
@@ -323,13 +326,22 @@ func (m *Manager) Interrupt(ctx context.Context, id string) (bool, error) {
 	return s.interrupt(), nil
 }
 
+// Answer is a reply to a prompt.
+type Answer struct {
+	Allow bool
+	// ForSession allows this and the prompt's session patterns for the
+	// rest of the session (implies Allow).
+	ForSession bool
+	Client     string
+}
+
 // AnswerPrompt answers a pending prompt.
-func (m *Manager) AnswerPrompt(ctx context.Context, id, promptID string, allow bool, client string) error {
+func (m *Manager) AnswerPrompt(ctx context.Context, id, promptID string, a Answer) error {
 	s, err := m.session(ctx, id)
 	if err != nil {
 		return err
 	}
-	return s.answer(promptID, allow, client)
+	return s.answer(promptID, a)
 }
 
 // SetModel changes the session's provider and model, effective from its

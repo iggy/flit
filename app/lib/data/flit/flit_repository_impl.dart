@@ -146,6 +146,7 @@ final class FlitRepositoryImpl implements FlitRepository {
     String sessionId,
     String promptId, {
     required bool allow,
+    bool forSession = false,
     String client = '',
   }) {
     return flitCall(
@@ -153,7 +154,9 @@ final class FlitRepositoryImpl implements FlitRepository {
         pb.AnswerPromptRequest(
           sessionId: sessionId,
           promptId: promptId,
-          decision: allow
+          decision: forSession
+              ? pb.PromptDecision.PROMPT_DECISION_ALLOW_SESSION
+              : allow
               ? pb.PromptDecision.PROMPT_DECISION_ALLOW
               : pb.PromptDecision.PROMPT_DECISION_DENY,
           client: client,

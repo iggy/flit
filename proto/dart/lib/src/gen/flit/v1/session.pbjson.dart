@@ -89,13 +89,15 @@ const PromptDecision$json = {
     {'1': 'PROMPT_DECISION_UNSPECIFIED', '2': 0},
     {'1': 'PROMPT_DECISION_ALLOW', '2': 1},
     {'1': 'PROMPT_DECISION_DENY', '2': 2},
+    {'1': 'PROMPT_DECISION_ALLOW_SESSION', '2': 3},
   ],
 };
 
 /// Descriptor for `PromptDecision`. Decode as a `google.protobuf.EnumDescriptorProto`.
 final $typed_data.Uint8List promptDecisionDescriptor = $convert.base64Decode(
     'Cg5Qcm9tcHREZWNpc2lvbhIfChtQUk9NUFRfREVDSVNJT05fVU5TUEVDSUZJRUQQABIZChVQUk'
-    '9NUFRfREVDSVNJT05fQUxMT1cQARIYChRQUk9NUFRfREVDSVNJT05fREVOWRAC');
+    '9NUFRfREVDSVNJT05fQUxMT1cQARIYChRQUk9NUFRfREVDSVNJT05fREVOWRACEiEKHVBST01Q'
+    'VF9ERUNJU0lPTl9BTExPV19TRVNTSU9OEAM=');
 
 @$core.Deprecated('Use todoStatusDescriptor instead')
 const TodoStatus$json = {
@@ -992,6 +994,7 @@ const PromptRequested$json = {
     {'1': 'tool_call_id', '3': 2, '4': 1, '5': 9, '10': 'toolCallId'},
     {'1': 'title', '3': 3, '4': 1, '5': 9, '10': 'title'},
     {'1': 'detail', '3': 4, '4': 1, '5': 9, '10': 'detail'},
+    {'1': 'session_patterns', '3': 5, '4': 3, '5': 9, '10': 'sessionPatterns'},
   ],
 };
 
@@ -999,7 +1002,8 @@ const PromptRequested$json = {
 final $typed_data.Uint8List promptRequestedDescriptor = $convert.base64Decode(
     'Cg9Qcm9tcHRSZXF1ZXN0ZWQSGwoJcHJvbXB0X2lkGAEgASgJUghwcm9tcHRJZBIgCgx0b29sX2'
     'NhbGxfaWQYAiABKAlSCnRvb2xDYWxsSWQSFAoFdGl0bGUYAyABKAlSBXRpdGxlEhYKBmRldGFp'
-    'bBgEIAEoCVIGZGV0YWls');
+    'bBgEIAEoCVIGZGV0YWlsEikKEHNlc3Npb25fcGF0dGVybnMYBSADKAlSD3Nlc3Npb25QYXR0ZX'
+    'Jucw==');
 
 @$core.Deprecated('Use promptResolvedDescriptor instead')
 const PromptResolved$json = {
@@ -1016,6 +1020,7 @@ const PromptResolved$json = {
     },
     {'1': 'client', '3': 3, '4': 1, '5': 9, '10': 'client'},
     {'1': 'reason', '3': 4, '4': 1, '5': 9, '10': 'reason'},
+    {'1': 'session_patterns', '3': 5, '4': 3, '5': 9, '10': 'sessionPatterns'},
   ],
 };
 
@@ -1023,7 +1028,8 @@ const PromptResolved$json = {
 final $typed_data.Uint8List promptResolvedDescriptor = $convert.base64Decode(
     'Cg5Qcm9tcHRSZXNvbHZlZBIbCglwcm9tcHRfaWQYASABKAlSCHByb21wdElkEjMKCGRlY2lzaW'
     '9uGAIgASgOMhcuZmxpdC52MS5Qcm9tcHREZWNpc2lvblIIZGVjaXNpb24SFgoGY2xpZW50GAMg'
-    'ASgJUgZjbGllbnQSFgoGcmVhc29uGAQgASgJUgZyZWFzb24=');
+    'ASgJUgZjbGllbnQSFgoGcmVhc29uGAQgASgJUgZyZWFzb24SKQoQc2Vzc2lvbl9wYXR0ZXJucx'
+    'gFIAMoCVIPc2Vzc2lvblBhdHRlcm5z');
 
 @$core.Deprecated('Use taskStateChangedDescriptor instead')
 const TaskStateChanged$json = {

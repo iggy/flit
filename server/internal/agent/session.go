@@ -33,7 +33,15 @@ type session struct {
 	info       store.Session
 	subs       map[*subscriber]struct{}
 	cancelTurn context.CancelFunc // non-nil while a turn runs
-	prompts    map[string]chan promptAnswer
+	prompts    map[string]pendingPrompt
+	// allowed are shell patterns allowed for the rest of the session
+	// ("allow for this session"), rebuilt from the log on load.
+	allowed []string
+}
+
+type pendingPrompt struct {
+	ch       chan promptAnswer
+	patterns []string // offered for "allow for this session"
 }
 
 type subscriber struct {
@@ -42,8 +50,9 @@ type subscriber struct {
 }
 
 type promptAnswer struct {
-	allow  bool
-	client string
+	allow      bool
+	forSession bool
+	client     string
 }
 
 func newSession(m *Manager, info store.Session) *session {
@@ -51,8 +60,36 @@ func newSession(m *Manager, info store.Session) *session {
 		m:       m,
 		info:    info,
 		subs:    map[*subscriber]struct{}{},
-		prompts: map[string]chan promptAnswer{},
+		prompts: map[string]pendingPrompt{},
 	}
+}
+
+// loadAllowed rebuilds the session's "allow for this session" patterns
+// from its log.
+func (s *session) loadAllowed(ctx context.Context) error {
+	evs, err := s.m.store.EventsOfKinds(ctx, s.info.ID, "prompt_resolved")
+	if err != nil {
+		return err
+	}
+	for _, ev := range evs {
+		r := ev.GetPromptResolved()
+		if r.Decision != flitv1.PromptDecision_PROMPT_DECISION_ALLOW_SESSION {
+			continue
+		}
+		for _, p := range r.SessionPatterns {
+			if !slices.Contains(s.allowed, p) {
+				s.allowed = append(s.allowed, p)
+			}
+		}
+	}
+	return nil
+}
+
+// sessionAllowed returns a copy of the session's allowed shell patterns.
+func (s *session) sessionAllowed() []string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return slices.Clone(s.allowed)
 }
 
 func (s *session) snapshot() store.Session {
@@ -212,29 +249,34 @@ func (s *session) interrupt() bool {
 	return true
 }
 
-func (s *session) answer(promptID string, allow bool, client string) error {
+func (s *session) answer(promptID string, a Answer) error {
 	s.mu.Lock()
-	ch, ok := s.prompts[promptID]
+	p, ok := s.prompts[promptID]
+	if ok && a.ForSession && len(p.patterns) == 0 {
+		s.mu.Unlock()
+		return invalid("this prompt can't be allowed for the whole session")
+	}
 	delete(s.prompts, promptID)
 	s.mu.Unlock()
 	if !ok {
 		return ErrPromptGone
 	}
-	ch <- promptAnswer{allow: allow, client: client} // buffered; never blocks
+	// buffered; never blocks
+	p.ch <- promptAnswer{allow: a.Allow || a.ForSession, forSession: a.ForSession, client: a.Client}
 	return nil
 }
 
 // approve raises a prompt and waits for a client to answer it or for the
 // turn to be interrupted.
-func (s *session) approve(ctx context.Context, toolCallID, title, detail string) (bool, error) {
+func (s *session) approve(ctx context.Context, toolCallID, title, detail string, patterns []string) (bool, error) {
 	promptID := newID("prm")
 	ch := make(chan promptAnswer, 1)
 	s.mu.Lock()
-	s.prompts[promptID] = ch
+	s.prompts[promptID] = pendingPrompt{ch: ch, patterns: patterns}
 	s.mu.Unlock()
 
 	if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_PromptRequested{PromptRequested: &flitv1.PromptRequested{
-		PromptId: promptID, ToolCallId: toolCallID, Title: title, Detail: detail,
+		PromptId: promptID, ToolCallId: toolCallID, Title: title, Detail: detail, SessionPatterns: patterns,
 	}}}); err != nil {
 		return false, err
 	}
@@ -248,7 +290,18 @@ func (s *session) approve(ctx context.Context, toolCallID, title, detail string)
 	case a := <-ch:
 		resolved.Client = a.client
 		resolved.Decision = flitv1.PromptDecision_PROMPT_DECISION_DENY
-		if a.allow {
+		switch {
+		case a.forSession:
+			resolved.Decision = flitv1.PromptDecision_PROMPT_DECISION_ALLOW_SESSION
+			resolved.SessionPatterns = patterns
+			s.mu.Lock()
+			for _, p := range patterns {
+				if !slices.Contains(s.allowed, p) {
+					s.allowed = append(s.allowed, p)
+				}
+			}
+			s.mu.Unlock()
+		case a.allow:
 			resolved.Decision = flitv1.PromptDecision_PROMPT_DECISION_ALLOW
 		}
 	case <-ctx.Done():
@@ -268,7 +321,7 @@ func (s *session) approve(ctx context.Context, toolCallID, title, detail string)
 	if _, err := s.append(stateChanged(flitv1.TaskState_TASK_STATE_WORKING, "")); err != nil {
 		return false, err
 	}
-	return resolved.Decision == flitv1.PromptDecision_PROMPT_DECISION_ALLOW, nil
+	return resolved.Decision != flitv1.PromptDecision_PROMPT_DECISION_DENY, nil
 }
 
 func (s *session) setModel(ctx context.Context, provider, model string) (store.Session, error) {

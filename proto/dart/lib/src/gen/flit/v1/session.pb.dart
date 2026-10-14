@@ -3377,12 +3377,14 @@ class PromptRequested extends $pb.GeneratedMessage {
     $core.String? toolCallId,
     $core.String? title,
     $core.String? detail,
+    $core.Iterable<$core.String>? sessionPatterns,
   }) {
     final result = PromptRequested._();
     if (promptId != null) result.promptId = promptId;
     if (toolCallId != null) result.toolCallId = toolCallId;
     if (title != null) result.title = title;
     if (detail != null) result.detail = detail;
+    if (sessionPatterns != null) result.sessionPatterns.addAll(sessionPatterns);
     return result;
   }
 
@@ -3403,6 +3405,7 @@ class PromptRequested extends $pb.GeneratedMessage {
     ..aOS(2, _omitFieldNames ? '' : 'toolCallId')
     ..aOS(3, _omitFieldNames ? '' : 'title')
     ..aOS(4, _omitFieldNames ? '' : 'detail')
+    ..pPS(5, _omitFieldNames ? '' : 'sessionPatterns')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -3464,6 +3467,13 @@ class PromptRequested extends $pb.GeneratedMessage {
   $core.bool hasDetail() => $_has(3);
   @$pb.TagNumber(4)
   void clearDetail() => $_clearField(4);
+
+  /// What "allow for this session" would allow from now on, e.g.
+  /// ["go test *"]: each command's program and subcommand, ignoring a
+  /// leading "cd ... &&" and variable assignments. Empty when it isn't
+  /// offered.
+  @$pb.TagNumber(5)
+  $pb.PbList<$core.String> get sessionPatterns => $_getList(4);
 }
 
 class PromptResolved extends $pb.GeneratedMessage {
@@ -3472,12 +3482,14 @@ class PromptResolved extends $pb.GeneratedMessage {
     PromptDecision? decision,
     $core.String? client,
     $core.String? reason,
+    $core.Iterable<$core.String>? sessionPatterns,
   }) {
     final result = PromptResolved._();
     if (promptId != null) result.promptId = promptId;
     if (decision != null) result.decision = decision;
     if (client != null) result.client = client;
     if (reason != null) result.reason = reason;
+    if (sessionPatterns != null) result.sessionPatterns.addAll(sessionPatterns);
     return result;
   }
 
@@ -3499,6 +3511,7 @@ class PromptResolved extends $pb.GeneratedMessage {
         enumValues: PromptDecision.values)
     ..aOS(3, _omitFieldNames ? '' : 'client')
     ..aOS(4, _omitFieldNames ? '' : 'reason')
+    ..pPS(5, _omitFieldNames ? '' : 'sessionPatterns')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -3561,6 +3574,11 @@ class PromptResolved extends $pb.GeneratedMessage {
   $core.bool hasReason() => $_has(3);
   @$pb.TagNumber(4)
   void clearReason() => $_clearField(4);
+
+  /// With PROMPT_DECISION_ALLOW_SESSION: the patterns now allowed for the
+  /// rest of the session.
+  @$pb.TagNumber(5)
+  $pb.PbList<$core.String> get sessionPatterns => $_getList(4);
 }
 
 class TaskStateChanged extends $pb.GeneratedMessage {
