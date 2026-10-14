@@ -40,7 +40,11 @@ final class FlitSession {
     this.role = '',
     this.contextTokens = 0,
     this.contextLength = 0,
+    this.mcpServers = const <String>[],
   });
+
+  /// MCP servers enabled for the session.
+  final List<String> mcpServers;
 
   /// Reasoning effort; empty means the model's default.
   final String effort;
@@ -191,3 +195,54 @@ final class FlitAgentRole {
   @override
   int get hashCode => name.hashCode;
 }
+
+/// A project: a group of sessions, usually for one directory on the server.
+final class FlitProject {
+  const FlitProject({
+    required this.id,
+    required this.name,
+    this.directory = '',
+    this.sessionCount = 0,
+  });
+
+  final String id;
+  final String name;
+
+  /// Absolute directory on the server; empty for Scratch.
+  final String directory;
+  final int sessionCount;
+
+  @override
+  bool operator ==(Object other) =>
+      other is FlitProject &&
+      other.id == id &&
+      other.name == name &&
+      other.directory == directory &&
+      other.sessionCount == sessionCount;
+
+  @override
+  int get hashCode => Object.hash(id, name, directory, sessionCount);
+
+  @override
+  String toString() => 'FlitProject($id, $name)';
+}
+
+/// An MCP server as one session sees it.
+final class FlitMcpServer {
+  const FlitMcpServer({
+    required this.name,
+    required this.enabled,
+    this.running = false,
+    this.toolCount = 0,
+    this.error = '',
+  });
+
+  final String name;
+  final bool enabled;
+  final bool running;
+  final int toolCount;
+  final String error;
+}
+
+/// What a rating is about.
+enum FlitRatingTarget { turn, model }

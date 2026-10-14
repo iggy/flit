@@ -100,7 +100,25 @@ final class FlitFoldState {
     this.contextLength = 0,
     this.todos = const <FlitTodo>[],
     this.speed,
+    this.messageIds = const <String?>[],
+    this.ratings = const <String, bool>{},
+    this.mcpServers,
+    this.projectId,
   });
+
+  /// The flit message id of each entry in [messages] (null for messages
+  /// the fold made up, like errors).
+  final List<String?> messageIds;
+
+  /// Latest turn rating per message id (true = good), from any client.
+  final Map<String, bool> ratings;
+
+  /// MCP servers enabled, once a change is logged (null until then: fall
+  /// back to the session's).
+  final List<String>? mcpServers;
+
+  /// The project, once a move is logged (null: the session's).
+  final String? projectId;
 
   /// The reasoning effort, once a ModelChanged event says so (null until
   /// then: fall back to the session's).
@@ -160,6 +178,10 @@ final class FlitFoldState {
     int? contextLength,
     List<FlitTodo>? todos,
     FlitSpeed? speed,
+    List<String?>? messageIds,
+    Map<String, bool>? ratings,
+    List<String>? mcpServers,
+    String? projectId,
   }) {
     return FlitFoldState(
       messages: messages ?? this.messages,
@@ -176,6 +198,10 @@ final class FlitFoldState {
       contextLength: contextLength ?? this.contextLength,
       todos: todos ?? this.todos,
       speed: speed ?? this.speed,
+      messageIds: messageIds ?? this.messageIds,
+      ratings: ratings ?? this.ratings,
+      mcpServers: mcpServers ?? this.mcpServers,
+      projectId: projectId ?? this.projectId,
     );
   }
 
@@ -193,7 +219,15 @@ final class FlitFoldState {
         other.contextTokens == contextTokens &&
         other.contextLength == contextLength &&
         deepListEquals(other.todos, todos) &&
-        other.speed == speed;
+        other.speed == speed &&
+        deepListEquals(other.messageIds, messageIds) &&
+        shallowMapEquals(other.ratings, ratings) &&
+        deepListEquals(
+          other.mcpServers ?? const <String>[],
+          mcpServers ?? const <String>[],
+        ) &&
+        (other.mcpServers == null) == (mcpServers == null) &&
+        other.projectId == projectId;
   }
 
   @override
@@ -304,7 +338,19 @@ FlitFoldState foldFlitEvent(FlitFoldState state, FlitEvent event) {
     ),
     FlitUsage() => _usage(s, event),
     FlitTodoUpdated() => s.copyWith(todos: event.items),
+    FlitFeedback() =>
+      event.target == FlitRatingTarget.turn && event.messageId.isNotEmpty
+          ? s.copyWith(
+              ratings: <String, bool>{
+                ...s.ratings,
+                event.messageId: event.good,
+              },
+            )
+          : s,
+    FlitMcpServersChanged() => s.copyWith(mcpServers: event.enabled),
+    FlitSessionMoved() => s.copyWith(projectId: event.projectId),
     FlitTurnError() => s.copyWith(
+      messageIds: <String?>[...s.messageIds, null],
       messages: <ChatMessage>[
         ...s.messages,
         ChatMessage(
@@ -362,6 +408,7 @@ FlitFoldState _started(FlitFoldState s, FlitMessageStarted e) {
       ...s.messageIndex,
       e.messageId: s.messages.length,
     },
+    messageIds: <String?>[...s.messageIds, e.messageId],
   );
 }
 

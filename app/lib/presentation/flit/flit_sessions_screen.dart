@@ -6,6 +6,7 @@ import 'package:flit/application/flit/flit_pair_controller.dart';
 import 'package:flit/application/flit/flit_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/domain/models/flit_session.dart';
+import 'package:flit/presentation/flit/flit_projects.dart';
 import 'package:flit/presentation/flit/flit_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,11 +20,17 @@ class FlitSessionsScreen extends ConsumerWidget {
     WidgetRef ref,
     List<FlitSession> existing,
   ) async {
+    final projectId = ref.read(flitSelectedProjectProvider);
+    var initialDir = existing.isEmpty ? '' : existing.first.workingDir;
+    for (final p
+        in ref.read(flitProjectsProvider).value ?? const <FlitProject>[]) {
+      if (p.id == projectId && p.directory.isNotEmpty) {
+        initialDir = p.directory;
+      }
+    }
     final choice = await showDialog<({String dir, String role})>(
       context: context,
-      builder: (_) => _NewSessionDialog(
-        initialDir: existing.isEmpty ? '' : existing.first.workingDir,
-      ),
+      builder: (_) => _NewSessionDialog(initialDir: initialDir),
     );
     if (choice == null || !context.mounted) {
       return;
@@ -36,8 +43,11 @@ class FlitSessionsScreen extends ConsumerWidget {
       final session = await repository.createSession(
         workingDir: choice.dir,
         role: choice.role,
+        projectId: projectId ?? '',
       );
-      ref.invalidate(flitSessionsProvider);
+      ref
+        ..invalidate(flitSessionsProvider)
+        ..invalidate(flitProjectsProvider);
       if (context.mounted) {
         await context.push('/flit/session/${session.id}');
         ref.invalidate(flitSessionsProvider);
@@ -88,11 +98,13 @@ class FlitSessionsScreen extends ConsumerWidget {
     final sessions = ref.watch(flitSessionsProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('flit sessions'),
+        title: const FlitProjectSwitcher(),
         actions: <Widget>[
           IconButton(
             tooltip: 'Refresh',
-            onPressed: () => ref.invalidate(flitSessionsProvider),
+            onPressed: () => ref
+              ..invalidate(flitSessionsProvider)
+              ..invalidate(flitProjectsProvider),
             icon: const Icon(Icons.refresh),
           ),
           IconButton(
@@ -152,7 +164,23 @@ class FlitSessionsScreen extends ConsumerWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       isThreeLine: true,
-                      trailing: FlitTaskStateChip(state: s.state),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          FlitTaskStateChip(state: s.state),
+                          PopupMenuButton<String>(
+                            tooltip: 'Session actions',
+                            onSelected: (_) =>
+                                showMoveSessionDialog(context, ref, s),
+                            itemBuilder: (_) => const <PopupMenuEntry<String>>[
+                              PopupMenuItem<String>(
+                                value: 'move',
+                                child: Text('Move to project…'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                       onTap: () async {
                         await context.push('/flit/session/${s.id}');
                         ref.invalidate(flitSessionsProvider);

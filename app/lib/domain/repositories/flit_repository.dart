@@ -6,8 +6,8 @@ import 'package:flit/domain/models/flit_session.dart';
 /// Implementations throw [GatewayException] subclasses on failure, never a
 /// transport error.
 abstract interface class FlitRepository {
-  /// All sessions, most recently updated first.
-  Future<List<FlitSession>> listSessions();
+  /// Sessions, most recently updated first; only [projectId]'s when set.
+  Future<List<FlitSession>> listSessions({String? projectId});
 
   /// Start a new session working in [workingDir] (an absolute path on the
   /// server). Empty [provider]/[model] mean the server's defaults.
@@ -18,6 +18,7 @@ abstract interface class FlitRepository {
     String model = '',
     String effort = '',
     String role = '',
+    String projectId = '',
   });
 
   Future<FlitSession> getSession(String id);
@@ -59,4 +60,32 @@ abstract interface class FlitRepository {
 
   /// The roles sessions can be created with.
   Future<List<FlitAgentRole>> listRoles();
+
+  /// Projects: Scratch first, then by name.
+  Future<List<FlitProject>> listProjects();
+
+  /// Add a project for an existing [directory] on the server.
+  Future<FlitProject> createProject({required String directory, String name});
+
+  /// Move a session to another project.
+  Future<FlitSession> moveSession(String sessionId, String projectId);
+
+  /// Mark a turn result (with [messageId]) or the model as good or bad.
+  Future<void> rate(
+    String sessionId, {
+    required FlitRatingTarget target,
+    required bool good,
+    String messageId = '',
+    String note = '',
+  });
+
+  /// The configured MCP servers and whether each is on for the session.
+  Future<List<FlitMcpServer>> listMcpServers(String sessionId);
+
+  /// Turn an MCP server on or off for the session.
+  Future<FlitSession> setMcpServer(
+    String sessionId,
+    String server, {
+    required bool enabled,
+  });
 }
