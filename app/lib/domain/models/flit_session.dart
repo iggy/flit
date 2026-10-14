@@ -203,7 +203,11 @@ final class FlitProject {
     required this.name,
     this.directory = '',
     this.sessionCount = 0,
+    this.exportEnabled = true,
   });
+
+  /// Whether `flit export` includes this project's sessions.
+  final bool exportEnabled;
 
   final String id;
   final String name;
@@ -218,10 +222,12 @@ final class FlitProject {
       other.id == id &&
       other.name == name &&
       other.directory == directory &&
-      other.sessionCount == sessionCount;
+      other.sessionCount == sessionCount &&
+      other.exportEnabled == exportEnabled;
 
   @override
-  int get hashCode => Object.hash(id, name, directory, sessionCount);
+  int get hashCode =>
+      Object.hash(id, name, directory, sessionCount, exportEnabled);
 
   @override
   String toString() => 'FlitProject($id, $name)';
@@ -246,3 +252,17 @@ final class FlitMcpServer {
 
 /// What a rating is about.
 enum FlitRatingTarget { turn, model }
+
+/// A skill the agent can load, and where it was found ("repo
+/// .agents/skills", "global", ...).
+final class FlitSkill {
+  const FlitSkill({
+    required this.name,
+    required this.description,
+    required this.source,
+  });
+
+  final String name;
+  final String description;
+  final String source;
+}

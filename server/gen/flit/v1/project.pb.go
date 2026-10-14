@@ -28,9 +28,11 @@ type Project struct {
 	TeamId string                 `protobuf:"bytes,2,opt,name=team_id,json=teamId,proto3" json:"team_id,omitempty"`
 	Name   string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
 	// Absolute directory on the server; empty for Scratch.
-	Directory     string                 `protobuf:"bytes,4,opt,name=directory,proto3" json:"directory,omitempty"`
-	SessionCount  int32                  `protobuf:"varint,5,opt,name=session_count,json=sessionCount,proto3" json:"session_count,omitempty"`
-	CreateTime    *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
+	Directory    string                 `protobuf:"bytes,4,opt,name=directory,proto3" json:"directory,omitempty"`
+	SessionCount int32                  `protobuf:"varint,5,opt,name=session_count,json=sessionCount,proto3" json:"session_count,omitempty"`
+	CreateTime   *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
+	// Whether "flit export" includes this project's sessions.
+	ExportEnabled bool `protobuf:"varint,7,opt,name=export_enabled,json=exportEnabled,proto3" json:"export_enabled,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -105,6 +107,13 @@ func (x *Project) GetCreateTime() *timestamppb.Timestamp {
 		return x.CreateTime
 	}
 	return nil
+}
+
+func (x *Project) GetExportEnabled() bool {
+	if x != nil {
+		return x.ExportEnabled
+	}
+	return false
 }
 
 type ListProjectsRequest struct {
@@ -286,11 +295,107 @@ func (x *CreateProjectResponse) GetProject() *Project {
 	return nil
 }
 
+type SetProjectExportRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ProjectId     string                 `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	Enabled       bool                   `protobuf:"varint,2,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetProjectExportRequest) Reset() {
+	*x = SetProjectExportRequest{}
+	mi := &file_flit_v1_project_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetProjectExportRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetProjectExportRequest) ProtoMessage() {}
+
+func (x *SetProjectExportRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_project_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetProjectExportRequest.ProtoReflect.Descriptor instead.
+func (*SetProjectExportRequest) Descriptor() ([]byte, []int) {
+	return file_flit_v1_project_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *SetProjectExportRequest) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+func (x *SetProjectExportRequest) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+type SetProjectExportResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Project       *Project               `protobuf:"bytes,1,opt,name=project,proto3" json:"project,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetProjectExportResponse) Reset() {
+	*x = SetProjectExportResponse{}
+	mi := &file_flit_v1_project_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetProjectExportResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetProjectExportResponse) ProtoMessage() {}
+
+func (x *SetProjectExportResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_project_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetProjectExportResponse.ProtoReflect.Descriptor instead.
+func (*SetProjectExportResponse) Descriptor() ([]byte, []int) {
+	return file_flit_v1_project_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *SetProjectExportResponse) GetProject() *Project {
+	if x != nil {
+		return x.Project
+	}
+	return nil
+}
+
 var File_flit_v1_project_proto protoreflect.FileDescriptor
 
 const file_flit_v1_project_proto_rawDesc = "" +
 	"\n" +
-	"\x15flit/v1/project.proto\x12\aflit.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xc6\x01\n" +
+	"\x15flit/v1/project.proto\x12\aflit.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xed\x01\n" +
 	"\aProject\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
 	"\ateam_id\x18\x02 \x01(\tR\x06teamId\x12\x12\n" +
@@ -298,7 +403,8 @@ const file_flit_v1_project_proto_rawDesc = "" +
 	"\tdirectory\x18\x04 \x01(\tR\tdirectory\x12#\n" +
 	"\rsession_count\x18\x05 \x01(\x05R\fsessionCount\x12;\n" +
 	"\vcreate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"createTime\"\x15\n" +
+	"createTime\x12%\n" +
+	"\x0eexport_enabled\x18\a \x01(\bR\rexportEnabled\"\x15\n" +
 	"\x13ListProjectsRequest\"D\n" +
 	"\x14ListProjectsResponse\x12,\n" +
 	"\bprojects\x18\x01 \x03(\v2\x10.flit.v1.ProjectR\bprojects\"H\n" +
@@ -306,10 +412,17 @@ const file_flit_v1_project_proto_rawDesc = "" +
 	"\tdirectory\x18\x01 \x01(\tR\tdirectory\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\"C\n" +
 	"\x15CreateProjectResponse\x12*\n" +
-	"\aproject\x18\x01 \x01(\v2\x10.flit.v1.ProjectR\aproject2\xb2\x01\n" +
+	"\aproject\x18\x01 \x01(\v2\x10.flit.v1.ProjectR\aproject\"R\n" +
+	"\x17SetProjectExportRequest\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x01 \x01(\tR\tprojectId\x12\x18\n" +
+	"\aenabled\x18\x02 \x01(\bR\aenabled\"F\n" +
+	"\x18SetProjectExportResponse\x12*\n" +
+	"\aproject\x18\x01 \x01(\v2\x10.flit.v1.ProjectR\aproject2\x8b\x02\n" +
 	"\x0eProjectService\x12P\n" +
 	"\fListProjects\x12\x1c.flit.v1.ListProjectsRequest\x1a\x1d.flit.v1.ListProjectsResponse\"\x03\x90\x02\x01\x12N\n" +
-	"\rCreateProject\x12\x1d.flit.v1.CreateProjectRequest\x1a\x1e.flit.v1.CreateProjectResponseB0Z.github.com/iggy/flit/server/gen/flit/v1;flitv1b\x06proto3"
+	"\rCreateProject\x12\x1d.flit.v1.CreateProjectRequest\x1a\x1e.flit.v1.CreateProjectResponse\x12W\n" +
+	"\x10SetProjectExport\x12 .flit.v1.SetProjectExportRequest\x1a!.flit.v1.SetProjectExportResponseB0Z.github.com/iggy/flit/server/gen/flit/v1;flitv1b\x06proto3"
 
 var (
 	file_flit_v1_project_proto_rawDescOnce sync.Once
@@ -323,28 +436,33 @@ func file_flit_v1_project_proto_rawDescGZIP() []byte {
 	return file_flit_v1_project_proto_rawDescData
 }
 
-var file_flit_v1_project_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_flit_v1_project_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_flit_v1_project_proto_goTypes = []any{
-	(*Project)(nil),               // 0: flit.v1.Project
-	(*ListProjectsRequest)(nil),   // 1: flit.v1.ListProjectsRequest
-	(*ListProjectsResponse)(nil),  // 2: flit.v1.ListProjectsResponse
-	(*CreateProjectRequest)(nil),  // 3: flit.v1.CreateProjectRequest
-	(*CreateProjectResponse)(nil), // 4: flit.v1.CreateProjectResponse
-	(*timestamppb.Timestamp)(nil), // 5: google.protobuf.Timestamp
+	(*Project)(nil),                  // 0: flit.v1.Project
+	(*ListProjectsRequest)(nil),      // 1: flit.v1.ListProjectsRequest
+	(*ListProjectsResponse)(nil),     // 2: flit.v1.ListProjectsResponse
+	(*CreateProjectRequest)(nil),     // 3: flit.v1.CreateProjectRequest
+	(*CreateProjectResponse)(nil),    // 4: flit.v1.CreateProjectResponse
+	(*SetProjectExportRequest)(nil),  // 5: flit.v1.SetProjectExportRequest
+	(*SetProjectExportResponse)(nil), // 6: flit.v1.SetProjectExportResponse
+	(*timestamppb.Timestamp)(nil),    // 7: google.protobuf.Timestamp
 }
 var file_flit_v1_project_proto_depIdxs = []int32{
-	5, // 0: flit.v1.Project.create_time:type_name -> google.protobuf.Timestamp
+	7, // 0: flit.v1.Project.create_time:type_name -> google.protobuf.Timestamp
 	0, // 1: flit.v1.ListProjectsResponse.projects:type_name -> flit.v1.Project
 	0, // 2: flit.v1.CreateProjectResponse.project:type_name -> flit.v1.Project
-	1, // 3: flit.v1.ProjectService.ListProjects:input_type -> flit.v1.ListProjectsRequest
-	3, // 4: flit.v1.ProjectService.CreateProject:input_type -> flit.v1.CreateProjectRequest
-	2, // 5: flit.v1.ProjectService.ListProjects:output_type -> flit.v1.ListProjectsResponse
-	4, // 6: flit.v1.ProjectService.CreateProject:output_type -> flit.v1.CreateProjectResponse
-	5, // [5:7] is the sub-list for method output_type
-	3, // [3:5] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	0, // 3: flit.v1.SetProjectExportResponse.project:type_name -> flit.v1.Project
+	1, // 4: flit.v1.ProjectService.ListProjects:input_type -> flit.v1.ListProjectsRequest
+	3, // 5: flit.v1.ProjectService.CreateProject:input_type -> flit.v1.CreateProjectRequest
+	5, // 6: flit.v1.ProjectService.SetProjectExport:input_type -> flit.v1.SetProjectExportRequest
+	2, // 7: flit.v1.ProjectService.ListProjects:output_type -> flit.v1.ListProjectsResponse
+	4, // 8: flit.v1.ProjectService.CreateProject:output_type -> flit.v1.CreateProjectResponse
+	6, // 9: flit.v1.ProjectService.SetProjectExport:output_type -> flit.v1.SetProjectExportResponse
+	7, // [7:10] is the sub-list for method output_type
+	4, // [4:7] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_flit_v1_project_proto_init() }
@@ -358,7 +476,7 @@ func file_flit_v1_project_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_flit_v1_project_proto_rawDesc), len(file_flit_v1_project_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

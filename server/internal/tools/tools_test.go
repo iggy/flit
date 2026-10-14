@@ -416,7 +416,7 @@ func TestSkillTool(t *testing.T) {
 	os.MkdirAll(filepath.Join(dir, "demo", "references"), 0o755)
 	os.WriteFile(filepath.Join(dir, "demo", "SKILL.md"), []byte("---\nname: demo\ndescription: Demo skill.\n---\nDo the demo."), 0o644)
 	os.WriteFile(filepath.Join(dir, "demo", "references", "REF.md"), []byte("deep detail"), 0o644)
-	list, problems := skills.Load([]string{dir})
+	list, problems := skills.Load([]skills.Dir{{Path: dir, Source: "test"}})
 	if len(problems) > 0 {
 		t.Fatal(problems)
 	}

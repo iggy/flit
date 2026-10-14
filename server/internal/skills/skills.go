@@ -39,14 +39,68 @@ type Skill struct {
 	// Dir is the skill directory; Body is SKILL.md after the frontmatter.
 	Dir  string `yaml:"-"`
 	Body string `yaml:"-"`
+	// Source says where it was found, e.g. "repo .agents/skills" or
+	// "global".
+	Source string `yaml:"-"`
+}
+
+// Dir is a directory of skills and a label for where it is.
+type Dir struct {
+	Path   string
+	Source string
+}
+
+// RepoDirs are the skill directories a repository can carry, in order of
+// preference. .agents/skills is the cross-tool convention; .claude/skills
+// is read for compatibility.
+var RepoDirs = []string{".agents/skills", ".claude/skills"}
+
+// SessionDirs returns the skill directories for a session working in
+// workDir: the repo's own (at workDir, then at its git root if that's
+// different) followed by the global ones. Earlier directories win when two
+// skills share a name, so a repo skill overrides a global one.
+func SessionDirs(workDir string, global []string) []Dir {
+	var out []Dir
+	add := func(base, label string) {
+		for _, rel := range RepoDirs {
+			out = append(out, Dir{Path: filepath.Join(base, filepath.FromSlash(rel)), Source: label + " " + rel})
+		}
+	}
+	if workDir != "" {
+		add(workDir, "repo")
+		if root := gitRoot(workDir); root != "" && root != filepath.Clean(workDir) {
+			add(root, "repo root")
+		}
+	}
+	for _, g := range global {
+		out = append(out, Dir{Path: g, Source: "global"})
+	}
+	return out
+}
+
+// gitRoot returns the nearest ancestor of dir (or dir itself) containing
+// .git, or "".
+func gitRoot(dir string) string {
+	dir = filepath.Clean(dir)
+	for {
+		if _, err := os.Stat(filepath.Join(dir, ".git")); err == nil {
+			return dir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return ""
+		}
+		dir = parent
+	}
 }
 
 // Load reads every skill directory in dirs. Later dirs don't override
 // earlier ones: the first skill with a name wins. Invalid skills are
 // skipped and reported in problems.
-func Load(dirs []string) (list []Skill, problems []error) {
+func Load(dirs []Dir) (list []Skill, problems []error) {
 	seen := map[string]bool{}
-	for _, dir := range dirs {
+	for _, d := range dirs {
+		dir := d.Path
 		entries, err := os.ReadDir(dir)
 		if errors.Is(err, os.ErrNotExist) {
 			continue
@@ -70,6 +124,7 @@ func Load(dirs []string) (list []Skill, problems []error) {
 			if seen[s.Name] {
 				continue
 			}
+			s.Source = d.Source
 			seen[s.Name] = true
 			list = append(list, s)
 		}

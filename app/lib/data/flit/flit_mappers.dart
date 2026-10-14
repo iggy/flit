@@ -44,6 +44,7 @@ FlitProject projectFromProto(pb.Project p) {
     name: p.name,
     directory: p.directory,
     sessionCount: p.sessionCount,
+    exportEnabled: p.exportEnabled,
   );
 }
 

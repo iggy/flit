@@ -65,6 +65,12 @@ service SessionService {
   // SetMcpServer enables or disables an MCP server for the session, from
   // its next model call.
   rpc SetMcpServer(SetMcpServerRequest) returns (SetMcpServerResponse);
+
+  // ListSkills lists the skills the session's agent can load: the repo's
+  // own (.agents/skills, .claude/skills) and the global ones.
+  rpc ListSkills(ListSkillsRequest) returns (ListSkillsResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
 }
 
 // TaskState is what a session's agent is doing.
@@ -257,6 +263,22 @@ message ListMcpServersRequest {
 
 message ListMcpServersResponse {
   repeated McpServer servers = 1;
+}
+
+message Skill {
+  string name = 1;
+  string description = 2;
+  // Where it was found: "repo .agents/skills", "repo root .claude/skills",
+  // "global", ...
+  string source = 3;
+}
+
+message ListSkillsRequest {
+  string session_id = 1;
+}
+
+message ListSkillsResponse {
+  repeated Skill skills = 1;
 }
 
 message SetMcpServerRequest {
@@ -468,6 +490,9 @@ message Feedback {
   string model = 6;
   // The client that rated.
   string client = 7;
+  // The turn the rated message belongs to: the id of the user message
+  // that started it.
+  string turn_id = 8;
 }
 
 // McpServersChanged lists the MCP servers enabled for the session after a

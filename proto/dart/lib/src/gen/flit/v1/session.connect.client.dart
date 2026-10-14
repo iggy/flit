@@ -255,4 +255,23 @@ extension type SessionServiceClient (connect.Transport _transport) {
       onTrailer: onTrailer,
     );
   }
+
+  /// ListSkills lists the skills the session's agent can load: the repo's
+  /// own (.agents/skills, .claude/skills) and the global ones.
+  Future<flitv1session.ListSkillsResponse> listSkills(
+    flitv1session.ListSkillsRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.SessionService.listSkills,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
 }

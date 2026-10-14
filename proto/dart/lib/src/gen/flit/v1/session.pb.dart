@@ -1887,6 +1887,196 @@ class ListMcpServersResponse extends $pb.GeneratedMessage {
   $pb.PbList<McpServer> get servers => $_getList(0);
 }
 
+class Skill extends $pb.GeneratedMessage {
+  factory Skill({
+    $core.String? name,
+    $core.String? description,
+    $core.String? source,
+  }) {
+    final result = Skill._();
+    if (name != null) result.name = name;
+    if (description != null) result.description = description;
+    if (source != null) result.source = source;
+    return result;
+  }
+
+  Skill._();
+
+  factory Skill.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Skill()..mergeFromBuffer(data, registry);
+  factory Skill.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Skill()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'Skill',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: Skill.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'name')
+    ..aOS(2, _omitFieldNames ? '' : 'description')
+    ..aOS(3, _omitFieldNames ? '' : 'source')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Skill clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Skill copyWith(void Function(Skill) updates) =>
+      super.copyWith((message) => updates(message as Skill)) as Skill;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use Skill() / Skill.new instead')
+  static Skill create() => Skill._();
+  static $pb.GeneratedMessage $_createMessage() => Skill._();
+  @$core.override
+  Skill createEmptyInstance() => Skill._();
+  @$core.pragma('dart2js:noInline')
+  static Skill getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<Skill>(Skill.$_createMessage);
+  static Skill? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get name => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set name($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasName() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearName() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get description => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set description($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasDescription() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearDescription() => $_clearField(2);
+
+  /// Where it was found: "repo .agents/skills", "repo root .claude/skills",
+  /// "global", ...
+  @$pb.TagNumber(3)
+  $core.String get source => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set source($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasSource() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearSource() => $_clearField(3);
+}
+
+class ListSkillsRequest extends $pb.GeneratedMessage {
+  factory ListSkillsRequest({
+    $core.String? sessionId,
+  }) {
+    final result = ListSkillsRequest._();
+    if (sessionId != null) result.sessionId = sessionId;
+    return result;
+  }
+
+  ListSkillsRequest._();
+
+  factory ListSkillsRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListSkillsRequest()..mergeFromBuffer(data, registry);
+  factory ListSkillsRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListSkillsRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListSkillsRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: ListSkillsRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'sessionId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListSkillsRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListSkillsRequest copyWith(void Function(ListSkillsRequest) updates) =>
+      super.copyWith((message) => updates(message as ListSkillsRequest))
+          as ListSkillsRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ListSkillsRequest() / ListSkillsRequest.new instead')
+  static ListSkillsRequest create() => ListSkillsRequest._();
+  static $pb.GeneratedMessage $_createMessage() => ListSkillsRequest._();
+  @$core.override
+  ListSkillsRequest createEmptyInstance() => ListSkillsRequest._();
+  @$core.pragma('dart2js:noInline')
+  static ListSkillsRequest getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ListSkillsRequest>(
+          ListSkillsRequest.$_createMessage);
+  static ListSkillsRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get sessionId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set sessionId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSessionId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSessionId() => $_clearField(1);
+}
+
+class ListSkillsResponse extends $pb.GeneratedMessage {
+  factory ListSkillsResponse({
+    $core.Iterable<Skill>? skills,
+  }) {
+    final result = ListSkillsResponse._();
+    if (skills != null) result.skills.addAll(skills);
+    return result;
+  }
+
+  ListSkillsResponse._();
+
+  factory ListSkillsResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListSkillsResponse()..mergeFromBuffer(data, registry);
+  factory ListSkillsResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListSkillsResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListSkillsResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: ListSkillsResponse.$_createMessage)
+    ..pPM<Skill>(1, _omitFieldNames ? '' : 'skills',
+        subBuilder: Skill.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListSkillsResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListSkillsResponse copyWith(void Function(ListSkillsResponse) updates) =>
+      super.copyWith((message) => updates(message as ListSkillsResponse))
+          as ListSkillsResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ListSkillsResponse() / ListSkillsResponse.new instead')
+  static ListSkillsResponse create() => ListSkillsResponse._();
+  static $pb.GeneratedMessage $_createMessage() => ListSkillsResponse._();
+  @$core.override
+  ListSkillsResponse createEmptyInstance() => ListSkillsResponse._();
+  @$core.pragma('dart2js:noInline')
+  static ListSkillsResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListSkillsResponse>(
+          ListSkillsResponse.$_createMessage);
+  static ListSkillsResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<Skill> get skills => $_getList(0);
+}
+
 class SetMcpServerRequest extends $pb.GeneratedMessage {
   factory SetMcpServerRequest({
     $core.String? sessionId,
@@ -3901,6 +4091,7 @@ class Feedback extends $pb.GeneratedMessage {
     $core.String? provider,
     $core.String? model,
     $core.String? client,
+    $core.String? turnId,
   }) {
     final result = Feedback._();
     if (target != null) result.target = target;
@@ -3910,6 +4101,7 @@ class Feedback extends $pb.GeneratedMessage {
     if (provider != null) result.provider = provider;
     if (model != null) result.model = model;
     if (client != null) result.client = client;
+    if (turnId != null) result.turnId = turnId;
     return result;
   }
 
@@ -3934,6 +4126,7 @@ class Feedback extends $pb.GeneratedMessage {
     ..aOS(5, _omitFieldNames ? '' : 'provider')
     ..aOS(6, _omitFieldNames ? '' : 'model')
     ..aOS(7, _omitFieldNames ? '' : 'client')
+    ..aOS(8, _omitFieldNames ? '' : 'turnId')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -4021,6 +4214,17 @@ class Feedback extends $pb.GeneratedMessage {
   $core.bool hasClient() => $_has(6);
   @$pb.TagNumber(7)
   void clearClient() => $_clearField(7);
+
+  /// The turn the rated message belongs to: the id of the user message
+  /// that started it.
+  @$pb.TagNumber(8)
+  $core.String get turnId => $_getSZ(7);
+  @$pb.TagNumber(8)
+  set turnId($core.String value) => $_setString(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasTurnId() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearTurnId() => $_clearField(8);
 }
 
 /// McpServersChanged lists the MCP servers enabled for the session after a
@@ -4230,6 +4434,13 @@ class SessionServiceApi {
           $pb.ClientContext? ctx, SetMcpServerRequest request) =>
       _client.invoke<SetMcpServerResponse>(ctx, 'SessionService',
           'SetMcpServer', request, SetMcpServerResponse());
+
+  /// ListSkills lists the skills the session's agent can load: the repo's
+  /// own (.agents/skills, .claude/skills) and the global ones.
+  $async.Future<ListSkillsResponse> listSkills(
+          $pb.ClientContext? ctx, ListSkillsRequest request) =>
+      _client.invoke<ListSkillsResponse>(
+          ctx, 'SessionService', 'ListSkills', request, ListSkillsResponse());
 }
 
 const $core.bool _omitFieldNames =

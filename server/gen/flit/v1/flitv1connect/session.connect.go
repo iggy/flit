@@ -68,6 +68,9 @@ const (
 	// SessionServiceSetMcpServerProcedure is the fully-qualified name of the SessionService's
 	// SetMcpServer RPC.
 	SessionServiceSetMcpServerProcedure = "/flit.v1.SessionService/SetMcpServer"
+	// SessionServiceListSkillsProcedure is the fully-qualified name of the SessionService's ListSkills
+	// RPC.
+	SessionServiceListSkillsProcedure = "/flit.v1.SessionService/ListSkills"
 )
 
 // SessionServiceClient is a client for the flit.v1.SessionService service.
@@ -108,6 +111,9 @@ type SessionServiceClient interface {
 	// SetMcpServer enables or disables an MCP server for the session, from
 	// its next model call.
 	SetMcpServer(context.Context, *connect.Request[v1.SetMcpServerRequest]) (*connect.Response[v1.SetMcpServerResponse], error)
+	// ListSkills lists the skills the session's agent can load: the repo's
+	// own (.agents/skills, .claude/skills) and the global ones.
+	ListSkills(context.Context, *connect.Request[v1.ListSkillsRequest]) (*connect.Response[v1.ListSkillsResponse], error)
 }
 
 // NewSessionServiceClient constructs a client for the flit.v1.SessionService service. By default,
@@ -202,6 +208,13 @@ func NewSessionServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(sessionServiceMethods.ByName("SetMcpServer")),
 			connect.WithClientOptions(opts...),
 		),
+		listSkills: connect.NewClient[v1.ListSkillsRequest, v1.ListSkillsResponse](
+			httpClient,
+			baseURL+SessionServiceListSkillsProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("ListSkills")),
+			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -220,6 +233,7 @@ type sessionServiceClient struct {
 	rate           *connect.Client[v1.RateRequest, v1.RateResponse]
 	listMcpServers *connect.Client[v1.ListMcpServersRequest, v1.ListMcpServersResponse]
 	setMcpServer   *connect.Client[v1.SetMcpServerRequest, v1.SetMcpServerResponse]
+	listSkills     *connect.Client[v1.ListSkillsRequest, v1.ListSkillsResponse]
 }
 
 // CreateSession calls flit.v1.SessionService.CreateSession.
@@ -287,6 +301,11 @@ func (c *sessionServiceClient) SetMcpServer(ctx context.Context, req *connect.Re
 	return c.setMcpServer.CallUnary(ctx, req)
 }
 
+// ListSkills calls flit.v1.SessionService.ListSkills.
+func (c *sessionServiceClient) ListSkills(ctx context.Context, req *connect.Request[v1.ListSkillsRequest]) (*connect.Response[v1.ListSkillsResponse], error) {
+	return c.listSkills.CallUnary(ctx, req)
+}
+
 // SessionServiceHandler is an implementation of the flit.v1.SessionService service.
 type SessionServiceHandler interface {
 	// CreateSession starts a new, idle session. Give working_dir, or a
@@ -325,6 +344,9 @@ type SessionServiceHandler interface {
 	// SetMcpServer enables or disables an MCP server for the session, from
 	// its next model call.
 	SetMcpServer(context.Context, *connect.Request[v1.SetMcpServerRequest]) (*connect.Response[v1.SetMcpServerResponse], error)
+	// ListSkills lists the skills the session's agent can load: the repo's
+	// own (.agents/skills, .claude/skills) and the global ones.
+	ListSkills(context.Context, *connect.Request[v1.ListSkillsRequest]) (*connect.Response[v1.ListSkillsResponse], error)
 }
 
 // NewSessionServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -415,6 +437,13 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 		connect.WithSchema(sessionServiceMethods.ByName("SetMcpServer")),
 		connect.WithHandlerOptions(opts...),
 	)
+	sessionServiceListSkillsHandler := connect.NewUnaryHandler(
+		SessionServiceListSkillsProcedure,
+		svc.ListSkills,
+		connect.WithSchema(sessionServiceMethods.ByName("ListSkills")),
+		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/flit.v1.SessionService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case SessionServiceCreateSessionProcedure:
@@ -443,6 +472,8 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 			sessionServiceListMcpServersHandler.ServeHTTP(w, r)
 		case SessionServiceSetMcpServerProcedure:
 			sessionServiceSetMcpServerHandler.ServeHTTP(w, r)
+		case SessionServiceListSkillsProcedure:
+			sessionServiceListSkillsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -502,4 +533,8 @@ func (UnimplementedSessionServiceHandler) ListMcpServers(context.Context, *conne
 
 func (UnimplementedSessionServiceHandler) SetMcpServer(context.Context, *connect.Request[v1.SetMcpServerRequest]) (*connect.Response[v1.SetMcpServerResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.SetMcpServer is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) ListSkills(context.Context, *connect.Request[v1.ListSkillsRequest]) (*connect.Response[v1.ListSkillsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.ListSkills is not implemented"))
 }

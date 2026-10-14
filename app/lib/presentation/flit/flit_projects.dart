@@ -227,3 +227,52 @@ Future<void> showMoveSessionDialog(
     }
   }
 }
+
+/// For the selected project: whether `flit export` includes its sessions
+/// (the training corpus). Hidden when "All projects" is selected.
+class FlitProjectExportToggle extends ConsumerWidget {
+  const FlitProjectExportToggle({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selected = ref.watch(flitSelectedProjectProvider);
+    FlitProject? project;
+    for (final p
+        in ref.watch(flitProjectsProvider).value ?? const <FlitProject>[]) {
+      if (p.id == selected) {
+        project = p;
+      }
+    }
+    if (project == null) {
+      return const SizedBox.shrink();
+    }
+    final p = project;
+    return PopupMenuButton<bool>(
+      tooltip: 'Project options',
+      icon: const Icon(Icons.more_vert),
+      onSelected: (enabled) async {
+        final repository = ref.read(flitRepositoryProvider);
+        if (repository == null) {
+          return;
+        }
+        try {
+          await repository.setProjectExport(p.id, enabled: enabled);
+          ref.invalidate(flitProjectsProvider);
+        } on GatewayException catch (error) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Could not change it: ${error.message}')),
+            );
+          }
+        }
+      },
+      itemBuilder: (_) => <PopupMenuEntry<bool>>[
+        CheckedPopupMenuItem<bool>(
+          value: !p.exportEnabled,
+          checked: p.exportEnabled,
+          child: const Text('Include in exports'),
+        ),
+      ],
+    );
+  }
+}

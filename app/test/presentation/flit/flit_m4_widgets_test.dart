@@ -13,9 +13,15 @@ final class _Repo extends Fake implements FlitRepository {
   final Map<String, bool> mcp = <String, bool>{'fs': true, 'web': false};
 
   @override
-  Future<List<FlitProject>> listProjects() async => const <FlitProject>[
-    FlitProject(id: 'scratch', name: 'Scratch', sessionCount: 2),
-    FlitProject(id: 'p1', name: 'app', directory: '/src/app', sessionCount: 1),
+  Future<List<FlitProject>> listProjects() async => <FlitProject>[
+    const FlitProject(id: 'scratch', name: 'Scratch', sessionCount: 2),
+    FlitProject(
+      id: 'p1',
+      name: 'app',
+      directory: '/src/app',
+      sessionCount: 1,
+      exportEnabled: exportOn,
+    ),
   ];
 
   @override
@@ -35,6 +41,28 @@ final class _Repo extends Fake implements FlitRepository {
       name: name.isEmpty ? 'new' : name,
       directory: directory,
     );
+  }
+
+  @override
+  Future<List<FlitSkill>> listSkills(String sessionId) async =>
+      const <FlitSkill>[
+        FlitSkill(
+          name: 'deploy',
+          description: 'Deploy it.',
+          source: 'repo .agents/skills',
+        ),
+      ];
+
+  bool exportOn = true;
+
+  @override
+  Future<FlitProject> setProjectExport(
+    String projectId, {
+    required bool enabled,
+  }) async {
+    calls.add('export:$projectId:$enabled');
+    exportOn = enabled;
+    return const FlitProject(id: 'p1', name: 'app');
   }
 
   @override
@@ -146,6 +174,33 @@ void main() {
     await tester.tap(find.widgetWithText(SwitchListTile, 'web'));
     await tester.pumpAndSettle();
     expect(repo.calls, contains('mcp:web:true'));
+    await tester.scrollUntilVisible(
+      find.text('deploy'),
+      100,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(find.text('deploy'), findsOneWidget);
+    expect(find.text('repo .agents/skills · Deploy it.'), findsOneWidget);
+  });
+
+  testWidgets('project export toggle', (tester) async {
+    container.read(flitSelectedProjectProvider.notifier).select('p1');
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          home: Scaffold(
+            appBar: AppBar(actions: const <Widget>[FlitProjectExportToggle()]),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Project options'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Include in exports'));
+    await tester.pumpAndSettle();
+    expect(repo.calls, contains('export:p1:false'));
   });
 
   testWidgets('rating buttons', (tester) async {

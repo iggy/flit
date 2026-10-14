@@ -27,6 +27,7 @@ import (
 	"github.com/iggy/flit/server/internal/mcpclient"
 	"github.com/iggy/flit/server/internal/models"
 	"github.com/iggy/flit/server/internal/roles"
+	"github.com/iggy/flit/server/internal/skills"
 	"github.com/iggy/flit/server/internal/store"
 )
 
@@ -457,4 +458,27 @@ func (m *Manager) SetMCPServer(ctx context.Context, id, server string, enabled b
 		return store.Session{}, err
 	}
 	return s.setMCPServer(ctx, server, enabled)
+}
+
+// SetProjectExport includes or excludes a project from export.
+func (m *Manager) SetProjectExport(ctx context.Context, id string, enabled bool) (store.Project, error) {
+	if err := m.store.SetProjectExport(ctx, id, enabled); err != nil {
+		return store.Project{}, err
+	}
+	return m.store.GetProject(ctx, id)
+}
+
+// Skills lists the skills a session's agent can load, with where each
+// came from.
+func (m *Manager) Skills(ctx context.Context, id string) ([]skills.Skill, error) {
+	s, err := m.session(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	var global []string
+	if m.SkillsDirs != nil {
+		global = m.SkillsDirs()
+	}
+	list, _ := skills.Load(skills.SessionDirs(s.snapshot().WorkingDir, global))
+	return list, nil
 }

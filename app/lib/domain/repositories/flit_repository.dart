@@ -82,6 +82,15 @@ abstract interface class FlitRepository {
   /// The configured MCP servers and whether each is on for the session.
   Future<List<FlitMcpServer>> listMcpServers(String sessionId);
 
+  /// The skills the session's agent can load.
+  Future<List<FlitSkill>> listSkills(String sessionId);
+
+  /// Include or exclude a project from `flit export`.
+  Future<FlitProject> setProjectExport(
+    String projectId, {
+    required bool enabled,
+  });
+
   /// Turn an MCP server on or off for the session.
   Future<FlitSession> setMcpServer(
     String sessionId,

@@ -107,6 +107,7 @@ class FlitSessionsScreen extends ConsumerWidget {
               ..invalidate(flitProjectsProvider),
             icon: const Icon(Icons.refresh),
           ),
+          const FlitProjectExportToggle(),
           IconButton(
             tooltip: 'Disconnect',
             onPressed: () => _disconnect(context, ref),

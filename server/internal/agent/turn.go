@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
+	"github.com/iggy/flit/server/internal/buildinfo"
 	"github.com/iggy/flit/server/internal/config"
 	"github.com/iggy/flit/server/internal/llm"
 	"github.com/iggy/flit/server/internal/mcpclient"
@@ -37,8 +38,8 @@ var (
 // and the WORKING state are already recorded. The final state change and
 // marking the session idle happen together, so a client that sees the turn
 // end can Send right away.
-func (s *session) runTurn(ctx context.Context) {
-	e, err := s.loop(ctx)
+func (s *session) runTurn(ctx context.Context, turnID string) {
+	e, err := s.loop(ctx, turnID)
 	if err != nil {
 		s.m.log.Error("turn failed", "session", s.info.ID, "err", err)
 		e = end{flitv1.TaskState_TASK_STATE_STUCK, "internal error: " + err.Error()}
@@ -53,7 +54,7 @@ func (s *session) runTurn(ctx context.Context) {
 
 // loop runs the turn and says how it ended. It returns an error only if the
 // event log can't be written.
-func (s *session) loop(ctx context.Context) (end, error) {
+func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 	for step := 0; ; step++ {
 		cfg := s.m.cfg()
 		if step >= cfg.Agent.MaxSteps {
@@ -81,7 +82,7 @@ func (s *session) loop(ctx context.Context) (end, error) {
 				return s.stop(fmt.Sprintf("role %q: %v", info.Role, err), false)
 			}
 		}
-		set, extra := s.toolSet(ctx, cfg, info)
+		set, extra, skillNames := s.toolSet(ctx, cfg, info)
 		system := systemPrompt(info.WorkingDir, role) + extra + promptAppends(cfg, info.Provider, info.Model)
 		req := llm.Request{
 			Model:           info.Model,
@@ -117,6 +118,7 @@ func (s *session) loop(ctx context.Context) (end, error) {
 		if appendErr != nil {
 			return end{}, appendErr
 		}
+		s.recordCall(info, turnID, msgID, role, skillNames, req, res, text.String(), reasoning.String(), err)
 		if err != nil {
 			finish := "error"
 			if ctx.Err() != nil {
@@ -262,8 +264,9 @@ func todoStatus(s string) flitv1.TodoStatus {
 // as configured, the skill tool when there are skills, and the tools of the
 // session's enabled MCP servers. extra is system prompt text that goes with
 // them (the skill list, unavailable MCP servers).
-func (s *session) toolSet(ctx context.Context, cfg config.Config, info store.Session) ([]tools.Tool, string) {
+func (s *session) toolSet(ctx context.Context, cfg config.Config, info store.Session) ([]tools.Tool, string, []string) {
 	set := tools.All()
+	var skillNames []string
 	var extra strings.Builder
 	if cfg.Git.IsEnabled() {
 		set = append(set, tools.GitTools()...)
@@ -274,14 +277,21 @@ func (s *session) toolSet(ctx context.Context, cfg config.Config, info store.Ses
 	if cfg.Web.Search.Provider == "searxng" {
 		set = append(set, tools.WebSearchTool(cfg.Web.Search.URL))
 	}
+	var global []string
 	if s.m.SkillsDirs != nil {
-		list, problems := skills.Load(s.m.SkillsDirs())
+		global = s.m.SkillsDirs()
+	}
+	{
+		list, problems := skills.Load(skills.SessionDirs(info.WorkingDir, global))
 		for _, p := range problems {
 			s.m.log.Warn("skill skipped", "err", p)
 		}
 		if len(list) > 0 {
 			set = append(set, tools.SkillTool(list))
 			extra.WriteString(skills.PromptSection(list))
+			for _, sk := range list {
+				skillNames = append(skillNames, sk.Name)
+			}
 		}
 	}
 	if s.m.MCP != nil && len(info.MCPServers) > 0 {
@@ -294,7 +304,72 @@ func (s *session) toolSet(ctx context.Context, cfg config.Config, info store.Ses
 			set = append(set, mcpTool(s.m.MCP, t))
 		}
 	}
-	return set, extra.String()
+	return set, extra.String(), skillNames
+}
+
+// recordCall stores the exact request and response of one model call for
+// the training corpus (see store.ModelCall). Failures are logged; they
+// never fail the turn.
+func (s *session) recordCall(info store.Session, turnID, msgID string, role *roles.Role, skillNames []string,
+	req llm.Request, res *llm.Result, text, reasoning string, callErr error) {
+	messages := make([][]byte, 0, len(req.Messages))
+	for _, m := range req.Messages {
+		b, err := json.Marshal(m)
+		if err != nil {
+			s.m.log.Warn("record model call", "err", err)
+			return
+		}
+		messages = append(messages, b)
+	}
+	var toolsJSON []byte
+	if len(req.Tools) > 0 {
+		toolsJSON, _ = json.Marshal(req.Tools)
+	}
+	params, _ := json.Marshal(map[string]any{
+		"model":            req.Model,
+		"reasoning_effort": req.ReasoningEffort,
+		"stream":           true,
+		// flit sends no sampling parameters; the provider's defaults apply.
+		"sampling": "provider defaults",
+	})
+	resp := map[string]any{"role": "assistant", "content": text}
+	if reasoning != "" {
+		resp["reasoning_content"] = reasoning
+	}
+	c := &store.ModelCall{
+		ID: msgID, SessionID: info.ID, TeamID: info.TeamID, ProjectID: info.ProjectID, TurnID: turnID,
+		Provider: info.Provider, Model: info.Model, Effort: info.Effort, FlitVersion: buildinfo.Get().Version,
+		Skills: skillNames, Params: params,
+	}
+	if role != nil {
+		c.Role = role.Name
+	}
+	if res != nil {
+		if len(res.ToolCalls) > 0 {
+			resp["tool_calls"] = res.ToolCalls
+		}
+		c.FinishReason = res.FinishReason
+		if res.Usage != nil {
+			c.Usage, _ = json.Marshal(res.Usage)
+		}
+		c.Metrics, _ = json.Marshal(map[string]any{
+			"time_to_first_token_ms":       res.Metrics.TimeToFirstToken.Milliseconds(),
+			"prompt_tokens_per_second":     res.Metrics.PromptPerSecond,
+			"generation_tokens_per_second": res.Metrics.GenerationPerSecond,
+			"source":                       res.Metrics.Source,
+		})
+	}
+	if callErr != nil {
+		c.Error = callErr.Error()
+		c.FinishReason = "error"
+		if errors.Is(callErr, context.Canceled) {
+			c.FinishReason = "interrupted"
+		}
+	}
+	c.Response, _ = json.Marshal(resp)
+	if err := s.m.store.RecordModelCall(context.Background(), c, messages, toolsJSON); err != nil {
+		s.m.log.Warn("record model call", "session", info.ID, "err", err)
+	}
 }
 
 func mcpTool(m *mcpclient.Manager, t mcpclient.Tool) tools.Tool {

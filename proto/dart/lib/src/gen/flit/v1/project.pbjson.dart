@@ -35,6 +35,7 @@ const Project$json = {
       '6': '.google.protobuf.Timestamp',
       '10': 'createTime'
     },
+    {'1': 'export_enabled', '3': 7, '4': 1, '5': 8, '10': 'exportEnabled'},
   ],
 };
 
@@ -43,7 +44,8 @@ final $typed_data.Uint8List projectDescriptor = $convert.base64Decode(
     'CgdQcm9qZWN0Eg4KAmlkGAEgASgJUgJpZBIXCgd0ZWFtX2lkGAIgASgJUgZ0ZWFtSWQSEgoEbm'
     'FtZRgDIAEoCVIEbmFtZRIcCglkaXJlY3RvcnkYBCABKAlSCWRpcmVjdG9yeRIjCg1zZXNzaW9u'
     'X2NvdW50GAUgASgFUgxzZXNzaW9uQ291bnQSOwoLY3JlYXRlX3RpbWUYBiABKAsyGi5nb29nbG'
-    'UucHJvdG9idWYuVGltZXN0YW1wUgpjcmVhdGVUaW1l');
+    'UucHJvdG9idWYuVGltZXN0YW1wUgpjcmVhdGVUaW1lEiUKDmV4cG9ydF9lbmFibGVkGAcgASgI'
+    'Ug1leHBvcnRFbmFibGVk');
 
 @$core.Deprecated('Use listProjectsRequestDescriptor instead')
 const ListProjectsRequest$json = {
@@ -108,6 +110,42 @@ final $typed_data.Uint8List createProjectResponseDescriptor = $convert.base64Dec
     'ChVDcmVhdGVQcm9qZWN0UmVzcG9uc2USKgoHcHJvamVjdBgBIAEoCzIQLmZsaXQudjEuUHJvam'
     'VjdFIHcHJvamVjdA==');
 
+@$core.Deprecated('Use setProjectExportRequestDescriptor instead')
+const SetProjectExportRequest$json = {
+  '1': 'SetProjectExportRequest',
+  '2': [
+    {'1': 'project_id', '3': 1, '4': 1, '5': 9, '10': 'projectId'},
+    {'1': 'enabled', '3': 2, '4': 1, '5': 8, '10': 'enabled'},
+  ],
+};
+
+/// Descriptor for `SetProjectExportRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List setProjectExportRequestDescriptor =
+    $convert.base64Decode(
+        'ChdTZXRQcm9qZWN0RXhwb3J0UmVxdWVzdBIdCgpwcm9qZWN0X2lkGAEgASgJUglwcm9qZWN0SW'
+        'QSGAoHZW5hYmxlZBgCIAEoCFIHZW5hYmxlZA==');
+
+@$core.Deprecated('Use setProjectExportResponseDescriptor instead')
+const SetProjectExportResponse$json = {
+  '1': 'SetProjectExportResponse',
+  '2': [
+    {
+      '1': 'project',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.Project',
+      '10': 'project'
+    },
+  ],
+};
+
+/// Descriptor for `SetProjectExportResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List setProjectExportResponseDescriptor =
+    $convert.base64Decode(
+        'ChhTZXRQcm9qZWN0RXhwb3J0UmVzcG9uc2USKgoHcHJvamVjdBgBIAEoCzIQLmZsaXQudjEuUH'
+        'JvamVjdFIHcHJvamVjdA==');
+
 const $core.Map<$core.String, $core.dynamic> ProjectServiceBase$json = {
   '1': 'ProjectService',
   '2': [
@@ -122,6 +160,11 @@ const $core.Map<$core.String, $core.dynamic> ProjectServiceBase$json = {
       '2': '.flit.v1.CreateProjectRequest',
       '3': '.flit.v1.CreateProjectResponse'
     },
+    {
+      '1': 'SetProjectExport',
+      '2': '.flit.v1.SetProjectExportRequest',
+      '3': '.flit.v1.SetProjectExportResponse'
+    },
   ],
 };
 
@@ -134,6 +177,8 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.google.protobuf.Timestamp': $0.Timestamp$json,
   '.flit.v1.CreateProjectRequest': CreateProjectRequest$json,
   '.flit.v1.CreateProjectResponse': CreateProjectResponse$json,
+  '.flit.v1.SetProjectExportRequest': SetProjectExportRequest$json,
+  '.flit.v1.SetProjectExportResponse': SetProjectExportResponse$json,
 };
 
 /// Descriptor for `ProjectService`. Decode as a `google.protobuf.ServiceDescriptorProto`.
@@ -141,4 +186,5 @@ final $typed_data.Uint8List projectServiceDescriptor = $convert.base64Decode(
     'Cg5Qcm9qZWN0U2VydmljZRJQCgxMaXN0UHJvamVjdHMSHC5mbGl0LnYxLkxpc3RQcm9qZWN0c1'
     'JlcXVlc3QaHS5mbGl0LnYxLkxpc3RQcm9qZWN0c1Jlc3BvbnNlIgOQAgESTgoNQ3JlYXRlUHJv'
     'amVjdBIdLmZsaXQudjEuQ3JlYXRlUHJvamVjdFJlcXVlc3QaHi5mbGl0LnYxLkNyZWF0ZVByb2'
-    'plY3RSZXNwb25zZQ==');
+    'plY3RSZXNwb25zZRJXChBTZXRQcm9qZWN0RXhwb3J0EiAuZmxpdC52MS5TZXRQcm9qZWN0RXhw'
+    'b3J0UmVxdWVzdBohLmZsaXQudjEuU2V0UHJvamVjdEV4cG9ydFJlc3BvbnNl');

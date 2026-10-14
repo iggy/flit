@@ -158,16 +158,24 @@ state, and the agent's todo list.
 
   Each session turns servers on or off at runtime; only enabled servers'
   tools are sent to the model.
-- **Skills** in the [Agent Skills](https://agentskills.io) format live in
-  `skills/` next to the config (`skills_dirs`). The model sees their names
-  and descriptions and loads a skill's instructions and files when needed.
+- **Skills** in the [Agent Skills](https://agentskills.io) format come from
+  the repo the session works in (`.agents/skills/`, and `.claude/skills/`
+  for compatibility, at the working directory and the git root) and from
+  `skills/` next to the config (`skills_dirs`). A repo skill wins over a
+  global one with the same name. The model sees names and descriptions and
+  loads a skill's instructions and files when needed.
 - **git** tools (status, diff, log, commit; nothing pushes), **web_fetch**,
   and **web_search** through a SearXNG instance (`web.search`); paid search
   APIs aren't supported.
 - **Prompt appends** per provider (`providers[].prompt_append`) and per model
   (`agent.model_prompt_appends`).
-- **Ratings**: mark a reply or a model choice good or bad in the app; they're
-  stored as events in the session log, naming the model that answered.
+- **Ratings and a training corpus**: mark a reply or a model choice good or
+  bad in the app, with an optional note. flit records every model call
+  exactly (messages, tool schemas, parameters, response, metrics), and
+  `flit export` writes sessions, turns and model calls as JSONL in OpenAI
+  chat format, filterable by date, project, model and rating, with
+  `--redact` for public datasets. Projects can opt out. See
+  [docs/export.md](docs/export.md).
 
 ### Sessions and tools
 

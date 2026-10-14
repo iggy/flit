@@ -44,6 +44,7 @@ Usage:
   flit pair [--url URL]       pair a phone or another machine (shows a QR code)
   flit devices [--all]        list paired devices
   flit devices revoke ID      revoke a paired device
+  flit export [flags]         write recorded sessions as JSONL (see docs/export.md)
   flit version                print version information
 
 Flags for serve, token, pair and devices:
@@ -106,6 +107,8 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		fmt.Fprintf(stdout, "flit %s (commit %s, built %s, %s, %s/%s, API %s)\n",
 			bi.Version, orUnknown(bi.Commit), orUnknown(bi.BuildTime), bi.GoVersion, bi.OS, bi.Arch, buildinfo.APIVersion)
 		return nil
+	case "export":
+		return exportCmd(ctx, stdout, stderr, args, defaultConfig)
 	case "help", "-h", "--help":
 		fmt.Fprintf(stdout, usage, defaultConfig)
 		return nil

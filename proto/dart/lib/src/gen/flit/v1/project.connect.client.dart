@@ -45,4 +45,23 @@ extension type ProjectServiceClient (connect.Transport _transport) {
       onTrailer: onTrailer,
     );
   }
+
+  /// SetProjectExport includes or excludes a project's sessions from
+  /// "flit export". Projects are included by default.
+  Future<flitv1project.SetProjectExportResponse> setProjectExport(
+    flitv1project.SetProjectExportRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.ProjectService.setProjectExport,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
 }

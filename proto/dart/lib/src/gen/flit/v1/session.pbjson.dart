@@ -559,6 +559,53 @@ final $typed_data.Uint8List listMcpServersResponseDescriptor =
         'ChZMaXN0TWNwU2VydmVyc1Jlc3BvbnNlEiwKB3NlcnZlcnMYASADKAsyEi5mbGl0LnYxLk1jcF'
         'NlcnZlclIHc2VydmVycw==');
 
+@$core.Deprecated('Use skillDescriptor instead')
+const Skill$json = {
+  '1': 'Skill',
+  '2': [
+    {'1': 'name', '3': 1, '4': 1, '5': 9, '10': 'name'},
+    {'1': 'description', '3': 2, '4': 1, '5': 9, '10': 'description'},
+    {'1': 'source', '3': 3, '4': 1, '5': 9, '10': 'source'},
+  ],
+};
+
+/// Descriptor for `Skill`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List skillDescriptor = $convert.base64Decode(
+    'CgVTa2lsbBISCgRuYW1lGAEgASgJUgRuYW1lEiAKC2Rlc2NyaXB0aW9uGAIgASgJUgtkZXNjcm'
+    'lwdGlvbhIWCgZzb3VyY2UYAyABKAlSBnNvdXJjZQ==');
+
+@$core.Deprecated('Use listSkillsRequestDescriptor instead')
+const ListSkillsRequest$json = {
+  '1': 'ListSkillsRequest',
+  '2': [
+    {'1': 'session_id', '3': 1, '4': 1, '5': 9, '10': 'sessionId'},
+  ],
+};
+
+/// Descriptor for `ListSkillsRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List listSkillsRequestDescriptor = $convert.base64Decode(
+    'ChFMaXN0U2tpbGxzUmVxdWVzdBIdCgpzZXNzaW9uX2lkGAEgASgJUglzZXNzaW9uSWQ=');
+
+@$core.Deprecated('Use listSkillsResponseDescriptor instead')
+const ListSkillsResponse$json = {
+  '1': 'ListSkillsResponse',
+  '2': [
+    {
+      '1': 'skills',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.flit.v1.Skill',
+      '10': 'skills'
+    },
+  ],
+};
+
+/// Descriptor for `ListSkillsResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List listSkillsResponseDescriptor = $convert.base64Decode(
+    'ChJMaXN0U2tpbGxzUmVzcG9uc2USJgoGc2tpbGxzGAEgAygLMg4uZmxpdC52MS5Ta2lsbFIGc2'
+    'tpbGxz');
+
 @$core.Deprecated('Use setMcpServerRequestDescriptor instead')
 const SetMcpServerRequest$json = {
   '1': 'SetMcpServerRequest',
@@ -1140,6 +1187,7 @@ const Feedback$json = {
     {'1': 'provider', '3': 5, '4': 1, '5': 9, '10': 'provider'},
     {'1': 'model', '3': 6, '4': 1, '5': 9, '10': 'model'},
     {'1': 'client', '3': 7, '4': 1, '5': 9, '10': 'client'},
+    {'1': 'turn_id', '3': 8, '4': 1, '5': 9, '10': 'turnId'},
   ],
 };
 
@@ -1149,7 +1197,7 @@ final $typed_data.Uint8List feedbackDescriptor = $convert.base64Decode(
     'V0EicKBnJhdGluZxgCIAEoDjIPLmZsaXQudjEuUmF0aW5nUgZyYXRpbmcSHQoKbWVzc2FnZV9p'
     'ZBgDIAEoCVIJbWVzc2FnZUlkEhIKBG5vdGUYBCABKAlSBG5vdGUSGgoIcHJvdmlkZXIYBSABKA'
     'lSCHByb3ZpZGVyEhQKBW1vZGVsGAYgASgJUgVtb2RlbBIWCgZjbGllbnQYByABKAlSBmNsaWVu'
-    'dA==');
+    'dBIXCgd0dXJuX2lkGAggASgJUgZ0dXJuSWQ=');
 
 @$core.Deprecated('Use mcpServersChangedDescriptor instead')
 const McpServersChanged$json = {
@@ -1239,6 +1287,12 @@ const $core.Map<$core.String, $core.dynamic> SessionServiceBase$json = {
       '2': '.flit.v1.SetMcpServerRequest',
       '3': '.flit.v1.SetMcpServerResponse'
     },
+    {
+      '1': 'ListSkills',
+      '2': '.flit.v1.ListSkillsRequest',
+      '3': '.flit.v1.ListSkillsResponse',
+      '4': {'34': 1},
+    },
   ],
 };
 
@@ -1293,6 +1347,9 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.flit.v1.McpServer': McpServer$json,
   '.flit.v1.SetMcpServerRequest': SetMcpServerRequest$json,
   '.flit.v1.SetMcpServerResponse': SetMcpServerResponse$json,
+  '.flit.v1.ListSkillsRequest': ListSkillsRequest$json,
+  '.flit.v1.ListSkillsResponse': ListSkillsResponse$json,
+  '.flit.v1.Skill': Skill$json,
 };
 
 /// Descriptor for `SessionService`. Decode as a `google.protobuf.ServiceDescriptorProto`.
@@ -1313,4 +1370,6 @@ final $typed_data.Uint8List sessionServiceDescriptor = $convert.base64Decode(
     'MKBFJhdGUSFC5mbGl0LnYxLlJhdGVSZXF1ZXN0GhUuZmxpdC52MS5SYXRlUmVzcG9uc2USVgoO'
     'TGlzdE1jcFNlcnZlcnMSHi5mbGl0LnYxLkxpc3RNY3BTZXJ2ZXJzUmVxdWVzdBofLmZsaXQudj'
     'EuTGlzdE1jcFNlcnZlcnNSZXNwb25zZSIDkAIBEksKDFNldE1jcFNlcnZlchIcLmZsaXQudjEu'
-    'U2V0TWNwU2VydmVyUmVxdWVzdBodLmZsaXQudjEuU2V0TWNwU2VydmVyUmVzcG9uc2U=');
+    'U2V0TWNwU2VydmVyUmVxdWVzdBodLmZsaXQudjEuU2V0TWNwU2VydmVyUmVzcG9uc2USSgoKTG'
+    'lzdFNraWxscxIaLmZsaXQudjEuTGlzdFNraWxsc1JlcXVlc3QaGy5mbGl0LnYxLkxpc3RTa2ls'
+    'bHNSZXNwb25zZSIDkAIB');

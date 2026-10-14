@@ -25,6 +25,8 @@ abstract class ProjectServiceBase extends $pb.GeneratedService {
       $pb.ServerContext ctx, $1.ListProjectsRequest request);
   $async.Future<$1.CreateProjectResponse> createProject(
       $pb.ServerContext ctx, $1.CreateProjectRequest request);
+  $async.Future<$1.SetProjectExportResponse> setProjectExport(
+      $pb.ServerContext ctx, $1.SetProjectExportRequest request);
 
   $pb.GeneratedMessage createRequest($core.String methodName) {
     switch (methodName) {
@@ -32,6 +34,8 @@ abstract class ProjectServiceBase extends $pb.GeneratedService {
         return $1.ListProjectsRequest();
       case 'CreateProject':
         return $1.CreateProjectRequest();
+      case 'SetProjectExport':
+        return $1.SetProjectExportRequest();
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }
@@ -44,6 +48,8 @@ abstract class ProjectServiceBase extends $pb.GeneratedService {
         return listProjects(ctx, request as $1.ListProjectsRequest);
       case 'CreateProject':
         return createProject(ctx, request as $1.CreateProjectRequest);
+      case 'SetProjectExport':
+        return setProjectExport(ctx, request as $1.SetProjectExportRequest);
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }

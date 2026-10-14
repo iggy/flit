@@ -39,6 +39,9 @@ const (
 	// ProjectServiceCreateProjectProcedure is the fully-qualified name of the ProjectService's
 	// CreateProject RPC.
 	ProjectServiceCreateProjectProcedure = "/flit.v1.ProjectService/CreateProject"
+	// ProjectServiceSetProjectExportProcedure is the fully-qualified name of the ProjectService's
+	// SetProjectExport RPC.
+	ProjectServiceSetProjectExportProcedure = "/flit.v1.ProjectService/SetProjectExport"
 )
 
 // ProjectServiceClient is a client for the flit.v1.ProjectService service.
@@ -46,6 +49,9 @@ type ProjectServiceClient interface {
 	ListProjects(context.Context, *connect.Request[v1.ListProjectsRequest]) (*connect.Response[v1.ListProjectsResponse], error)
 	// CreateProject adds a project for a directory on the server.
 	CreateProject(context.Context, *connect.Request[v1.CreateProjectRequest]) (*connect.Response[v1.CreateProjectResponse], error)
+	// SetProjectExport includes or excludes a project's sessions from
+	// "flit export". Projects are included by default.
+	SetProjectExport(context.Context, *connect.Request[v1.SetProjectExportRequest]) (*connect.Response[v1.SetProjectExportResponse], error)
 }
 
 // NewProjectServiceClient constructs a client for the flit.v1.ProjectService service. By default,
@@ -72,13 +78,20 @@ func NewProjectServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(projectServiceMethods.ByName("CreateProject")),
 			connect.WithClientOptions(opts...),
 		),
+		setProjectExport: connect.NewClient[v1.SetProjectExportRequest, v1.SetProjectExportResponse](
+			httpClient,
+			baseURL+ProjectServiceSetProjectExportProcedure,
+			connect.WithSchema(projectServiceMethods.ByName("SetProjectExport")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // projectServiceClient implements ProjectServiceClient.
 type projectServiceClient struct {
-	listProjects  *connect.Client[v1.ListProjectsRequest, v1.ListProjectsResponse]
-	createProject *connect.Client[v1.CreateProjectRequest, v1.CreateProjectResponse]
+	listProjects     *connect.Client[v1.ListProjectsRequest, v1.ListProjectsResponse]
+	createProject    *connect.Client[v1.CreateProjectRequest, v1.CreateProjectResponse]
+	setProjectExport *connect.Client[v1.SetProjectExportRequest, v1.SetProjectExportResponse]
 }
 
 // ListProjects calls flit.v1.ProjectService.ListProjects.
@@ -91,11 +104,19 @@ func (c *projectServiceClient) CreateProject(ctx context.Context, req *connect.R
 	return c.createProject.CallUnary(ctx, req)
 }
 
+// SetProjectExport calls flit.v1.ProjectService.SetProjectExport.
+func (c *projectServiceClient) SetProjectExport(ctx context.Context, req *connect.Request[v1.SetProjectExportRequest]) (*connect.Response[v1.SetProjectExportResponse], error) {
+	return c.setProjectExport.CallUnary(ctx, req)
+}
+
 // ProjectServiceHandler is an implementation of the flit.v1.ProjectService service.
 type ProjectServiceHandler interface {
 	ListProjects(context.Context, *connect.Request[v1.ListProjectsRequest]) (*connect.Response[v1.ListProjectsResponse], error)
 	// CreateProject adds a project for a directory on the server.
 	CreateProject(context.Context, *connect.Request[v1.CreateProjectRequest]) (*connect.Response[v1.CreateProjectResponse], error)
+	// SetProjectExport includes or excludes a project's sessions from
+	// "flit export". Projects are included by default.
+	SetProjectExport(context.Context, *connect.Request[v1.SetProjectExportRequest]) (*connect.Response[v1.SetProjectExportResponse], error)
 }
 
 // NewProjectServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -118,12 +139,20 @@ func NewProjectServiceHandler(svc ProjectServiceHandler, opts ...connect.Handler
 		connect.WithSchema(projectServiceMethods.ByName("CreateProject")),
 		connect.WithHandlerOptions(opts...),
 	)
+	projectServiceSetProjectExportHandler := connect.NewUnaryHandler(
+		ProjectServiceSetProjectExportProcedure,
+		svc.SetProjectExport,
+		connect.WithSchema(projectServiceMethods.ByName("SetProjectExport")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/flit.v1.ProjectService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ProjectServiceListProjectsProcedure:
 			projectServiceListProjectsHandler.ServeHTTP(w, r)
 		case ProjectServiceCreateProjectProcedure:
 			projectServiceCreateProjectHandler.ServeHTTP(w, r)
+		case ProjectServiceSetProjectExportProcedure:
+			projectServiceSetProjectExportHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -139,4 +168,8 @@ func (UnimplementedProjectServiceHandler) ListProjects(context.Context, *connect
 
 func (UnimplementedProjectServiceHandler) CreateProject(context.Context, *connect.Request[v1.CreateProjectRequest]) (*connect.Response[v1.CreateProjectResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.ProjectService.CreateProject is not implemented"))
+}
+
+func (UnimplementedProjectServiceHandler) SetProjectExport(context.Context, *connect.Request[v1.SetProjectExportRequest]) (*connect.Response[v1.SetProjectExportResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.ProjectService.SetProjectExport is not implemented"))
 }

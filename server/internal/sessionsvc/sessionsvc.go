@@ -307,6 +307,7 @@ func projectProto(p store.Project) *flitv1.Project {
 	return &flitv1.Project{
 		Id: p.ID, TeamId: p.TeamID, Name: p.Name, Directory: p.Directory,
 		SessionCount: int32(p.SessionCount), CreateTime: timestamppb.New(p.CreatedAt),
+		ExportEnabled: p.ExportEnabled,
 	}
 }
 
@@ -333,4 +334,32 @@ func (s *Projects) CreateProject(ctx context.Context, req *connect.Request[flitv
 		return nil, connectErr(err)
 	}
 	return connect.NewResponse(&flitv1.CreateProjectResponse{Project: projectProto(p)}), nil
+}
+
+// SetProjectExport implements flitv1connect.ProjectServiceHandler.
+func (s *Projects) SetProjectExport(ctx context.Context, req *connect.Request[flitv1.SetProjectExportRequest]) (*connect.Response[flitv1.SetProjectExportResponse], error) {
+	if err := required("project_id", req.Msg.ProjectId); err != nil {
+		return nil, err
+	}
+	p, err := s.M.SetProjectExport(ctx, req.Msg.ProjectId, req.Msg.Enabled)
+	if err != nil {
+		return nil, connectErr(err)
+	}
+	return connect.NewResponse(&flitv1.SetProjectExportResponse{Project: projectProto(p)}), nil
+}
+
+// ListSkills implements flitv1connect.SessionServiceHandler.
+func (s *Service) ListSkills(ctx context.Context, req *connect.Request[flitv1.ListSkillsRequest]) (*connect.Response[flitv1.ListSkillsResponse], error) {
+	if err := required("session_id", req.Msg.SessionId); err != nil {
+		return nil, err
+	}
+	list, err := s.M.Skills(ctx, req.Msg.SessionId)
+	if err != nil {
+		return nil, connectErr(err)
+	}
+	res := &flitv1.ListSkillsResponse{}
+	for _, sk := range list {
+		res.Skills = append(res.Skills, &flitv1.Skill{Name: sk.Name, Description: sk.Description, Source: sk.Source})
+	}
+	return connect.NewResponse(res), nil
 }

@@ -27,6 +27,7 @@ class Project extends $pb.GeneratedMessage {
     $core.String? directory,
     $core.int? sessionCount,
     $0.Timestamp? createTime,
+    $core.bool? exportEnabled,
   }) {
     final result = Project._();
     if (id != null) result.id = id;
@@ -35,6 +36,7 @@ class Project extends $pb.GeneratedMessage {
     if (directory != null) result.directory = directory;
     if (sessionCount != null) result.sessionCount = sessionCount;
     if (createTime != null) result.createTime = createTime;
+    if (exportEnabled != null) result.exportEnabled = exportEnabled;
     return result;
   }
 
@@ -58,6 +60,7 @@ class Project extends $pb.GeneratedMessage {
     ..aI(5, _omitFieldNames ? '' : 'sessionCount')
     ..aOM<$0.Timestamp>(6, _omitFieldNames ? '' : 'createTime',
         subBuilder: $0.Timestamp.$_createMessage)
+    ..aOB(7, _omitFieldNames ? '' : 'exportEnabled')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -136,6 +139,16 @@ class Project extends $pb.GeneratedMessage {
   void clearCreateTime() => $_clearField(6);
   @$pb.TagNumber(6)
   $0.Timestamp ensureCreateTime() => $_ensure(5);
+
+  /// Whether "flit export" includes this project's sessions.
+  @$pb.TagNumber(7)
+  $core.bool get exportEnabled => $_getBF(6);
+  @$pb.TagNumber(7)
+  set exportEnabled($core.bool value) => $_setBool(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasExportEnabled() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearExportEnabled() => $_clearField(7);
 }
 
 class ListProjectsRequest extends $pb.GeneratedMessage {
@@ -368,6 +381,140 @@ class CreateProjectResponse extends $pb.GeneratedMessage {
   Project ensureProject() => $_ensure(0);
 }
 
+class SetProjectExportRequest extends $pb.GeneratedMessage {
+  factory SetProjectExportRequest({
+    $core.String? projectId,
+    $core.bool? enabled,
+  }) {
+    final result = SetProjectExportRequest._();
+    if (projectId != null) result.projectId = projectId;
+    if (enabled != null) result.enabled = enabled;
+    return result;
+  }
+
+  SetProjectExportRequest._();
+
+  factory SetProjectExportRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetProjectExportRequest()..mergeFromBuffer(data, registry);
+  factory SetProjectExportRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetProjectExportRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SetProjectExportRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: SetProjectExportRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'projectId')
+    ..aOB(2, _omitFieldNames ? '' : 'enabled')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetProjectExportRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetProjectExportRequest copyWith(
+          void Function(SetProjectExportRequest) updates) =>
+      super.copyWith((message) => updates(message as SetProjectExportRequest))
+          as SetProjectExportRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use SetProjectExportRequest() / SetProjectExportRequest.new instead')
+  static SetProjectExportRequest create() => SetProjectExportRequest._();
+  static $pb.GeneratedMessage $_createMessage() => SetProjectExportRequest._();
+  @$core.override
+  SetProjectExportRequest createEmptyInstance() => SetProjectExportRequest._();
+  @$core.pragma('dart2js:noInline')
+  static SetProjectExportRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SetProjectExportRequest>(
+          SetProjectExportRequest.$_createMessage);
+  static SetProjectExportRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get projectId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set projectId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasProjectId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearProjectId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.bool get enabled => $_getBF(1);
+  @$pb.TagNumber(2)
+  set enabled($core.bool value) => $_setBool(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasEnabled() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearEnabled() => $_clearField(2);
+}
+
+class SetProjectExportResponse extends $pb.GeneratedMessage {
+  factory SetProjectExportResponse({
+    Project? project,
+  }) {
+    final result = SetProjectExportResponse._();
+    if (project != null) result.project = project;
+    return result;
+  }
+
+  SetProjectExportResponse._();
+
+  factory SetProjectExportResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetProjectExportResponse()..mergeFromBuffer(data, registry);
+  factory SetProjectExportResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetProjectExportResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SetProjectExportResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: SetProjectExportResponse.$_createMessage)
+    ..aOM<Project>(1, _omitFieldNames ? '' : 'project',
+        subBuilder: Project.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetProjectExportResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetProjectExportResponse copyWith(
+          void Function(SetProjectExportResponse) updates) =>
+      super.copyWith((message) => updates(message as SetProjectExportResponse))
+          as SetProjectExportResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use SetProjectExportResponse() / SetProjectExportResponse.new instead')
+  static SetProjectExportResponse create() => SetProjectExportResponse._();
+  static $pb.GeneratedMessage $_createMessage() => SetProjectExportResponse._();
+  @$core.override
+  SetProjectExportResponse createEmptyInstance() =>
+      SetProjectExportResponse._();
+  @$core.pragma('dart2js:noInline')
+  static SetProjectExportResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SetProjectExportResponse>(
+          SetProjectExportResponse.$_createMessage);
+  static SetProjectExportResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  Project get project => $_getN(0);
+  @$pb.TagNumber(1)
+  set project(Project value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasProject() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearProject() => $_clearField(1);
+  @$pb.TagNumber(1)
+  Project ensureProject() => $_ensure(0);
+}
+
 /// ProjectService manages projects. A project groups sessions and usually
 /// points at a directory on the server, which new sessions in it work in.
 /// Every team starts with a project called "Scratch" that has no directory.
@@ -386,6 +533,13 @@ class ProjectServiceApi {
           $pb.ClientContext? ctx, CreateProjectRequest request) =>
       _client.invoke<CreateProjectResponse>(ctx, 'ProjectService',
           'CreateProject', request, CreateProjectResponse());
+
+  /// SetProjectExport includes or excludes a project's sessions from
+  /// "flit export". Projects are included by default.
+  $async.Future<SetProjectExportResponse> setProjectExport(
+          $pb.ClientContext? ctx, SetProjectExportRequest request) =>
+      _client.invoke<SetProjectExportResponse>(ctx, 'ProjectService',
+          'SetProjectExport', request, SetProjectExportResponse());
 }
 
 const $core.bool _omitFieldNames =

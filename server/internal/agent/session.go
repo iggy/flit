@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -165,6 +166,7 @@ func (s *session) send(text string) (int64, error) {
 	}
 
 	msgID := newID("msg")
+	turnID := msgID
 	first, err := s.appendLocked(&flitv1.Event{Payload: &flitv1.Event_MessageStarted{
 		MessageStarted: &flitv1.MessageStarted{MessageId: msgID, Role: flitv1.Role_ROLE_USER},
 	}})
@@ -187,7 +189,7 @@ func (s *session) send(text string) (int64, error) {
 	go func() {
 		defer s.m.turns.Done()
 		defer cancel()
-		s.runTurn(ctx)
+		s.runTurn(ctx, turnID)
 	}()
 	return first.Seq, nil
 }
@@ -353,6 +355,7 @@ func (s *session) rate(ctx context.Context, r Rating) error {
 	}
 	info := s.snapshot()
 	fb.Provider, fb.Model = info.Provider, info.Model
+	modelCallID := ""
 	if r.MessageID != "" {
 		evs, err := s.m.store.EventsOfKinds(ctx, info.ID, "message_started")
 		if err != nil {
@@ -373,7 +376,49 @@ func (s *session) rate(ctx context.Context, r Rating) error {
 		if !found {
 			return invalid("no message %s in this session", r.MessageID)
 		}
+		turn, err := s.m.store.ModelCallTurn(ctx, r.MessageID)
+		switch {
+		case err == nil:
+			fb.TurnId, modelCallID = turn, r.MessageID
+		case errors.Is(err, store.ErrNotFound):
+			// Recorded before model calls were kept: find the turn in the log.
+			if fb.TurnId, err = s.turnOf(ctx, r.MessageID); err != nil {
+				return err
+			}
+		default:
+			return err
+		}
 	}
-	_, err := s.append(&flitv1.Event{Payload: &flitv1.Event_Feedback{Feedback: fb}})
-	return err
+	if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_Feedback{Feedback: fb}}); err != nil {
+		return err
+	}
+	target := "turn"
+	if r.Target == flitv1.RatingTarget_RATING_TARGET_MODEL {
+		target = "model"
+	}
+	return s.m.store.AddRating(ctx, &store.Rating{
+		ID: newID("rat"), SessionID: info.ID, TeamID: info.TeamID, ProjectID: info.ProjectID,
+		TurnID: fb.TurnId, ModelCallID: modelCallID, Target: target, Good: r.Good, Note: r.Note,
+		Client: r.Client, Provider: fb.Provider, Model: fb.Model,
+	})
+}
+
+// turnOf finds the user message that started the turn containing
+// messageID.
+func (s *session) turnOf(ctx context.Context, messageID string) (string, error) {
+	evs, err := s.m.store.EventsOfKinds(ctx, s.snapshot().ID, "message_started")
+	if err != nil {
+		return "", err
+	}
+	turn := ""
+	for _, ev := range evs {
+		ms := ev.GetMessageStarted()
+		if ms.Role == flitv1.Role_ROLE_USER {
+			turn = ms.MessageId
+		}
+		if ms.MessageId == messageID {
+			return turn, nil
+		}
+	}
+	return "", nil
 }

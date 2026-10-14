@@ -52,12 +52,12 @@ class _McpSheetState extends ConsumerState<_McpSheet> {
   @override
   Widget build(BuildContext context) {
     final servers = ref.watch(flitMcpServersProvider(widget.sessionId));
+    final skills = ref.watch(flitSkillsProvider(widget.sessionId));
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: ListView(
+          shrinkWrap: true,
           children: <Widget>[
             Text('MCP servers', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 4),
@@ -94,6 +94,42 @@ class _McpSheetState extends ConsumerState<_McpSheet> {
                                   : s.running
                                   ? '${s.toolCount} tools'
                                   : 'not started yet',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                      ],
+                    ),
+            ),
+            const SizedBox(height: 16),
+            Text('Skills', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 4),
+            const Text(
+              "The agent loads a skill's instructions when a task calls for "
+              "it. Repo skills come from .agents/skills or .claude/skills.",
+            ),
+            skills.when(
+              loading: () => const Padding(
+                padding: EdgeInsets.all(16),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (e, _) => Text(
+                'Could not list skills: ${e is GatewayException ? e.message : e}',
+              ),
+              data: (list) => list.isEmpty
+                  ? const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child: Text('No skills found.'),
+                    )
+                  : Column(
+                      children: <Widget>[
+                        for (final s in list)
+                          ListTile(
+                            dense: true,
+                            leading: const Icon(Icons.auto_stories_outlined),
+                            title: Text(s.name),
+                            subtitle: Text(
+                              '${s.source} · ${s.description}',
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),

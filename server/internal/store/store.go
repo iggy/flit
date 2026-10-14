@@ -123,6 +123,53 @@ ALTER TABLE projects ADD COLUMN directory TEXT NOT NULL DEFAULT '';
 ALTER TABLE sessions ADD COLUMN mcp_servers TEXT NOT NULL DEFAULT '';
 CREATE UNIQUE INDEX projects_by_directory ON projects (team_id, directory) WHERE directory != '';
 `,
+	`
+ALTER TABLE projects ADD COLUMN export_enabled INTEGER NOT NULL DEFAULT 1;
+CREATE TABLE blobs (
+	hash TEXT PRIMARY KEY,
+	data BLOB NOT NULL
+) WITHOUT ROWID;
+CREATE TABLE model_calls (
+	id               TEXT PRIMARY KEY,
+	session_id       TEXT NOT NULL REFERENCES sessions(id),
+	team_id          TEXT NOT NULL,
+	project_id       TEXT NOT NULL,
+	turn_id          TEXT NOT NULL,
+	created_at       INTEGER NOT NULL,
+	provider         TEXT NOT NULL,
+	model            TEXT NOT NULL,
+	effort           TEXT NOT NULL,
+	flit_version     TEXT NOT NULL,
+	role             TEXT NOT NULL,
+	skills           TEXT NOT NULL,
+	request_messages TEXT NOT NULL,
+	request_tools    TEXT NOT NULL,
+	request_params   TEXT NOT NULL,
+	response         TEXT NOT NULL,
+	finish_reason    TEXT NOT NULL,
+	usage            TEXT NOT NULL,
+	metrics          TEXT NOT NULL,
+	error            TEXT NOT NULL
+);
+CREATE INDEX model_calls_by_session ON model_calls (session_id, created_at);
+CREATE INDEX model_calls_by_time ON model_calls (created_at);
+CREATE TABLE ratings (
+	id            TEXT PRIMARY KEY,
+	session_id    TEXT NOT NULL REFERENCES sessions(id),
+	team_id       TEXT NOT NULL,
+	project_id    TEXT NOT NULL,
+	turn_id       TEXT NOT NULL,
+	model_call_id TEXT NOT NULL,
+	target        TEXT NOT NULL,
+	good          INTEGER NOT NULL,
+	note          TEXT NOT NULL,
+	client        TEXT NOT NULL,
+	provider      TEXT NOT NULL,
+	model         TEXT NOT NULL,
+	created_at    INTEGER NOT NULL
+);
+CREATE INDEX ratings_by_session ON ratings (session_id, created_at);
+`,
 }
 
 func (s *Store) migrate(ctx context.Context) error {
@@ -279,12 +326,13 @@ func (s *Store) SetMCPServers(ctx context.Context, id string, names []string) er
 
 // Project is a group of sessions, usually for one directory.
 type Project struct {
-	ID           string
-	TeamID       string
-	Name         string
-	Directory    string
-	CreatedAt    time.Time
-	SessionCount int
+	ID            string
+	TeamID        string
+	Name          string
+	Directory     string
+	CreatedAt     time.Time
+	SessionCount  int
+	ExportEnabled bool
 }
 
 // ErrExists is returned when creating something that already exists.
@@ -303,12 +351,12 @@ func (s *Store) CreateProject(ctx context.Context, p *Project) error {
 }
 
 const projectQuery = `SELECT p.id, p.team_id, p.name, p.directory, p.created_at,
-	(SELECT count(*) FROM sessions s WHERE s.project_id = p.id) FROM projects p`
+	(SELECT count(*) FROM sessions s WHERE s.project_id = p.id), p.export_enabled FROM projects p`
 
 func scanProject(row interface{ Scan(...any) error }) (Project, error) {
 	var p Project
 	var created int64
-	err := row.Scan(&p.ID, &p.TeamID, &p.Name, &p.Directory, &created, &p.SessionCount)
+	err := row.Scan(&p.ID, &p.TeamID, &p.Name, &p.Directory, &created, &p.SessionCount, &p.ExportEnabled)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Project{}, ErrNotFound
 	}

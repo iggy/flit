@@ -117,3 +117,15 @@ final flitRolesProvider = FutureProvider<List<FlitAgentRole>>((ref) async {
   }
   return repository.listRoles();
 });
+
+/// The skills a session's agent can load, with where each came from.
+final flitSkillsProvider = FutureProvider.family<List<FlitSkill>, String>((
+  ref,
+  sessionId,
+) async {
+  final repository = ref.watch(flitRepositoryProvider);
+  if (repository == null) {
+    return const <FlitSkill>[];
+  }
+  return repository.listSkills(sessionId);
+});

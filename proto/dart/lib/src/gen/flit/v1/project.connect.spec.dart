@@ -28,4 +28,13 @@ abstract final class ProjectService {
     flitv1project.CreateProjectRequest.new,
     flitv1project.CreateProjectResponse.new,
   );
+
+  /// SetProjectExport includes or excludes a project's sessions from
+  /// "flit export". Projects are included by default.
+  static const setProjectExport = connect.Spec(
+    '/$name/SetProjectExport',
+    connect.StreamType.unary,
+    flitv1project.SetProjectExportRequest.new,
+    flitv1project.SetProjectExportResponse.new,
+  );
 }

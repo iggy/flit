@@ -130,4 +130,14 @@ abstract final class SessionService {
     flitv1session.SetMcpServerRequest.new,
     flitv1session.SetMcpServerResponse.new,
   );
+
+  /// ListSkills lists the skills the session's agent can load: the repo's
+  /// own (.agents/skills, .claude/skills) and the global ones.
+  static const listSkills = connect.Spec(
+    '/$name/ListSkills',
+    connect.StreamType.unary,
+    flitv1session.ListSkillsRequest.new,
+    flitv1session.ListSkillsResponse.new,
+    idempotency: connect.Idempotency.noSideEffects,
+  );
 }

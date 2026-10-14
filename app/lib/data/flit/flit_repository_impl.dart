@@ -296,4 +296,35 @@ final class FlitRepositoryImpl implements FlitRepository {
       return sessionFromProto(res.session);
     });
   }
+
+  @override
+  Future<List<FlitSkill>> listSkills(String sessionId) {
+    return flitCall(() async {
+      final res = await _sessions.listSkills(
+        pb.ListSkillsRequest(sessionId: sessionId),
+      );
+      return res.skills
+          .map(
+            (s) => FlitSkill(
+              name: s.name,
+              description: s.description,
+              source: s.source,
+            ),
+          )
+          .toList();
+    });
+  }
+
+  @override
+  Future<FlitProject> setProjectExport(
+    String projectId, {
+    required bool enabled,
+  }) {
+    return flitCall(() async {
+      final res = await _projects.setProjectExport(
+        pb.SetProjectExportRequest(projectId: projectId, enabled: enabled),
+      );
+      return projectFromProto(res.project);
+    });
+  }
 }

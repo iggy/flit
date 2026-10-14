@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"log/slog"
@@ -846,3 +847,60 @@ func TestToolSetSkillsAppendsAndMCPToggle(t *testing.T) {
 }
 
 func ptrBool(b bool) *bool { return &b }
+
+func TestModelCallsRecordedForCorpus(t *testing.T) {
+	h := newHarness(t)
+	ctx := context.Background()
+	h.llm.Push(
+		llmtest.Response{Chunks: llmtest.ToolCalls([3]string{"c1", "list", `{}`})},
+		llmtest.Response{Chunks: llmtest.Text("listed")},
+	)
+	sess := h.create()
+	w := h.watch(sess.ID, 0)
+	if _, err := h.m.Send(ctx, sess.ID, "list files"); err != nil {
+		t.Fatal(err)
+	}
+	w.waitTurnEnd()
+	var userID string
+	var assistant []string
+	for _, ev := range w.snapshot() {
+		if ms := ev.GetMessageStarted(); ms != nil {
+			if ms.Role == flitv1.Role_ROLE_USER {
+				userID = ms.MessageId
+			} else {
+				assistant = append(assistant, ms.MessageId)
+			}
+		}
+	}
+	if len(assistant) != 2 {
+		t.Fatalf("assistant messages = %v", assistant)
+	}
+
+	// The second call's exact request is stored: system, user, the
+	// assistant tool call and the tool result, plus the tool schemas.
+	msgs, tools, err := h.st.ModelCallRequest(ctx, assistant[1])
+	if err != nil || len(msgs) != 4 || !json.Valid(tools) {
+		t.Fatalf("stored request = %d messages, tools %s, %v", len(msgs), tools, err)
+	}
+	var tool llm.Message
+	json.Unmarshal(msgs[3], &tool)
+	if tool.Role != "tool" || tool.ToolCallID != "c1" {
+		t.Fatalf("stored tool message = %+v", tool)
+	}
+	if turn, err := h.st.ModelCallTurn(ctx, assistant[1]); err != nil || turn != userID {
+		t.Fatalf("turn = %q, %v (user message %s)", turn, err, userID)
+	}
+
+	// A rating names the turn and the call, and lands in the ratings table.
+	if err := h.m.Rate(ctx, sess.ID, Rating{Target: flitv1.RatingTarget_RATING_TARGET_TURN, Good: true, MessageID: assistant[1], Note: "right files"}); err != nil {
+		t.Fatal(err)
+	}
+	fb := w.waitFor("feedback", func(ev *flitv1.Event) bool { return ev.GetFeedback() != nil }).GetFeedback()
+	if fb.TurnId != userID {
+		t.Fatalf("feedback turn = %q, want %q", fb.TurnId, userID)
+	}
+	rs, err := h.st.RatingsFor(ctx, []string{sess.ID})
+	if err != nil || len(rs) != 1 || rs[0].ModelCallID != assistant[1] || rs[0].TurnID != userID || rs[0].Note != "right files" || !rs[0].Good {
+		t.Fatalf("ratings = %+v, %v", rs, err)
+	}
+}

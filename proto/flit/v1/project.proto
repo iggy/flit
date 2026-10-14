@@ -16,6 +16,10 @@ service ProjectService {
 
   // CreateProject adds a project for a directory on the server.
   rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse);
+
+  // SetProjectExport includes or excludes a project's sessions from
+  // "flit export". Projects are included by default.
+  rpc SetProjectExport(SetProjectExportRequest) returns (SetProjectExportResponse);
 }
 
 message Project {
@@ -26,6 +30,8 @@ message Project {
   string directory = 4;
   int32 session_count = 5;
   google.protobuf.Timestamp create_time = 6;
+  // Whether "flit export" includes this project's sessions.
+  bool export_enabled = 7;
 }
 
 message ListProjectsRequest {}
@@ -43,5 +49,14 @@ message CreateProjectRequest {
 }
 
 message CreateProjectResponse {
+  Project project = 1;
+}
+
+message SetProjectExportRequest {
+  string project_id = 1;
+  bool enabled = 2;
+}
+
+message SetProjectExportResponse {
   Project project = 1;
 }
