@@ -11,9 +11,11 @@ import (
 	"io"
 	"log/slog"
 	"net"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -31,6 +33,70 @@ type Config struct {
 	DataDir string `yaml:"data_dir"`
 	TLS     TLS    `yaml:"tls"`
 	Log     Log    `yaml:"log"`
+	// Providers are the OpenAI-compatible endpoints flit can use.
+	Providers []Provider `yaml:"providers"`
+	Agent     Agent      `yaml:"agent"`
+	Shell     Shell      `yaml:"shell"`
+}
+
+// Provider is an OpenAI-compatible chat completions endpoint.
+type Provider struct {
+	// Name identifies the provider in sessions and the API.
+	Name string `yaml:"name"`
+	// BaseURL is the API root, e.g. https://api.openai.com/v1 or
+	// http://localhost:8080/v1 for llama.cpp.
+	BaseURL string `yaml:"base_url"`
+	// APIKey is the key itself; APIKeyEnv names an environment variable
+	// holding it. Set at most one. Neither means no Authorization header.
+	APIKey    string `yaml:"api_key"`
+	APIKeyEnv string `yaml:"api_key_env"`
+}
+
+// Key returns the provider's API key, if any.
+func (p Provider) Key() string {
+	if p.APIKeyEnv != "" {
+		return os.Getenv(p.APIKeyEnv)
+	}
+	return p.APIKey
+}
+
+// Agent configures the agent loop.
+type Agent struct {
+	// Provider and Model are used by sessions that don't pick their own.
+	Provider string `yaml:"provider"`
+	Model    string `yaml:"model"`
+	// MaxSteps caps model calls per turn.
+	MaxSteps int `yaml:"max_steps"`
+	// Tool output longer than this is cut down to its head and tail before
+	// the model sees it.
+	ToolOutputMaxBytes int `yaml:"tool_output_max_bytes"`
+	ToolOutputMaxLines int `yaml:"tool_output_max_lines"`
+}
+
+// Shell configures the shell tool.
+type Shell struct {
+	// Timeout applies when the model doesn't ask for one; MaxTimeout caps
+	// what it may ask for.
+	Timeout    time.Duration `yaml:"timeout"`
+	MaxTimeout time.Duration `yaml:"max_timeout"`
+	// Allow and Deny are command patterns; "*" matches any run of
+	// characters. Deny wins over Allow. A command with shell operators
+	// (; & | < > ` $( and newlines) never matches Allow.
+	Allow []string `yaml:"allow"`
+	Deny  []string `yaml:"deny"`
+	// Default is what happens to commands neither list matches: "ask"
+	// (prompt the user), "allow" or "deny".
+	Default string `yaml:"default"`
+}
+
+// Provider returns the provider named name.
+func (c Config) Provider(name string) (Provider, bool) {
+	for _, p := range c.Providers {
+		if p.Name == name {
+			return p, true
+		}
+	}
+	return Provider{}, false
 }
 
 // TLS enables HTTPS when both files are set. Both empty means plain HTTP.
@@ -58,8 +124,21 @@ func (l Log) SlogLevel() slog.Level {
 // Default returns the config used when the file sets nothing.
 func Default() Config {
 	return Config{
-		Listen: DefaultListen,
-		Log:    Log{Level: "info"},
+		Listen:    DefaultListen,
+		Log:       Log{Level: "info"},
+		Providers: []Provider{},
+		Agent: Agent{
+			MaxSteps:           50,
+			ToolOutputMaxBytes: 32 * 1024,
+			ToolOutputMaxLines: 500,
+		},
+		Shell: Shell{
+			Timeout:    2 * time.Minute,
+			MaxTimeout: 30 * time.Minute,
+			Allow:      []string{"ls*", "pwd", "git status*", "git diff*", "git log*"},
+			Deny:       []string{},
+			Default:    "ask",
+		},
 	}
 }
 
@@ -78,10 +157,34 @@ func Parse(data []byte) (Config, error) {
 	if cfg.Log.Level == "" {
 		cfg.Log.Level = "info"
 	}
+	cfg.fillDefaults()
 	if err := cfg.Validate(); err != nil {
 		return Config{}, err
 	}
 	return cfg, nil
+}
+
+// fillDefaults replaces zero values that YAML may have set explicitly.
+func (c *Config) fillDefaults() {
+	d := Default()
+	if c.Agent.MaxSteps == 0 {
+		c.Agent.MaxSteps = d.Agent.MaxSteps
+	}
+	if c.Agent.ToolOutputMaxBytes == 0 {
+		c.Agent.ToolOutputMaxBytes = d.Agent.ToolOutputMaxBytes
+	}
+	if c.Agent.ToolOutputMaxLines == 0 {
+		c.Agent.ToolOutputMaxLines = d.Agent.ToolOutputMaxLines
+	}
+	if c.Shell.Timeout == 0 {
+		c.Shell.Timeout = d.Shell.Timeout
+	}
+	if c.Shell.MaxTimeout == 0 {
+		c.Shell.MaxTimeout = d.Shell.MaxTimeout
+	}
+	if c.Shell.Default == "" {
+		c.Shell.Default = d.Shell.Default
+	}
 }
 
 // Load reads and parses the config file at path.
@@ -109,6 +212,42 @@ func (c Config) Validate() error {
 	if err := lvl.UnmarshalText([]byte(c.Log.Level)); err != nil {
 		return fmt.Errorf("log.level %q: want debug, info, warn or error", c.Log.Level)
 	}
+	seen := map[string]bool{}
+	for i, p := range c.Providers {
+		if p.Name == "" {
+			return fmt.Errorf("providers[%d]: name is required", i)
+		}
+		if seen[p.Name] {
+			return fmt.Errorf("providers: duplicate name %q", p.Name)
+		}
+		seen[p.Name] = true
+		u, err := url.Parse(p.BaseURL)
+		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			return fmt.Errorf("providers %q: base_url %q must be an http(s) URL", p.Name, p.BaseURL)
+		}
+		if p.APIKey != "" && p.APIKeyEnv != "" {
+			return fmt.Errorf("providers %q: set api_key or api_key_env, not both", p.Name)
+		}
+	}
+	if c.Agent.Provider != "" && !seen[c.Agent.Provider] {
+		return fmt.Errorf("agent.provider %q is not in providers", c.Agent.Provider)
+	}
+	if c.Agent.MaxSteps < 0 || c.Agent.ToolOutputMaxBytes < 0 || c.Agent.ToolOutputMaxLines < 0 {
+		return errors.New("agent: limits must not be negative")
+	}
+	if c.Shell.Timeout < 0 || c.Shell.MaxTimeout < c.Shell.Timeout {
+		return errors.New("shell: need 0 <= timeout <= max_timeout")
+	}
+	switch c.Shell.Default {
+	case "ask", "allow", "deny":
+	default:
+		return fmt.Errorf("shell.default %q: want ask, allow or deny", c.Shell.Default)
+	}
+	for _, pat := range append(append([]string{}, c.Shell.Allow...), c.Shell.Deny...) {
+		if strings.TrimSpace(pat) == "" {
+			return errors.New("shell: empty pattern in allow/deny")
+		}
+	}
 	return nil
 }
 
@@ -134,6 +273,40 @@ tls:
 log:
   # debug, info, warn or error.
   level: info
+
+# OpenAI-compatible endpoints. Several can be configured at once.
+providers: []
+#  - name: local
+#    base_url: http://localhost:8080/v1   # e.g. llama.cpp's llama-server
+#  - name: openai
+#    base_url: https://api.openai.com/v1
+#    api_key_env: OPENAI_API_KEY          # or api_key: sk-...
+
+agent:
+  # Defaults for sessions that don't choose their own.
+  provider: ""
+  model: ""
+  # Maximum model calls in one turn.
+  max_steps: 50
+  # Longer tool output is cut to its head and tail before the model sees it.
+  tool_output_max_bytes: 32768
+  tool_output_max_lines: 500
+
+shell:
+  timeout: 2m
+  max_timeout: 30m
+  # Command patterns; "*" matches anything. deny wins over allow, and a
+  # command using shell operators (; & | < > $( backticks) is never
+  # auto-allowed.
+  allow:
+    - "ls*"
+    - "pwd"
+    - "git status*"
+    - "git diff*"
+    - "git log*"
+  deny: []
+  # For commands matching neither list: ask, allow or deny.
+  default: ask
 `
 
 // EnsureFile writes the default config to path if no file exists there.
