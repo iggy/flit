@@ -67,27 +67,42 @@ final class FlitRepositoryImpl implements FlitRepository {
 
   @override
   Stream<FlitEvent> attach(String sessionId, {required int fromSeq}) {
-    // Cancelling the subscription aborts the HTTP request.
+    // To stop, abort the request rather than cancelling the Connect stream:
+    // its async* generators only notice a cancel at the next event, and an
+    // idle session may never send one. The aborted stream then ends with a
+    // "canceled" error, which is ours to swallow, so the subscription stays
+    // open until that arrives instead of being cancelled.
     final signal = connect.CancelableSignal();
-    StreamSubscription<pb.AttachResponse>? subscription;
+    var stopped = false;
     late final StreamController<FlitEvent> controller;
     controller = StreamController<FlitEvent>(
       onListen: () {
-        subscription = _sessions
+        _sessions
             .attach(
               pb.AttachRequest(sessionId: sessionId, fromSeq: Int64(fromSeq)),
               signal: signal,
             )
             .listen(
-              (res) => controller.add(eventFromProto(res.event)),
-              onError: (Object error, StackTrace stack) =>
-                  controller.addError(flitError(error), stack),
-              onDone: controller.close,
+              (res) {
+                if (!stopped) {
+                  controller.add(eventFromProto(res.event));
+                }
+              },
+              onError: (Object error, StackTrace stack) {
+                if (!stopped) {
+                  controller.addError(flitError(error), stack);
+                }
+              },
+              onDone: () {
+                if (!stopped) {
+                  unawaited(controller.close());
+                }
+              },
             );
       },
-      onCancel: () async {
+      onCancel: () {
+        stopped = true;
         signal.cancel();
-        await subscription?.cancel();
       },
     );
     return controller.stream;
