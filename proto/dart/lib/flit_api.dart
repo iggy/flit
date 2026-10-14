@@ -1,0 +1,7 @@
+/// Generated client for the flit API, package `flit.v1`.
+///
+/// Regenerate with `buf generate` from `proto/`.
+library;
+
+export 'package:flit_api/src/gen/flit/v1/system.connect.client.dart';
+export 'package:flit_api/src/gen/flit/v1/system.pb.dart';

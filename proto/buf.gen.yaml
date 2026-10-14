@@ -1,0 +1,19 @@
+# Code generation for flit's API. Run `buf generate` from proto/.
+#
+# Plugins run remotely on the Buf Schema Registry (no local protoc plugins
+# needed). Plugin versions are pinned to match the runtime libraries:
+#   - Go:   google.golang.org/protobuf and connectrpc.com/connect in server/go.mod
+#   - Dart: protobuf and connectrpc in proto/dart/pubspec.yaml
+version: v2
+clean: true
+plugins:
+  - remote: buf.build/protocolbuffers/go:v1.36.12
+    out: ../server/gen
+    opt: paths=source_relative
+  - remote: buf.build/connectrpc/go:v1.21.0
+    out: ../server/gen
+    opt: paths=source_relative
+  - remote: buf.build/protocolbuffers/dart:v25.1.0
+    out: dart/lib/src/gen
+  - remote: buf.build/connectrpc/dart:v2.0.0
+    out: dart/lib/src/gen

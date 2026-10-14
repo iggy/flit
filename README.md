@@ -1,11 +1,73 @@
 # Flit
 
-A cross-platform (mobile + desktop) client for [Hermes Agent](https://github.com/NousResearch/hermes-agent),
-built in Flutter. It connects to a running Hermes **gateway** and gives you
-chat, tool-calling, model selection, plugins (kanban, etc.), and full parity
-with the existing desktop/TUI experiences.
+An open source coding agent. flit is a **Go server** (`flit serve`) that runs
+the agent, plus a cross-platform **Flutter app** (iOS, Android, macOS,
+Windows, Linux, web) as its main front end.
 
-## What this is
+> **Status:** early. The server skeleton (milestone M0) is in place: one
+> static binary, a versioned protobuf/Connect API, YAML config that reloads
+> live, and token auth. The app is still a client for Hermes Agent (below)
+> until it is switched over to the flit server in M2.
+
+## Repository layout
+
+```
+flit/
+├── README.md                     ← you are here
+├── AGENTS.md / CLAUDE.md         ← build/test commands + architecture rules for agents
+├── server/                       ← Go server; builds the `flit` binary
+├── proto/                        ← API schema (protobuf, package flit.v1) + buf config
+│   └── dart/                     ← generated Dart client package (flit_api) for the app
+├── app/                          ← the Flutter app
+└── docs/
+    ├── roadmap.md                ← phase overview + sequencing
+    ├── reference/                ← the Hermes gateway contract (grounded in source)
+    ├── design/                   ← theming etc.
+    └── phases/                   ← per-phase tickets (P0-… through P9-…)
+```
+
+## Server
+
+Requires Go (see `server/go.mod` for the version). No cgo: binaries are
+static and cross-compile for Linux, macOS and Windows on amd64 and arm64.
+
+```sh
+cd server
+go build -o flit ./cmd/flit
+./flit serve
+```
+
+On first run flit:
+
+- writes a commented default config to `~/.config/flit/config.yaml` (the
+  per-user config dir on macOS/Windows; override with `--config`);
+- creates its data dir (`~/.local/share/flit` on Linux,
+  `~/Library/Application Support/flit` on macOS, `%LocalAppData%\flit` on
+  Windows; override with `data_dir` in the config or `--data-dir`);
+- generates an API token, prints it once, and stores it in the data dir.
+  Print it again with `flit token`.
+
+Every API call needs that token, even from localhost. The API is
+[Connect](https://connectrpc.com) (so plain HTTP/JSON, gRPC and gRPC-Web all
+work), served on `127.0.0.1:7433` by default:
+
+```sh
+curl -H "Authorization: Bearer $(./flit token)" -H "Content-Type: application/json" \
+  -d '{}' http://127.0.0.1:7433/flit.v1.SystemService/Version
+```
+
+Config is YAML only, and edits to the file are applied while flit runs,
+including moving to a new listen address or turning TLS on (`tls.cert_file`
+and `tls.key_file`). The one exception is `data_dir`, which is read at
+startup.
+
+The API schema lives in [`proto/`](proto/); `buf generate` there produces the
+Go server code and the Dart client. See [`AGENTS.md`](AGENTS.md) for the
+full workflow.
+
+## App
+
+### Today: a Hermes gateway client
 
 Hermes already ships four clients: a desktop app (Electron), a web dashboard,
 a terminal UI (Ink/React), and a plain CLI. This project adds a **fifth**: a
@@ -16,7 +78,7 @@ The app is a **gateway client**. It does *not* embed or spawn the Python
 backend the way the Electron desktop app does — it connects to a gateway you
 point it at.
 
-## How it talks to Hermes
+#### How it talks to Hermes
 
 The app speaks the same protocol the desktop app and TUI use: **newline-delimited
 JSON-RPC 2.0 over a WebSocket** at `/api/ws`, dispatched by the gateway's
@@ -27,30 +89,7 @@ The full, source-grounded protocol contract lives in
 [`docs/reference/`](docs/reference/). Every claim there is cited to a
 `file:line` in the `hermes-agent` repo so an implementer can verify it.
 
-## Repository layout
-
-```
-flit/
-├── README.md                     ← you are here
-├── AGENTS.md / CLAUDE.md         ← build/test commands + architecture rules for agents
-├── docs/
-│   ├── roadmap.md                ← phase overview + sequencing
-│   ├── reference/                ← the gateway contract (grounded in source)
-│   │   ├── 00-overview.md
-│   │   ├── 01-gateway-protocol.md
-│   │   ├── 02-rpc-index.md
-│   │   ├── 03-mvp-wire-shapes.md
-│   │   ├── 04-app-architecture.md
-│   │   ├── 05-conventions.md
-│   │   ├── 06-kanban-rest.md
-│   │   └── …(07-10) phase-specific wire shapes & deep links
-│   ├── design/
-│   │   └── theming.md            ← Material 3 now, "match Hermes skin" later
-│   └── phases/                   ← per-phase tickets (P0-… through P9-…)
-└── app/                          ← the Flutter project
-```
-
-## Prerequisites
+### Prerequisites
 
 - **Flutter SDK 3.44.8** (stable channel). The dev machine keeps it at
   `~/flutter`; add `~/flutter/bin` to your `PATH`. See
@@ -72,7 +111,7 @@ flit/
 - **Android**: Android Studio / Android SDK + NDK (NDK is deferred; see roadmap).
 - **Web**: no extra deps beyond Flutter.
 
-## Develop
+### Develop
 
 All commands run from [`app/`](app/):
 
@@ -91,20 +130,20 @@ Builds: `task build-android|build-ios|build-web|build-macos|build-windows|build-
 [`app/README.md`](app/README.md) and [`AGENTS.md`](AGENTS.md) for the full
 command reference, pinned dependencies, and architecture rules.
 
-## Screenshots
+### Screenshots
 
-### Android
+#### Android
 
 <img src="docs/screenshots/android-chat.png" alt="Android chat" width="270" />
 <img src="docs/screenshots/android-sessions.png" alt="Android sessions" width="270" />
 <img src="docs/screenshots/android-menu.png" alt="Android menu" width="270" />
 
-### Linux
+#### Linux
 
 <img src="docs/screenshots/linux-chat.jpg" alt="Linux chat" width="480" />
 <img src="docs/screenshots/linux-sessions.jpg" alt="Linux sessions" width="480" />
 
-## For implementers
+## For implementers (app)
 
 The plan is written so that most tickets can be picked up and completed
 **independently**. Before implementing (or extending) any ticket:
@@ -116,7 +155,10 @@ The plan is written so that most tickets can be picked up and completed
 3. Ground every wire interaction in [`docs/reference/03-mvp-wire-shapes.md`](docs/reference/03-mvp-wire-shapes.md)
    or the relevant reference section. Do not invent RPC method names or fields.
 
-## Release process
+## Release process (app)
 
 Create a tag with a description (`git tag --sign`) and then push (`git push origin --tags`). CI creates the github
 release, etc.
+
+Server binaries are built by the Server workflow on every change but are not
+attached to releases yet.

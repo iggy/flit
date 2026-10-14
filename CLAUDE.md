@@ -1,15 +1,81 @@
 # AGENTS.md
 
-Flutter client ("flit") for the Hermes Agent **gateway**. Cross-platform
-(iOS, Android, macOS, Windows, Linux, web) from one codebase. It is a *thin
+flit is an open source coding agent: a **Go server** (`flit serve`) plus a
+**Flutter app** as its main front end. It is a monorepo:
+
+```
+server/   Go service. One static binary, `flit`. Module github.com/iggy/flit/server.
+proto/    The API schema (protobuf, package flit.v1) + buf config. Source of truth.
+  dart/   Generated Dart client package `flit_api`, for the app.
+app/      Flutter app (iOS, Android, macOS, Windows, Linux, web).
+docs/     Plans, reference docs, phase tickets.
+```
+
+The app is still the Hermes gateway client it started as; switching it over
+to the flit server (via `proto/dart`) is milestone M2. Until then the app
+section below describes it as it is.
+
+## Server (`server/`)
+
+```sh
+cd server
+go build ./...
+go test ./...                     # add -race locally (needs cgo)
+go run ./cmd/flit serve           # first run writes config + token, prints the token
+go run ./cmd/flit token           # print the token again
+```
+
+Release-style build (what CI does; must stay cgo-free):
+
+```sh
+CGO_ENABLED=0 go build -trimpath -o flit ./cmd/flit
+```
+
+Rules:
+- **No cgo, ever.** Binaries are static (`CGO_ENABLED=0`) for linux/darwin/windows
+  on amd64 and arm64. Pick pure-Go deps (e.g. `modernc.org/sqlite`, not
+  `mattn/go-sqlite3`).
+- **Config is YAML only.** No JSON config files anywhere. Config hot-reloads
+  (`internal/config.Watch`); new settings must take effect live, without a
+  restart. Unknown keys are errors.
+- **Every RPC requires the token**, localhost included
+  (`Authorization: Bearer <token>`, enforced by `internal/auth.Interceptor`).
+  Never log the token.
+- State lives in the data dir (SQLite + flat files). Data will carry team and
+  project ids (default team "Personal", default project "Scratch"); don't
+  design anything that assumes a single user or project.
+- Layout: `cmd/flit` (CLI), `internal/config`, `internal/auth`,
+  `internal/server` (HTTP server + rebind), `internal/system`
+  (SystemService), `gen/` (generated, don't edit).
+
+## API (`proto/`)
+
+Schema first: change the `.proto`, then regenerate. Never hand-edit
+`server/gen` or `proto/dart/lib/src/gen`.
+
+```sh
+cd proto
+buf lint
+buf format -w
+buf generate      # Go -> server/gen, Dart -> proto/dart/lib/src/gen
+```
+
+buf generate uses remote plugins on the Buf Schema Registry (network needed).
+Plugin versions in `buf.gen.yaml` are pinned to match the runtime libraries
+in `server/go.mod` and `proto/dart/pubspec.yaml`; bump them together. The API
+is versioned from day one (`flit.v1`); breaking changes go in a new package.
+CI fails if generated code is stale.
+
+## App (`app/`)
+
+Flutter client, currently for the Hermes Agent **gateway**. It is a *thin
 gateway client*: it never spawns the Python backend, it connects to a running
 gateway over WebSocket JSON-RPC (+ some REST) and renders chat, tool calls,
 sessions, models, and plugins.
 
-The Flutter project lives in **`app/`** — run all commands from there. The
-repo root holds only `docs/` and READMEs.
+The Flutter project lives in **`app/`** — run all app commands from there.
 
-## Commands
+### App commands
 
 Flutter is expected at `~/flutter/bin` (add to `PATH`). A `Taskfile.yaml` in
 `app/` wraps everything; raw `flutter` also works.
@@ -29,7 +95,7 @@ flutter run -d linux                                     # task watch (DEVICE=ch
 Builds: `task build-android|build-ios|build-web|build-macos|build-windows|build-linux`.
 Override build mode with `BUILD_MODE=debug task ...` (default `release`).
 
-## Codegen is mandatory
+### Codegen is mandatory
 
 `freezed`, `json_serializable`, and `riverpod_generator` produce the `*.g.dart`
 and `*.freezed.dart` files that sit next to their sources (e.g.
@@ -38,7 +104,7 @@ DTO, freezed union, or annotated provider you **must** re-run
 `dart run build_runner build --delete-conflicting-outputs` or analyze/test will
 fail on missing generated parts. Generated files are excluded from lints.
 
-## Architecture: four layers, dependencies point DOWN only
+### Architecture: four layers, dependencies point DOWN only
 
 ```
 presentation/  Flutter widgets/screens. ConsumerWidgets that watch providers. Never touch a client/DTO.
@@ -54,7 +120,7 @@ Rules that are enforced by convention (see `docs/reference/04-app-architecture.m
 - **DTOs translate; domain models are clean.** Wire quirks are absorbed in
   `data/dto` + repositories via `.toDomain()`. Never expose a DTO above `data/`.
 
-### Data flow
+#### Data flow
 `ConnectionStore` (secure storage) → `ConnectionConfig` → `GatewayRpcClient`
 (WS) / `GatewayRestClient` (HTTP) → repository impls → application providers →
 widgets. Repositories are re-minted on client swap (reconnect) so subscribers
@@ -62,7 +128,7 @@ re-subscribe to the new event stream — see `application/providers.dart` and
 `connection/connection_providers.dart`. Client providers are **nullable**
 (null = disconnected); callers must handle null.
 
-### The event fold — highest-value, most bug-prone code
+#### The event fold — highest-value, most bug-prone code
 `application/chat/message_fold.dart` is a **pure** reducer (no Riverpod, no I/O)
 that folds the turn-event stream (`message.start/delta/complete`,
 `tool.start/complete`, `approval.request`, `clarify.request`, `error`) into a
@@ -70,7 +136,7 @@ that folds the turn-event stream (`message.start/delta/complete`,
 unit-tested. Interactive prompts are NOT chat messages — they render inline and
 are cleared by the notifier, not the fold.
 
-## Protocol: never invent it
+### Protocol: never invent it
 
 The gateway contract is documented and source-grounded in
 **`docs/reference/`** (`01-gateway-protocol.md`, `02-rpc-index.md`,
@@ -91,13 +157,13 @@ Non-obvious protocol facts baked into the code:
   single-use so a fresh URI is minted per reconnect attempt.
 - Close codes 4401 / 4403 are terminal auth failures (no retry).
 
-### Auth
+#### Auth
 Loopback token mode (URL + session token, sent as `X-Hermes-Session-Token`) or
 gated username/password (login → session cookies in the cookie jar → single-use
 WS tickets). **The password is never stored.** Never log tokens, cookie values,
 or full WS URLs — redact the query string.
 
-## Conventions
+### Conventions
 
 - Files `snake_case.dart`; types `UpperCamelCase`; providers end in `Provider`,
   notifiers in `Notifier`. Prefer `final`; models are immutable.
@@ -110,14 +176,14 @@ or full WS URLs — redact the query string.
   (`core/errors/gateway_error.dart`); never let a raw `DioException` or socket
   error leak into a provider.
 
-## Dependencies are pinned exact
+### Dependencies are pinned exact
 
 `pubspec.yaml` uses exact versions and `pubspec.lock` is committed. Bump
 deliberately — do **not** run `pub upgrade`. Note: `custom_lint` /
 `riverpod_lint` are intentionally omitted (no release compatible with the
 pinned riverpod 3.3 / freezed yet).
 
-## Testing
+### Testing
 
 - Mirror `lib/` structure under `test/`. Fixtures (captured wire frames) live in
   `test/fixtures/` (e.g. `turn_basic.jsonl`) — develop against recorded frames,
@@ -128,7 +194,7 @@ pinned riverpod 3.3 / freezed yet).
 - Widget tests exist for chat bubble, tool card, interactive prompts, etc.
 - Don't mark work done with failing/absent tests where the ticket specifies them.
 
-## Workflow context
+### Workflow context
 
 Work is organized as phased tickets in `docs/phases/*` (stable IDs like
 `P1-06`, referenced in commit messages). Each ticket lists Inputs, Deliverables,
