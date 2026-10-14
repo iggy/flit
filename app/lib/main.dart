@@ -3,6 +3,7 @@ import 'package:flit/application/config/window_providers.dart';
 import 'package:flit/application/notifications/notification_providers.dart';
 import 'package:flit/core/platform/desktop_window.dart';
 import 'package:flit/core/router/app_router.dart';
+import 'package:flit/presentation/common/middle_click_paste.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -64,6 +65,9 @@ class _FlitAppState extends ConsumerState<FlitApp> {
       theme: ref.watch(appLightThemeProvider),
       darkTheme: ref.watch(appDarkThemeProvider),
       routerConfig: router,
+      // Linux: middle-click pastes the PRIMARY selection into any field.
+      builder: (context, child) =>
+          MiddleClickPaste(child: child ?? const SizedBox.shrink()),
     );
   }
 }
