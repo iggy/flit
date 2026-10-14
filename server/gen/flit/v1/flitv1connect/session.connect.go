@@ -57,11 +57,26 @@ const (
 	// SessionServiceSetEffortProcedure is the fully-qualified name of the SessionService's SetEffort
 	// RPC.
 	SessionServiceSetEffortProcedure = "/flit.v1.SessionService/SetEffort"
+	// SessionServiceMoveSessionProcedure is the fully-qualified name of the SessionService's
+	// MoveSession RPC.
+	SessionServiceMoveSessionProcedure = "/flit.v1.SessionService/MoveSession"
+	// SessionServiceRateProcedure is the fully-qualified name of the SessionService's Rate RPC.
+	SessionServiceRateProcedure = "/flit.v1.SessionService/Rate"
+	// SessionServiceListMcpServersProcedure is the fully-qualified name of the SessionService's
+	// ListMcpServers RPC.
+	SessionServiceListMcpServersProcedure = "/flit.v1.SessionService/ListMcpServers"
+	// SessionServiceSetMcpServerProcedure is the fully-qualified name of the SessionService's
+	// SetMcpServer RPC.
+	SessionServiceSetMcpServerProcedure = "/flit.v1.SessionService/SetMcpServer"
+	// SessionServiceListSkillsProcedure is the fully-qualified name of the SessionService's ListSkills
+	// RPC.
+	SessionServiceListSkillsProcedure = "/flit.v1.SessionService/ListSkills"
 )
 
 // SessionServiceClient is a client for the flit.v1.SessionService service.
 type SessionServiceClient interface {
-	// CreateSession starts a new, idle session.
+	// CreateSession starts a new, idle session. Give working_dir, or a
+	// project_id whose project has a directory.
 	CreateSession(context.Context, *connect.Request[v1.CreateSessionRequest]) (*connect.Response[v1.CreateSessionResponse], error)
 	// ListSessions lists sessions, most recently updated first.
 	ListSessions(context.Context, *connect.Request[v1.ListSessionsRequest]) (*connect.Response[v1.ListSessionsResponse], error)
@@ -84,6 +99,21 @@ type SessionServiceClient interface {
 	SetModel(context.Context, *connect.Request[v1.SetModelRequest]) (*connect.Response[v1.SetModelResponse], error)
 	// SetEffort changes the reasoning effort used from the next model call.
 	SetEffort(context.Context, *connect.Request[v1.SetEffortRequest]) (*connect.Response[v1.SetEffortResponse], error)
+	// MoveSession moves a session to another project. Its working directory
+	// stays the same.
+	MoveSession(context.Context, *connect.Request[v1.MoveSessionRequest]) (*connect.Response[v1.MoveSessionResponse], error)
+	// Rate records whether a turn's result or the model choice was good or
+	// bad. Ratings are events in the session log.
+	Rate(context.Context, *connect.Request[v1.RateRequest]) (*connect.Response[v1.RateResponse], error)
+	// ListMcpServers lists the configured MCP servers and whether each is
+	// enabled for the session. Only enabled servers' tools reach the model.
+	ListMcpServers(context.Context, *connect.Request[v1.ListMcpServersRequest]) (*connect.Response[v1.ListMcpServersResponse], error)
+	// SetMcpServer enables or disables an MCP server for the session, from
+	// its next model call.
+	SetMcpServer(context.Context, *connect.Request[v1.SetMcpServerRequest]) (*connect.Response[v1.SetMcpServerResponse], error)
+	// ListSkills lists the skills the session's agent can load: the repo's
+	// own (.agents/skills, .claude/skills) and the global ones.
+	ListSkills(context.Context, *connect.Request[v1.ListSkillsRequest]) (*connect.Response[v1.ListSkillsResponse], error)
 }
 
 // NewSessionServiceClient constructs a client for the flit.v1.SessionService service. By default,
@@ -153,20 +183,57 @@ func NewSessionServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(sessionServiceMethods.ByName("SetEffort")),
 			connect.WithClientOptions(opts...),
 		),
+		moveSession: connect.NewClient[v1.MoveSessionRequest, v1.MoveSessionResponse](
+			httpClient,
+			baseURL+SessionServiceMoveSessionProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("MoveSession")),
+			connect.WithClientOptions(opts...),
+		),
+		rate: connect.NewClient[v1.RateRequest, v1.RateResponse](
+			httpClient,
+			baseURL+SessionServiceRateProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("Rate")),
+			connect.WithClientOptions(opts...),
+		),
+		listMcpServers: connect.NewClient[v1.ListMcpServersRequest, v1.ListMcpServersResponse](
+			httpClient,
+			baseURL+SessionServiceListMcpServersProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("ListMcpServers")),
+			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+			connect.WithClientOptions(opts...),
+		),
+		setMcpServer: connect.NewClient[v1.SetMcpServerRequest, v1.SetMcpServerResponse](
+			httpClient,
+			baseURL+SessionServiceSetMcpServerProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("SetMcpServer")),
+			connect.WithClientOptions(opts...),
+		),
+		listSkills: connect.NewClient[v1.ListSkillsRequest, v1.ListSkillsResponse](
+			httpClient,
+			baseURL+SessionServiceListSkillsProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("ListSkills")),
+			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // sessionServiceClient implements SessionServiceClient.
 type sessionServiceClient struct {
-	createSession *connect.Client[v1.CreateSessionRequest, v1.CreateSessionResponse]
-	listSessions  *connect.Client[v1.ListSessionsRequest, v1.ListSessionsResponse]
-	getSession    *connect.Client[v1.GetSessionRequest, v1.GetSessionResponse]
-	attach        *connect.Client[v1.AttachRequest, v1.AttachResponse]
-	send          *connect.Client[v1.SendRequest, v1.SendResponse]
-	interrupt     *connect.Client[v1.InterruptRequest, v1.InterruptResponse]
-	answerPrompt  *connect.Client[v1.AnswerPromptRequest, v1.AnswerPromptResponse]
-	setModel      *connect.Client[v1.SetModelRequest, v1.SetModelResponse]
-	setEffort     *connect.Client[v1.SetEffortRequest, v1.SetEffortResponse]
+	createSession  *connect.Client[v1.CreateSessionRequest, v1.CreateSessionResponse]
+	listSessions   *connect.Client[v1.ListSessionsRequest, v1.ListSessionsResponse]
+	getSession     *connect.Client[v1.GetSessionRequest, v1.GetSessionResponse]
+	attach         *connect.Client[v1.AttachRequest, v1.AttachResponse]
+	send           *connect.Client[v1.SendRequest, v1.SendResponse]
+	interrupt      *connect.Client[v1.InterruptRequest, v1.InterruptResponse]
+	answerPrompt   *connect.Client[v1.AnswerPromptRequest, v1.AnswerPromptResponse]
+	setModel       *connect.Client[v1.SetModelRequest, v1.SetModelResponse]
+	setEffort      *connect.Client[v1.SetEffortRequest, v1.SetEffortResponse]
+	moveSession    *connect.Client[v1.MoveSessionRequest, v1.MoveSessionResponse]
+	rate           *connect.Client[v1.RateRequest, v1.RateResponse]
+	listMcpServers *connect.Client[v1.ListMcpServersRequest, v1.ListMcpServersResponse]
+	setMcpServer   *connect.Client[v1.SetMcpServerRequest, v1.SetMcpServerResponse]
+	listSkills     *connect.Client[v1.ListSkillsRequest, v1.ListSkillsResponse]
 }
 
 // CreateSession calls flit.v1.SessionService.CreateSession.
@@ -214,9 +281,35 @@ func (c *sessionServiceClient) SetEffort(ctx context.Context, req *connect.Reque
 	return c.setEffort.CallUnary(ctx, req)
 }
 
+// MoveSession calls flit.v1.SessionService.MoveSession.
+func (c *sessionServiceClient) MoveSession(ctx context.Context, req *connect.Request[v1.MoveSessionRequest]) (*connect.Response[v1.MoveSessionResponse], error) {
+	return c.moveSession.CallUnary(ctx, req)
+}
+
+// Rate calls flit.v1.SessionService.Rate.
+func (c *sessionServiceClient) Rate(ctx context.Context, req *connect.Request[v1.RateRequest]) (*connect.Response[v1.RateResponse], error) {
+	return c.rate.CallUnary(ctx, req)
+}
+
+// ListMcpServers calls flit.v1.SessionService.ListMcpServers.
+func (c *sessionServiceClient) ListMcpServers(ctx context.Context, req *connect.Request[v1.ListMcpServersRequest]) (*connect.Response[v1.ListMcpServersResponse], error) {
+	return c.listMcpServers.CallUnary(ctx, req)
+}
+
+// SetMcpServer calls flit.v1.SessionService.SetMcpServer.
+func (c *sessionServiceClient) SetMcpServer(ctx context.Context, req *connect.Request[v1.SetMcpServerRequest]) (*connect.Response[v1.SetMcpServerResponse], error) {
+	return c.setMcpServer.CallUnary(ctx, req)
+}
+
+// ListSkills calls flit.v1.SessionService.ListSkills.
+func (c *sessionServiceClient) ListSkills(ctx context.Context, req *connect.Request[v1.ListSkillsRequest]) (*connect.Response[v1.ListSkillsResponse], error) {
+	return c.listSkills.CallUnary(ctx, req)
+}
+
 // SessionServiceHandler is an implementation of the flit.v1.SessionService service.
 type SessionServiceHandler interface {
-	// CreateSession starts a new, idle session.
+	// CreateSession starts a new, idle session. Give working_dir, or a
+	// project_id whose project has a directory.
 	CreateSession(context.Context, *connect.Request[v1.CreateSessionRequest]) (*connect.Response[v1.CreateSessionResponse], error)
 	// ListSessions lists sessions, most recently updated first.
 	ListSessions(context.Context, *connect.Request[v1.ListSessionsRequest]) (*connect.Response[v1.ListSessionsResponse], error)
@@ -239,6 +332,21 @@ type SessionServiceHandler interface {
 	SetModel(context.Context, *connect.Request[v1.SetModelRequest]) (*connect.Response[v1.SetModelResponse], error)
 	// SetEffort changes the reasoning effort used from the next model call.
 	SetEffort(context.Context, *connect.Request[v1.SetEffortRequest]) (*connect.Response[v1.SetEffortResponse], error)
+	// MoveSession moves a session to another project. Its working directory
+	// stays the same.
+	MoveSession(context.Context, *connect.Request[v1.MoveSessionRequest]) (*connect.Response[v1.MoveSessionResponse], error)
+	// Rate records whether a turn's result or the model choice was good or
+	// bad. Ratings are events in the session log.
+	Rate(context.Context, *connect.Request[v1.RateRequest]) (*connect.Response[v1.RateResponse], error)
+	// ListMcpServers lists the configured MCP servers and whether each is
+	// enabled for the session. Only enabled servers' tools reach the model.
+	ListMcpServers(context.Context, *connect.Request[v1.ListMcpServersRequest]) (*connect.Response[v1.ListMcpServersResponse], error)
+	// SetMcpServer enables or disables an MCP server for the session, from
+	// its next model call.
+	SetMcpServer(context.Context, *connect.Request[v1.SetMcpServerRequest]) (*connect.Response[v1.SetMcpServerResponse], error)
+	// ListSkills lists the skills the session's agent can load: the repo's
+	// own (.agents/skills, .claude/skills) and the global ones.
+	ListSkills(context.Context, *connect.Request[v1.ListSkillsRequest]) (*connect.Response[v1.ListSkillsResponse], error)
 }
 
 // NewSessionServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -304,6 +412,38 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 		connect.WithSchema(sessionServiceMethods.ByName("SetEffort")),
 		connect.WithHandlerOptions(opts...),
 	)
+	sessionServiceMoveSessionHandler := connect.NewUnaryHandler(
+		SessionServiceMoveSessionProcedure,
+		svc.MoveSession,
+		connect.WithSchema(sessionServiceMethods.ByName("MoveSession")),
+		connect.WithHandlerOptions(opts...),
+	)
+	sessionServiceRateHandler := connect.NewUnaryHandler(
+		SessionServiceRateProcedure,
+		svc.Rate,
+		connect.WithSchema(sessionServiceMethods.ByName("Rate")),
+		connect.WithHandlerOptions(opts...),
+	)
+	sessionServiceListMcpServersHandler := connect.NewUnaryHandler(
+		SessionServiceListMcpServersProcedure,
+		svc.ListMcpServers,
+		connect.WithSchema(sessionServiceMethods.ByName("ListMcpServers")),
+		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+		connect.WithHandlerOptions(opts...),
+	)
+	sessionServiceSetMcpServerHandler := connect.NewUnaryHandler(
+		SessionServiceSetMcpServerProcedure,
+		svc.SetMcpServer,
+		connect.WithSchema(sessionServiceMethods.ByName("SetMcpServer")),
+		connect.WithHandlerOptions(opts...),
+	)
+	sessionServiceListSkillsHandler := connect.NewUnaryHandler(
+		SessionServiceListSkillsProcedure,
+		svc.ListSkills,
+		connect.WithSchema(sessionServiceMethods.ByName("ListSkills")),
+		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/flit.v1.SessionService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case SessionServiceCreateSessionProcedure:
@@ -324,6 +464,16 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 			sessionServiceSetModelHandler.ServeHTTP(w, r)
 		case SessionServiceSetEffortProcedure:
 			sessionServiceSetEffortHandler.ServeHTTP(w, r)
+		case SessionServiceMoveSessionProcedure:
+			sessionServiceMoveSessionHandler.ServeHTTP(w, r)
+		case SessionServiceRateProcedure:
+			sessionServiceRateHandler.ServeHTTP(w, r)
+		case SessionServiceListMcpServersProcedure:
+			sessionServiceListMcpServersHandler.ServeHTTP(w, r)
+		case SessionServiceSetMcpServerProcedure:
+			sessionServiceSetMcpServerHandler.ServeHTTP(w, r)
+		case SessionServiceListSkillsProcedure:
+			sessionServiceListSkillsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -367,4 +517,24 @@ func (UnimplementedSessionServiceHandler) SetModel(context.Context, *connect.Req
 
 func (UnimplementedSessionServiceHandler) SetEffort(context.Context, *connect.Request[v1.SetEffortRequest]) (*connect.Response[v1.SetEffortResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.SetEffort is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) MoveSession(context.Context, *connect.Request[v1.MoveSessionRequest]) (*connect.Response[v1.MoveSessionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.MoveSession is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) Rate(context.Context, *connect.Request[v1.RateRequest]) (*connect.Response[v1.RateResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.Rate is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) ListMcpServers(context.Context, *connect.Request[v1.ListMcpServersRequest]) (*connect.Response[v1.ListMcpServersResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.ListMcpServers is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) SetMcpServer(context.Context, *connect.Request[v1.SetMcpServerRequest]) (*connect.Response[v1.SetMcpServerResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.SetMcpServer is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) ListSkills(context.Context, *connect.Request[v1.ListSkillsRequest]) (*connect.Response[v1.ListSkillsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.ListSkills is not implemented"))
 }

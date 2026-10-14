@@ -14,23 +14,29 @@ final class FlitRepositoryImpl implements FlitRepository {
   FlitRepositoryImpl(connect.Transport transport)
     : _sessions = pb.SessionServiceClient(transport),
       _models = pb.ModelServiceClient(transport),
-      _roles = pb.RoleServiceClient(transport);
+      _roles = pb.RoleServiceClient(transport),
+      _projects = pb.ProjectServiceClient(transport);
 
   final pb.SessionServiceClient _sessions;
   final pb.ModelServiceClient _models;
   final pb.RoleServiceClient _roles;
+  final pb.ProjectServiceClient _projects;
 
   /// Page size for [listSessions]; it fetches every page.
   static const int _pageSize = 200;
 
   @override
-  Future<List<FlitSession>> listSessions() {
+  Future<List<FlitSession>> listSessions({String? projectId}) {
     return flitCall(() async {
       final out = <FlitSession>[];
       var token = '';
       do {
         final res = await _sessions.listSessions(
-          pb.ListSessionsRequest(pageSize: _pageSize, pageToken: token),
+          pb.ListSessionsRequest(
+            pageSize: _pageSize,
+            pageToken: token,
+            projectId: projectId ?? '',
+          ),
         );
         out.addAll(res.sessions.map(sessionFromProto));
         token = res.nextPageToken;
@@ -47,6 +53,7 @@ final class FlitRepositoryImpl implements FlitRepository {
     String model = '',
     String effort = '',
     String role = '',
+    String projectId = '',
   }) {
     return flitCall(() async {
       final res = await _sessions.createSession(
@@ -57,6 +64,7 @@ final class FlitRepositoryImpl implements FlitRepository {
           model: model,
           effort: effort,
           role: role,
+          projectId: projectId,
         ),
       );
       return sessionFromProto(res.session);
@@ -204,6 +212,119 @@ final class FlitRepositoryImpl implements FlitRepository {
     return flitCall(() async {
       final res = await _roles.listRoles(pb.ListRolesRequest());
       return res.roles.map(roleFromProto).toList();
+    });
+  }
+
+  @override
+  Future<List<FlitProject>> listProjects() {
+    return flitCall(() async {
+      final res = await _projects.listProjects(pb.ListProjectsRequest());
+      return res.projects.map(projectFromProto).toList();
+    });
+  }
+
+  @override
+  Future<FlitProject> createProject({
+    required String directory,
+    String name = '',
+  }) {
+    return flitCall(() async {
+      final res = await _projects.createProject(
+        pb.CreateProjectRequest(directory: directory, name: name),
+      );
+      return projectFromProto(res.project);
+    });
+  }
+
+  @override
+  Future<FlitSession> moveSession(String sessionId, String projectId) {
+    return flitCall(() async {
+      final res = await _sessions.moveSession(
+        pb.MoveSessionRequest(sessionId: sessionId, projectId: projectId),
+      );
+      return sessionFromProto(res.session);
+    });
+  }
+
+  @override
+  Future<void> rate(
+    String sessionId, {
+    required FlitRatingTarget target,
+    required bool good,
+    String messageId = '',
+    String note = '',
+  }) {
+    return flitCall(
+      () => _sessions.rate(
+        pb.RateRequest(
+          sessionId: sessionId,
+          target: target == FlitRatingTarget.model
+              ? pb.RatingTarget.RATING_TARGET_MODEL
+              : pb.RatingTarget.RATING_TARGET_TURN,
+          rating: good ? pb.Rating.RATING_GOOD : pb.Rating.RATING_BAD,
+          messageId: messageId,
+          note: note,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Future<List<FlitMcpServer>> listMcpServers(String sessionId) {
+    return flitCall(() async {
+      final res = await _sessions.listMcpServers(
+        pb.ListMcpServersRequest(sessionId: sessionId),
+      );
+      return res.servers.map(mcpServerFromProto).toList();
+    });
+  }
+
+  @override
+  Future<FlitSession> setMcpServer(
+    String sessionId,
+    String server, {
+    required bool enabled,
+  }) {
+    return flitCall(() async {
+      final res = await _sessions.setMcpServer(
+        pb.SetMcpServerRequest(
+          sessionId: sessionId,
+          server: server,
+          enabled: enabled,
+        ),
+      );
+      return sessionFromProto(res.session);
+    });
+  }
+
+  @override
+  Future<List<FlitSkill>> listSkills(String sessionId) {
+    return flitCall(() async {
+      final res = await _sessions.listSkills(
+        pb.ListSkillsRequest(sessionId: sessionId),
+      );
+      return res.skills
+          .map(
+            (s) => FlitSkill(
+              name: s.name,
+              description: s.description,
+              source: s.source,
+            ),
+          )
+          .toList();
+    });
+  }
+
+  @override
+  Future<FlitProject> setProjectExport(
+    String projectId, {
+    required bool enabled,
+  }) {
+    return flitCall(() async {
+      final res = await _projects.setProjectExport(
+        pb.SetProjectExportRequest(projectId: projectId, enabled: enabled),
+      );
+      return projectFromProto(res.project);
     });
   }
 }

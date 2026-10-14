@@ -9,6 +9,7 @@ import 'package:flit/application/flit/flit_fold.dart';
 import 'package:flit/application/flit/flit_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/domain/models/flit_event.dart';
+import 'package:flit/domain/models/flit_session.dart';
 import 'package:flit/domain/repositories/flit_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -166,6 +167,25 @@ class FlitChatNotifier extends Notifier<FlitChatState> {
     final client = ref.read(flitDeviceNameProvider);
     return _run(
       (r) => r.answerPrompt(sessionId, promptId, allow: allow, client: client),
+    );
+  }
+
+  /// Marks the turn that produced [messageId] as good or bad.
+  Future<String?> rateTurn(String messageId, {required bool good}) {
+    return _run(
+      (r) => r.rate(
+        sessionId,
+        target: FlitRatingTarget.turn,
+        good: good,
+        messageId: messageId,
+      ),
+    );
+  }
+
+  /// Marks the session's current model as a good or bad choice.
+  Future<String?> rateModel({required bool good}) {
+    return _run(
+      (r) => r.rate(sessionId, target: FlitRatingTarget.model, good: good),
     );
   }
 

@@ -23,11 +23,17 @@ final class FlitMessageStarted extends FlitEvent {
     required super.seq,
     required this.messageId,
     required this.role,
+    this.provider = '',
+    this.model = '',
     super.time,
   });
 
   final String messageId;
   final FlitRole role;
+
+  /// For assistant messages, the model writing it.
+  final String provider;
+  final String model;
 }
 
 final class FlitTextDelta extends FlitEvent {
@@ -264,4 +270,49 @@ final class FlitTurnError extends FlitEvent {
 /// An event kind this app version doesn't know. Still advances the seq.
 final class FlitUnknownEvent extends FlitEvent {
   const FlitUnknownEvent({required super.seq, super.time});
+}
+
+/// Someone rated a turn or a model.
+final class FlitFeedback extends FlitEvent {
+  const FlitFeedback({
+    required super.seq,
+    required this.target,
+    required this.good,
+    this.messageId = '',
+    this.provider = '',
+    this.model = '',
+    this.client = '',
+    this.note = '',
+    super.time,
+  });
+
+  final FlitRatingTarget target;
+  final bool good;
+  final String messageId;
+  final String provider;
+  final String model;
+  final String client;
+  final String note;
+}
+
+/// The MCP servers enabled for the session changed.
+final class FlitMcpServersChanged extends FlitEvent {
+  const FlitMcpServersChanged({
+    required super.seq,
+    required this.enabled,
+    super.time,
+  });
+
+  final List<String> enabled;
+}
+
+/// The session moved to another project.
+final class FlitSessionMoved extends FlitEvent {
+  const FlitSessionMoved({
+    required super.seq,
+    required this.projectId,
+    super.time,
+  });
+
+  final String projectId;
 }

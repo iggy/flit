@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package flit.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/iggy/flit/server/gen/flit/v1;flitv1";
+
+// ProjectService manages projects. A project groups sessions and usually
+// points at a directory on the server, which new sessions in it work in.
+// Every team starts with a project called "Scratch" that has no directory.
+service ProjectService {
+  rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+
+  // CreateProject adds a project for a directory on the server.
+  rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse);
+
+  // SetProjectExport includes or excludes a project's sessions from
+  // "flit export". Projects are included by default.
+  rpc SetProjectExport(SetProjectExportRequest) returns (SetProjectExportResponse);
+}
+
+message Project {
+  string id = 1;
+  string team_id = 2;
+  string name = 3;
+  // Absolute directory on the server; empty for Scratch.
+  string directory = 4;
+  int32 session_count = 5;
+  google.protobuf.Timestamp create_time = 6;
+  // Whether "flit export" includes this project's sessions.
+  bool export_enabled = 7;
+}
+
+message ListProjectsRequest {}
+
+message ListProjectsResponse {
+  // Scratch first, then by name.
+  repeated Project projects = 1;
+}
+
+message CreateProjectRequest {
+  // Directory on the server; must exist. Required.
+  string directory = 1;
+  // Empty means the directory's base name.
+  string name = 2;
+}
+
+message CreateProjectResponse {
+  Project project = 1;
+}
+
+message SetProjectExportRequest {
+  string project_id = 1;
+  bool enabled = 2;
+}
+
+message SetProjectExportResponse {
+  Project project = 1;
+}

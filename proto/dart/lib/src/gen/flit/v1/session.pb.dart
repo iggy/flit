@@ -41,6 +41,7 @@ class Session extends $pb.GeneratedMessage {
     $core.String? role,
     $fixnum.Int64? contextTokens,
     $fixnum.Int64? contextLength,
+    $core.Iterable<$core.String>? mcpServers,
   }) {
     final result = Session._();
     if (id != null) result.id = id;
@@ -58,6 +59,7 @@ class Session extends $pb.GeneratedMessage {
     if (role != null) result.role = role;
     if (contextTokens != null) result.contextTokens = contextTokens;
     if (contextLength != null) result.contextLength = contextLength;
+    if (mcpServers != null) result.mcpServers.addAll(mcpServers);
     return result;
   }
 
@@ -92,6 +94,7 @@ class Session extends $pb.GeneratedMessage {
     ..aOS(13, _omitFieldNames ? '' : 'role')
     ..aInt64(14, _omitFieldNames ? '' : 'contextTokens')
     ..aInt64(15, _omitFieldNames ? '' : 'contextLength')
+    ..pPS(16, _omitFieldNames ? '' : 'mcpServers')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -260,6 +263,10 @@ class Session extends $pb.GeneratedMessage {
   $core.bool hasContextLength() => $_has(14);
   @$pb.TagNumber(15)
   void clearContextLength() => $_clearField(15);
+
+  /// MCP servers enabled for the session.
+  @$pb.TagNumber(16)
+  $pb.PbList<$core.String> get mcpServers => $_getList(15);
 }
 
 class CreateSessionRequest extends $pb.GeneratedMessage {
@@ -270,6 +277,7 @@ class CreateSessionRequest extends $pb.GeneratedMessage {
     $core.String? model,
     $core.String? role,
     $core.String? effort,
+    $core.String? projectId,
   }) {
     final result = CreateSessionRequest._();
     if (workingDir != null) result.workingDir = workingDir;
@@ -278,6 +286,7 @@ class CreateSessionRequest extends $pb.GeneratedMessage {
     if (model != null) result.model = model;
     if (role != null) result.role = role;
     if (effort != null) result.effort = effort;
+    if (projectId != null) result.projectId = projectId;
     return result;
   }
 
@@ -300,6 +309,7 @@ class CreateSessionRequest extends $pb.GeneratedMessage {
     ..aOS(4, _omitFieldNames ? '' : 'model')
     ..aOS(5, _omitFieldNames ? '' : 'role')
     ..aOS(6, _omitFieldNames ? '' : 'effort')
+    ..aOS(7, _omitFieldNames ? '' : 'projectId')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -383,6 +393,17 @@ class CreateSessionRequest extends $pb.GeneratedMessage {
   $core.bool hasEffort() => $_has(5);
   @$pb.TagNumber(6)
   void clearEffort() => $_clearField(6);
+
+  /// Project to create the session in; empty means Scratch. If
+  /// working_dir is empty, the project's directory is used.
+  @$pb.TagNumber(7)
+  $core.String get projectId => $_getSZ(6);
+  @$pb.TagNumber(7)
+  set projectId($core.String value) => $_setString(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasProjectId() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearProjectId() => $_clearField(7);
 }
 
 class CreateSessionResponse extends $pb.GeneratedMessage {
@@ -451,10 +472,12 @@ class ListSessionsRequest extends $pb.GeneratedMessage {
   factory ListSessionsRequest({
     $core.int? pageSize,
     $core.String? pageToken,
+    $core.String? projectId,
   }) {
     final result = ListSessionsRequest._();
     if (pageSize != null) result.pageSize = pageSize;
     if (pageToken != null) result.pageToken = pageToken;
+    if (projectId != null) result.projectId = projectId;
     return result;
   }
 
@@ -473,6 +496,7 @@ class ListSessionsRequest extends $pb.GeneratedMessage {
       createEmptyInstance: ListSessionsRequest.$_createMessage)
     ..aI(1, _omitFieldNames ? '' : 'pageSize')
     ..aOS(2, _omitFieldNames ? '' : 'pageToken')
+    ..aOS(3, _omitFieldNames ? '' : 'projectId')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -517,6 +541,16 @@ class ListSessionsRequest extends $pb.GeneratedMessage {
   $core.bool hasPageToken() => $_has(1);
   @$pb.TagNumber(2)
   void clearPageToken() => $_clearField(2);
+
+  /// Only sessions in this project; empty means all.
+  @$pb.TagNumber(3)
+  $core.String get projectId => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set projectId($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasProjectId() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearProjectId() => $_clearField(3);
 }
 
 class ListSessionsResponse extends $pb.GeneratedMessage {
@@ -1355,6 +1389,837 @@ class SetModelResponse extends $pb.GeneratedMessage {
   Session ensureSession() => $_ensure(0);
 }
 
+class MoveSessionRequest extends $pb.GeneratedMessage {
+  factory MoveSessionRequest({
+    $core.String? sessionId,
+    $core.String? projectId,
+  }) {
+    final result = MoveSessionRequest._();
+    if (sessionId != null) result.sessionId = sessionId;
+    if (projectId != null) result.projectId = projectId;
+    return result;
+  }
+
+  MoveSessionRequest._();
+
+  factory MoveSessionRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      MoveSessionRequest()..mergeFromBuffer(data, registry);
+  factory MoveSessionRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      MoveSessionRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'MoveSessionRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: MoveSessionRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'sessionId')
+    ..aOS(2, _omitFieldNames ? '' : 'projectId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  MoveSessionRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  MoveSessionRequest copyWith(void Function(MoveSessionRequest) updates) =>
+      super.copyWith((message) => updates(message as MoveSessionRequest))
+          as MoveSessionRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use MoveSessionRequest() / MoveSessionRequest.new instead')
+  static MoveSessionRequest create() => MoveSessionRequest._();
+  static $pb.GeneratedMessage $_createMessage() => MoveSessionRequest._();
+  @$core.override
+  MoveSessionRequest createEmptyInstance() => MoveSessionRequest._();
+  @$core.pragma('dart2js:noInline')
+  static MoveSessionRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<MoveSessionRequest>(
+          MoveSessionRequest.$_createMessage);
+  static MoveSessionRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get sessionId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set sessionId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSessionId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSessionId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get projectId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set projectId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasProjectId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearProjectId() => $_clearField(2);
+}
+
+class MoveSessionResponse extends $pb.GeneratedMessage {
+  factory MoveSessionResponse({
+    Session? session,
+  }) {
+    final result = MoveSessionResponse._();
+    if (session != null) result.session = session;
+    return result;
+  }
+
+  MoveSessionResponse._();
+
+  factory MoveSessionResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      MoveSessionResponse()..mergeFromBuffer(data, registry);
+  factory MoveSessionResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      MoveSessionResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'MoveSessionResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: MoveSessionResponse.$_createMessage)
+    ..aOM<Session>(1, _omitFieldNames ? '' : 'session',
+        subBuilder: Session.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  MoveSessionResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  MoveSessionResponse copyWith(void Function(MoveSessionResponse) updates) =>
+      super.copyWith((message) => updates(message as MoveSessionResponse))
+          as MoveSessionResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core
+      .Deprecated('Use MoveSessionResponse() / MoveSessionResponse.new instead')
+  static MoveSessionResponse create() => MoveSessionResponse._();
+  static $pb.GeneratedMessage $_createMessage() => MoveSessionResponse._();
+  @$core.override
+  MoveSessionResponse createEmptyInstance() => MoveSessionResponse._();
+  @$core.pragma('dart2js:noInline')
+  static MoveSessionResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<MoveSessionResponse>(
+          MoveSessionResponse.$_createMessage);
+  static MoveSessionResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  Session get session => $_getN(0);
+  @$pb.TagNumber(1)
+  set session(Session value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSession() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSession() => $_clearField(1);
+  @$pb.TagNumber(1)
+  Session ensureSession() => $_ensure(0);
+}
+
+class RateRequest extends $pb.GeneratedMessage {
+  factory RateRequest({
+    $core.String? sessionId,
+    RatingTarget? target,
+    Rating? rating,
+    $core.String? messageId,
+    $core.String? note,
+  }) {
+    final result = RateRequest._();
+    if (sessionId != null) result.sessionId = sessionId;
+    if (target != null) result.target = target;
+    if (rating != null) result.rating = rating;
+    if (messageId != null) result.messageId = messageId;
+    if (note != null) result.note = note;
+    return result;
+  }
+
+  RateRequest._();
+
+  factory RateRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RateRequest()..mergeFromBuffer(data, registry);
+  factory RateRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RateRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RateRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: RateRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'sessionId')
+    ..aE<RatingTarget>(2, _omitFieldNames ? '' : 'target',
+        enumValues: RatingTarget.values)
+    ..aE<Rating>(3, _omitFieldNames ? '' : 'rating', enumValues: Rating.values)
+    ..aOS(4, _omitFieldNames ? '' : 'messageId')
+    ..aOS(5, _omitFieldNames ? '' : 'note')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RateRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RateRequest copyWith(void Function(RateRequest) updates) =>
+      super.copyWith((message) => updates(message as RateRequest))
+          as RateRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use RateRequest() / RateRequest.new instead')
+  static RateRequest create() => RateRequest._();
+  static $pb.GeneratedMessage $_createMessage() => RateRequest._();
+  @$core.override
+  RateRequest createEmptyInstance() => RateRequest._();
+  @$core.pragma('dart2js:noInline')
+  static RateRequest getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<RateRequest>(
+          RateRequest.$_createMessage);
+  static RateRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get sessionId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set sessionId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSessionId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSessionId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  RatingTarget get target => $_getN(1);
+  @$pb.TagNumber(2)
+  set target(RatingTarget value) => $_setField(2, value);
+  @$pb.TagNumber(2)
+  $core.bool hasTarget() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearTarget() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  Rating get rating => $_getN(2);
+  @$pb.TagNumber(3)
+  set rating(Rating value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasRating() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearRating() => $_clearField(3);
+
+  /// The assistant message rated; empty rates the model in general.
+  @$pb.TagNumber(4)
+  $core.String get messageId => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set messageId($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasMessageId() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearMessageId() => $_clearField(4);
+
+  /// Optional free-text reason.
+  @$pb.TagNumber(5)
+  $core.String get note => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set note($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasNote() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearNote() => $_clearField(5);
+}
+
+class RateResponse extends $pb.GeneratedMessage {
+  factory RateResponse() => RateResponse._();
+
+  RateResponse._();
+
+  factory RateResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RateResponse()..mergeFromBuffer(data, registry);
+  factory RateResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RateResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RateResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: RateResponse.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RateResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RateResponse copyWith(void Function(RateResponse) updates) =>
+      super.copyWith((message) => updates(message as RateResponse))
+          as RateResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use RateResponse() / RateResponse.new instead')
+  static RateResponse create() => RateResponse._();
+  static $pb.GeneratedMessage $_createMessage() => RateResponse._();
+  @$core.override
+  RateResponse createEmptyInstance() => RateResponse._();
+  @$core.pragma('dart2js:noInline')
+  static RateResponse getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<RateResponse>(
+          RateResponse.$_createMessage);
+  static RateResponse? _defaultInstance;
+}
+
+class McpServer extends $pb.GeneratedMessage {
+  factory McpServer({
+    $core.String? name,
+    $core.bool? enabled,
+    $core.bool? running,
+    $core.int? toolCount,
+    $core.String? error,
+  }) {
+    final result = McpServer._();
+    if (name != null) result.name = name;
+    if (enabled != null) result.enabled = enabled;
+    if (running != null) result.running = running;
+    if (toolCount != null) result.toolCount = toolCount;
+    if (error != null) result.error = error;
+    return result;
+  }
+
+  McpServer._();
+
+  factory McpServer.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      McpServer()..mergeFromBuffer(data, registry);
+  factory McpServer.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      McpServer()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'McpServer',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: McpServer.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'name')
+    ..aOB(2, _omitFieldNames ? '' : 'enabled')
+    ..aOB(3, _omitFieldNames ? '' : 'running')
+    ..aI(4, _omitFieldNames ? '' : 'toolCount')
+    ..aOS(5, _omitFieldNames ? '' : 'error')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  McpServer clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  McpServer copyWith(void Function(McpServer) updates) =>
+      super.copyWith((message) => updates(message as McpServer)) as McpServer;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use McpServer() / McpServer.new instead')
+  static McpServer create() => McpServer._();
+  static $pb.GeneratedMessage $_createMessage() => McpServer._();
+  @$core.override
+  McpServer createEmptyInstance() => McpServer._();
+  @$core.pragma('dart2js:noInline')
+  static McpServer getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<McpServer>(McpServer.$_createMessage);
+  static McpServer? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get name => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set name($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasName() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearName() => $_clearField(1);
+
+  /// Enabled for this session.
+  @$pb.TagNumber(2)
+  $core.bool get enabled => $_getBF(1);
+  @$pb.TagNumber(2)
+  set enabled($core.bool value) => $_setBool(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasEnabled() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearEnabled() => $_clearField(2);
+
+  /// Started and answering; tool_count is how many tools it offers.
+  @$pb.TagNumber(3)
+  $core.bool get running => $_getBF(2);
+  @$pb.TagNumber(3)
+  set running($core.bool value) => $_setBool(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasRunning() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearRunning() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.int get toolCount => $_getIZ(3);
+  @$pb.TagNumber(4)
+  set toolCount($core.int value) => $_setSignedInt32(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasToolCount() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearToolCount() => $_clearField(4);
+
+  /// Why it failed to start or list tools, if it did.
+  @$pb.TagNumber(5)
+  $core.String get error => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set error($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasError() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearError() => $_clearField(5);
+}
+
+class ListMcpServersRequest extends $pb.GeneratedMessage {
+  factory ListMcpServersRequest({
+    $core.String? sessionId,
+  }) {
+    final result = ListMcpServersRequest._();
+    if (sessionId != null) result.sessionId = sessionId;
+    return result;
+  }
+
+  ListMcpServersRequest._();
+
+  factory ListMcpServersRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListMcpServersRequest()..mergeFromBuffer(data, registry);
+  factory ListMcpServersRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListMcpServersRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListMcpServersRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: ListMcpServersRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'sessionId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListMcpServersRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListMcpServersRequest copyWith(
+          void Function(ListMcpServersRequest) updates) =>
+      super.copyWith((message) => updates(message as ListMcpServersRequest))
+          as ListMcpServersRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ListMcpServersRequest() / ListMcpServersRequest.new instead')
+  static ListMcpServersRequest create() => ListMcpServersRequest._();
+  static $pb.GeneratedMessage $_createMessage() => ListMcpServersRequest._();
+  @$core.override
+  ListMcpServersRequest createEmptyInstance() => ListMcpServersRequest._();
+  @$core.pragma('dart2js:noInline')
+  static ListMcpServersRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListMcpServersRequest>(
+          ListMcpServersRequest.$_createMessage);
+  static ListMcpServersRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get sessionId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set sessionId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSessionId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSessionId() => $_clearField(1);
+}
+
+class ListMcpServersResponse extends $pb.GeneratedMessage {
+  factory ListMcpServersResponse({
+    $core.Iterable<McpServer>? servers,
+  }) {
+    final result = ListMcpServersResponse._();
+    if (servers != null) result.servers.addAll(servers);
+    return result;
+  }
+
+  ListMcpServersResponse._();
+
+  factory ListMcpServersResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListMcpServersResponse()..mergeFromBuffer(data, registry);
+  factory ListMcpServersResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListMcpServersResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListMcpServersResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: ListMcpServersResponse.$_createMessage)
+    ..pPM<McpServer>(1, _omitFieldNames ? '' : 'servers',
+        subBuilder: McpServer.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListMcpServersResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListMcpServersResponse copyWith(
+          void Function(ListMcpServersResponse) updates) =>
+      super.copyWith((message) => updates(message as ListMcpServersResponse))
+          as ListMcpServersResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ListMcpServersResponse() / ListMcpServersResponse.new instead')
+  static ListMcpServersResponse create() => ListMcpServersResponse._();
+  static $pb.GeneratedMessage $_createMessage() => ListMcpServersResponse._();
+  @$core.override
+  ListMcpServersResponse createEmptyInstance() => ListMcpServersResponse._();
+  @$core.pragma('dart2js:noInline')
+  static ListMcpServersResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListMcpServersResponse>(
+          ListMcpServersResponse.$_createMessage);
+  static ListMcpServersResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<McpServer> get servers => $_getList(0);
+}
+
+class Skill extends $pb.GeneratedMessage {
+  factory Skill({
+    $core.String? name,
+    $core.String? description,
+    $core.String? source,
+  }) {
+    final result = Skill._();
+    if (name != null) result.name = name;
+    if (description != null) result.description = description;
+    if (source != null) result.source = source;
+    return result;
+  }
+
+  Skill._();
+
+  factory Skill.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Skill()..mergeFromBuffer(data, registry);
+  factory Skill.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Skill()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'Skill',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: Skill.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'name')
+    ..aOS(2, _omitFieldNames ? '' : 'description')
+    ..aOS(3, _omitFieldNames ? '' : 'source')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Skill clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Skill copyWith(void Function(Skill) updates) =>
+      super.copyWith((message) => updates(message as Skill)) as Skill;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use Skill() / Skill.new instead')
+  static Skill create() => Skill._();
+  static $pb.GeneratedMessage $_createMessage() => Skill._();
+  @$core.override
+  Skill createEmptyInstance() => Skill._();
+  @$core.pragma('dart2js:noInline')
+  static Skill getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<Skill>(Skill.$_createMessage);
+  static Skill? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get name => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set name($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasName() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearName() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get description => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set description($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasDescription() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearDescription() => $_clearField(2);
+
+  /// Where it was found: "repo .agents/skills", "repo root .claude/skills",
+  /// "global", ...
+  @$pb.TagNumber(3)
+  $core.String get source => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set source($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasSource() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearSource() => $_clearField(3);
+}
+
+class ListSkillsRequest extends $pb.GeneratedMessage {
+  factory ListSkillsRequest({
+    $core.String? sessionId,
+  }) {
+    final result = ListSkillsRequest._();
+    if (sessionId != null) result.sessionId = sessionId;
+    return result;
+  }
+
+  ListSkillsRequest._();
+
+  factory ListSkillsRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListSkillsRequest()..mergeFromBuffer(data, registry);
+  factory ListSkillsRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListSkillsRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListSkillsRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: ListSkillsRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'sessionId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListSkillsRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListSkillsRequest copyWith(void Function(ListSkillsRequest) updates) =>
+      super.copyWith((message) => updates(message as ListSkillsRequest))
+          as ListSkillsRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ListSkillsRequest() / ListSkillsRequest.new instead')
+  static ListSkillsRequest create() => ListSkillsRequest._();
+  static $pb.GeneratedMessage $_createMessage() => ListSkillsRequest._();
+  @$core.override
+  ListSkillsRequest createEmptyInstance() => ListSkillsRequest._();
+  @$core.pragma('dart2js:noInline')
+  static ListSkillsRequest getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ListSkillsRequest>(
+          ListSkillsRequest.$_createMessage);
+  static ListSkillsRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get sessionId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set sessionId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSessionId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSessionId() => $_clearField(1);
+}
+
+class ListSkillsResponse extends $pb.GeneratedMessage {
+  factory ListSkillsResponse({
+    $core.Iterable<Skill>? skills,
+  }) {
+    final result = ListSkillsResponse._();
+    if (skills != null) result.skills.addAll(skills);
+    return result;
+  }
+
+  ListSkillsResponse._();
+
+  factory ListSkillsResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListSkillsResponse()..mergeFromBuffer(data, registry);
+  factory ListSkillsResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListSkillsResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListSkillsResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: ListSkillsResponse.$_createMessage)
+    ..pPM<Skill>(1, _omitFieldNames ? '' : 'skills',
+        subBuilder: Skill.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListSkillsResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListSkillsResponse copyWith(void Function(ListSkillsResponse) updates) =>
+      super.copyWith((message) => updates(message as ListSkillsResponse))
+          as ListSkillsResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ListSkillsResponse() / ListSkillsResponse.new instead')
+  static ListSkillsResponse create() => ListSkillsResponse._();
+  static $pb.GeneratedMessage $_createMessage() => ListSkillsResponse._();
+  @$core.override
+  ListSkillsResponse createEmptyInstance() => ListSkillsResponse._();
+  @$core.pragma('dart2js:noInline')
+  static ListSkillsResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListSkillsResponse>(
+          ListSkillsResponse.$_createMessage);
+  static ListSkillsResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<Skill> get skills => $_getList(0);
+}
+
+class SetMcpServerRequest extends $pb.GeneratedMessage {
+  factory SetMcpServerRequest({
+    $core.String? sessionId,
+    $core.String? server,
+    $core.bool? enabled,
+  }) {
+    final result = SetMcpServerRequest._();
+    if (sessionId != null) result.sessionId = sessionId;
+    if (server != null) result.server = server;
+    if (enabled != null) result.enabled = enabled;
+    return result;
+  }
+
+  SetMcpServerRequest._();
+
+  factory SetMcpServerRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetMcpServerRequest()..mergeFromBuffer(data, registry);
+  factory SetMcpServerRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetMcpServerRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SetMcpServerRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: SetMcpServerRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'sessionId')
+    ..aOS(2, _omitFieldNames ? '' : 'server')
+    ..aOB(3, _omitFieldNames ? '' : 'enabled')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetMcpServerRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetMcpServerRequest copyWith(void Function(SetMcpServerRequest) updates) =>
+      super.copyWith((message) => updates(message as SetMcpServerRequest))
+          as SetMcpServerRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core
+      .Deprecated('Use SetMcpServerRequest() / SetMcpServerRequest.new instead')
+  static SetMcpServerRequest create() => SetMcpServerRequest._();
+  static $pb.GeneratedMessage $_createMessage() => SetMcpServerRequest._();
+  @$core.override
+  SetMcpServerRequest createEmptyInstance() => SetMcpServerRequest._();
+  @$core.pragma('dart2js:noInline')
+  static SetMcpServerRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SetMcpServerRequest>(
+          SetMcpServerRequest.$_createMessage);
+  static SetMcpServerRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get sessionId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set sessionId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSessionId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSessionId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get server => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set server($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasServer() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearServer() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.bool get enabled => $_getBF(2);
+  @$pb.TagNumber(3)
+  set enabled($core.bool value) => $_setBool(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasEnabled() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearEnabled() => $_clearField(3);
+}
+
+class SetMcpServerResponse extends $pb.GeneratedMessage {
+  factory SetMcpServerResponse({
+    Session? session,
+  }) {
+    final result = SetMcpServerResponse._();
+    if (session != null) result.session = session;
+    return result;
+  }
+
+  SetMcpServerResponse._();
+
+  factory SetMcpServerResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetMcpServerResponse()..mergeFromBuffer(data, registry);
+  factory SetMcpServerResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetMcpServerResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SetMcpServerResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: SetMcpServerResponse.$_createMessage)
+    ..aOM<Session>(1, _omitFieldNames ? '' : 'session',
+        subBuilder: Session.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetMcpServerResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetMcpServerResponse copyWith(void Function(SetMcpServerResponse) updates) =>
+      super.copyWith((message) => updates(message as SetMcpServerResponse))
+          as SetMcpServerResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use SetMcpServerResponse() / SetMcpServerResponse.new instead')
+  static SetMcpServerResponse create() => SetMcpServerResponse._();
+  static $pb.GeneratedMessage $_createMessage() => SetMcpServerResponse._();
+  @$core.override
+  SetMcpServerResponse createEmptyInstance() => SetMcpServerResponse._();
+  @$core.pragma('dart2js:noInline')
+  static SetMcpServerResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SetMcpServerResponse>(
+          SetMcpServerResponse.$_createMessage);
+  static SetMcpServerResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  Session get session => $_getN(0);
+  @$pb.TagNumber(1)
+  set session(Session value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSession() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSession() => $_clearField(1);
+  @$pb.TagNumber(1)
+  Session ensureSession() => $_ensure(0);
+}
+
 class SetEffortRequest extends $pb.GeneratedMessage {
   factory SetEffortRequest({
     $core.String? sessionId,
@@ -1500,6 +2365,9 @@ enum Event_Payload {
   usage,
   error,
   todoUpdated,
+  feedback,
+  mcpServersChanged,
+  sessionMoved,
   notSet
 }
 
@@ -1523,6 +2391,9 @@ class Event extends $pb.GeneratedMessage {
     Usage? usage,
     TurnError? error,
     TodoUpdated? todoUpdated,
+    Feedback? feedback,
+    McpServersChanged? mcpServersChanged,
+    SessionMoved? sessionMoved,
   }) {
     final result = Event._();
     if (sessionId != null) result.sessionId = sessionId;
@@ -1542,6 +2413,9 @@ class Event extends $pb.GeneratedMessage {
     if (usage != null) result.usage = usage;
     if (error != null) result.error = error;
     if (todoUpdated != null) result.todoUpdated = todoUpdated;
+    if (feedback != null) result.feedback = feedback;
+    if (mcpServersChanged != null) result.mcpServersChanged = mcpServersChanged;
+    if (sessionMoved != null) result.sessionMoved = sessionMoved;
     return result;
   }
 
@@ -1569,13 +2443,17 @@ class Event extends $pb.GeneratedMessage {
     21: Event_Payload.usage,
     22: Event_Payload.error,
     23: Event_Payload.todoUpdated,
+    24: Event_Payload.feedback,
+    25: Event_Payload.mcpServersChanged,
+    26: Event_Payload.sessionMoved,
     0: Event_Payload.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
       _omitMessageNames ? '' : 'Event',
       package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
       createEmptyInstance: Event.$_createMessage)
-    ..oo(0, [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23])
+    ..oo(
+        0, [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26])
     ..aOS(1, _omitFieldNames ? '' : 'sessionId')
     ..aInt64(2, _omitFieldNames ? '' : 'seq')
     ..aOM<$0.Timestamp>(3, _omitFieldNames ? '' : 'time',
@@ -1608,6 +2486,12 @@ class Event extends $pb.GeneratedMessage {
         subBuilder: TurnError.$_createMessage)
     ..aOM<TodoUpdated>(23, _omitFieldNames ? '' : 'todoUpdated',
         subBuilder: TodoUpdated.$_createMessage)
+    ..aOM<Feedback>(24, _omitFieldNames ? '' : 'feedback',
+        subBuilder: Feedback.$_createMessage)
+    ..aOM<McpServersChanged>(25, _omitFieldNames ? '' : 'mcpServersChanged',
+        subBuilder: McpServersChanged.$_createMessage)
+    ..aOM<SessionMoved>(26, _omitFieldNames ? '' : 'sessionMoved',
+        subBuilder: SessionMoved.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -1644,6 +2528,9 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(21)
   @$pb.TagNumber(22)
   @$pb.TagNumber(23)
+  @$pb.TagNumber(24)
+  @$pb.TagNumber(25)
+  @$pb.TagNumber(26)
   Event_Payload whichPayload() => _Event_PayloadByTag[$_whichOneof(0)]!;
   @$pb.TagNumber(10)
   @$pb.TagNumber(11)
@@ -1659,6 +2546,9 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(21)
   @$pb.TagNumber(22)
   @$pb.TagNumber(23)
+  @$pb.TagNumber(24)
+  @$pb.TagNumber(25)
+  @$pb.TagNumber(26)
   void clearPayload() => $_clearField($_whichOneof(0));
 
   @$pb.TagNumber(1)
@@ -1844,6 +2734,39 @@ class Event extends $pb.GeneratedMessage {
   void clearTodoUpdated() => $_clearField(23);
   @$pb.TagNumber(23)
   TodoUpdated ensureTodoUpdated() => $_ensure(16);
+
+  @$pb.TagNumber(24)
+  Feedback get feedback => $_getN(17);
+  @$pb.TagNumber(24)
+  set feedback(Feedback value) => $_setField(24, value);
+  @$pb.TagNumber(24)
+  $core.bool hasFeedback() => $_has(17);
+  @$pb.TagNumber(24)
+  void clearFeedback() => $_clearField(24);
+  @$pb.TagNumber(24)
+  Feedback ensureFeedback() => $_ensure(17);
+
+  @$pb.TagNumber(25)
+  McpServersChanged get mcpServersChanged => $_getN(18);
+  @$pb.TagNumber(25)
+  set mcpServersChanged(McpServersChanged value) => $_setField(25, value);
+  @$pb.TagNumber(25)
+  $core.bool hasMcpServersChanged() => $_has(18);
+  @$pb.TagNumber(25)
+  void clearMcpServersChanged() => $_clearField(25);
+  @$pb.TagNumber(25)
+  McpServersChanged ensureMcpServersChanged() => $_ensure(18);
+
+  @$pb.TagNumber(26)
+  SessionMoved get sessionMoved => $_getN(19);
+  @$pb.TagNumber(26)
+  set sessionMoved(SessionMoved value) => $_setField(26, value);
+  @$pb.TagNumber(26)
+  $core.bool hasSessionMoved() => $_has(19);
+  @$pb.TagNumber(26)
+  void clearSessionMoved() => $_clearField(26);
+  @$pb.TagNumber(26)
+  SessionMoved ensureSessionMoved() => $_ensure(19);
 }
 
 /// MessageStarted opens a message. Its text arrives as TextDelta events and
@@ -1852,10 +2775,14 @@ class MessageStarted extends $pb.GeneratedMessage {
   factory MessageStarted({
     $core.String? messageId,
     Role? role,
+    $core.String? provider,
+    $core.String? model,
   }) {
     final result = MessageStarted._();
     if (messageId != null) result.messageId = messageId;
     if (role != null) result.role = role;
+    if (provider != null) result.provider = provider;
+    if (model != null) result.model = model;
     return result;
   }
 
@@ -1874,6 +2801,8 @@ class MessageStarted extends $pb.GeneratedMessage {
       createEmptyInstance: MessageStarted.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'messageId')
     ..aE<Role>(2, _omitFieldNames ? '' : 'role', enumValues: Role.values)
+    ..aOS(3, _omitFieldNames ? '' : 'provider')
+    ..aOS(4, _omitFieldNames ? '' : 'model')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -1915,6 +2844,25 @@ class MessageStarted extends $pb.GeneratedMessage {
   $core.bool hasRole() => $_has(1);
   @$pb.TagNumber(2)
   void clearRole() => $_clearField(2);
+
+  /// For assistant messages, the model writing it.
+  @$pb.TagNumber(3)
+  $core.String get provider => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set provider($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasProvider() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearProvider() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get model => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set model($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasModel() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearModel() => $_clearField(4);
 }
 
 class TextDelta extends $pb.GeneratedMessage {
@@ -3133,6 +4081,263 @@ class TurnError extends $pb.GeneratedMessage {
   void clearTurnCanContinue() => $_clearField(2);
 }
 
+/// Feedback is a rating someone gave a turn or a model.
+class Feedback extends $pb.GeneratedMessage {
+  factory Feedback({
+    RatingTarget? target,
+    Rating? rating,
+    $core.String? messageId,
+    $core.String? note,
+    $core.String? provider,
+    $core.String? model,
+    $core.String? client,
+    $core.String? turnId,
+  }) {
+    final result = Feedback._();
+    if (target != null) result.target = target;
+    if (rating != null) result.rating = rating;
+    if (messageId != null) result.messageId = messageId;
+    if (note != null) result.note = note;
+    if (provider != null) result.provider = provider;
+    if (model != null) result.model = model;
+    if (client != null) result.client = client;
+    if (turnId != null) result.turnId = turnId;
+    return result;
+  }
+
+  Feedback._();
+
+  factory Feedback.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Feedback()..mergeFromBuffer(data, registry);
+  factory Feedback.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      Feedback()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'Feedback',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: Feedback.$_createMessage)
+    ..aE<RatingTarget>(1, _omitFieldNames ? '' : 'target',
+        enumValues: RatingTarget.values)
+    ..aE<Rating>(2, _omitFieldNames ? '' : 'rating', enumValues: Rating.values)
+    ..aOS(3, _omitFieldNames ? '' : 'messageId')
+    ..aOS(4, _omitFieldNames ? '' : 'note')
+    ..aOS(5, _omitFieldNames ? '' : 'provider')
+    ..aOS(6, _omitFieldNames ? '' : 'model')
+    ..aOS(7, _omitFieldNames ? '' : 'client')
+    ..aOS(8, _omitFieldNames ? '' : 'turnId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Feedback clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  Feedback copyWith(void Function(Feedback) updates) =>
+      super.copyWith((message) => updates(message as Feedback)) as Feedback;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use Feedback() / Feedback.new instead')
+  static Feedback create() => Feedback._();
+  static $pb.GeneratedMessage $_createMessage() => Feedback._();
+  @$core.override
+  Feedback createEmptyInstance() => Feedback._();
+  @$core.pragma('dart2js:noInline')
+  static Feedback getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<Feedback>(Feedback.$_createMessage);
+  static Feedback? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  RatingTarget get target => $_getN(0);
+  @$pb.TagNumber(1)
+  set target(RatingTarget value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasTarget() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearTarget() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  Rating get rating => $_getN(1);
+  @$pb.TagNumber(2)
+  set rating(Rating value) => $_setField(2, value);
+  @$pb.TagNumber(2)
+  $core.bool hasRating() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearRating() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get messageId => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set messageId($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasMessageId() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearMessageId() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get note => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set note($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasNote() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearNote() => $_clearField(4);
+
+  /// The model in use for the rated message (or at the time, for a model
+  /// rating without a message).
+  @$pb.TagNumber(5)
+  $core.String get provider => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set provider($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasProvider() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearProvider() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.String get model => $_getSZ(5);
+  @$pb.TagNumber(6)
+  set model($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasModel() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearModel() => $_clearField(6);
+
+  /// The client that rated.
+  @$pb.TagNumber(7)
+  $core.String get client => $_getSZ(6);
+  @$pb.TagNumber(7)
+  set client($core.String value) => $_setString(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasClient() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearClient() => $_clearField(7);
+
+  /// The turn the rated message belongs to: the id of the user message
+  /// that started it.
+  @$pb.TagNumber(8)
+  $core.String get turnId => $_getSZ(7);
+  @$pb.TagNumber(8)
+  set turnId($core.String value) => $_setString(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasTurnId() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearTurnId() => $_clearField(8);
+}
+
+/// McpServersChanged lists the MCP servers enabled for the session after a
+/// change.
+class McpServersChanged extends $pb.GeneratedMessage {
+  factory McpServersChanged({
+    $core.Iterable<$core.String>? enabled,
+  }) {
+    final result = McpServersChanged._();
+    if (enabled != null) result.enabled.addAll(enabled);
+    return result;
+  }
+
+  McpServersChanged._();
+
+  factory McpServersChanged.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      McpServersChanged()..mergeFromBuffer(data, registry);
+  factory McpServersChanged.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      McpServersChanged()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'McpServersChanged',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: McpServersChanged.$_createMessage)
+    ..pPS(1, _omitFieldNames ? '' : 'enabled')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  McpServersChanged clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  McpServersChanged copyWith(void Function(McpServersChanged) updates) =>
+      super.copyWith((message) => updates(message as McpServersChanged))
+          as McpServersChanged;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use McpServersChanged() / McpServersChanged.new instead')
+  static McpServersChanged create() => McpServersChanged._();
+  static $pb.GeneratedMessage $_createMessage() => McpServersChanged._();
+  @$core.override
+  McpServersChanged createEmptyInstance() => McpServersChanged._();
+  @$core.pragma('dart2js:noInline')
+  static McpServersChanged getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<McpServersChanged>(
+          McpServersChanged.$_createMessage);
+  static McpServersChanged? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.String> get enabled => $_getList(0);
+}
+
+/// SessionMoved says the session moved to another project.
+class SessionMoved extends $pb.GeneratedMessage {
+  factory SessionMoved({
+    $core.String? projectId,
+  }) {
+    final result = SessionMoved._();
+    if (projectId != null) result.projectId = projectId;
+    return result;
+  }
+
+  SessionMoved._();
+
+  factory SessionMoved.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SessionMoved()..mergeFromBuffer(data, registry);
+  factory SessionMoved.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SessionMoved()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SessionMoved',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: SessionMoved.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'projectId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SessionMoved clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SessionMoved copyWith(void Function(SessionMoved) updates) =>
+      super.copyWith((message) => updates(message as SessionMoved))
+          as SessionMoved;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use SessionMoved() / SessionMoved.new instead')
+  static SessionMoved create() => SessionMoved._();
+  static $pb.GeneratedMessage $_createMessage() => SessionMoved._();
+  @$core.override
+  SessionMoved createEmptyInstance() => SessionMoved._();
+  @$core.pragma('dart2js:noInline')
+  static SessionMoved getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SessionMoved>(
+          SessionMoved.$_createMessage);
+  static SessionMoved? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get projectId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set projectId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasProjectId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearProjectId() => $_clearField(1);
+}
+
 /// SessionService runs agent sessions. A session is a conversation with the
 /// agent in a working directory. Everything that happens in it is recorded as
 /// an append-only, numbered event log, so a client can attach at any point,
@@ -3142,7 +4347,8 @@ class SessionServiceApi {
 
   SessionServiceApi(this._client);
 
-  /// CreateSession starts a new, idle session.
+  /// CreateSession starts a new, idle session. Give working_dir, or a
+  /// project_id whose project has a directory.
   $async.Future<CreateSessionResponse> createSession(
           $pb.ClientContext? ctx, CreateSessionRequest request) =>
       _client.invoke<CreateSessionResponse>(ctx, 'SessionService',
@@ -3200,6 +4406,41 @@ class SessionServiceApi {
           $pb.ClientContext? ctx, SetEffortRequest request) =>
       _client.invoke<SetEffortResponse>(
           ctx, 'SessionService', 'SetEffort', request, SetEffortResponse());
+
+  /// MoveSession moves a session to another project. Its working directory
+  /// stays the same.
+  $async.Future<MoveSessionResponse> moveSession(
+          $pb.ClientContext? ctx, MoveSessionRequest request) =>
+      _client.invoke<MoveSessionResponse>(
+          ctx, 'SessionService', 'MoveSession', request, MoveSessionResponse());
+
+  /// Rate records whether a turn's result or the model choice was good or
+  /// bad. Ratings are events in the session log.
+  $async.Future<RateResponse> rate(
+          $pb.ClientContext? ctx, RateRequest request) =>
+      _client.invoke<RateResponse>(
+          ctx, 'SessionService', 'Rate', request, RateResponse());
+
+  /// ListMcpServers lists the configured MCP servers and whether each is
+  /// enabled for the session. Only enabled servers' tools reach the model.
+  $async.Future<ListMcpServersResponse> listMcpServers(
+          $pb.ClientContext? ctx, ListMcpServersRequest request) =>
+      _client.invoke<ListMcpServersResponse>(ctx, 'SessionService',
+          'ListMcpServers', request, ListMcpServersResponse());
+
+  /// SetMcpServer enables or disables an MCP server for the session, from
+  /// its next model call.
+  $async.Future<SetMcpServerResponse> setMcpServer(
+          $pb.ClientContext? ctx, SetMcpServerRequest request) =>
+      _client.invoke<SetMcpServerResponse>(ctx, 'SessionService',
+          'SetMcpServer', request, SetMcpServerResponse());
+
+  /// ListSkills lists the skills the session's agent can load: the repo's
+  /// own (.agents/skills, .claude/skills) and the global ones.
+  $async.Future<ListSkillsResponse> listSkills(
+          $pb.ClientContext? ctx, ListSkillsRequest request) =>
+      _client.invoke<ListSkillsResponse>(
+          ctx, 'SessionService', 'ListSkills', request, ListSkillsResponse());
 }
 
 const $core.bool _omitFieldNames =

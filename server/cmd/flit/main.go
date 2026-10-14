@@ -29,6 +29,7 @@ import (
 	"github.com/iggy/flit/server/internal/buildinfo"
 	"github.com/iggy/flit/server/internal/config"
 	"github.com/iggy/flit/server/internal/devices"
+	"github.com/iggy/flit/server/internal/mcpclient"
 	"github.com/iggy/flit/server/internal/models"
 	"github.com/iggy/flit/server/internal/paths"
 	"github.com/iggy/flit/server/internal/server"
@@ -43,6 +44,7 @@ Usage:
   flit pair [--url URL]       pair a phone or another machine (shows a QR code)
   flit devices [--all]        list paired devices
   flit devices revoke ID      revoke a paired device
+  flit export [flags]         write recorded sessions as JSONL (see docs/export.md)
   flit version                print version information
 
 Flags for serve, token, pair and devices:
@@ -105,6 +107,8 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		fmt.Fprintf(stdout, "flit %s (commit %s, built %s, %s, %s/%s, API %s)\n",
 			bi.Version, orUnknown(bi.Commit), orUnknown(bi.BuildTime), bi.GoVersion, bi.OS, bi.Arch, buildinfo.APIVersion)
 		return nil
+	case "export":
+		return exportCmd(ctx, stdout, stderr, args, defaultConfig)
 	case "help", "-h", "--help":
 		fmt.Fprintf(stdout, usage, defaultConfig)
 		return nil
@@ -225,6 +229,16 @@ func serve(ctx context.Context, stderr io.Writer, configPath, dataDirFlag string
 	rolesDir := func() string { return relToConfig(current().RolesDir) }
 	catalog := models.NewCatalog(current, func() string { return relToConfig(current().ModelOverridesFile) }, log)
 	sessions.Catalog, sessions.RolesDir = catalog, rolesDir
+	sessions.SkillsDirs = func() []string {
+		var dirs []string
+		for _, d := range current().SkillsDirs {
+			dirs = append(dirs, relToConfig(d))
+		}
+		return dirs
+	}
+	mcpServers := mcpclient.New(current, log)
+	defer mcpServers.Close()
+	sessions.MCP = mcpServers
 	go func() {
 		if err := catalog.Refresh(ctx, ""); err != nil {
 			log.Warn("model discovery", "err", err)

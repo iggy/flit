@@ -34,6 +34,27 @@ FlitSession sessionFromProto(pb.Session s) {
     role: s.role,
     contextTokens: s.contextTokens.toInt(),
     contextLength: s.contextLength.toInt(),
+    mcpServers: List<String>.unmodifiable(s.mcpServers),
+  );
+}
+
+FlitProject projectFromProto(pb.Project p) {
+  return FlitProject(
+    id: p.id,
+    name: p.name,
+    directory: p.directory,
+    sessionCount: p.sessionCount,
+    exportEnabled: p.exportEnabled,
+  );
+}
+
+FlitMcpServer mcpServerFromProto(pb.McpServer s) {
+  return FlitMcpServer(
+    name: s.name,
+    enabled: s.enabled,
+    running: s.running,
+    toolCount: s.toolCount,
+    error: s.error,
   );
 }
 
@@ -85,6 +106,8 @@ FlitEvent eventFromProto(pb.Event e) {
           pb.Role.ROLE_ASSISTANT => FlitRole.assistant,
           _ => FlitRole.unknown,
         },
+        provider: p.provider,
+        model: p.model,
       );
     case pb.Event_Payload.textDelta:
       return FlitTextDelta(
@@ -203,6 +226,33 @@ FlitEvent eventFromProto(pb.Event e) {
         time: time,
         message: e.error.message,
         canContinue: e.error.turnCanContinue,
+      );
+    case pb.Event_Payload.feedback:
+      final f = e.feedback;
+      return FlitFeedback(
+        seq: seq,
+        time: time,
+        target: f.target == pb.RatingTarget.RATING_TARGET_MODEL
+            ? FlitRatingTarget.model
+            : FlitRatingTarget.turn,
+        good: f.rating == pb.Rating.RATING_GOOD,
+        messageId: f.messageId,
+        provider: f.provider,
+        model: f.model,
+        client: f.client,
+        note: f.note,
+      );
+    case pb.Event_Payload.mcpServersChanged:
+      return FlitMcpServersChanged(
+        seq: seq,
+        time: time,
+        enabled: List<String>.unmodifiable(e.mcpServersChanged.enabled),
+      );
+    case pb.Event_Payload.sessionMoved:
+      return FlitSessionMoved(
+        seq: seq,
+        time: time,
+        projectId: e.sessionMoved.projectId,
       );
     case pb.Event_Payload.notSet:
       return FlitUnknownEvent(seq: seq, time: time);

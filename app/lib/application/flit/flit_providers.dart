@@ -32,14 +32,49 @@ final flitDeviceNameProvider = Provider<String>((ref) {
   return ref.watch(connectionConfigProvider)?.deviceName ?? '';
 });
 
-/// All sessions on the server, most recently updated first.
+/// The project the sessions list shows; null means all projects. Kept for
+/// the app's lifetime so switching back to the list keeps the choice.
+final flitSelectedProjectProvider =
+    NotifierProvider<FlitSelectedProjectNotifier, String?>(
+      FlitSelectedProjectNotifier.new,
+    );
+
+class FlitSelectedProjectNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void select(String? projectId) => state = projectId;
+}
+
+/// Projects on the server: Scratch first, then by name.
+final flitProjectsProvider = FutureProvider<List<FlitProject>>((ref) async {
+  final repository = ref.watch(flitRepositoryProvider);
+  if (repository == null) {
+    return const <FlitProject>[];
+  }
+  return repository.listProjects();
+});
+
+/// Sessions in the selected project (or all), most recently updated first.
 final flitSessionsProvider = FutureProvider<List<FlitSession>>((ref) async {
   final repository = ref.watch(flitRepositoryProvider);
   if (repository == null) {
     return const <FlitSession>[];
   }
-  return repository.listSessions();
+  return repository.listSessions(
+    projectId: ref.watch(flitSelectedProjectProvider),
+  );
 });
+
+/// A session's MCP servers and whether each is on.
+final flitMcpServersProvider =
+    FutureProvider.family<List<FlitMcpServer>, String>((ref, sessionId) async {
+      final repository = ref.watch(flitRepositoryProvider);
+      if (repository == null) {
+        return const <FlitMcpServer>[];
+      }
+      return repository.listMcpServers(sessionId);
+    });
 
 /// One session's metadata (title, working dir, model).
 final flitSessionProvider = FutureProvider.family<FlitSession?, String>((
@@ -81,4 +116,16 @@ final flitRolesProvider = FutureProvider<List<FlitAgentRole>>((ref) async {
     return const <FlitAgentRole>[];
   }
   return repository.listRoles();
+});
+
+/// The skills a session's agent can load, with where each came from.
+final flitSkillsProvider = FutureProvider.family<List<FlitSkill>, String>((
+  ref,
+  sessionId,
+) async {
+  final repository = ref.watch(flitRepositoryProvider);
+  if (repository == null) {
+    return const <FlitSkill>[];
+  }
+  return repository.listSkills(sessionId);
 });

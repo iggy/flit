@@ -2,13 +2,19 @@ package agent
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
+	"github.com/iggy/flit/server/internal/buildinfo"
+	"github.com/iggy/flit/server/internal/config"
 	"github.com/iggy/flit/server/internal/llm"
+	"github.com/iggy/flit/server/internal/mcpclient"
 	"github.com/iggy/flit/server/internal/roles"
+	"github.com/iggy/flit/server/internal/skills"
+	"github.com/iggy/flit/server/internal/store"
 	"github.com/iggy/flit/server/internal/tools"
 )
 
@@ -32,8 +38,8 @@ var (
 // and the WORKING state are already recorded. The final state change and
 // marking the session idle happen together, so a client that sees the turn
 // end can Send right away.
-func (s *session) runTurn(ctx context.Context) {
-	e, err := s.loop(ctx)
+func (s *session) runTurn(ctx context.Context, turnID string) {
+	e, err := s.loop(ctx, turnID)
 	if err != nil {
 		s.m.log.Error("turn failed", "session", s.info.ID, "err", err)
 		e = end{flitv1.TaskState_TASK_STATE_STUCK, "internal error: " + err.Error()}
@@ -48,7 +54,7 @@ func (s *session) runTurn(ctx context.Context) {
 
 // loop runs the turn and says how it ended. It returns an error only if the
 // event log can't be written.
-func (s *session) loop(ctx context.Context) (end, error) {
+func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 	for step := 0; ; step++ {
 		cfg := s.m.cfg()
 		if step >= cfg.Agent.MaxSteps {
@@ -76,16 +82,18 @@ func (s *session) loop(ctx context.Context) (end, error) {
 				return s.stop(fmt.Sprintf("role %q: %v", info.Role, err), false)
 			}
 		}
+		set, extra, skillNames := s.toolSet(ctx, cfg, info)
+		system := systemPrompt(info.WorkingDir, role) + extra + promptAppends(cfg, info.Provider, info.Model)
 		req := llm.Request{
 			Model:           info.Model,
-			Messages:        append([]llm.Message{{Role: "system", Content: systemPrompt(info.WorkingDir, role)}}, buildMessages(history)...),
-			Tools:           tools.Definitions(),
+			Messages:        append([]llm.Message{{Role: "system", Content: system}}, buildMessages(history)...),
+			Tools:           tools.Definitions(set),
 			ReasoningEffort: info.Effort,
 		}
 
 		msgID := newID("msg")
 		if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_MessageStarted{MessageStarted: &flitv1.MessageStarted{
-			MessageId: msgID, Role: flitv1.Role_ROLE_ASSISTANT,
+			MessageId: msgID, Role: flitv1.Role_ROLE_ASSISTANT, Provider: info.Provider, Model: info.Model,
 		}}}); err != nil {
 			return end{}, err
 		}
@@ -110,6 +118,7 @@ func (s *session) loop(ctx context.Context) (end, error) {
 		if appendErr != nil {
 			return end{}, appendErr
 		}
+		s.recordCall(info, turnID, msgID, role, skillNames, req, res, text.String(), reasoning.String(), err)
 		if err != nil {
 			finish := "error"
 			if ctx.Err() != nil {
@@ -161,7 +170,7 @@ func (s *session) loop(ctx context.Context) (end, error) {
 				}
 				continue
 			}
-			res, err := s.runTool(ctx, tc)
+			res, err := s.runTool(ctx, set, tc)
 			if err != nil {
 				return end{}, err
 			}
@@ -176,7 +185,7 @@ func (s *session) loop(ctx context.Context) (end, error) {
 	}
 }
 
-func (s *session) runTool(ctx context.Context, tc llm.ToolCall) (tools.Result, error) {
+func (s *session) runTool(ctx context.Context, set []tools.Tool, tc llm.ToolCall) (tools.Result, error) {
 	var live int
 	var appendErr error
 	env := &tools.Env{
@@ -209,7 +218,7 @@ func (s *session) runTool(ctx context.Context, tc llm.ToolCall) (tools.Result, e
 			}
 		},
 	}
-	res := tools.Run(ctx, env, tc.Function.Name, tc.Function.Arguments)
+	res := tools.Run(ctx, env, set, tc.Function.Name, tc.Function.Arguments)
 	if appendErr != nil && !errors.Is(appendErr, errInterrupted) {
 		return res, appendErr
 	}
@@ -249,4 +258,151 @@ func todoStatus(s string) flitv1.TodoStatus {
 		return flitv1.TodoStatus_TODO_STATUS_COMPLETED
 	}
 	return flitv1.TodoStatus_TODO_STATUS_UNSPECIFIED
+}
+
+// toolSet is the tools offered this turn: the core tools, git and web tools
+// as configured, the skill tool when there are skills, and the tools of the
+// session's enabled MCP servers. extra is system prompt text that goes with
+// them (the skill list, unavailable MCP servers).
+func (s *session) toolSet(ctx context.Context, cfg config.Config, info store.Session) ([]tools.Tool, string, []string) {
+	set := tools.All()
+	var skillNames []string
+	var extra strings.Builder
+	if cfg.Git.IsEnabled() {
+		set = append(set, tools.GitTools()...)
+	}
+	if cfg.Web.FetchEnabled() {
+		set = append(set, tools.WebFetchTool())
+	}
+	if cfg.Web.Search.Provider == "searxng" {
+		set = append(set, tools.WebSearchTool(cfg.Web.Search.URL))
+	}
+	var global []string
+	if s.m.SkillsDirs != nil {
+		global = s.m.SkillsDirs()
+	}
+	{
+		list, problems := skills.Load(skills.SessionDirs(info.WorkingDir, global))
+		for _, p := range problems {
+			s.m.log.Warn("skill skipped", "err", p)
+		}
+		if len(list) > 0 {
+			set = append(set, tools.SkillTool(list))
+			extra.WriteString(skills.PromptSection(list))
+			for _, sk := range list {
+				skillNames = append(skillNames, sk.Name)
+			}
+		}
+	}
+	if s.m.MCP != nil && len(info.MCPServers) > 0 {
+		mcpTools, err := s.m.MCP.Tools(ctx, info.MCPServers)
+		if err != nil {
+			s.m.log.Warn("MCP servers unavailable", "session", info.ID, "err", err)
+			fmt.Fprintf(&extra, "\nSome MCP servers could not be started this turn: %v\n", err)
+		}
+		for _, t := range mcpTools {
+			set = append(set, mcpTool(s.m.MCP, t))
+		}
+	}
+	return set, extra.String(), skillNames
+}
+
+// recordCall stores the exact request and response of one model call for
+// the training corpus (see store.ModelCall). Failures are logged; they
+// never fail the turn.
+func (s *session) recordCall(info store.Session, turnID, msgID string, role *roles.Role, skillNames []string,
+	req llm.Request, res *llm.Result, text, reasoning string, callErr error) {
+	messages := make([][]byte, 0, len(req.Messages))
+	for _, m := range req.Messages {
+		b, err := json.Marshal(m)
+		if err != nil {
+			s.m.log.Warn("record model call", "err", err)
+			return
+		}
+		messages = append(messages, b)
+	}
+	var toolsJSON []byte
+	if len(req.Tools) > 0 {
+		toolsJSON, _ = json.Marshal(req.Tools)
+	}
+	params, _ := json.Marshal(map[string]any{
+		"model":            req.Model,
+		"reasoning_effort": req.ReasoningEffort,
+		"stream":           true,
+		// flit sends no sampling parameters; the provider's defaults apply.
+		"sampling": "provider defaults",
+	})
+	resp := map[string]any{"role": "assistant", "content": text}
+	if reasoning != "" {
+		resp["reasoning_content"] = reasoning
+	}
+	c := &store.ModelCall{
+		ID: msgID, SessionID: info.ID, TeamID: info.TeamID, ProjectID: info.ProjectID, TurnID: turnID,
+		Provider: info.Provider, Model: info.Model, Effort: info.Effort, FlitVersion: buildinfo.Get().Version,
+		Skills: skillNames, Params: params,
+	}
+	if role != nil {
+		c.Role = role.Name
+	}
+	if res != nil {
+		if len(res.ToolCalls) > 0 {
+			resp["tool_calls"] = res.ToolCalls
+		}
+		c.FinishReason = res.FinishReason
+		if res.Usage != nil {
+			c.Usage, _ = json.Marshal(res.Usage)
+		}
+		c.Metrics, _ = json.Marshal(map[string]any{
+			"time_to_first_token_ms":       res.Metrics.TimeToFirstToken.Milliseconds(),
+			"prompt_tokens_per_second":     res.Metrics.PromptPerSecond,
+			"generation_tokens_per_second": res.Metrics.GenerationPerSecond,
+			"source":                       res.Metrics.Source,
+		})
+	}
+	if callErr != nil {
+		c.Error = callErr.Error()
+		c.FinishReason = "error"
+		if errors.Is(callErr, context.Canceled) {
+			c.FinishReason = "interrupted"
+		}
+	}
+	c.Response, _ = json.Marshal(resp)
+	if err := s.m.store.RecordModelCall(context.Background(), c, messages, toolsJSON); err != nil {
+		s.m.log.Warn("record model call", "session", info.ID, "err", err)
+	}
+}
+
+func mcpTool(m *mcpclient.Manager, t mcpclient.Tool) tools.Tool {
+	desc := t.Description
+	if desc == "" {
+		desc = t.Name
+	}
+	return tools.Tool{
+		Name:        t.QualifiedName(),
+		Description: fmt.Sprintf("[MCP server %s] %s", t.Server, desc),
+		Schema:      string(t.Schema),
+		Run: func(ctx context.Context, _ *tools.Env, args json.RawMessage) tools.Result {
+			out, isErr, err := m.Call(ctx, t, args)
+			if err != nil {
+				return tools.Result{Text: err.Error(), IsError: true}
+			}
+			return tools.Result{Text: out, IsError: isErr}
+		},
+	}
+}
+
+// promptAppends is extra system prompt text configured for the provider
+// (providers[].prompt_append) and the model (agent.model_prompt_appends).
+func promptAppends(cfg config.Config, provider, model string) string {
+	var parts []string
+	if p, ok := cfg.Provider(provider); ok && strings.TrimSpace(p.PromptAppend) != "" {
+		parts = append(parts, strings.TrimSpace(p.PromptAppend))
+	}
+	if t := strings.TrimSpace(cfg.Agent.ModelPromptAppends[provider+"/"+model]); t != "" {
+		parts = append(parts, t)
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+	return "\n" + strings.Join(parts, "\n\n") + "\n"
 }

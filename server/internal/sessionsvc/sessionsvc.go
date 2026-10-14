@@ -46,6 +46,7 @@ func toProto(s store.Session) *flitv1.Session {
 		Role:          s.Role,
 		ContextTokens: s.ContextTokens,
 		ContextLength: s.ContextLength,
+		McpServers:    s.MCPServers,
 	}
 }
 
@@ -82,6 +83,7 @@ func (s *Service) CreateSession(ctx context.Context, req *connect.Request[flitv1
 	m := req.Msg
 	sess, err := s.M.Create(ctx, agent.CreateOptions{
 		WorkingDir: m.WorkingDir, Title: m.Title, Provider: m.Provider, Model: m.Model, Effort: m.Effort, Role: m.Role,
+		ProjectID: m.ProjectId,
 	})
 	if err != nil {
 		return nil, connectErr(err)
@@ -105,7 +107,7 @@ func (s *Service) ListSessions(ctx context.Context, req *connect.Request[flitv1.
 		}
 		offset = n
 	}
-	list, err := s.M.List(ctx, size+1, offset)
+	list, err := s.M.List(ctx, req.Msg.ProjectId, size+1, offset)
 	if err != nil {
 		return nil, connectErr(err)
 	}
@@ -194,9 +196,7 @@ func (s *Service) AnswerPrompt(ctx context.Context, req *connect.Request[flitv1.
 	}
 	client := m.Client
 	if client == "" {
-		if p, ok := auth.FromContext(ctx); ok {
-			client = p.Name
-		}
+		client = clientName(ctx)
 	}
 	if err := s.M.AnswerPrompt(ctx, m.SessionId, m.PromptId, allow, client); err != nil {
 		return nil, connectErr(err)
@@ -226,4 +226,140 @@ func (s *Service) SetEffort(ctx context.Context, req *connect.Request[flitv1.Set
 		return nil, connectErr(err)
 	}
 	return connect.NewResponse(&flitv1.SetEffortResponse{Session: toProto(sess)}), nil
+}
+
+func clientName(ctx context.Context) string {
+	if p, ok := auth.FromContext(ctx); ok {
+		return p.Name
+	}
+	return ""
+}
+
+// MoveSession implements flitv1connect.SessionServiceHandler.
+func (s *Service) MoveSession(ctx context.Context, req *connect.Request[flitv1.MoveSessionRequest]) (*connect.Response[flitv1.MoveSessionResponse], error) {
+	if err := errors.Join(required("session_id", req.Msg.SessionId), required("project_id", req.Msg.ProjectId)); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	sess, err := s.M.MoveSession(ctx, req.Msg.SessionId, req.Msg.ProjectId)
+	if err != nil {
+		return nil, connectErr(err)
+	}
+	return connect.NewResponse(&flitv1.MoveSessionResponse{Session: toProto(sess)}), nil
+}
+
+// Rate implements flitv1connect.SessionServiceHandler.
+func (s *Service) Rate(ctx context.Context, req *connect.Request[flitv1.RateRequest]) (*connect.Response[flitv1.RateResponse], error) {
+	m := req.Msg
+	if err := required("session_id", m.SessionId); err != nil {
+		return nil, err
+	}
+	if m.Rating == flitv1.Rating_RATING_UNSPECIFIED {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("rating must be GOOD or BAD"))
+	}
+	err := s.M.Rate(ctx, m.SessionId, agent.Rating{
+		Target: m.Target, Good: m.Rating == flitv1.Rating_RATING_GOOD, MessageID: m.MessageId,
+		Note: m.Note, Client: clientName(ctx),
+	})
+	if err != nil {
+		return nil, connectErr(err)
+	}
+	return connect.NewResponse(&flitv1.RateResponse{}), nil
+}
+
+// ListMcpServers implements flitv1connect.SessionServiceHandler.
+func (s *Service) ListMcpServers(ctx context.Context, req *connect.Request[flitv1.ListMcpServersRequest]) (*connect.Response[flitv1.ListMcpServersResponse], error) {
+	if err := required("session_id", req.Msg.SessionId); err != nil {
+		return nil, err
+	}
+	list, err := s.M.MCPServers(ctx, req.Msg.SessionId)
+	if err != nil {
+		return nil, connectErr(err)
+	}
+	res := &flitv1.ListMcpServersResponse{}
+	for _, st := range list {
+		res.Servers = append(res.Servers, &flitv1.McpServer{
+			Name: st.Name, Enabled: st.Enabled, Running: st.Running, ToolCount: int32(st.ToolCount), Error: st.Err,
+		})
+	}
+	return connect.NewResponse(res), nil
+}
+
+// SetMcpServer implements flitv1connect.SessionServiceHandler.
+func (s *Service) SetMcpServer(ctx context.Context, req *connect.Request[flitv1.SetMcpServerRequest]) (*connect.Response[flitv1.SetMcpServerResponse], error) {
+	if err := errors.Join(required("session_id", req.Msg.SessionId), required("server", req.Msg.Server)); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	sess, err := s.M.SetMCPServer(ctx, req.Msg.SessionId, req.Msg.Server, req.Msg.Enabled)
+	if err != nil {
+		return nil, connectErr(err)
+	}
+	return connect.NewResponse(&flitv1.SetMcpServerResponse{Session: toProto(sess)}), nil
+}
+
+// Projects implements flitv1connect.ProjectServiceHandler.
+type Projects struct {
+	M *agent.Manager
+}
+
+var _ flitv1connect.ProjectServiceHandler = (*Projects)(nil)
+
+func projectProto(p store.Project) *flitv1.Project {
+	return &flitv1.Project{
+		Id: p.ID, TeamId: p.TeamID, Name: p.Name, Directory: p.Directory,
+		SessionCount: int32(p.SessionCount), CreateTime: timestamppb.New(p.CreatedAt),
+		ExportEnabled: p.ExportEnabled,
+	}
+}
+
+// ListProjects implements flitv1connect.ProjectServiceHandler.
+func (s *Projects) ListProjects(ctx context.Context, _ *connect.Request[flitv1.ListProjectsRequest]) (*connect.Response[flitv1.ListProjectsResponse], error) {
+	list, err := s.M.Projects(ctx)
+	if err != nil {
+		return nil, connectErr(err)
+	}
+	res := &flitv1.ListProjectsResponse{}
+	for _, p := range list {
+		res.Projects = append(res.Projects, projectProto(p))
+	}
+	return connect.NewResponse(res), nil
+}
+
+// CreateProject implements flitv1connect.ProjectServiceHandler.
+func (s *Projects) CreateProject(ctx context.Context, req *connect.Request[flitv1.CreateProjectRequest]) (*connect.Response[flitv1.CreateProjectResponse], error) {
+	if err := required("directory", req.Msg.Directory); err != nil {
+		return nil, err
+	}
+	p, err := s.M.CreateProject(ctx, req.Msg.Directory, req.Msg.Name)
+	if err != nil {
+		return nil, connectErr(err)
+	}
+	return connect.NewResponse(&flitv1.CreateProjectResponse{Project: projectProto(p)}), nil
+}
+
+// SetProjectExport implements flitv1connect.ProjectServiceHandler.
+func (s *Projects) SetProjectExport(ctx context.Context, req *connect.Request[flitv1.SetProjectExportRequest]) (*connect.Response[flitv1.SetProjectExportResponse], error) {
+	if err := required("project_id", req.Msg.ProjectId); err != nil {
+		return nil, err
+	}
+	p, err := s.M.SetProjectExport(ctx, req.Msg.ProjectId, req.Msg.Enabled)
+	if err != nil {
+		return nil, connectErr(err)
+	}
+	return connect.NewResponse(&flitv1.SetProjectExportResponse{Project: projectProto(p)}), nil
+}
+
+// ListSkills implements flitv1connect.SessionServiceHandler.
+func (s *Service) ListSkills(ctx context.Context, req *connect.Request[flitv1.ListSkillsRequest]) (*connect.Response[flitv1.ListSkillsResponse], error) {
+	if err := required("session_id", req.Msg.SessionId); err != nil {
+		return nil, err
+	}
+	list, err := s.M.Skills(ctx, req.Msg.SessionId)
+	if err != nil {
+		return nil, connectErr(err)
+	}
+	res := &flitv1.ListSkillsResponse{}
+	for _, sk := range list {
+		res.Skills = append(res.Skills, &flitv1.Skill{Name: sk.Name, Description: sk.Description, Source: sk.Source})
+	}
+	return connect.NewResponse(res), nil
 }

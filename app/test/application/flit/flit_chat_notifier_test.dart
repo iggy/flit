@@ -4,13 +4,12 @@ import 'package:flit/application/flit/flit_chat_notifier.dart';
 import 'package:flit/application/flit/flit_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/domain/models/flit_event.dart';
-import 'package:flit/domain/models/flit_session.dart';
 import 'package:flit/domain/repositories/flit_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// A server log the fake replays from any seq, like flit does.
-final class FakeFlitRepository implements FlitRepository {
+final class FakeFlitRepository extends Fake implements FlitRepository {
   final List<FlitEvent> log = <FlitEvent>[];
   final List<int> attachedFrom = <int>[];
   final List<StreamController<FlitEvent>> streams =
@@ -70,46 +69,10 @@ final class FakeFlitRepository implements FlitRepository {
   }
 
   @override
-  Future<FlitSession> createSession({
-    required String workingDir,
-    String title = '',
-    String provider = '',
-    String model = '',
-    String effort = '',
-    String role = '',
-  }) => throw UnimplementedError();
-
-  @override
-  Future<FlitSession> setEffort(String sessionId, String effort) =>
-      throw UnimplementedError();
-
-  @override
-  Future<List<FlitModel>> listModels() async => const <FlitModel>[];
-
-  @override
-  Future<List<FlitModel>> refreshModels() async => const <FlitModel>[];
-
-  @override
-  Future<List<FlitAgentRole>> listRoles() async => const <FlitAgentRole>[];
-
-  @override
-  Future<FlitSession> getSession(String id) => throw UnimplementedError();
-
-  @override
   Future<bool> interrupt(String sessionId) async => true;
 
   @override
-  Future<List<FlitSession>> listSessions() async => const <FlitSession>[];
-
-  @override
   Future<void> send(String sessionId, String text) async {}
-
-  @override
-  Future<FlitSession> setModel(
-    String sessionId, {
-    required String provider,
-    required String model,
-  }) => throw UnimplementedError();
 }
 
 FlitEvent delta(int seq, String text) =>

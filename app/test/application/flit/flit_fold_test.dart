@@ -270,4 +270,44 @@ void main() {
     ]);
     expect(state.messages.single.usage?.input, 12000);
   });
+
+  test('ratings, MCP changes and moves', () {
+    final state = foldFlitEvents(const FlitFoldState(), <FlitEvent>[
+      const FlitMessageStarted(
+        seq: 1,
+        messageId: 'a1',
+        role: FlitRole.assistant,
+        provider: 'llama',
+        model: 'qwen',
+      ),
+      const FlitMessageDone(
+        seq: 2,
+        messageId: 'a1',
+        text: 'hi',
+        reasoning: '',
+        finishReason: 'stop',
+      ),
+      const FlitTurnError(seq: 3, message: 'x', canContinue: true),
+      const FlitFeedback(
+        seq: 4,
+        target: FlitRatingTarget.turn,
+        good: false,
+        messageId: 'a1',
+      ),
+      const FlitFeedback(
+        seq: 5,
+        target: FlitRatingTarget.turn,
+        good: true,
+        messageId: 'a1',
+        client: 'phone',
+      ),
+      const FlitFeedback(seq: 6, target: FlitRatingTarget.model, good: false),
+      const FlitMcpServersChanged(seq: 7, enabled: <String>['fs']),
+      const FlitSessionMoved(seq: 8, projectId: 'proj_x'),
+    ]);
+    expect(state.messageIds, <String?>['a1', null]);
+    expect(state.ratings, <String, bool>{'a1': true});
+    expect(state.mcpServers, <String>['fs']);
+    expect(state.projectId, 'proj_x');
+  });
 }

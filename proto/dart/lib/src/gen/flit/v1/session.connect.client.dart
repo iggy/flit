@@ -12,7 +12,8 @@ import "session.connect.spec.dart" as specs;
 /// an append-only, numbered event log, so a client can attach at any point,
 /// replay from any sequence number and then follow live.
 extension type SessionServiceClient (connect.Transport _transport) {
-  /// CreateSession starts a new, idle session.
+  /// CreateSession starts a new, idle session. Give working_dir, or a
+  /// project_id whose project has a directory.
   Future<flitv1session.CreateSessionResponse> createSession(
     flitv1session.CreateSessionRequest input, {
     connect.Headers? headers,
@@ -171,6 +172,101 @@ extension type SessionServiceClient (connect.Transport _transport) {
   }) {
     return connect.Client(_transport).unary(
       specs.SessionService.setEffort,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
+
+  /// MoveSession moves a session to another project. Its working directory
+  /// stays the same.
+  Future<flitv1session.MoveSessionResponse> moveSession(
+    flitv1session.MoveSessionRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.SessionService.moveSession,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
+
+  /// Rate records whether a turn's result or the model choice was good or
+  /// bad. Ratings are events in the session log.
+  Future<flitv1session.RateResponse> rate(
+    flitv1session.RateRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.SessionService.rate,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
+
+  /// ListMcpServers lists the configured MCP servers and whether each is
+  /// enabled for the session. Only enabled servers' tools reach the model.
+  Future<flitv1session.ListMcpServersResponse> listMcpServers(
+    flitv1session.ListMcpServersRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.SessionService.listMcpServers,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
+
+  /// SetMcpServer enables or disables an MCP server for the session, from
+  /// its next model call.
+  Future<flitv1session.SetMcpServerResponse> setMcpServer(
+    flitv1session.SetMcpServerRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.SessionService.setMcpServer,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
+
+  /// ListSkills lists the skills the session's agent can load: the repo's
+  /// own (.agents/skills, .claude/skills) and the global ones.
+  Future<flitv1session.ListSkillsResponse> listSkills(
+    flitv1session.ListSkillsRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.SessionService.listSkills,
       input,
       signal: signal,
       headers: headers,

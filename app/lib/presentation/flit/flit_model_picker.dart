@@ -5,6 +5,7 @@ library;
 import 'package:flit/application/flit/flit_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/domain/models/flit_session.dart';
+import 'package:flit/presentation/flit/flit_rating.dart';
 import 'package:flit/presentation/flit/flit_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,6 +18,7 @@ Future<FlitModelChoice?> showFlitModelPicker(
   required String provider,
   required String model,
   required String effort,
+  Future<String?> Function(bool good)? onRateCurrent,
 }) {
   return showModalBottomSheet<FlitModelChoice>(
     context: context,
@@ -24,7 +26,12 @@ Future<FlitModelChoice?> showFlitModelPicker(
     showDragHandle: true,
     builder: (_) => FractionallySizedBox(
       heightFactor: 0.85,
-      child: _Picker(provider: provider, model: model, effort: effort),
+      child: _Picker(
+        provider: provider,
+        model: model,
+        effort: effort,
+        onRateCurrent: onRateCurrent,
+      ),
     ),
   );
 }
@@ -34,11 +41,13 @@ class _Picker extends ConsumerStatefulWidget {
     required this.provider,
     required this.model,
     required this.effort,
+    this.onRateCurrent,
   });
 
   final String provider;
   final String model;
   final String effort;
+  final Future<String?> Function(bool good)? onRateCurrent;
 
   @override
   ConsumerState<_Picker> createState() => _PickerState();
@@ -50,6 +59,7 @@ class _PickerState extends ConsumerState<_Picker> {
   late String _model = widget.model;
   late String _effort = widget.effort;
   bool _refreshing = false;
+  bool? _rated;
 
   Future<void> _refresh() async {
     final repository = ref.read(flitRepositoryProvider);
@@ -117,6 +127,33 @@ class _PickerState extends ConsumerState<_Picker> {
               ),
             ],
           ),
+          if (widget.onRateCurrent != null && widget.model.isNotEmpty)
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    'Is ${widget.model} a good choice for this work?',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ),
+                FlitRatingButtons(
+                  rating: _rated,
+                  onRate: (good) async {
+                    final error = await widget.onRateCurrent!(good);
+                    if (!context.mounted) {
+                      return;
+                    }
+                    if (error == null) {
+                      setState(() => _rated = good);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Could not rate: $error')),
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
           TextField(
             decoration: const InputDecoration(
               prefixIcon: Icon(Icons.search),

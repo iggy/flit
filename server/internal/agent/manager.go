@@ -17,14 +17,17 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
 
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
 	"github.com/iggy/flit/server/internal/config"
+	"github.com/iggy/flit/server/internal/mcpclient"
 	"github.com/iggy/flit/server/internal/models"
 	"github.com/iggy/flit/server/internal/roles"
+	"github.com/iggy/flit/server/internal/skills"
 	"github.com/iggy/flit/server/internal/store"
 )
 
@@ -53,6 +56,10 @@ type Manager struct {
 	Catalog *models.Catalog
 	// RolesDir, if set, returns the roles directory. Set before use.
 	RolesDir func() string
+	// MCP, if set, runs MCP servers. Set before use.
+	MCP *mcpclient.Manager
+	// SkillsDirs, if set, returns the skills directories. Set before use.
+	SkillsDirs func() []string
 
 	mu       sync.Mutex
 	sessions map[string]*session
@@ -123,6 +130,9 @@ type CreateOptions struct {
 	Effort     string
 	// Role names a role file; its model and effort are defaults.
 	Role string
+	// ProjectID is the project; empty means Scratch. Without a WorkingDir,
+	// the project's directory is used.
+	ProjectID string
 }
 
 // contextLength is the model's context window, if the catalog knows it.
@@ -153,8 +163,22 @@ func (m *Manager) role(name string) (*roles.Role, error) {
 
 // Create starts a new idle session in the default team and project.
 func (m *Manager) Create(ctx context.Context, o CreateOptions) (store.Session, error) {
+	projectID := o.ProjectID
+	if projectID == "" {
+		projectID = store.DefaultProjectID
+	}
+	project, err := m.store.GetProject(ctx, projectID)
+	if errors.Is(err, store.ErrNotFound) {
+		return store.Session{}, invalid("no project %q", projectID)
+	}
+	if err != nil {
+		return store.Session{}, err
+	}
 	if o.WorkingDir == "" {
-		return store.Session{}, invalid("working_dir is required")
+		o.WorkingDir = project.Directory
+	}
+	if o.WorkingDir == "" {
+		return store.Session{}, invalid("working_dir is required (the project has no directory)")
 	}
 	if !filepath.IsAbs(o.WorkingDir) {
 		return store.Session{}, invalid("working_dir must be an absolute path")
@@ -189,8 +213,8 @@ func (m *Manager) Create(ctx context.Context, o CreateOptions) (store.Session, e
 	}
 	info := store.Session{
 		ID:         newID("ses"),
-		TeamID:     store.DefaultTeamID,
-		ProjectID:  store.DefaultProjectID,
+		TeamID:     project.TeamID,
+		ProjectID:  project.ID,
 		Title:      o.Title,
 		WorkingDir: dir,
 		Provider:   provider,
@@ -198,6 +222,11 @@ func (m *Manager) Create(ctx context.Context, o CreateOptions) (store.Session, e
 		State:      flitv1.TaskState_TASK_STATE_IDLE,
 		Effort:     effort,
 		Role:       o.Role,
+	}
+	for _, srv := range m.cfg().MCPServers {
+		if srv.EnabledByDefault() {
+			info.MCPServers = append(info.MCPServers, srv.Name)
+		}
 	}
 	info.ContextLength = m.contextLength(provider, model)
 	if err := m.store.CreateSession(ctx, &info); err != nil {
@@ -236,9 +265,10 @@ func (m *Manager) Get(ctx context.Context, id string) (store.Session, error) {
 	return s.snapshot(), nil
 }
 
-// List returns sessions, most recently updated first.
-func (m *Manager) List(ctx context.Context, limit, offset int) ([]store.Session, error) {
-	list, err := m.store.ListSessions(ctx, limit, offset)
+// List returns sessions, most recently updated first, optionally only one
+// project's.
+func (m *Manager) List(ctx context.Context, projectID string, limit, offset int) ([]store.Session, error) {
+	list, err := m.store.ListSessions(ctx, projectID, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -326,4 +356,129 @@ func (m *Manager) SetEffort(ctx context.Context, id, effort string) (store.Sessi
 		return store.Session{}, err
 	}
 	return s.setEffort(ctx, effort)
+}
+
+// Projects lists the default team's projects.
+func (m *Manager) Projects(ctx context.Context) ([]store.Project, error) {
+	return m.store.ListProjects(ctx, store.DefaultTeamID)
+}
+
+// CreateProject adds a project for an existing directory.
+func (m *Manager) CreateProject(ctx context.Context, dir, name string) (store.Project, error) {
+	if !filepath.IsAbs(dir) {
+		return store.Project{}, invalid("directory must be an absolute path")
+	}
+	dir = filepath.Clean(dir)
+	if fi, err := os.Stat(dir); err != nil || !fi.IsDir() {
+		return store.Project{}, invalid("directory %s does not exist", dir)
+	}
+	if strings.TrimSpace(name) == "" {
+		name = filepath.Base(dir)
+	}
+	p := store.Project{ID: newID("proj"), TeamID: store.DefaultTeamID, Name: strings.TrimSpace(name), Directory: dir}
+	if err := m.store.CreateProject(ctx, &p); err != nil {
+		if errors.Is(err, store.ErrExists) {
+			return store.Project{}, invalid("%v", err)
+		}
+		return store.Project{}, err
+	}
+	return m.store.GetProject(ctx, p.ID)
+}
+
+// MoveSession moves a session to another project.
+func (m *Manager) MoveSession(ctx context.Context, id, projectID string) (store.Session, error) {
+	p, err := m.store.GetProject(ctx, projectID)
+	if errors.Is(err, store.ErrNotFound) {
+		return store.Session{}, invalid("no project %q", projectID)
+	}
+	if err != nil {
+		return store.Session{}, err
+	}
+	s, err := m.session(ctx, id)
+	if err != nil {
+		return store.Session{}, err
+	}
+	return s.move(ctx, p.ID)
+}
+
+// Rating is a good/bad mark on a turn or a model.
+type Rating struct {
+	Target    flitv1.RatingTarget
+	Good      bool
+	MessageID string
+	Note      string
+	Client    string
+}
+
+// Rate records a rating as a Feedback event.
+func (m *Manager) Rate(ctx context.Context, id string, r Rating) error {
+	if r.Target == flitv1.RatingTarget_RATING_TARGET_UNSPECIFIED {
+		return invalid("target is required")
+	}
+	if r.Target == flitv1.RatingTarget_RATING_TARGET_TURN && r.MessageID == "" {
+		return invalid("rating a turn needs message_id")
+	}
+	s, err := m.session(ctx, id)
+	if err != nil {
+		return err
+	}
+	return s.rate(ctx, r)
+}
+
+// MCPServerStatus is an MCP server as one session sees it.
+type MCPServerStatus struct {
+	mcpclient.Status
+	Enabled bool
+}
+
+// MCPServers lists the configured MCP servers for a session.
+func (m *Manager) MCPServers(ctx context.Context, id string) ([]MCPServerStatus, error) {
+	s, err := m.session(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	enabled := s.snapshot().MCPServers
+	var out []MCPServerStatus
+	if m.MCP == nil {
+		return out, nil
+	}
+	for _, st := range m.MCP.Status() {
+		out = append(out, MCPServerStatus{Status: st, Enabled: slices.Contains(enabled, st.Name)})
+	}
+	return out, nil
+}
+
+// SetMCPServer enables or disables an MCP server for a session.
+func (m *Manager) SetMCPServer(ctx context.Context, id, server string, enabled bool) (store.Session, error) {
+	if _, ok := m.cfg().MCPServer(server); !ok {
+		return store.Session{}, invalid("no MCP server named %q in the config", server)
+	}
+	s, err := m.session(ctx, id)
+	if err != nil {
+		return store.Session{}, err
+	}
+	return s.setMCPServer(ctx, server, enabled)
+}
+
+// SetProjectExport includes or excludes a project from export.
+func (m *Manager) SetProjectExport(ctx context.Context, id string, enabled bool) (store.Project, error) {
+	if err := m.store.SetProjectExport(ctx, id, enabled); err != nil {
+		return store.Project{}, err
+	}
+	return m.store.GetProject(ctx, id)
+}
+
+// Skills lists the skills a session's agent can load, with where each
+// came from.
+func (m *Manager) Skills(ctx context.Context, id string) ([]skills.Skill, error) {
+	s, err := m.session(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	var global []string
+	if m.SkillsDirs != nil {
+		global = m.SkillsDirs()
+	}
+	list, _ := skills.Load(skills.SessionDirs(s.snapshot().WorkingDir, global))
+	return list, nil
 }

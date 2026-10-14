@@ -3,7 +3,12 @@ package tools
 import (
 	"context"
 	"encoding/json"
+	"github.com/iggy/flit/server/internal/skills"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -12,6 +17,9 @@ import (
 
 	"github.com/iggy/flit/server/internal/config"
 )
+
+// testSet is every tool that needs no configuration.
+var testSet = append(All(), GitTools()...)
 
 func newEnv(t *testing.T) *Env {
 	t.Helper()
@@ -25,7 +33,7 @@ func run(t *testing.T, env *Env, name string, args any) Result {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return Run(context.Background(), env, name, string(b))
+	return Run(context.Background(), env, testSet, name, string(b))
 }
 
 func writeFixture(t *testing.T, env *Env, name, content string) {
@@ -58,10 +66,10 @@ func TestReadWrite(t *testing.T) {
 	if r := run(t, env, "read", map[string]any{"path": "a", "bogus": 1}); !r.IsError || !strings.Contains(r.Text, "bogus") {
 		t.Fatalf("unknown argument: %+v", r)
 	}
-	if r := Run(context.Background(), env, "read", "{not json"); !r.IsError {
+	if r := Run(context.Background(), env, testSet, "read", "{not json"); !r.IsError {
 		t.Fatal("invalid JSON should fail")
 	}
-	if r := Run(context.Background(), env, "nope", "{}"); !r.IsError {
+	if r := Run(context.Background(), env, testSet, "nope", "{}"); !r.IsError {
 		t.Fatal("unknown tool should fail")
 	}
 }
@@ -189,7 +197,7 @@ func TestShellInterrupt(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	time.AfterFunc(300*time.Millisecond, cancel)
 	start := time.Now()
-	r := Run(ctx, env, "shell", `{"command":"sleep 30"}`)
+	r := Run(ctx, env, testSet, "shell", `{"command":"sleep 30"}`)
 	if !strings.Contains(r.Text, "[interrupted]") || time.Since(start) > 10*time.Second {
 		t.Fatalf("interrupt: %+v after %s", r, time.Since(start))
 	}
@@ -304,5 +312,128 @@ func TestTodo(t *testing.T) {
 	}
 	if r := run(t, env, "todo", map[string]any{"items": []any{map[string]any{"content": " ", "status": "pending"}}}); !r.IsError {
 		t.Fatal("empty content accepted")
+	}
+}
+
+func TestGit(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("no git")
+	}
+	env := newEnv(t)
+	for _, args := range [][]string{
+		{"init", "-q", "-b", "main"},
+		{"config", "user.email", "t@example.com"},
+		{"config", "user.name", "Test"},
+		{"config", "commit.gpgsign", "false"},
+	} {
+		if out, err := git(context.Background(), env.Dir, args...); err != nil {
+			t.Fatalf("%v: %s", err, out)
+		}
+	}
+	writeFixture(t, env, "a.txt", "one\n")
+
+	if r := run(t, env, "git_status", map[string]any{}); r.IsError || !strings.Contains(r.Text, "?? a.txt") {
+		t.Fatalf("status = %+v", r)
+	}
+	if r := run(t, env, "git_commit", map[string]any{"message": "first", "paths": []string{"a.txt"}}); r.IsError {
+		t.Fatalf("commit = %+v", r)
+	}
+	writeFixture(t, env, "a.txt", "two\n")
+	if r := run(t, env, "git_diff", map[string]any{}); r.IsError || !strings.Contains(r.Text, "+two") {
+		t.Fatalf("diff = %+v", r)
+	}
+	if r := run(t, env, "git_commit", map[string]any{"message": "second", "all": true}); r.IsError {
+		t.Fatalf("commit -a = %+v", r)
+	}
+	r := run(t, env, "git_log", map[string]any{"count": 5})
+	if r.IsError || !strings.Contains(r.Text, "Test: second") || !strings.Contains(r.Text, "Test: first") {
+		t.Fatalf("log = %+v", r)
+	}
+	if r := run(t, env, "git_diff", map[string]any{"ref": "--output=/tmp/x"}); !r.IsError {
+		t.Fatal("option injection via ref accepted")
+	}
+	if r := run(t, env, "git_commit", map[string]any{"message": "nothing"}); !r.IsError {
+		t.Fatal("empty commit succeeded")
+	}
+}
+
+func TestWebFetch(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/page":
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			io.WriteString(w, `<html><head><title>T</title><style>x{}</style></head><body><nav>menu</nav>
+<h1>Hello</h1><p>First <a href="https://go.dev">link</a>.</p><script>evil()</script><ul><li>one</li><li>two</li></ul></body></html>`)
+		case "/data":
+			w.Header().Set("Content-Type", "application/json")
+			io.WriteString(w, `{"ok":true}`)
+		case "/bin":
+			w.Header().Set("Content-Type", "image/png")
+			w.Write([]byte{0x89, 'P', 'N', 'G'})
+		case "/search":
+			if r.URL.Query().Get("format") != "json" {
+				http.Error(w, "no", 403)
+				return
+			}
+			io.WriteString(w, `{"results":[{"title":"Go","url":"https://go.dev","content":"The Go language"}]}`)
+		}
+	}))
+	defer srv.Close()
+	env := newEnv(t)
+	set := []Tool{WebFetchTool(), WebSearchTool(srv.URL)}
+	call := func(name string, args map[string]any) Result {
+		b, _ := json.Marshal(args)
+		return Run(context.Background(), env, set, name, string(b))
+	}
+
+	r := call("web_fetch", map[string]any{"url": srv.URL + "/page"})
+	for _, want := range []string{"# Hello", "First link (https://go.dev) .", "- one", "- two"} {
+		if !strings.Contains(r.Text, want) {
+			t.Errorf("page text lacks %q:\n%s", want, r.Text)
+		}
+	}
+	for _, unwanted := range []string{"evil", "menu", "x{}"} {
+		if strings.Contains(r.Text, unwanted) {
+			t.Errorf("page text has %q:\n%s", unwanted, r.Text)
+		}
+	}
+	if r := call("web_fetch", map[string]any{"url": srv.URL + "/data"}); !strings.Contains(r.Text, `{"ok":true}`) {
+		t.Errorf("json = %+v", r)
+	}
+	if r := call("web_fetch", map[string]any{"url": srv.URL + "/bin"}); !r.IsError {
+		t.Error("binary fetched")
+	}
+	if r := call("web_fetch", map[string]any{"url": "file:///etc/passwd"}); !r.IsError {
+		t.Error("file URL fetched")
+	}
+	if r := call("web_search", map[string]any{"query": "golang"}); r.IsError || !strings.Contains(r.Text, "1. Go\n   https://go.dev") {
+		t.Errorf("search = %+v", r)
+	}
+}
+
+func TestSkillTool(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, "demo", "references"), 0o755)
+	os.WriteFile(filepath.Join(dir, "demo", "SKILL.md"), []byte("---\nname: demo\ndescription: Demo skill.\n---\nDo the demo."), 0o644)
+	os.WriteFile(filepath.Join(dir, "demo", "references", "REF.md"), []byte("deep detail"), 0o644)
+	list, problems := skills.Load([]skills.Dir{{Path: dir, Source: "test"}})
+	if len(problems) > 0 {
+		t.Fatal(problems)
+	}
+	env := newEnv(t)
+	set := []Tool{SkillTool(list)}
+	call := func(args string) Result { return Run(context.Background(), env, set, "skill", args) }
+
+	if r := call(`{"name":"demo"}`); r.IsError || !strings.Contains(r.Text, "Do the demo.") || !strings.Contains(r.Text, "- references/REF.md") {
+		t.Fatalf("load = %+v", r)
+	}
+	if r := call(`{"name":"demo","file":"references/REF.md"}`); r.Text != "deep detail" {
+		t.Fatalf("file = %+v", r)
+	}
+	if r := call(`{"name":"demo","file":"../../etc/passwd"}`); !r.IsError {
+		t.Fatal("escaped the skill dir")
+	}
+	if r := call(`{"name":"nope"}`); !r.IsError {
+		t.Fatal("unknown skill loaded")
 	}
 }

@@ -4,12 +4,16 @@
 library;
 
 import 'package:flit/application/flit/flit_chat_notifier.dart';
+import 'package:flit/application/flit/flit_fold.dart';
 import 'package:flit/application/flit/flit_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
+import 'package:flit/domain/models/chat_message.dart';
 import 'package:flit/domain/models/flit_session.dart';
 import 'package:flit/presentation/chat/message_bubble.dart';
+import 'package:flit/presentation/flit/flit_mcp_sheet.dart';
 import 'package:flit/presentation/flit/flit_model_picker.dart';
 import 'package:flit/presentation/flit/flit_prompt_card.dart';
+import 'package:flit/presentation/flit/flit_rating.dart';
 import 'package:flit/presentation/flit/flit_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -94,6 +98,9 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
       provider: provider,
       model: model,
       effort: effort,
+      onRateCurrent: (good) => ref
+          .read(flitChatProvider(widget.sessionId).notifier)
+          .rateModel(good: good),
     );
     if (choice == null) {
       return;
@@ -119,6 +126,17 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
         _snack('Could not change the model: ${error.message}');
       }
     }
+  }
+
+  /// Turn results can be rated on the last assistant message of a finished
+  /// model call that produced text.
+  static bool _rateable(FlitFoldState fold, int i) {
+    final m = fold.messages[i];
+    return m.role == MessageRole.assistant &&
+        !m.streaming &&
+        m.text.trim().isNotEmpty &&
+        i < fold.messageIds.length &&
+        fold.messageIds[i] != null;
   }
 
   void _scrollToEnd() {
@@ -169,6 +187,11 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
           overflow: TextOverflow.ellipsis,
         ),
         actions: <Widget>[
+          IconButton(
+            tooltip: 'MCP servers',
+            onPressed: () => showFlitMcpSheet(context, widget.sessionId),
+            icon: const Icon(Icons.extension_outlined),
+          ),
           IconButton(
             tooltip: 'Change model',
             onPressed: () => _changeModel(provider, model, effort),
@@ -227,8 +250,29 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
                       controller: _scroll,
                       padding: const EdgeInsets.all(12),
                       children: <Widget>[
-                        for (final m in fold.messages)
-                          MessageBubble(message: m),
+                        for (
+                          var i = 0;
+                          i < fold.messages.length;
+                          i++
+                        ) ...<Widget>[
+                          MessageBubble(message: fold.messages[i]),
+                          if (_rateable(fold, i))
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: FlitRatingButtons(
+                                rating: fold.ratings[fold.messageIds[i]],
+                                onRate: (good) async {
+                                  final error = await notifier.rateTurn(
+                                    fold.messageIds[i]!,
+                                    good: good,
+                                  );
+                                  if (error != null && mounted) {
+                                    _snack('Could not rate: $error');
+                                  }
+                                },
+                              ),
+                            ),
+                        ],
                         for (final p in fold.prompts)
                           FlitPromptCard(
                             key: ValueKey<String>(p.promptId),

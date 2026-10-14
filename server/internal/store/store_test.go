@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"testing"
 	"time"
@@ -106,8 +107,47 @@ func TestSessionsAndEvents(t *testing.T) {
 	if err := s.SetModel(ctx, sess.ID, "cloud", "big"); err != nil {
 		t.Fatal(err)
 	}
-	list, err := s.ListSessions(ctx, 10, 0)
+	list, err := s.ListSessions(ctx, "", 10, 0)
 	if err != nil || len(list) != 1 || list[0].Model != "big" {
 		t.Fatalf("list = %+v, %v", list, err)
+	}
+}
+
+func TestProjects(t *testing.T) {
+	s, _ := open(t)
+	ctx := context.Background()
+	p := Project{ID: "proj_a", TeamID: DefaultTeamID, Name: "alpha", Directory: "/src/a"}
+	if err := s.CreateProject(ctx, &p); err != nil {
+		t.Fatal(err)
+	}
+	dup := Project{ID: "proj_b", TeamID: DefaultTeamID, Name: "again", Directory: "/src/a"}
+	if err := s.CreateProject(ctx, &dup); !errors.Is(err, ErrExists) {
+		t.Fatalf("duplicate directory: %v", err)
+	}
+	sess := Session{ID: "ses_1", TeamID: DefaultTeamID, ProjectID: DefaultProjectID, WorkingDir: "/src/a", MCPServers: []string{"x", "y"}}
+	if err := s.CreateSession(ctx, &sess); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := s.GetSession(ctx, "ses_1"); len(got.MCPServers) != 2 || got.MCPServers[1] != "y" {
+		t.Fatalf("mcp servers = %v", got.MCPServers)
+	}
+	if err := s.MoveSession(ctx, "ses_1", "proj_a"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.SetMCPServers(ctx, "ses_1", nil); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := s.GetSession(ctx, "ses_1"); got.ProjectID != "proj_a" || got.MCPServers != nil {
+		t.Fatalf("after move = %+v", got)
+	}
+	list, err := s.ListProjects(ctx, DefaultTeamID)
+	if err != nil || len(list) != 2 || list[0].ID != DefaultProjectID || list[1].SessionCount != 1 || list[0].SessionCount != 0 {
+		t.Fatalf("projects = %+v, %v", list, err)
+	}
+	if in, _ := s.ListSessions(ctx, "proj_a", 10, 0); len(in) != 1 {
+		t.Fatalf("filtered sessions = %v", in)
+	}
+	if in, _ := s.ListSessions(ctx, DefaultProjectID, 10, 0); len(in) != 0 {
+		t.Fatalf("scratch sessions = %v", in)
 	}
 }
