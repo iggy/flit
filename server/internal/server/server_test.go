@@ -20,7 +20,7 @@ const testToken = "flit_test-token"
 
 func start(t *testing.T) (*Server, string) {
 	t.Helper()
-	srv := New(NewHandler(testToken, nil), slog.New(slog.NewTextHandler(io.Discard, nil)))
+	srv := New(NewHandler(testToken, Deps{}), slog.New(slog.NewTextHandler(io.Discard, nil)))
 	cfg := config.Default()
 	cfg.Listen = "127.0.0.1:0"
 	if err := srv.Apply(cfg); err != nil {
@@ -164,7 +164,7 @@ func TestApplyRebinds(t *testing.T) {
 }
 
 func TestTLSMissingFiles(t *testing.T) {
-	srv := New(NewHandler(testToken, nil), slog.New(slog.NewTextHandler(io.Discard, nil)))
+	srv := New(NewHandler(testToken, Deps{}), slog.New(slog.NewTextHandler(io.Discard, nil)))
 	cfg := config.Default()
 	cfg.Listen = "127.0.0.1:0"
 	cfg.TLS = config.TLS{CertFile: "/nonexistent/cert.pem", KeyFile: "/nonexistent/key.pem"}

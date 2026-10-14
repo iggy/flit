@@ -13,6 +13,7 @@ import (
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
 	"github.com/iggy/flit/server/gen/flit/v1/flitv1connect"
 	"github.com/iggy/flit/server/internal/agent"
+	"github.com/iggy/flit/server/internal/auth"
 	"github.com/iggy/flit/server/internal/store"
 )
 
@@ -185,7 +186,13 @@ func (s *Service) AnswerPrompt(ctx context.Context, req *connect.Request[flitv1.
 	default:
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("decision must be ALLOW or DENY"))
 	}
-	if err := s.M.AnswerPrompt(ctx, m.SessionId, m.PromptId, allow, m.Client); err != nil {
+	client := m.Client
+	if client == "" {
+		if p, ok := auth.FromContext(ctx); ok {
+			client = p.Name
+		}
+	}
+	if err := s.M.AnswerPrompt(ctx, m.SessionId, m.PromptId, allow, client); err != nil {
 		return nil, connectErr(err)
 	}
 	return connect.NewResponse(&flitv1.AnswerPromptResponse{}), nil

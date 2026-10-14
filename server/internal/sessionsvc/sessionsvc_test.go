@@ -35,7 +35,7 @@ func start(t *testing.T, cfg config.Config) flitv1connect.SessionServiceClient {
 	if err != nil {
 		t.Fatal(err)
 	}
-	srv := httptest.NewServer(server.NewHandler(token, m))
+	srv := httptest.NewServer(server.NewHandler(token, server.Deps{Sessions: m}))
 	t.Cleanup(func() {
 		srv.CloseClientConnections()
 		srv.Close()
@@ -200,7 +200,7 @@ func TestSessionAPIRequiresToken(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer m.Close()
-	srv := httptest.NewServer(server.NewHandler(token, m))
+	srv := httptest.NewServer(server.NewHandler(token, server.Deps{Sessions: m}))
 	defer srv.Close()
 
 	for _, tok := range []string{"", "flit_wrong"} {
