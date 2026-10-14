@@ -205,9 +205,10 @@ func (s *session) runTool(ctx context.Context, set []tools.Tool, tc llm.ToolCall
 				appendErr = err
 			}
 		},
-		Approve: func(ctx context.Context, title, detail string) (bool, error) {
-			return s.approve(ctx, tc.ID, title, detail)
+		Approve: func(ctx context.Context, title, detail string, patterns []string) (bool, error) {
+			return s.approve(ctx, tc.ID, title, detail, patterns)
 		},
+		SessionAllowed: s.sessionAllowed(),
 		Todo: func(items []tools.TodoItem) {
 			ev := &flitv1.TodoUpdated{}
 			for _, it := range items {

@@ -133,14 +133,21 @@ class PromptDecision extends $pb.ProtobufEnum {
   static const PromptDecision PROMPT_DECISION_DENY =
       PromptDecision._(2, _omitEnumNames ? '' : 'PROMPT_DECISION_DENY');
 
+  /// Allow, and allow the prompt's session_patterns for the rest of the
+  /// session without asking again. Only valid when the prompt offered
+  /// session_patterns.
+  static const PromptDecision PROMPT_DECISION_ALLOW_SESSION = PromptDecision._(
+      3, _omitEnumNames ? '' : 'PROMPT_DECISION_ALLOW_SESSION');
+
   static const $core.List<PromptDecision> values = <PromptDecision>[
     PROMPT_DECISION_UNSPECIFIED,
     PROMPT_DECISION_ALLOW,
     PROMPT_DECISION_DENY,
+    PROMPT_DECISION_ALLOW_SESSION,
   ];
 
   static final $core.List<PromptDecision?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 2);
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
   static PromptDecision? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 

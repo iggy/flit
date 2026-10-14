@@ -35,10 +35,12 @@ abstract interface class FlitRepository {
   Future<bool> interrupt(String sessionId);
 
   /// Answer a pending prompt. [client] names this device in the session log.
+  /// [forSession] also allows the prompt's session patterns from now on.
   Future<void> answerPrompt(
     String sessionId,
     String promptId, {
     required bool allow,
+    bool forSession = false,
     String client = '',
   });
 

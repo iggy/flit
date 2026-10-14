@@ -136,6 +136,7 @@ final class FlitPromptRequested extends FlitEvent {
     required this.toolCallId,
     required this.title,
     required this.detail,
+    this.sessionPatterns = const <String>[],
     super.time,
   });
 
@@ -143,6 +144,10 @@ final class FlitPromptRequested extends FlitEvent {
   final String toolCallId;
   final String title;
   final String detail;
+
+  /// What "allow for this session" would allow, e.g. `go test *`; empty
+  /// when it isn't offered.
+  final List<String> sessionPatterns;
 }
 
 /// A prompt was answered (by [client]) or resolved by the server.
@@ -153,11 +158,15 @@ final class FlitPromptResolved extends FlitEvent {
     required this.allowed,
     required this.client,
     required this.reason,
+    this.forSession = false,
     super.time,
   });
 
   final String promptId;
   final bool allowed;
+
+  /// Allowed for the rest of the session, not just this once.
+  final bool forSession;
 
   /// The answering client's name; empty when the server resolved it.
   final String client;

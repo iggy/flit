@@ -25,8 +25,12 @@ type Env struct {
 	// Output receives live output (shell). May be nil.
 	Output func(string)
 	// Approve asks the user to allow something and blocks until they
-	// answer or ctx ends. Nil means nothing can be approved.
-	Approve func(ctx context.Context, title, detail string) (bool, error)
+	// answer or ctx ends. sessionPatterns, if any, are offered as "allow for
+	// this session". Nil means nothing can be approved.
+	Approve func(ctx context.Context, title, detail string, sessionPatterns []string) (bool, error)
+	// SessionAllowed are shell patterns the user allowed for the rest of
+	// the session (see SessionPatterns).
+	SessionAllowed []string
 	// Todo receives the agent's task list whenever the todo tool changes
 	// it. May be nil.
 	Todo func([]TodoItem)

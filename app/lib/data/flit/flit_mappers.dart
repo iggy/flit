@@ -169,6 +169,7 @@ FlitEvent eventFromProto(pb.Event e) {
         toolCallId: p.toolCallId,
         title: p.title,
         detail: p.detail,
+        sessionPatterns: List<String>.unmodifiable(p.sessionPatterns),
       );
     case pb.Event_Payload.promptResolved:
       final p = e.promptResolved;
@@ -176,7 +177,11 @@ FlitEvent eventFromProto(pb.Event e) {
         seq: seq,
         time: time,
         promptId: p.promptId,
-        allowed: p.decision == pb.PromptDecision.PROMPT_DECISION_ALLOW,
+        allowed:
+            p.decision == pb.PromptDecision.PROMPT_DECISION_ALLOW ||
+            p.decision == pb.PromptDecision.PROMPT_DECISION_ALLOW_SESSION,
+        forSession:
+            p.decision == pb.PromptDecision.PROMPT_DECISION_ALLOW_SESSION,
         client: p.client,
         reason: p.reason,
       );

@@ -209,7 +209,7 @@ func TestShellApproval(t *testing.T) {
 		Timeout: time.Minute, MaxTimeout: time.Minute}
 	var asked []string
 	answer := false
-	env.Approve = func(_ context.Context, title, detail string) (bool, error) {
+	env.Approve = func(_ context.Context, title, detail string, _ []string) (bool, error) {
 		asked = append(asked, detail)
 		return answer, nil
 	}
@@ -435,5 +435,45 @@ func TestSkillTool(t *testing.T) {
 	}
 	if r := call(`{"name":"nope"}`); !r.IsError {
 		t.Fatal("unknown skill loaded")
+	}
+}
+
+func TestSessionPatterns(t *testing.T) {
+	for cmd, want := range map[string][]string{
+		"go test ./...":                       {"go test *"},
+		"cd /src/app && go test ./... -run X": {"go test *"},
+		"CGO_ENABLED=0 go build ./cmd/flit":   {"go build *"},
+		"git status":                          {"git status *"},
+		"ls -la":                              {"ls *"},
+		"./run.sh --fast":                     {"./run.sh *"},
+		"npm run build && npm run test":       {"npm run *"},
+		"go test ./... | tail -20":            {"go test *", "tail *"},
+		"python3 script.py":                   {"python3 *"},
+	} {
+		got, ok := SessionPatterns(cmd)
+		if !ok || strings.Join(got, ",") != strings.Join(want, ",") {
+			t.Errorf("%q: got %v, %v; want %v", cmd, got, ok, want)
+		}
+	}
+	for _, cmd := range []string{"go test > out.txt", "echo $(whoami)", "cat `x`", "cd /tmp", "FOO=1"} {
+		if got, ok := SessionPatterns(cmd); ok {
+			t.Errorf("%q: offered %v", cmd, got)
+		}
+	}
+
+	sh := config.Shell{Default: "ask", Deny: []string{"git push*"}}
+	session := []string{"go test *", "tail *", "git push *"}
+	for cmd, want := range map[string]Decision{
+		"go test ./...":             Allow,
+		"cd x && go test ./pkg":     Allow,
+		"go test ./... | tail -5":   Allow,
+		"go test ./... | grep FAIL": Ask, // grep isn't allowed
+		"go build ./...":            Ask,
+		"go test ./... > log.txt":   Ask,  // redirection is never session-allowed
+		"git push origin main":      Deny, // deny rules win
+	} {
+		if got := ShellDecisionWith(cmd, sh, session); got != want {
+			t.Errorf("%q: got %v, want %v", cmd, got, want)
+		}
 	}
 }

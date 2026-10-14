@@ -285,8 +285,12 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
                           FlitPromptCard(
                             key: ValueKey<String>(p.promptId),
                             prompt: p,
-                            onAnswer: ({required allow}) =>
-                                notifier.answer(p.promptId, allow: allow),
+                            onAnswer: ({required allow, forSession = false}) =>
+                                notifier.answer(
+                                  p.promptId,
+                                  allow: allow,
+                                  forSession: forSession,
+                                ),
                           ),
                       ],
                     ),

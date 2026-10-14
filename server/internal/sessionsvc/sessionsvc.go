@@ -186,19 +186,22 @@ func (s *Service) AnswerPrompt(ctx context.Context, req *connect.Request[flitv1.
 	if err := errors.Join(required("session_id", m.SessionId), required("prompt_id", m.PromptId)); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	var allow bool
+	var answer agent.Answer
 	switch m.Decision {
 	case flitv1.PromptDecision_PROMPT_DECISION_ALLOW:
-		allow = true
+		answer.Allow = true
+	case flitv1.PromptDecision_PROMPT_DECISION_ALLOW_SESSION:
+		answer.ForSession = true
 	case flitv1.PromptDecision_PROMPT_DECISION_DENY:
 	default:
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("decision must be ALLOW or DENY"))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("decision must be ALLOW, ALLOW_SESSION or DENY"))
 	}
 	client := m.Client
 	if client == "" {
 		client = clientName(ctx)
 	}
-	if err := s.M.AnswerPrompt(ctx, m.SessionId, m.PromptId, allow, client); err != nil {
+	answer.Client = client
+	if err := s.M.AnswerPrompt(ctx, m.SessionId, m.PromptId, answer); err != nil {
 		return nil, connectErr(err)
 	}
 	return connect.NewResponse(&flitv1.AnswerPromptResponse{}), nil

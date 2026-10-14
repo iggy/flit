@@ -396,6 +396,10 @@ enum PromptDecision {
   PROMPT_DECISION_UNSPECIFIED = 0;
   PROMPT_DECISION_ALLOW = 1;
   PROMPT_DECISION_DENY = 2;
+  // Allow, and allow the prompt's session_patterns for the rest of the
+  // session without asking again. Only valid when the prompt offered
+  // session_patterns.
+  PROMPT_DECISION_ALLOW_SESSION = 3;
 }
 
 // PromptRequested asks the user to allow or deny something, such as a shell
@@ -407,6 +411,11 @@ message PromptRequested {
   string title = 3;
   // What exactly would happen, e.g. the command line.
   string detail = 4;
+  // What "allow for this session" would allow from now on, e.g.
+  // ["go test *"]: each command's program and subcommand, ignoring a
+  // leading "cd ... &&" and variable assignments. Empty when it isn't
+  // offered.
+  repeated string session_patterns = 5;
 }
 
 message PromptResolved {
@@ -417,6 +426,9 @@ message PromptResolved {
   string client = 3;
   // Why the server resolved it, when it did.
   string reason = 4;
+  // With PROMPT_DECISION_ALLOW_SESSION: the patterns now allowed for the
+  // rest of the session.
+  repeated string session_patterns = 5;
 }
 
 message TaskStateChanged {

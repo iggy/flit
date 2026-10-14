@@ -54,9 +54,10 @@ final class FakeFlitRepository extends Fake implements FlitRepository {
     String sessionId,
     String promptId, {
     required bool allow,
+    bool forSession = false,
     String client = '',
   }) async {
-    answers.add('$promptId:$allow:$client');
+    answers.add('$promptId:$allow:$client${forSession ? ':session' : ''}');
     emit(
       FlitPromptResolved(
         seq: log.length + 1,

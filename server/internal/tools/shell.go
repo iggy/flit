@@ -41,7 +41,7 @@ var shellTool = Tool{
 			return errorf("%v", err)
 		}
 
-		switch ShellDecision(a.Command, env.Shell) {
+		switch ShellDecisionWith(a.Command, env.Shell, env.SessionAllowed) {
 		case Deny:
 			return errorf("the command is denied by flit's shell rules; do not retry it, find another way or ask the user")
 		case Ask:
@@ -52,7 +52,8 @@ var shellTool = Tool{
 			if a.Workdir != "" {
 				detail = fmt.Sprintf("%s\n(in %s)", a.Command, rel(env.Dir, dir))
 			}
-			ok, err := env.Approve(ctx, "Run shell command", detail)
+			patterns, _ := SessionPatterns(a.Command)
+			ok, err := env.Approve(ctx, "Run shell command", detail, patterns)
 			if err != nil {
 				return errorf("approval failed: %v", err)
 			}

@@ -163,10 +163,20 @@ class FlitChatNotifier extends Notifier<FlitChatState> {
 
   /// Answers a prompt as this device. The prompt disappears from every
   /// client once the server records the answer.
-  Future<String?> answer(String promptId, {required bool allow}) {
+  Future<String?> answer(
+    String promptId, {
+    required bool allow,
+    bool forSession = false,
+  }) {
     final client = ref.read(flitDeviceNameProvider);
     return _run(
-      (r) => r.answerPrompt(sessionId, promptId, allow: allow, client: client),
+      (r) => r.answerPrompt(
+        sessionId,
+        promptId,
+        allow: allow,
+        forSession: forSession,
+        client: client,
+      ),
     );
   }
 
