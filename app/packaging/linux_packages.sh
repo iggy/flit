@@ -52,7 +52,7 @@ chmod 755 "$STAGE/usr/bin/$APP_NAME"
 cat > "$STAGE/usr/share/applications/$APP_NAME.desktop" <<'EOF'
 [Desktop Entry]
 Name=Flit
-Comment=Flutter client for Hermes Agent gateway
+Comment=flit coding agent (also a Hermes Agent client)
 Exec=flit
 Icon=flit
 Type=Application
@@ -88,9 +88,9 @@ Section: utils
 Priority: optional
 Architecture: amd64
 Maintainer: Iggy Jackson <iggy@kws1.com>
-Description: Flutter client for the Hermes Agent gateway
- Cross-platform gateway client for Hermes Agent. Thin client that connects
- to a running gateway over WebSocket JSON-RPC.
+Description: App for the flit coding agent
+ Cross-platform app for the flit coding agent (pair it with "flit pair").
+ Also connects to Hermes Agent gateways.
 EOF
 
 dpkg-deb --build --root-owner-group "$STAGE" "$OUT_DIR/${APP_NAME}_${VERSION}_amd64.deb" >/dev/null
@@ -112,13 +112,13 @@ else
 Name: $APP_NAME
 Version: $VERSION
 Release: 1
-Summary: Flutter client for the Hermes Agent gateway
+Summary: App for the flit coding agent
 License: MIT
 BuildArch: x86_64
 
 %description
-Cross-platform gateway client for Hermes Agent. Thin client that connects
-to a running gateway over WebSocket JSON-RPC.
+Cross-platform app for the flit coding agent (pair it with "flit pair").
+Also connects to Hermes Agent gateways.
 
 %prep
 %build

@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.nousresearch.hermes"
+    namespace = "com.theiggy.flit"
     // flutter_secure_storage 11.x compiles against Android SDK 37, so the
     // AAR metadata check fails unless we exceed Flutter's default (36).
     compileSdk = 37
@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.nousresearch.hermes"
+        applicationId = "com.theiggy.flit"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

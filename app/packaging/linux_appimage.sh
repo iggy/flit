@@ -45,7 +45,7 @@ chmod +x "$APPDIR/AppRun"
 cat > "$APPDIR/flit.desktop" <<'EOF'
 [Desktop Entry]
 Name=Flit
-Comment=Flutter client for Hermes Agent gateway
+Comment=flit coding agent (also a Hermes Agent client)
 Exec=flit
 Icon=flit
 Type=Application
