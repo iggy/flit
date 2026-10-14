@@ -175,25 +175,76 @@ final class FlitModelChanged extends FlitEvent {
     required super.seq,
     required this.provider,
     required this.model,
+    this.effort = '',
+    this.contextLength = 0,
     super.time,
   });
 
   final String provider;
   final String model;
+
+  /// Reasoning effort; empty means the model's default.
+  final String effort;
+
+  /// The model's context window; 0 if unknown.
+  final int contextLength;
 }
 
+/// Token use and speed of one model call.
 final class FlitUsage extends FlitEvent {
   const FlitUsage({
     required super.seq,
     required this.messageId,
     required this.inputTokens,
     required this.outputTokens,
+    this.contextLength = 0,
+    this.timeToFirstTokenMs = 0,
+    this.promptTokensPerSecond = 0,
+    this.generationTokensPerSecond = 0,
+    this.timingSource = '',
     super.time,
   });
 
   final String messageId;
   final int inputTokens;
   final int outputTokens;
+
+  /// The model's context window; 0 if unknown. Input plus output tokens is
+  /// how much of it the call used.
+  final int contextLength;
+  final int timeToFirstTokenMs;
+  final double promptTokensPerSecond;
+  final double generationTokensPerSecond;
+
+  /// "llama.cpp" (the server's own timings) or "measured" (timed by flit).
+  final String timingSource;
+}
+
+enum FlitTodoStatus { pending, inProgress, completed }
+
+/// One entry in the agent's task list.
+final class FlitTodo {
+  const FlitTodo({required this.content, required this.status});
+
+  final String content;
+  final FlitTodoStatus status;
+
+  @override
+  bool operator ==(Object other) =>
+      other is FlitTodo && other.content == content && other.status == status;
+
+  @override
+  int get hashCode => Object.hash(content, status);
+
+  @override
+  String toString() => 'FlitTodo(${status.name}: $content)';
+}
+
+/// The agent's task list after it changed.
+final class FlitTodoUpdated extends FlitEvent {
+  const FlitTodoUpdated({required super.seq, required this.items, super.time});
+
+  final List<FlitTodo> items;
 }
 
 final class FlitTurnError extends FlitEvent {

@@ -50,6 +50,39 @@ final class FlitPendingPrompt {
   String toString() => 'FlitPendingPrompt($promptId, $title: $detail)';
 }
 
+/// How fast the last model call was.
+final class FlitSpeed {
+  const FlitSpeed({
+    required this.timeToFirstTokenMs,
+    required this.promptTokensPerSecond,
+    required this.generationTokensPerSecond,
+    required this.source,
+  });
+
+  final int timeToFirstTokenMs;
+  final double promptTokensPerSecond;
+  final double generationTokensPerSecond;
+
+  /// "llama.cpp" or "measured".
+  final String source;
+
+  @override
+  bool operator ==(Object other) =>
+      other is FlitSpeed &&
+      other.timeToFirstTokenMs == timeToFirstTokenMs &&
+      other.promptTokensPerSecond == promptTokensPerSecond &&
+      other.generationTokensPerSecond == generationTokensPerSecond &&
+      other.source == source;
+
+  @override
+  int get hashCode => Object.hash(
+    timeToFirstTokenMs,
+    promptTokensPerSecond,
+    generationTokensPerSecond,
+    source,
+  );
+}
+
 /// The folded view of one flit session.
 final class FlitFoldState {
   const FlitFoldState({
@@ -62,7 +95,26 @@ final class FlitFoldState {
     this.lastSeq = 0,
     this.messageIndex = const <String, int>{},
     this.toolMessage = const <String, int>{},
+    this.effort,
+    this.contextTokens = 0,
+    this.contextLength = 0,
+    this.todos = const <FlitTodo>[],
+    this.speed,
   });
+
+  /// The reasoning effort, once a ModelChanged event says so (null until
+  /// then: fall back to the session's).
+  final String? effort;
+
+  /// Context use after the last model call, and the window (0 if unknown).
+  final int contextTokens;
+  final int contextLength;
+
+  /// The agent's task list (todo tool), latest version.
+  final List<FlitTodo> todos;
+
+  /// Speed of the last model call, if reported.
+  final FlitSpeed? speed;
 
   /// The conversation, in log order.
   final List<ChatMessage> messages;
@@ -103,6 +155,11 @@ final class FlitFoldState {
     int? lastSeq,
     Map<String, int>? messageIndex,
     Map<String, int>? toolMessage,
+    String? effort,
+    int? contextTokens,
+    int? contextLength,
+    List<FlitTodo>? todos,
+    FlitSpeed? speed,
   }) {
     return FlitFoldState(
       messages: messages ?? this.messages,
@@ -114,6 +171,11 @@ final class FlitFoldState {
       lastSeq: lastSeq ?? this.lastSeq,
       messageIndex: messageIndex ?? this.messageIndex,
       toolMessage: toolMessage ?? this.toolMessage,
+      effort: effort ?? this.effort,
+      contextTokens: contextTokens ?? this.contextTokens,
+      contextLength: contextLength ?? this.contextLength,
+      todos: todos ?? this.todos,
+      speed: speed ?? this.speed,
     );
   }
 
@@ -126,7 +188,12 @@ final class FlitFoldState {
         other.taskReason == taskReason &&
         other.provider == provider &&
         other.model == model &&
-        other.lastSeq == lastSeq;
+        other.lastSeq == lastSeq &&
+        other.effort == effort &&
+        other.contextTokens == contextTokens &&
+        other.contextLength == contextLength &&
+        deepListEquals(other.todos, todos) &&
+        other.speed == speed;
   }
 
   @override
@@ -138,6 +205,11 @@ final class FlitFoldState {
     provider,
     model,
     lastSeq,
+    effort,
+    contextTokens,
+    contextLength,
+    Object.hashAll(todos),
+    speed,
   );
 
   @override
@@ -227,14 +299,11 @@ FlitFoldState foldFlitEvent(FlitFoldState state, FlitEvent event) {
     FlitModelChanged() => s.copyWith(
       provider: event.provider,
       model: event.model,
+      effort: event.effort,
+      contextLength: event.contextLength,
     ),
-    FlitUsage() => _updateMessage(
-      s,
-      event.messageId,
-      (m) => m.copyWith(
-        usage: Usage(input: event.inputTokens, output: event.outputTokens),
-      ),
-    ),
+    FlitUsage() => _usage(s, event),
+    FlitTodoUpdated() => s.copyWith(todos: event.items),
     FlitTurnError() => s.copyWith(
       messages: <ChatMessage>[
         ...s.messages,
@@ -250,6 +319,28 @@ FlitFoldState foldFlitEvent(FlitFoldState state, FlitEvent event) {
     ),
     FlitUnknownEvent() => s,
   };
+}
+
+FlitFoldState _usage(FlitFoldState s, FlitUsage e) {
+  final withUsage = _updateMessage(
+    s,
+    e.messageId,
+    (m) => m.copyWith(
+      usage: Usage(input: e.inputTokens, output: e.outputTokens),
+    ),
+  );
+  return withUsage.copyWith(
+    contextTokens: e.inputTokens + e.outputTokens,
+    contextLength: e.contextLength > 0 ? e.contextLength : s.contextLength,
+    speed: e.timingSource.isEmpty
+        ? null
+        : FlitSpeed(
+            timeToFirstTokenMs: e.timeToFirstTokenMs,
+            promptTokensPerSecond: e.promptTokensPerSecond,
+            generationTokensPerSecond: e.generationTokensPerSecond,
+            source: e.timingSource,
+          ),
+  );
 }
 
 FlitFoldState _started(FlitFoldState s, FlitMessageStarted e) {

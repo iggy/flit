@@ -8,6 +8,7 @@ import 'package:flit/application/flit/flit_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/domain/models/flit_session.dart';
 import 'package:flit/presentation/chat/message_bubble.dart';
+import 'package:flit/presentation/flit/flit_model_picker.dart';
 import 'package:flit/presentation/flit/flit_prompt_card.dart';
 import 'package:flit/presentation/flit/flit_widgets.dart';
 import 'package:flutter/material.dart';
@@ -83,12 +84,18 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
     }
   }
 
-  Future<void> _changeModel(String provider, String model) async {
-    final result = await showDialog<(String, String)>(
-      context: context,
-      builder: (_) => _ModelDialog(provider: provider, model: model),
+  Future<void> _changeModel(
+    String provider,
+    String model,
+    String effort,
+  ) async {
+    final choice = await showFlitModelPicker(
+      context,
+      provider: provider,
+      model: model,
+      effort: effort,
     );
-    if (result == null) {
+    if (choice == null) {
       return;
     }
     final repository = ref.read(flitRepositoryProvider);
@@ -96,11 +103,16 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
       return;
     }
     try {
-      await repository.setModel(
-        widget.sessionId,
-        provider: result.$1,
-        model: result.$2,
-      );
+      if (choice.provider != provider || choice.model != model) {
+        await repository.setModel(
+          widget.sessionId,
+          provider: choice.provider,
+          model: choice.model,
+        );
+      }
+      if (choice.effort != effort) {
+        await repository.setEffort(widget.sessionId, choice.effort);
+      }
       ref.invalidate(flitSessionProvider(widget.sessionId));
     } on GatewayException catch (error) {
       if (mounted) {
@@ -141,37 +153,25 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
     final taskState = fold.lastSeq > 0
         ? fold.taskState
         : (session?.state ?? FlitTaskState.idle);
+    final effort = fold.effort ?? session?.effort ?? '';
+    final contextLength = fold.contextLength > 0
+        ? fold.contextLength
+        : (session?.contextLength ?? 0);
+    final contextTokens = fold.contextTokens > 0
+        ? fold.contextTokens
+        : (session?.contextTokens ?? 0);
 
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              session?.displayTitle ?? 'Session',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            Row(
-              children: <Widget>[
-                Flexible(
-                  child: Text(
-                    flitModelLabel(provider, model),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.labelSmall,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                FlitTaskStateChip(state: taskState),
-              ],
-            ),
-          ],
+        title: Text(
+          session?.displayTitle ?? 'Session',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         actions: <Widget>[
           IconButton(
             tooltip: 'Change model',
-            onPressed: () => _changeModel(provider, model),
+            onPressed: () => _changeModel(provider, model, effort),
             icon: const Icon(Icons.tune),
           ),
         ],
@@ -179,6 +179,17 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
       body: SafeArea(
         child: Column(
           children: <Widget>[
+            FlitStatusStrip(
+              provider: provider,
+              model: model,
+              effort: effort,
+              contextTokens: contextTokens,
+              contextLength: contextLength,
+              state: taskState,
+              generationTokensPerSecond: fold.speed?.generationTokensPerSecond,
+              timeToFirstTokenMs: fold.speed?.timeToFirstTokenMs,
+              onModelTap: () => _changeModel(provider, model, effort),
+            ),
             if (chat.link == FlitLink.reconnecting)
               MaterialBanner(
                 content: Text('Reconnecting… ${chat.linkError ?? ''}'.trim()),
@@ -228,6 +239,7 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
                       ],
                     ),
             ),
+            FlitTodoPanel(todos: fold.todos),
             _Composer(
               controller: _input,
               busy: fold.busy,
@@ -293,74 +305,6 @@ class _Composer extends StatelessWidget {
             ),
         ],
       ),
-    );
-  }
-}
-
-class _ModelDialog extends StatefulWidget {
-  const _ModelDialog({required this.provider, required this.model});
-
-  final String provider;
-  final String model;
-
-  @override
-  State<_ModelDialog> createState() => _ModelDialogState();
-}
-
-class _ModelDialogState extends State<_ModelDialog> {
-  late final TextEditingController _provider = TextEditingController(
-    text: widget.provider,
-  );
-  late final TextEditingController _model = TextEditingController(
-    text: widget.model,
-  );
-
-  @override
-  void dispose() {
-    _provider.dispose();
-    _model.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Model'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          const Text(
-            'Provider names come from the server config (providers:). '
-            'The change applies from the next model call.',
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _provider,
-            decoration: const InputDecoration(labelText: 'Provider'),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _model,
-            decoration: const InputDecoration(labelText: 'Model'),
-          ),
-        ],
-      ),
-      actions: <Widget>[
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () {
-            final p = _provider.text.trim();
-            final m = _model.text.trim();
-            if (p.isNotEmpty && m.isNotEmpty) {
-              Navigator.pop(context, (p, m));
-            }
-          },
-          child: const Text('Use'),
-        ),
-      ],
     );
   }
 }

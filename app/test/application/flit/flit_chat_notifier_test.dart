@@ -75,7 +75,22 @@ final class FakeFlitRepository implements FlitRepository {
     String title = '',
     String provider = '',
     String model = '',
+    String effort = '',
+    String role = '',
   }) => throw UnimplementedError();
+
+  @override
+  Future<FlitSession> setEffort(String sessionId, String effort) =>
+      throw UnimplementedError();
+
+  @override
+  Future<List<FlitModel>> listModels() async => const <FlitModel>[];
+
+  @override
+  Future<List<FlitModel>> refreshModels() async => const <FlitModel>[];
+
+  @override
+  Future<List<FlitAgentRole>> listRoles() async => const <FlitAgentRole>[];
 
   @override
   Future<FlitSession> getSession(String id) => throw UnimplementedError();

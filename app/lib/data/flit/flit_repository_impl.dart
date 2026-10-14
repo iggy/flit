@@ -12,9 +12,13 @@ import 'package:flit_api/flit_api.dart' as pb;
 /// [FlitRepository] over a Connect transport.
 final class FlitRepositoryImpl implements FlitRepository {
   FlitRepositoryImpl(connect.Transport transport)
-    : _sessions = pb.SessionServiceClient(transport);
+    : _sessions = pb.SessionServiceClient(transport),
+      _models = pb.ModelServiceClient(transport),
+      _roles = pb.RoleServiceClient(transport);
 
   final pb.SessionServiceClient _sessions;
+  final pb.ModelServiceClient _models;
+  final pb.RoleServiceClient _roles;
 
   /// Page size for [listSessions]; it fetches every page.
   static const int _pageSize = 200;
@@ -41,6 +45,8 @@ final class FlitRepositoryImpl implements FlitRepository {
     String title = '',
     String provider = '',
     String model = '',
+    String effort = '',
+    String role = '',
   }) {
     return flitCall(() async {
       final res = await _sessions.createSession(
@@ -49,6 +55,8 @@ final class FlitRepositoryImpl implements FlitRepository {
           title: title,
           provider: provider,
           model: model,
+          effort: effort,
+          role: role,
         ),
       );
       return sessionFromProto(res.session);
@@ -161,6 +169,41 @@ final class FlitRepositoryImpl implements FlitRepository {
         ),
       );
       return sessionFromProto(res.session);
+    });
+  }
+
+  @override
+  Future<FlitSession> setEffort(String sessionId, String effort) {
+    return flitCall(() async {
+      final res = await _sessions.setEffort(
+        pb.SetEffortRequest(sessionId: sessionId, effort: effort),
+      );
+      return sessionFromProto(res.session);
+    });
+  }
+
+  @override
+  Future<List<FlitModel>> listModels() {
+    return flitCall(() async {
+      final res = await _models.listModels(pb.ListModelsRequest());
+      return res.models.map(modelFromProto).toList();
+    });
+  }
+
+  @override
+  Future<List<FlitModel>> refreshModels() {
+    return flitCall(() async {
+      await _models.refresh(pb.RefreshRequest());
+      final res = await _models.listModels(pb.ListModelsRequest());
+      return res.models.map(modelFromProto).toList();
+    });
+  }
+
+  @override
+  Future<List<FlitAgentRole>> listRoles() {
+    return flitCall(() async {
+      final res = await _roles.listRoles(pb.ListRolesRequest());
+      return res.roles.map(roleFromProto).toList();
     });
   }
 }

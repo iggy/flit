@@ -99,6 +99,47 @@ agent:
   model: qwen3-coder
 ```
 
+### Model discovery, effort and roles
+
+flit asks each provider's `/models` endpoint what it offers (with adapters for
+OpenRouter, llama.cpp, including router mode, and gomodel) to learn context
+windows and tool/reasoning support. There is no built-in model list. If a
+provider reports something wrong or nothing at all, correct it in
+`models.yaml` next to the config:
+
+```yaml
+local:                 # provider name
+  qwen3-coder:         # model id
+    context_length: 131072
+    tools: true
+    reasoning: true
+    efforts: [low, medium, high]
+```
+
+Each session has a model and a reasoning effort, both switchable mid-session.
+`agent.tasks` in the config can set a model per kind of work (`chat` is used
+for new sessions; `planning`, `cron`, `compaction` and `search` are for
+features to come).
+
+Roles are Markdown files in `roles/` next to the config. The body is added to
+the system prompt; YAML frontmatter can set a default model and effort and a
+memory file whose contents are included each turn:
+
+```markdown
+---
+description: Careful reviewer
+model: some-big-model
+effort: high
+memory_file: NOTES.md
+---
+Review changes for correctness first, style second.
+```
+
+Every model call reports context use, time to first token, and prompt and
+generation speed (llama.cpp's own timings when it sends them, otherwise
+measured by flit). The app shows these along with the model, effort and task
+state, and the agent's todo list.
+
 ### Sessions and tools
 
 A session is a conversation with the agent in one working directory. The
