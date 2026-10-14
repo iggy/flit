@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"google.golang.org/protobuf/proto"
@@ -88,6 +89,7 @@ CREATE TABLE sessions (
 );
 CREATE INDEX sessions_by_project ON sessions (team_id, project_id, updated_at);
 CREATE INDEX sessions_by_updated ON sessions (updated_at);
+CREATE INDEX sessions_by_state ON sessions (state);
 CREATE TABLE events (
 	session_id TEXT NOT NULL REFERENCES sessions(id),
 	seq        INTEGER NOT NULL,
@@ -98,6 +100,7 @@ CREATE TABLE events (
 	payload    BLOB NOT NULL,
 	PRIMARY KEY (session_id, seq)
 ) WITHOUT ROWID;
+CREATE INDEX events_by_kind ON events (session_id, kind, seq);
 `,
 }
 
@@ -209,6 +212,36 @@ func (s *Store) SetModel(ctx context.Context, id, provider, model string) error 
 	return nil
 }
 
+// SetTitle changes a session's title.
+func (s *Store) SetTitle(ctx context.Context, id, title string) error {
+	_, err := s.db.ExecContext(ctx, `UPDATE sessions SET title = ? WHERE id = ?`, title, id)
+	return err
+}
+
+// SessionIDsInStates returns the ids of sessions in any of the given states.
+func (s *Store) SessionIDsInStates(ctx context.Context, states ...flitv1.TaskState) ([]string, error) {
+	var ids []string
+	for _, st := range states {
+		rows, err := s.db.QueryContext(ctx, `SELECT id FROM sessions WHERE state = ?`, st)
+		if err != nil {
+			return nil, err
+		}
+		for rows.Next() {
+			var id string
+			if err := rows.Scan(&id); err != nil {
+				rows.Close()
+				return nil, err
+			}
+			ids = append(ids, id)
+		}
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
+	}
+	return ids, nil
+}
+
 // AppendEvent stores ev, which must carry the session's next sequence
 // number, and advances the session's last_seq (and state, for
 // TaskStateChanged events) in the same transaction.
@@ -245,8 +278,23 @@ func (s *Store) AppendEvent(ctx context.Context, sess Session, ev *flitv1.Event)
 
 // Events returns a session's events with fromSeq <= seq <= toSeq, in order.
 func (s *Store) Events(ctx context.Context, sessionID string, fromSeq, toSeq int64) ([]*flitv1.Event, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT payload FROM events WHERE session_id = ? AND seq >= ? AND seq <= ? ORDER BY seq`,
+	return s.queryEvents(ctx, `SELECT payload FROM events WHERE session_id = ? AND seq >= ? AND seq <= ? ORDER BY seq`,
 		sessionID, fromSeq, toSeq)
+}
+
+// EventsOfKinds returns all of a session's events of the given kinds (see
+// Kind), in order.
+func (s *Store) EventsOfKinds(ctx context.Context, sessionID string, kinds ...string) ([]*flitv1.Event, error) {
+	q := `SELECT payload FROM events WHERE session_id = ? AND kind IN (?` + strings.Repeat(",?", len(kinds)-1) + `) ORDER BY seq`
+	args := []any{sessionID}
+	for _, k := range kinds {
+		args = append(args, k)
+	}
+	return s.queryEvents(ctx, q, args...)
+}
+
+func (s *Store) queryEvents(ctx context.Context, q string, args ...any) ([]*flitv1.Event, error) {
+	rows, err := s.db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}

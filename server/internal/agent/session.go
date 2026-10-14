@@ -1,0 +1,284 @@
+package agent
+
+import (
+	"context"
+	"fmt"
+	"strings"
+	"sync"
+	"time"
+	"unicode/utf8"
+
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
+	"github.com/iggy/flit/server/internal/store"
+)
+
+// subscriberBuffer is how many events an attached client may lag behind
+// before it is dropped (it can reattach from the last seq it saw).
+const subscriberBuffer = 4096
+
+// replayPage is how many events Attach reads from the store at a time.
+const replayPage = 1000
+
+// session is the live state of one session.
+type session struct {
+	m *Manager
+
+	// mu guards everything below and serializes appends, so sequence
+	// numbers are assigned, stored and published in order.
+	mu         sync.Mutex
+	info       store.Session
+	subs       map[*subscriber]struct{}
+	cancelTurn context.CancelFunc // non-nil while a turn runs
+	prompts    map[string]chan promptAnswer
+}
+
+type subscriber struct {
+	ch      chan *flitv1.Event
+	dropped bool
+}
+
+type promptAnswer struct {
+	allow  bool
+	client string
+}
+
+func newSession(m *Manager, info store.Session) *session {
+	return &session{
+		m:       m,
+		info:    info,
+		subs:    map[*subscriber]struct{}{},
+		prompts: map[string]chan promptAnswer{},
+	}
+}
+
+func (s *session) snapshot() store.Session {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.info
+}
+
+// append assigns ev the next sequence number, stores it and publishes it to
+// attached clients.
+func (s *session) append(ev *flitv1.Event) (*flitv1.Event, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.appendLocked(ev)
+}
+
+func (s *session) appendLocked(ev *flitv1.Event) (*flitv1.Event, error) {
+	ev.SessionId = s.info.ID
+	ev.Seq = s.info.LastSeq + 1
+	ev.Time = timestamppb.New(time.Now())
+	if err := s.m.store.AppendEvent(context.Background(), s.info, ev); err != nil {
+		return nil, fmt.Errorf("record event: %w", err)
+	}
+	s.info.LastSeq = ev.Seq
+	s.info.UpdatedAt = ev.Time.AsTime()
+	if st := ev.GetTaskStateChanged(); st != nil {
+		s.info.State = st.State
+	}
+	for sub := range s.subs {
+		select {
+		case sub.ch <- ev:
+		default:
+			sub.dropped = true
+			close(sub.ch)
+			delete(s.subs, sub)
+		}
+	}
+	return ev, nil
+}
+
+func (s *session) attach(ctx context.Context, fromSeq int64, send func(*flitv1.Event) error) error {
+	fromSeq = max(fromSeq, 1)
+
+	// Subscribe before replaying, so nothing appended in between is missed:
+	// everything up to last comes from the store, everything after from the
+	// subscription.
+	sub := &subscriber{ch: make(chan *flitv1.Event, subscriberBuffer)}
+	s.mu.Lock()
+	last := s.info.LastSeq
+	s.subs[sub] = struct{}{}
+	s.mu.Unlock()
+	defer func() {
+		s.mu.Lock()
+		delete(s.subs, sub)
+		s.mu.Unlock()
+	}()
+
+	next := fromSeq
+	for next <= last {
+		evs, err := s.m.store.Events(ctx, s.info.ID, next, min(last, next+replayPage-1))
+		if err != nil {
+			return err
+		}
+		if len(evs) == 0 {
+			break
+		}
+		for _, ev := range evs {
+			if err := send(ev); err != nil {
+				return err
+			}
+			next = ev.Seq + 1
+		}
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case ev, ok := <-sub.ch:
+			if !ok {
+				return fmt.Errorf("%w; attach again from seq %d", ErrSlowClient, next)
+			}
+			if ev.Seq < next {
+				continue
+			}
+			if err := send(ev); err != nil {
+				return err
+			}
+			next = ev.Seq + 1
+		}
+	}
+}
+
+func (s *session) send(text string) (int64, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.cancelTurn != nil {
+		return 0, ErrBusy
+	}
+	if s.info.Title == "" {
+		s.info.Title = titleFrom(text)
+		if err := s.m.store.SetTitle(context.Background(), s.info.ID, s.info.Title); err != nil {
+			return 0, err
+		}
+	}
+
+	msgID := newID("msg")
+	first, err := s.appendLocked(&flitv1.Event{Payload: &flitv1.Event_MessageStarted{
+		MessageStarted: &flitv1.MessageStarted{MessageId: msgID, Role: flitv1.Role_ROLE_USER},
+	}})
+	if err != nil {
+		return 0, err
+	}
+	for _, ev := range []*flitv1.Event{
+		{Payload: &flitv1.Event_TextDelta{TextDelta: &flitv1.TextDelta{MessageId: msgID, Text: text}}},
+		{Payload: &flitv1.Event_MessageDone{MessageDone: &flitv1.MessageDone{MessageId: msgID, Text: text, FinishReason: "stop"}}},
+		stateChanged(flitv1.TaskState_TASK_STATE_WORKING, ""),
+	} {
+		if _, err := s.appendLocked(ev); err != nil {
+			return 0, err
+		}
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	s.cancelTurn = cancel
+	s.m.turns.Add(1)
+	go func() {
+		defer s.m.turns.Done()
+		defer cancel()
+		s.runTurn(ctx)
+	}()
+	return first.Seq, nil
+}
+
+func titleFrom(text string) string {
+	t := strings.Join(strings.Fields(text), " ")
+	if utf8.RuneCountInString(t) > 60 {
+		t = string([]rune(t)[:60]) + "…"
+	}
+	return t
+}
+
+func (s *session) interrupt() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.cancelTurn == nil {
+		return false
+	}
+	s.cancelTurn()
+	return true
+}
+
+func (s *session) answer(promptID string, allow bool, client string) error {
+	s.mu.Lock()
+	ch, ok := s.prompts[promptID]
+	delete(s.prompts, promptID)
+	s.mu.Unlock()
+	if !ok {
+		return ErrPromptGone
+	}
+	ch <- promptAnswer{allow: allow, client: client} // buffered; never blocks
+	return nil
+}
+
+// approve raises a prompt and waits for a client to answer it or for the
+// turn to be interrupted.
+func (s *session) approve(ctx context.Context, toolCallID, title, detail string) (bool, error) {
+	promptID := newID("prm")
+	ch := make(chan promptAnswer, 1)
+	s.mu.Lock()
+	s.prompts[promptID] = ch
+	s.mu.Unlock()
+
+	if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_PromptRequested{PromptRequested: &flitv1.PromptRequested{
+		PromptId: promptID, ToolCallId: toolCallID, Title: title, Detail: detail,
+	}}}); err != nil {
+		return false, err
+	}
+	if _, err := s.append(stateChanged(flitv1.TaskState_TASK_STATE_WAITING, title)); err != nil {
+		return false, err
+	}
+
+	resolved := &flitv1.PromptResolved{PromptId: promptID}
+	var answerErr error
+	select {
+	case a := <-ch:
+		resolved.Client = a.client
+		resolved.Decision = flitv1.PromptDecision_PROMPT_DECISION_DENY
+		if a.allow {
+			resolved.Decision = flitv1.PromptDecision_PROMPT_DECISION_ALLOW
+		}
+	case <-ctx.Done():
+		s.mu.Lock()
+		delete(s.prompts, promptID)
+		s.mu.Unlock()
+		resolved.Decision = flitv1.PromptDecision_PROMPT_DECISION_DENY
+		resolved.Reason = "interrupted"
+		answerErr = errInterrupted
+	}
+	if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_PromptResolved{PromptResolved: resolved}}); err != nil {
+		return false, err
+	}
+	if answerErr != nil {
+		return false, answerErr
+	}
+	if _, err := s.append(stateChanged(flitv1.TaskState_TASK_STATE_WORKING, "")); err != nil {
+		return false, err
+	}
+	return resolved.Decision == flitv1.PromptDecision_PROMPT_DECISION_ALLOW, nil
+}
+
+func (s *session) setModel(ctx context.Context, provider, model string) (store.Session, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := s.m.store.SetModel(ctx, s.info.ID, provider, model); err != nil {
+		return store.Session{}, err
+	}
+	s.info.Provider, s.info.Model = provider, model
+	if _, err := s.appendLocked(&flitv1.Event{Payload: &flitv1.Event_ModelChanged{ModelChanged: &flitv1.ModelChanged{
+		Provider: provider, Model: model,
+	}}}); err != nil {
+		return store.Session{}, err
+	}
+	return s.info, nil
+}
+
+func stateChanged(state flitv1.TaskState, reason string) *flitv1.Event {
+	return &flitv1.Event{Payload: &flitv1.Event_TaskStateChanged{TaskStateChanged: &flitv1.TaskStateChanged{
+		State: state, Reason: reason,
+	}}}
+}
