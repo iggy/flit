@@ -84,4 +84,12 @@ abstract final class SessionService {
     flitv1session.SetModelRequest.new,
     flitv1session.SetModelResponse.new,
   );
+
+  /// SetEffort changes the reasoning effort used from the next model call.
+  static const setEffort = connect.Spec(
+    '/$name/SetEffort',
+    connect.StreamType.unary,
+    flitv1session.SetEffortRequest.new,
+    flitv1session.SetEffortResponse.new,
+  );
 }

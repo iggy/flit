@@ -36,7 +36,22 @@ final class FlitSession {
     this.projectId = '',
     this.createdAt,
     this.updatedAt,
+    this.effort = '',
+    this.role = '',
+    this.contextTokens = 0,
+    this.contextLength = 0,
   });
+
+  /// Reasoning effort; empty means the model's default.
+  final String effort;
+
+  /// The role the session was created with; empty for none.
+  final String role;
+
+  /// Context use after the last model call, and the model's window (0 if
+  /// unknown).
+  final int contextTokens;
+  final int contextLength;
 
   final String id;
   final String title;
@@ -74,7 +89,11 @@ final class FlitSession {
         other.teamId == teamId &&
         other.projectId == projectId &&
         other.createdAt == createdAt &&
-        other.updatedAt == updatedAt;
+        other.updatedAt == updatedAt &&
+        other.effort == effort &&
+        other.role == role &&
+        other.contextTokens == contextTokens &&
+        other.contextLength == contextLength;
   }
 
   @override
@@ -90,10 +109,85 @@ final class FlitSession {
     projectId,
     createdAt,
     updatedAt,
+    effort,
+    role,
+    contextTokens,
+    contextLength,
   );
 
   @override
   String toString() =>
       'FlitSession(id: $id, title: $title, state: ${state.name}, '
       'model: $provider/$model, lastSeq: $lastSeq)';
+}
+
+/// A model a flit server can use, as discovered from its provider.
+final class FlitModel {
+  const FlitModel({
+    required this.provider,
+    required this.id,
+    this.displayName = '',
+    this.contextLength = 0,
+    this.supportsTools = false,
+    this.supportsReasoning = false,
+    this.supportsVision = false,
+    this.efforts = const <String>[],
+    this.loaded = false,
+  });
+
+  final String provider;
+  final String id;
+  final String displayName;
+
+  /// Context window in tokens; 0 if unknown.
+  final int contextLength;
+  final bool supportsTools;
+  final bool supportsReasoning;
+  final bool supportsVision;
+
+  /// Reasoning effort levels it accepts.
+  final List<String> efforts;
+
+  /// llama.cpp router: loaded right now (no load delay).
+  final bool loaded;
+
+  String get label => displayName.isEmpty ? id : displayName;
+
+  @override
+  bool operator ==(Object other) =>
+      other is FlitModel && other.provider == provider && other.id == id;
+
+  @override
+  int get hashCode => Object.hash(provider, id);
+
+  @override
+  String toString() => 'FlitModel($provider/$id)';
+}
+
+/// A role a session can be created with.
+final class FlitAgentRole {
+  const FlitAgentRole({
+    required this.name,
+    this.description = '',
+    this.provider = '',
+    this.model = '',
+    this.effort = '',
+    this.error = '',
+  });
+
+  final String name;
+  final String description;
+  final String provider;
+  final String model;
+  final String effort;
+
+  /// Why the role file couldn't be read; such roles can't be picked.
+  final String error;
+
+  @override
+  bool operator ==(Object other) =>
+      other is FlitAgentRole && other.name == name;
+
+  @override
+  int get hashCode => name.hashCode;
 }

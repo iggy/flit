@@ -54,6 +54,9 @@ const (
 	SessionServiceAnswerPromptProcedure = "/flit.v1.SessionService/AnswerPrompt"
 	// SessionServiceSetModelProcedure is the fully-qualified name of the SessionService's SetModel RPC.
 	SessionServiceSetModelProcedure = "/flit.v1.SessionService/SetModel"
+	// SessionServiceSetEffortProcedure is the fully-qualified name of the SessionService's SetEffort
+	// RPC.
+	SessionServiceSetEffortProcedure = "/flit.v1.SessionService/SetEffort"
 )
 
 // SessionServiceClient is a client for the flit.v1.SessionService service.
@@ -79,6 +82,8 @@ type SessionServiceClient interface {
 	AnswerPrompt(context.Context, *connect.Request[v1.AnswerPromptRequest]) (*connect.Response[v1.AnswerPromptResponse], error)
 	// SetModel changes the provider and model used from the next model call.
 	SetModel(context.Context, *connect.Request[v1.SetModelRequest]) (*connect.Response[v1.SetModelResponse], error)
+	// SetEffort changes the reasoning effort used from the next model call.
+	SetEffort(context.Context, *connect.Request[v1.SetEffortRequest]) (*connect.Response[v1.SetEffortResponse], error)
 }
 
 // NewSessionServiceClient constructs a client for the flit.v1.SessionService service. By default,
@@ -142,6 +147,12 @@ func NewSessionServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(sessionServiceMethods.ByName("SetModel")),
 			connect.WithClientOptions(opts...),
 		),
+		setEffort: connect.NewClient[v1.SetEffortRequest, v1.SetEffortResponse](
+			httpClient,
+			baseURL+SessionServiceSetEffortProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("SetEffort")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -155,6 +166,7 @@ type sessionServiceClient struct {
 	interrupt     *connect.Client[v1.InterruptRequest, v1.InterruptResponse]
 	answerPrompt  *connect.Client[v1.AnswerPromptRequest, v1.AnswerPromptResponse]
 	setModel      *connect.Client[v1.SetModelRequest, v1.SetModelResponse]
+	setEffort     *connect.Client[v1.SetEffortRequest, v1.SetEffortResponse]
 }
 
 // CreateSession calls flit.v1.SessionService.CreateSession.
@@ -197,6 +209,11 @@ func (c *sessionServiceClient) SetModel(ctx context.Context, req *connect.Reques
 	return c.setModel.CallUnary(ctx, req)
 }
 
+// SetEffort calls flit.v1.SessionService.SetEffort.
+func (c *sessionServiceClient) SetEffort(ctx context.Context, req *connect.Request[v1.SetEffortRequest]) (*connect.Response[v1.SetEffortResponse], error) {
+	return c.setEffort.CallUnary(ctx, req)
+}
+
 // SessionServiceHandler is an implementation of the flit.v1.SessionService service.
 type SessionServiceHandler interface {
 	// CreateSession starts a new, idle session.
@@ -220,6 +237,8 @@ type SessionServiceHandler interface {
 	AnswerPrompt(context.Context, *connect.Request[v1.AnswerPromptRequest]) (*connect.Response[v1.AnswerPromptResponse], error)
 	// SetModel changes the provider and model used from the next model call.
 	SetModel(context.Context, *connect.Request[v1.SetModelRequest]) (*connect.Response[v1.SetModelResponse], error)
+	// SetEffort changes the reasoning effort used from the next model call.
+	SetEffort(context.Context, *connect.Request[v1.SetEffortRequest]) (*connect.Response[v1.SetEffortResponse], error)
 }
 
 // NewSessionServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -279,6 +298,12 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 		connect.WithSchema(sessionServiceMethods.ByName("SetModel")),
 		connect.WithHandlerOptions(opts...),
 	)
+	sessionServiceSetEffortHandler := connect.NewUnaryHandler(
+		SessionServiceSetEffortProcedure,
+		svc.SetEffort,
+		connect.WithSchema(sessionServiceMethods.ByName("SetEffort")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/flit.v1.SessionService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case SessionServiceCreateSessionProcedure:
@@ -297,6 +322,8 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 			sessionServiceAnswerPromptHandler.ServeHTTP(w, r)
 		case SessionServiceSetModelProcedure:
 			sessionServiceSetModelHandler.ServeHTTP(w, r)
+		case SessionServiceSetEffortProcedure:
+			sessionServiceSetEffortHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -336,4 +363,8 @@ func (UnimplementedSessionServiceHandler) AnswerPrompt(context.Context, *connect
 
 func (UnimplementedSessionServiceHandler) SetModel(context.Context, *connect.Request[v1.SetModelRequest]) (*connect.Response[v1.SetModelResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.SetModel is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) SetEffort(context.Context, *connect.Request[v1.SetEffortRequest]) (*connect.Response[v1.SetEffortResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.SetEffort is not implemented"))
 }

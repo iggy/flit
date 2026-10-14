@@ -27,6 +27,9 @@ type Env struct {
 	// Approve asks the user to allow something and blocks until they
 	// answer or ctx ends. Nil means nothing can be approved.
 	Approve func(ctx context.Context, title, detail string) (bool, error)
+	// Todo receives the agent's task list whenever the todo tool changes
+	// it. May be nil.
+	Todo func([]TodoItem)
 }
 
 // Result is what the model gets back.
@@ -49,7 +52,7 @@ type Tool struct {
 
 // All returns the built-in tools.
 func All() []Tool {
-	return []Tool{readTool, writeTool, patchTool, listTool, grepTool, shellTool}
+	return []Tool{readTool, writeTool, patchTool, listTool, grepTool, shellTool, todoTool}
 }
 
 // Definitions returns the tools in chat completions format.

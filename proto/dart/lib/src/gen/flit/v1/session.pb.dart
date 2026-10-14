@@ -37,6 +37,10 @@ class Session extends $pb.GeneratedMessage {
     $fixnum.Int64? lastSeq,
     $0.Timestamp? createTime,
     $0.Timestamp? updateTime,
+    $core.String? effort,
+    $core.String? role,
+    $fixnum.Int64? contextTokens,
+    $fixnum.Int64? contextLength,
   }) {
     final result = Session._();
     if (id != null) result.id = id;
@@ -50,6 +54,10 @@ class Session extends $pb.GeneratedMessage {
     if (lastSeq != null) result.lastSeq = lastSeq;
     if (createTime != null) result.createTime = createTime;
     if (updateTime != null) result.updateTime = updateTime;
+    if (effort != null) result.effort = effort;
+    if (role != null) result.role = role;
+    if (contextTokens != null) result.contextTokens = contextTokens;
+    if (contextLength != null) result.contextLength = contextLength;
     return result;
   }
 
@@ -80,6 +88,10 @@ class Session extends $pb.GeneratedMessage {
         subBuilder: $0.Timestamp.$_createMessage)
     ..aOM<$0.Timestamp>(11, _omitFieldNames ? '' : 'updateTime',
         subBuilder: $0.Timestamp.$_createMessage)
+    ..aOS(12, _omitFieldNames ? '' : 'effort')
+    ..aOS(13, _omitFieldNames ? '' : 'role')
+    ..aInt64(14, _omitFieldNames ? '' : 'contextTokens')
+    ..aInt64(15, _omitFieldNames ? '' : 'contextLength')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -207,6 +219,47 @@ class Session extends $pb.GeneratedMessage {
   void clearUpdateTime() => $_clearField(11);
   @$pb.TagNumber(11)
   $0.Timestamp ensureUpdateTime() => $_ensure(10);
+
+  /// Reasoning effort ("low", "medium", "high", ...); empty means the
+  /// model's default.
+  @$pb.TagNumber(12)
+  $core.String get effort => $_getSZ(11);
+  @$pb.TagNumber(12)
+  set effort($core.String value) => $_setString(11, value);
+  @$pb.TagNumber(12)
+  $core.bool hasEffort() => $_has(11);
+  @$pb.TagNumber(12)
+  void clearEffort() => $_clearField(12);
+
+  /// The role the session was created with; empty for none.
+  @$pb.TagNumber(13)
+  $core.String get role => $_getSZ(12);
+  @$pb.TagNumber(13)
+  set role($core.String value) => $_setString(12, value);
+  @$pb.TagNumber(13)
+  $core.bool hasRole() => $_has(12);
+  @$pb.TagNumber(13)
+  void clearRole() => $_clearField(13);
+
+  /// Context use after the last model call: tokens in the prompt plus the
+  /// reply, and the model's context window (0 if unknown).
+  @$pb.TagNumber(14)
+  $fixnum.Int64 get contextTokens => $_getI64(13);
+  @$pb.TagNumber(14)
+  set contextTokens($fixnum.Int64 value) => $_setInt64(13, value);
+  @$pb.TagNumber(14)
+  $core.bool hasContextTokens() => $_has(13);
+  @$pb.TagNumber(14)
+  void clearContextTokens() => $_clearField(14);
+
+  @$pb.TagNumber(15)
+  $fixnum.Int64 get contextLength => $_getI64(14);
+  @$pb.TagNumber(15)
+  set contextLength($fixnum.Int64 value) => $_setInt64(14, value);
+  @$pb.TagNumber(15)
+  $core.bool hasContextLength() => $_has(14);
+  @$pb.TagNumber(15)
+  void clearContextLength() => $_clearField(15);
 }
 
 class CreateSessionRequest extends $pb.GeneratedMessage {
@@ -215,12 +268,16 @@ class CreateSessionRequest extends $pb.GeneratedMessage {
     $core.String? title,
     $core.String? provider,
     $core.String? model,
+    $core.String? role,
+    $core.String? effort,
   }) {
     final result = CreateSessionRequest._();
     if (workingDir != null) result.workingDir = workingDir;
     if (title != null) result.title = title;
     if (provider != null) result.provider = provider;
     if (model != null) result.model = model;
+    if (role != null) result.role = role;
+    if (effort != null) result.effort = effort;
     return result;
   }
 
@@ -241,6 +298,8 @@ class CreateSessionRequest extends $pb.GeneratedMessage {
     ..aOS(2, _omitFieldNames ? '' : 'title')
     ..aOS(3, _omitFieldNames ? '' : 'provider')
     ..aOS(4, _omitFieldNames ? '' : 'model')
+    ..aOS(5, _omitFieldNames ? '' : 'role')
+    ..aOS(6, _omitFieldNames ? '' : 'effort')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -285,7 +344,8 @@ class CreateSessionRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearTitle() => $_clearField(2);
 
-  /// Provider and model. Empty means the config's agent defaults.
+  /// Provider and model. Empty means the role's, then the config's chat
+  /// task defaults.
   @$pb.TagNumber(3)
   $core.String get provider => $_getSZ(2);
   @$pb.TagNumber(3)
@@ -303,6 +363,26 @@ class CreateSessionRequest extends $pb.GeneratedMessage {
   $core.bool hasModel() => $_has(3);
   @$pb.TagNumber(4)
   void clearModel() => $_clearField(4);
+
+  /// Role name (see RoleService); empty for none.
+  @$pb.TagNumber(5)
+  $core.String get role => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set role($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasRole() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearRole() => $_clearField(5);
+
+  /// Reasoning effort; empty means the role's, then the config's.
+  @$pb.TagNumber(6)
+  $core.String get effort => $_getSZ(5);
+  @$pb.TagNumber(6)
+  set effort($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasEffort() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearEffort() => $_clearField(6);
 }
 
 class CreateSessionResponse extends $pb.GeneratedMessage {
@@ -1275,6 +1355,136 @@ class SetModelResponse extends $pb.GeneratedMessage {
   Session ensureSession() => $_ensure(0);
 }
 
+class SetEffortRequest extends $pb.GeneratedMessage {
+  factory SetEffortRequest({
+    $core.String? sessionId,
+    $core.String? effort,
+  }) {
+    final result = SetEffortRequest._();
+    if (sessionId != null) result.sessionId = sessionId;
+    if (effort != null) result.effort = effort;
+    return result;
+  }
+
+  SetEffortRequest._();
+
+  factory SetEffortRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetEffortRequest()..mergeFromBuffer(data, registry);
+  factory SetEffortRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetEffortRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SetEffortRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: SetEffortRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'sessionId')
+    ..aOS(2, _omitFieldNames ? '' : 'effort')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetEffortRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetEffortRequest copyWith(void Function(SetEffortRequest) updates) =>
+      super.copyWith((message) => updates(message as SetEffortRequest))
+          as SetEffortRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use SetEffortRequest() / SetEffortRequest.new instead')
+  static SetEffortRequest create() => SetEffortRequest._();
+  static $pb.GeneratedMessage $_createMessage() => SetEffortRequest._();
+  @$core.override
+  SetEffortRequest createEmptyInstance() => SetEffortRequest._();
+  @$core.pragma('dart2js:noInline')
+  static SetEffortRequest getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SetEffortRequest>(
+          SetEffortRequest.$_createMessage);
+  static SetEffortRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get sessionId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set sessionId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSessionId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSessionId() => $_clearField(1);
+
+  /// E.g. "low", "medium", "high"; empty means the model's default.
+  @$pb.TagNumber(2)
+  $core.String get effort => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set effort($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasEffort() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearEffort() => $_clearField(2);
+}
+
+class SetEffortResponse extends $pb.GeneratedMessage {
+  factory SetEffortResponse({
+    Session? session,
+  }) {
+    final result = SetEffortResponse._();
+    if (session != null) result.session = session;
+    return result;
+  }
+
+  SetEffortResponse._();
+
+  factory SetEffortResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetEffortResponse()..mergeFromBuffer(data, registry);
+  factory SetEffortResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetEffortResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SetEffortResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: SetEffortResponse.$_createMessage)
+    ..aOM<Session>(1, _omitFieldNames ? '' : 'session',
+        subBuilder: Session.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetEffortResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetEffortResponse copyWith(void Function(SetEffortResponse) updates) =>
+      super.copyWith((message) => updates(message as SetEffortResponse))
+          as SetEffortResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use SetEffortResponse() / SetEffortResponse.new instead')
+  static SetEffortResponse create() => SetEffortResponse._();
+  static $pb.GeneratedMessage $_createMessage() => SetEffortResponse._();
+  @$core.override
+  SetEffortResponse createEmptyInstance() => SetEffortResponse._();
+  @$core.pragma('dart2js:noInline')
+  static SetEffortResponse getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SetEffortResponse>(
+          SetEffortResponse.$_createMessage);
+  static SetEffortResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  Session get session => $_getN(0);
+  @$pb.TagNumber(1)
+  set session(Session value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSession() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSession() => $_clearField(1);
+  @$pb.TagNumber(1)
+  Session ensureSession() => $_ensure(0);
+}
+
 enum Event_Payload {
   messageStarted,
   textDelta,
@@ -1289,6 +1499,7 @@ enum Event_Payload {
   modelChanged,
   usage,
   error,
+  todoUpdated,
   notSet
 }
 
@@ -1311,6 +1522,7 @@ class Event extends $pb.GeneratedMessage {
     ModelChanged? modelChanged,
     Usage? usage,
     TurnError? error,
+    TodoUpdated? todoUpdated,
   }) {
     final result = Event._();
     if (sessionId != null) result.sessionId = sessionId;
@@ -1329,6 +1541,7 @@ class Event extends $pb.GeneratedMessage {
     if (modelChanged != null) result.modelChanged = modelChanged;
     if (usage != null) result.usage = usage;
     if (error != null) result.error = error;
+    if (todoUpdated != null) result.todoUpdated = todoUpdated;
     return result;
   }
 
@@ -1355,13 +1568,14 @@ class Event extends $pb.GeneratedMessage {
     20: Event_Payload.modelChanged,
     21: Event_Payload.usage,
     22: Event_Payload.error,
+    23: Event_Payload.todoUpdated,
     0: Event_Payload.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
       _omitMessageNames ? '' : 'Event',
       package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
       createEmptyInstance: Event.$_createMessage)
-    ..oo(0, [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])
+    ..oo(0, [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23])
     ..aOS(1, _omitFieldNames ? '' : 'sessionId')
     ..aInt64(2, _omitFieldNames ? '' : 'seq')
     ..aOM<$0.Timestamp>(3, _omitFieldNames ? '' : 'time',
@@ -1392,6 +1606,8 @@ class Event extends $pb.GeneratedMessage {
         subBuilder: Usage.$_createMessage)
     ..aOM<TurnError>(22, _omitFieldNames ? '' : 'error',
         subBuilder: TurnError.$_createMessage)
+    ..aOM<TodoUpdated>(23, _omitFieldNames ? '' : 'todoUpdated',
+        subBuilder: TodoUpdated.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -1427,6 +1643,7 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(20)
   @$pb.TagNumber(21)
   @$pb.TagNumber(22)
+  @$pb.TagNumber(23)
   Event_Payload whichPayload() => _Event_PayloadByTag[$_whichOneof(0)]!;
   @$pb.TagNumber(10)
   @$pb.TagNumber(11)
@@ -1441,6 +1658,7 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(20)
   @$pb.TagNumber(21)
   @$pb.TagNumber(22)
+  @$pb.TagNumber(23)
   void clearPayload() => $_clearField($_whichOneof(0));
 
   @$pb.TagNumber(1)
@@ -1615,6 +1833,17 @@ class Event extends $pb.GeneratedMessage {
   void clearError() => $_clearField(22);
   @$pb.TagNumber(22)
   TurnError ensureError() => $_ensure(15);
+
+  @$pb.TagNumber(23)
+  TodoUpdated get todoUpdated => $_getN(16);
+  @$pb.TagNumber(23)
+  set todoUpdated(TodoUpdated value) => $_setField(23, value);
+  @$pb.TagNumber(23)
+  $core.bool hasTodoUpdated() => $_has(16);
+  @$pb.TagNumber(23)
+  void clearTodoUpdated() => $_clearField(23);
+  @$pb.TagNumber(23)
+  TodoUpdated ensureTodoUpdated() => $_ensure(16);
 }
 
 /// MessageStarted opens a message. Its text arrives as TextDelta events and
@@ -2461,10 +2690,14 @@ class ModelChanged extends $pb.GeneratedMessage {
   factory ModelChanged({
     $core.String? provider,
     $core.String? model,
+    $core.String? effort,
+    $fixnum.Int64? contextLength,
   }) {
     final result = ModelChanged._();
     if (provider != null) result.provider = provider;
     if (model != null) result.model = model;
+    if (effort != null) result.effort = effort;
+    if (contextLength != null) result.contextLength = contextLength;
     return result;
   }
 
@@ -2483,6 +2716,8 @@ class ModelChanged extends $pb.GeneratedMessage {
       createEmptyInstance: ModelChanged.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'provider')
     ..aOS(2, _omitFieldNames ? '' : 'model')
+    ..aOS(3, _omitFieldNames ? '' : 'effort')
+    ..aInt64(4, _omitFieldNames ? '' : 'contextLength')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -2524,21 +2759,54 @@ class ModelChanged extends $pb.GeneratedMessage {
   $core.bool hasModel() => $_has(1);
   @$pb.TagNumber(2)
   void clearModel() => $_clearField(2);
+
+  /// Reasoning effort; empty means the model's default.
+  @$pb.TagNumber(3)
+  $core.String get effort => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set effort($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasEffort() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearEffort() => $_clearField(3);
+
+  /// The model's context window, if known.
+  @$pb.TagNumber(4)
+  $fixnum.Int64 get contextLength => $_getI64(3);
+  @$pb.TagNumber(4)
+  set contextLength($fixnum.Int64 value) => $_setInt64(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasContextLength() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearContextLength() => $_clearField(4);
 }
 
-/// Usage is token usage for one model call.
+/// Usage is token usage and speed for one model call.
 class Usage extends $pb.GeneratedMessage {
   factory Usage({
     $core.String? messageId,
     $fixnum.Int64? inputTokens,
     $fixnum.Int64? outputTokens,
     $fixnum.Int64? totalTokens,
+    $fixnum.Int64? contextLength,
+    $fixnum.Int64? timeToFirstTokenMs,
+    $core.double? promptTokensPerSecond,
+    $core.double? generationTokensPerSecond,
+    $core.String? timingSource,
   }) {
     final result = Usage._();
     if (messageId != null) result.messageId = messageId;
     if (inputTokens != null) result.inputTokens = inputTokens;
     if (outputTokens != null) result.outputTokens = outputTokens;
     if (totalTokens != null) result.totalTokens = totalTokens;
+    if (contextLength != null) result.contextLength = contextLength;
+    if (timeToFirstTokenMs != null)
+      result.timeToFirstTokenMs = timeToFirstTokenMs;
+    if (promptTokensPerSecond != null)
+      result.promptTokensPerSecond = promptTokensPerSecond;
+    if (generationTokensPerSecond != null)
+      result.generationTokensPerSecond = generationTokensPerSecond;
+    if (timingSource != null) result.timingSource = timingSource;
     return result;
   }
 
@@ -2559,6 +2827,11 @@ class Usage extends $pb.GeneratedMessage {
     ..aInt64(2, _omitFieldNames ? '' : 'inputTokens')
     ..aInt64(3, _omitFieldNames ? '' : 'outputTokens')
     ..aInt64(4, _omitFieldNames ? '' : 'totalTokens')
+    ..aInt64(5, _omitFieldNames ? '' : 'contextLength')
+    ..aInt64(6, _omitFieldNames ? '' : 'timeToFirstTokenMs')
+    ..aD(7, _omitFieldNames ? '' : 'promptTokensPerSecond')
+    ..aD(8, _omitFieldNames ? '' : 'generationTokensPerSecond')
+    ..aOS(9, _omitFieldNames ? '' : 'timingSource')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -2616,6 +2889,179 @@ class Usage extends $pb.GeneratedMessage {
   $core.bool hasTotalTokens() => $_has(3);
   @$pb.TagNumber(4)
   void clearTotalTokens() => $_clearField(4);
+
+  /// Context window of the model, if known; input + output tokens is how
+  /// much of it this call used.
+  @$pb.TagNumber(5)
+  $fixnum.Int64 get contextLength => $_getI64(4);
+  @$pb.TagNumber(5)
+  set contextLength($fixnum.Int64 value) => $_setInt64(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasContextLength() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearContextLength() => $_clearField(5);
+
+  /// Time from sending the request to the first token, in milliseconds.
+  @$pb.TagNumber(6)
+  $fixnum.Int64 get timeToFirstTokenMs => $_getI64(5);
+  @$pb.TagNumber(6)
+  set timeToFirstTokenMs($fixnum.Int64 value) => $_setInt64(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasTimeToFirstTokenMs() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearTimeToFirstTokenMs() => $_clearField(6);
+
+  /// Prompt processing and generation speed in tokens per second; 0 if
+  /// unknown.
+  @$pb.TagNumber(7)
+  $core.double get promptTokensPerSecond => $_getN(6);
+  @$pb.TagNumber(7)
+  set promptTokensPerSecond($core.double value) => $_setDouble(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasPromptTokensPerSecond() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearPromptTokensPerSecond() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.double get generationTokensPerSecond => $_getN(7);
+  @$pb.TagNumber(8)
+  set generationTokensPerSecond($core.double value) => $_setDouble(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasGenerationTokensPerSecond() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearGenerationTokensPerSecond() => $_clearField(8);
+
+  /// Where the timings came from: "llama.cpp" when the server reported its
+  /// own timings, "measured" when flit timed the stream itself.
+  @$pb.TagNumber(9)
+  $core.String get timingSource => $_getSZ(8);
+  @$pb.TagNumber(9)
+  set timingSource($core.String value) => $_setString(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasTimingSource() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearTimingSource() => $_clearField(9);
+}
+
+/// TodoUpdated is the agent's task list after it changed (the todo tool).
+class TodoUpdated extends $pb.GeneratedMessage {
+  factory TodoUpdated({
+    $core.Iterable<TodoItem>? items,
+  }) {
+    final result = TodoUpdated._();
+    if (items != null) result.items.addAll(items);
+    return result;
+  }
+
+  TodoUpdated._();
+
+  factory TodoUpdated.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      TodoUpdated()..mergeFromBuffer(data, registry);
+  factory TodoUpdated.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      TodoUpdated()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'TodoUpdated',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: TodoUpdated.$_createMessage)
+    ..pPM<TodoItem>(1, _omitFieldNames ? '' : 'items',
+        subBuilder: TodoItem.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  TodoUpdated clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  TodoUpdated copyWith(void Function(TodoUpdated) updates) =>
+      super.copyWith((message) => updates(message as TodoUpdated))
+          as TodoUpdated;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use TodoUpdated() / TodoUpdated.new instead')
+  static TodoUpdated create() => TodoUpdated._();
+  static $pb.GeneratedMessage $_createMessage() => TodoUpdated._();
+  @$core.override
+  TodoUpdated createEmptyInstance() => TodoUpdated._();
+  @$core.pragma('dart2js:noInline')
+  static TodoUpdated getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<TodoUpdated>(
+          TodoUpdated.$_createMessage);
+  static TodoUpdated? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<TodoItem> get items => $_getList(0);
+}
+
+class TodoItem extends $pb.GeneratedMessage {
+  factory TodoItem({
+    $core.String? content,
+    TodoStatus? status,
+  }) {
+    final result = TodoItem._();
+    if (content != null) result.content = content;
+    if (status != null) result.status = status;
+    return result;
+  }
+
+  TodoItem._();
+
+  factory TodoItem.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      TodoItem()..mergeFromBuffer(data, registry);
+  factory TodoItem.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      TodoItem()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'TodoItem',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: TodoItem.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'content')
+    ..aE<TodoStatus>(2, _omitFieldNames ? '' : 'status',
+        enumValues: TodoStatus.values)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  TodoItem clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  TodoItem copyWith(void Function(TodoItem) updates) =>
+      super.copyWith((message) => updates(message as TodoItem)) as TodoItem;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use TodoItem() / TodoItem.new instead')
+  static TodoItem create() => TodoItem._();
+  static $pb.GeneratedMessage $_createMessage() => TodoItem._();
+  @$core.override
+  TodoItem createEmptyInstance() => TodoItem._();
+  @$core.pragma('dart2js:noInline')
+  static TodoItem getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<TodoItem>(TodoItem.$_createMessage);
+  static TodoItem? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get content => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set content($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasContent() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearContent() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  TodoStatus get status => $_getN(1);
+  @$pb.TagNumber(2)
+  set status(TodoStatus value) => $_setField(2, value);
+  @$pb.TagNumber(2)
+  $core.bool hasStatus() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearStatus() => $_clearField(2);
 }
 
 class TurnError extends $pb.GeneratedMessage {
@@ -2748,6 +3194,12 @@ class SessionServiceApi {
           $pb.ClientContext? ctx, SetModelRequest request) =>
       _client.invoke<SetModelResponse>(
           ctx, 'SessionService', 'SetModel', request, SetModelResponse());
+
+  /// SetEffort changes the reasoning effort used from the next model call.
+  $async.Future<SetEffortResponse> setEffort(
+          $pb.ClientContext? ctx, SetEffortRequest request) =>
+      _client.invoke<SetEffortResponse>(
+          ctx, 'SessionService', 'SetEffort', request, SetEffortResponse());
 }
 
 const $core.bool _omitFieldNames =

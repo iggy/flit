@@ -30,7 +30,44 @@ FlitSession sessionFromProto(pb.Session s) {
     projectId: s.projectId,
     createdAt: s.hasCreateTime() ? s.createTime.toDateTime() : null,
     updatedAt: s.hasUpdateTime() ? s.updateTime.toDateTime() : null,
+    effort: s.effort,
+    role: s.role,
+    contextTokens: s.contextTokens.toInt(),
+    contextLength: s.contextLength.toInt(),
   );
+}
+
+FlitModel modelFromProto(pb.Model m) {
+  return FlitModel(
+    provider: m.provider,
+    id: m.id,
+    displayName: m.displayName,
+    contextLength: m.contextLength.toInt(),
+    supportsTools: m.supportsTools,
+    supportsReasoning: m.supportsReasoning,
+    supportsVision: m.supportsVision,
+    efforts: List<String>.unmodifiable(m.efforts),
+    loaded: m.loaded,
+  );
+}
+
+FlitAgentRole roleFromProto(pb.AgentRole r) {
+  return FlitAgentRole(
+    name: r.name,
+    description: r.description,
+    provider: r.provider,
+    model: r.model,
+    effort: r.effort,
+    error: r.error,
+  );
+}
+
+FlitTodoStatus _todoStatus(pb.TodoStatus s) {
+  return switch (s) {
+    pb.TodoStatus.TODO_STATUS_IN_PROGRESS => FlitTodoStatus.inProgress,
+    pb.TodoStatus.TODO_STATUS_COMPLETED => FlitTodoStatus.completed,
+    _ => FlitTodoStatus.pending,
+  };
 }
 
 FlitEvent eventFromProto(pb.Event e) {
@@ -133,14 +170,32 @@ FlitEvent eventFromProto(pb.Event e) {
         time: time,
         provider: e.modelChanged.provider,
         model: e.modelChanged.model,
+        effort: e.modelChanged.effort,
+        contextLength: e.modelChanged.contextLength.toInt(),
       );
     case pb.Event_Payload.usage:
+      final u = e.usage;
       return FlitUsage(
         seq: seq,
         time: time,
-        messageId: e.usage.messageId,
-        inputTokens: e.usage.inputTokens.toInt(),
-        outputTokens: e.usage.outputTokens.toInt(),
+        messageId: u.messageId,
+        inputTokens: u.inputTokens.toInt(),
+        outputTokens: u.outputTokens.toInt(),
+        contextLength: u.contextLength.toInt(),
+        timeToFirstTokenMs: u.timeToFirstTokenMs.toInt(),
+        promptTokensPerSecond: u.promptTokensPerSecond,
+        generationTokensPerSecond: u.generationTokensPerSecond,
+        timingSource: u.timingSource,
+      );
+    case pb.Event_Payload.todoUpdated:
+      return FlitTodoUpdated(
+        seq: seq,
+        time: time,
+        items: List<FlitTodo>.unmodifiable(
+          e.todoUpdated.items.map(
+            (i) => FlitTodo(content: i.content, status: _todoStatus(i.status)),
+          ),
+        ),
       );
     case pb.Event_Payload.error:
       return FlitTurnError(

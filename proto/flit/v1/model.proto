@@ -1,0 +1,89 @@
+syntax = "proto3";
+
+package flit.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/iggy/flit/server/gen/flit/v1;flitv1";
+
+// ModelService lists the models flit can use. Models are discovered from
+// each configured provider's /models endpoint (there is no built-in model
+// database) and can be corrected or filled in by a YAML override file.
+// Discovery runs when the server starts and on Refresh.
+service ModelService {
+  // ListProviders lists the configured providers and how discovery went.
+  rpc ListProviders(ListProvidersRequest) returns (ListProvidersResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+
+  // ListModels lists the discovered models, optionally for one provider.
+  rpc ListModels(ListModelsRequest) returns (ListModelsResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+
+  // Refresh re-runs discovery (and re-reads the override file).
+  rpc Refresh(RefreshRequest) returns (RefreshResponse);
+}
+
+// ProviderKind is how flit reads a provider's /models response. AUTO
+// detects it from the URL and the response.
+enum ProviderKind {
+  PROVIDER_KIND_UNSPECIFIED = 0;
+  PROVIDER_KIND_OPENAI = 1;
+  PROVIDER_KIND_OPENROUTER = 2;
+  PROVIDER_KIND_LLAMACPP = 3;
+  PROVIDER_KIND_GOMODEL = 4;
+}
+
+message Provider {
+  string name = 1;
+  string base_url = 2;
+  // The kind discovery detected or the config set.
+  ProviderKind kind = 3;
+  int32 model_count = 4;
+  // When discovery last finished, and its error if it failed.
+  google.protobuf.Timestamp refresh_time = 5;
+  string error = 6;
+}
+
+message Model {
+  string provider = 1;
+  string id = 2;
+  string display_name = 3;
+  // Context window in tokens; 0 if unknown.
+  int64 context_length = 4;
+  bool supports_tools = 5;
+  bool supports_reasoning = 6;
+  bool supports_vision = 7;
+  // Reasoning effort levels the model accepts, e.g. ["low","medium","high"].
+  repeated string efforts = 8;
+  // llama.cpp router: whether the model is loaded right now.
+  bool loaded = 9;
+  // Whether discovery found it and whether the override file touched it.
+  bool discovered = 10;
+  bool overridden = 11;
+}
+
+message ListProvidersRequest {}
+
+message ListProvidersResponse {
+  repeated Provider providers = 1;
+}
+
+message ListModelsRequest {
+  // Empty means all providers.
+  string provider = 1;
+}
+
+message ListModelsResponse {
+  repeated Model models = 1;
+}
+
+message RefreshRequest {
+  // Empty means all providers.
+  string provider = 1;
+}
+
+message RefreshResponse {
+  repeated Provider providers = 1;
+}

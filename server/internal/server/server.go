@@ -21,6 +21,8 @@ import (
 	"github.com/iggy/flit/server/internal/auth"
 	"github.com/iggy/flit/server/internal/config"
 	"github.com/iggy/flit/server/internal/devices"
+	"github.com/iggy/flit/server/internal/models"
+	"github.com/iggy/flit/server/internal/modelsvc"
 	"github.com/iggy/flit/server/internal/sessionsvc"
 	"github.com/iggy/flit/server/internal/system"
 )
@@ -34,6 +36,8 @@ type Deps struct {
 	Sessions *agent.Manager
 	Devices  *devices.Registry
 	Config   func() config.Config
+	Catalog  *models.Catalog
+	RolesDir func() string
 }
 
 // NewHandler returns the API handler. Every RPC requires the admin token or
@@ -48,6 +52,12 @@ func NewHandler(adminToken string, d Deps) http.Handler {
 	mux.Handle(flitv1connect.NewSystemServiceHandler(&system.Service{Devices: d.Devices, Config: d.Config}, opts))
 	if d.Sessions != nil {
 		mux.Handle(flitv1connect.NewSessionServiceHandler(&sessionsvc.Service{M: d.Sessions}, opts))
+	}
+	if d.Catalog != nil {
+		mux.Handle(flitv1connect.NewModelServiceHandler(&modelsvc.Models{Catalog: d.Catalog}, opts))
+	}
+	if d.RolesDir != nil {
+		mux.Handle(flitv1connect.NewRoleServiceHandler(&modelsvc.Roles{Dir: d.RolesDir}, opts))
 	}
 	return mux
 }

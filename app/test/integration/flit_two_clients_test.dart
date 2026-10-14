@@ -137,6 +137,9 @@ void main() {
           .firstWhere((t) => t.name == 'shell');
       expect('${tool.result}', contains('flit-two-clients'));
       expect(fold.messages.first.role, MessageRole.user);
+      // M3: context use and speed come with every model call.
+      expect(fold.contextTokens, greaterThan(0));
+      expect(fold.speed, isNotNull);
 
       // Both clients folded the same log to the same view.
       final foldB = foldFlitEvents(const FlitFoldState(), bEvents);
@@ -154,7 +157,10 @@ void main() {
       print(
         'two-client check: session ${session.id}, ${fold.lastSeq} events, '
         'prompt answered by "${resolved.client}", '
-        'tool output: ${'${tool.result}'.trim().split('\n').first}',
+        'tool output: ${'${tool.result}'.trim().split('\n').first}, '
+        'context ${fold.contextTokens}/${fold.contextLength}, '
+        '${fold.speed?.generationTokensPerSecond.toStringAsFixed(1)} tok/s '
+        '(${fold.speed?.source}), first token ${fold.speed?.timeToFirstTokenMs}ms',
       );
     },
     skip: skip,

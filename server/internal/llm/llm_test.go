@@ -105,3 +105,34 @@ func errString(err error) string {
 	}
 	return err.Error()
 }
+
+func TestMetrics(t *testing.T) {
+	srv := llmtest.New(t)
+	srv.Push(
+		llmtest.Response{Chunks: llmtest.Text("a", "b", "c")},
+		llmtest.Response{Chunks: append(llmtest.Text("x")[:1], llmtest.Finish("stop"), llmtest.Timings(120.5, 44.25))},
+	)
+	c := &llm.Client{BaseURL: srv.BaseURL()}
+
+	res, err := c.Stream(context.Background(), llm.Request{Model: "m", ReasoningEffort: "high"}, llm.Handler{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Metrics.Source != "measured" || res.Metrics.TimeToFirstToken <= 0 || res.Metrics.PromptPerSecond <= 0 {
+		t.Fatalf("measured metrics = %+v", res.Metrics)
+	}
+	if got := srv.Requests()[0].ReasoningEffort; got != "high" {
+		t.Fatalf("reasoning_effort sent = %q", got)
+	}
+
+	res, err = c.Stream(context.Background(), llm.Request{Model: "m"}, llm.Handler{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Metrics.Source != "llama.cpp" || res.Metrics.PromptPerSecond != 120.5 || res.Metrics.GenerationPerSecond != 44.25 {
+		t.Fatalf("llama.cpp metrics = %+v", res.Metrics)
+	}
+	if res.Usage == nil || res.Usage.PromptTokens != 40 {
+		t.Fatalf("usage = %+v", res.Usage)
+	}
+}

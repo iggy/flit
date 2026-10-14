@@ -43,6 +43,9 @@ service SessionService {
 
   // SetModel changes the provider and model used from the next model call.
   rpc SetModel(SetModelRequest) returns (SetModelResponse);
+
+  // SetEffort changes the reasoning effort used from the next model call.
+  rpc SetEffort(SetEffortRequest) returns (SetEffortResponse);
 }
 
 // TaskState is what a session's agent is doing.
@@ -75,15 +78,29 @@ message Session {
   int64 last_seq = 9;
   google.protobuf.Timestamp create_time = 10;
   google.protobuf.Timestamp update_time = 11;
+  // Reasoning effort ("low", "medium", "high", ...); empty means the
+  // model's default.
+  string effort = 12;
+  // The role the session was created with; empty for none.
+  string role = 13;
+  // Context use after the last model call: tokens in the prompt plus the
+  // reply, and the model's context window (0 if unknown).
+  int64 context_tokens = 14;
+  int64 context_length = 15;
 }
 
 message CreateSessionRequest {
   // Directory the agent works in. Must exist. Required.
   string working_dir = 1;
   string title = 2;
-  // Provider and model. Empty means the config's agent defaults.
+  // Provider and model. Empty means the role's, then the config's chat
+  // task defaults.
   string provider = 3;
   string model = 4;
+  // Role name (see RoleService); empty for none.
+  string role = 5;
+  // Reasoning effort; empty means the role's, then the config's.
+  string effort = 6;
 }
 
 message CreateSessionResponse {
@@ -162,6 +179,16 @@ message SetModelResponse {
   Session session = 1;
 }
 
+message SetEffortRequest {
+  string session_id = 1;
+  // E.g. "low", "medium", "high"; empty means the model's default.
+  string effort = 2;
+}
+
+message SetEffortResponse {
+  Session session = 1;
+}
+
 // Event is one entry in a session's event log.
 message Event {
   string session_id = 1;
@@ -183,6 +210,7 @@ message Event {
     ModelChanged model_changed = 20;
     Usage usage = 21;
     TurnError error = 22;
+    TodoUpdated todo_updated = 23;
   }
 }
 
@@ -282,14 +310,47 @@ message TaskStateChanged {
 message ModelChanged {
   string provider = 1;
   string model = 2;
+  // Reasoning effort; empty means the model's default.
+  string effort = 3;
+  // The model's context window, if known.
+  int64 context_length = 4;
 }
 
-// Usage is token usage for one model call.
+// Usage is token usage and speed for one model call.
 message Usage {
   string message_id = 1;
   int64 input_tokens = 2;
   int64 output_tokens = 3;
   int64 total_tokens = 4;
+  // Context window of the model, if known; input + output tokens is how
+  // much of it this call used.
+  int64 context_length = 5;
+  // Time from sending the request to the first token, in milliseconds.
+  int64 time_to_first_token_ms = 6;
+  // Prompt processing and generation speed in tokens per second; 0 if
+  // unknown.
+  double prompt_tokens_per_second = 7;
+  double generation_tokens_per_second = 8;
+  // Where the timings came from: "llama.cpp" when the server reported its
+  // own timings, "measured" when flit timed the stream itself.
+  string timing_source = 9;
+}
+
+// TodoUpdated is the agent's task list after it changed (the todo tool).
+message TodoUpdated {
+  repeated TodoItem items = 1;
+}
+
+message TodoItem {
+  string content = 1;
+  TodoStatus status = 2;
+}
+
+enum TodoStatus {
+  TODO_STATUS_UNSPECIFIED = 0;
+  TODO_STATUS_PENDING = 1;
+  TODO_STATUS_IN_PROGRESS = 2;
+  TODO_STATUS_COMPLETED = 3;
 }
 
 message TurnError {

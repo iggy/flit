@@ -237,7 +237,7 @@ func TestTurnWithToolCall(t *testing.T) {
 	if sys.Role != "system" || !strings.Contains(sys.Content, "Always say please.") || !strings.Contains(sys.Content, h.dir) {
 		t.Fatalf("system prompt: %s", sys.Content)
 	}
-	if len(reqs[0].Tools) != 6 || reqs[0].Model != "test-model" {
+	if len(reqs[0].Tools) != 7 || reqs[0].Model != "test-model" {
 		t.Fatalf("first request tools=%d model=%s", len(reqs[0].Tools), reqs[0].Model)
 	}
 	second := reqs[1].Messages
@@ -599,17 +599,97 @@ func TestBuildMessagesFillsMissingToolResults(t *testing.T) {
 
 func TestSystemPromptInstructionFiles(t *testing.T) {
 	dir := t.TempDir()
-	if p := systemPrompt(dir); strings.Contains(p, "Project instructions") {
+	if p := systemPrompt(dir, nil); strings.Contains(p, "Project instructions") {
 		t.Fatal("instructions without files")
 	}
 	os.WriteFile(filepath.Join(dir, "AGENTS.md"), []byte("rule one"), 0o644)
 	os.WriteFile(filepath.Join(dir, "CLAUDE.md"), []byte("rule one\n"), 0o644)
-	p := systemPrompt(dir)
+	p := systemPrompt(dir, nil)
 	if strings.Count(p, "rule one") != 1 || !strings.Contains(p, "CLAUDE.md has the same content as AGENTS.md") {
 		t.Fatalf("duplicate files: %s", p)
 	}
 	os.WriteFile(filepath.Join(dir, "CLAUDE.md"), []byte("rule two"), 0o644)
-	if p := systemPrompt(dir); !strings.Contains(p, "rule one") || !strings.Contains(p, "rule two") {
+	if p := systemPrompt(dir, nil); !strings.Contains(p, "rule one") || !strings.Contains(p, "rule two") {
 		t.Fatalf("both files: %s", p)
+	}
+}
+
+func TestRolesEffortTodoAndMetrics(t *testing.T) {
+	h := newHarness(t)
+	rolesDir := t.TempDir()
+	os.WriteFile(filepath.Join(rolesDir, "reviewer.md"), []byte(
+		"---\ndescription: Reviews\nprovider: other\nmodel: review-model\neffort: high\nmemory_file: MEMORY.md\n---\nReview carefully."), 0o600)
+	os.WriteFile(filepath.Join(h.dir, "MEMORY.md"), []byte("The user likes tests."), 0o600)
+	h.m.RolesDir = func() string { return rolesDir }
+
+	if _, err := h.m.Create(context.Background(), CreateOptions{WorkingDir: h.dir, Role: "nope"}); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("unknown role: %v", err)
+	}
+	sess, err := h.m.Create(context.Background(), CreateOptions{WorkingDir: h.dir, Role: "reviewer"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sess.Provider != "other" || sess.Model != "review-model" || sess.Effort != "high" || sess.Role != "reviewer" {
+		t.Fatalf("session from role = %+v", sess)
+	}
+
+	h.llm.Push(
+		llmtest.Response{Chunks: llmtest.ToolCalls([3]string{"c1", "todo", `{"items":[{"content":"read code","status":"in_progress"},{"content":"report","status":"pending"}]}`})},
+		llmtest.Response{Chunks: append(llmtest.Text("ok")[:1], llmtest.Finish("stop"), llmtest.Timings(100, 40))},
+	)
+	w := h.watch(sess.ID, 0)
+	if _, err := h.m.Send(context.Background(), sess.ID, "review"); err != nil {
+		t.Fatal(err)
+	}
+	w.waitTurnEnd()
+	evs := w.snapshot()
+
+	reqs := h.llm.Requests()
+	sys := reqs[0].Messages[0].Content
+	if !strings.Contains(sys, "Review carefully.") || !strings.Contains(sys, "The user likes tests.") {
+		t.Fatalf("system prompt lacks role/memory:\n%s", sys)
+	}
+	if reqs[0].ReasoningEffort != "high" || reqs[0].Model != "review-model" {
+		t.Fatalf("request effort/model = %q/%q", reqs[0].ReasoningEffort, reqs[0].Model)
+	}
+	todo, ok := find(evs, (*flitv1.Event).GetTodoUpdated, notNil)
+	if !ok || len(todo.Items) != 2 || todo.Items[0].Status != flitv1.TodoStatus_TODO_STATUS_IN_PROGRESS {
+		t.Fatalf("todo event = %v", todo)
+	}
+	var last *flitv1.Usage
+	for _, ev := range evs {
+		if u := ev.GetUsage(); u != nil {
+			last = u
+		}
+	}
+	if last == nil || last.TimingSource != "llama.cpp" || last.PromptTokensPerSecond != 100 || last.GenerationTokensPerSecond != 40 {
+		t.Fatalf("usage = %v", last)
+	}
+	got, _ := h.m.Get(context.Background(), sess.ID)
+	if got.ContextTokens != 48 {
+		t.Fatalf("context tokens = %d", got.ContextTokens)
+	}
+
+	// Effort can change mid-session.
+	got, err = h.m.SetEffort(context.Background(), sess.ID, "low")
+	if err != nil || got.Effort != "low" {
+		t.Fatalf("SetEffort = %+v, %v", got, err)
+	}
+	mc := w.waitFor("effort change", func(ev *flitv1.Event) bool { return ev.GetModelChanged().GetEffort() == "low" })
+	if mc.GetModelChanged().Model != "review-model" {
+		t.Fatalf("model changed = %v", mc)
+	}
+	stored, _ := h.st.GetSession(context.Background(), sess.ID)
+	if stored.Effort != "low" || stored.Role != "reviewer" {
+		t.Fatalf("stored = %+v", stored)
+	}
+}
+
+func TestChatTaskDefaults(t *testing.T) {
+	h := newHarness(t)
+	h.cfg.Agent.Tasks = map[string]config.TaskModel{"chat": {Provider: "other", Model: "chat-model", Effort: "medium"}}
+	sess := h.create()
+	if sess.Provider != "other" || sess.Model != "chat-model" || sess.Effort != "medium" {
+		t.Fatalf("session = %+v", sess)
 	}
 }

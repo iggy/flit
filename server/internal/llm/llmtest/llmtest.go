@@ -176,3 +176,15 @@ func ToolCalls(calls ...[3]string) []string {
 	}
 	return append(out, Finish("tool_calls"), Usage(20, 8))
 }
+
+// Timings returns a chunk with llama.cpp's timings block and usage.
+func Timings(promptPerSec, genPerSec float64) string {
+	return mustJSON(map[string]any{
+		"choices": []any{},
+		"usage":   map[string]any{"prompt_tokens": 40, "completion_tokens": 8, "total_tokens": 48},
+		"timings": map[string]any{
+			"prompt_n": 40, "prompt_ms": 400.0, "prompt_per_second": promptPerSec,
+			"predicted_n": 8, "predicted_ms": 200.0, "predicted_per_second": genPerSec,
+		},
+	})
+}

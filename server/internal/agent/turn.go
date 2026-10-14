@@ -8,6 +8,7 @@ import (
 
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
 	"github.com/iggy/flit/server/internal/llm"
+	"github.com/iggy/flit/server/internal/roles"
 	"github.com/iggy/flit/server/internal/tools"
 )
 
@@ -69,10 +70,17 @@ func (s *session) loop(ctx context.Context) (end, error) {
 		if err != nil {
 			return end{}, err
 		}
+		var role *roles.Role
+		if info.Role != "" {
+			if role, err = s.m.role(info.Role); err != nil {
+				return s.stop(fmt.Sprintf("role %q: %v", info.Role, err), false)
+			}
+		}
 		req := llm.Request{
-			Model:    info.Model,
-			Messages: append([]llm.Message{{Role: "system", Content: systemPrompt(info.WorkingDir)}}, buildMessages(history)...),
-			Tools:    tools.Definitions(),
+			Model:           info.Model,
+			Messages:        append([]llm.Message{{Role: "system", Content: systemPrompt(info.WorkingDir, role)}}, buildMessages(history)...),
+			Tools:           tools.Definitions(),
+			ReasoningEffort: info.Effort,
 		}
 
 		msgID := newID("msg")
@@ -119,10 +127,19 @@ func (s *session) loop(ctx context.Context) (end, error) {
 		if err := s.messageDone(msgID, res.Text, res.Reasoning, res.FinishReason); err != nil {
 			return end{}, err
 		}
-		if res.Usage != nil {
-			if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_Usage{Usage: &flitv1.Usage{
-				MessageId: msgID, InputTokens: res.Usage.PromptTokens, OutputTokens: res.Usage.CompletionTokens, TotalTokens: res.Usage.TotalTokens,
-			}}}); err != nil {
+		if res.Usage != nil || res.Metrics.Source != "" {
+			u := &flitv1.Usage{
+				MessageId:                 msgID,
+				ContextLength:             s.m.contextLength(info.Provider, info.Model),
+				TimeToFirstTokenMs:        res.Metrics.TimeToFirstToken.Milliseconds(),
+				PromptTokensPerSecond:     res.Metrics.PromptPerSecond,
+				GenerationTokensPerSecond: res.Metrics.GenerationPerSecond,
+				TimingSource:              res.Metrics.Source,
+			}
+			if res.Usage != nil {
+				u.InputTokens, u.OutputTokens, u.TotalTokens = res.Usage.PromptTokens, res.Usage.CompletionTokens, res.Usage.TotalTokens
+			}
+			if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_Usage{Usage: u}}); err != nil {
 				return end{}, err
 			}
 		}
@@ -182,6 +199,15 @@ func (s *session) runTool(ctx context.Context, tc llm.ToolCall) (tools.Result, e
 		Approve: func(ctx context.Context, title, detail string) (bool, error) {
 			return s.approve(ctx, tc.ID, title, detail)
 		},
+		Todo: func(items []tools.TodoItem) {
+			ev := &flitv1.TodoUpdated{}
+			for _, it := range items {
+				ev.Items = append(ev.Items, &flitv1.TodoItem{Content: it.Content, Status: todoStatus(it.Status)})
+			}
+			if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_TodoUpdated{TodoUpdated: ev}}); err != nil {
+				appendErr = err
+			}
+		},
 	}
 	res := tools.Run(ctx, env, tc.Function.Name, tc.Function.Arguments)
 	if appendErr != nil && !errors.Is(appendErr, errInterrupted) {
@@ -211,4 +237,16 @@ func (s *session) stop(msg string, canContinue bool) (end, error) {
 		Message: msg, TurnCanContinue: canContinue,
 	}}})
 	return end{flitv1.TaskState_TASK_STATE_STUCK, msg}, err
+}
+
+func todoStatus(s string) flitv1.TodoStatus {
+	switch s {
+	case "pending":
+		return flitv1.TodoStatus_TODO_STATUS_PENDING
+	case "in_progress":
+		return flitv1.TodoStatus_TODO_STATUS_IN_PROGRESS
+	case "completed":
+		return flitv1.TodoStatus_TODO_STATUS_COMPLETED
+	}
+	return flitv1.TodoStatus_TODO_STATUS_UNSPECIFIED
 }

@@ -226,4 +226,48 @@ void main() {
     expect(toolContext('list', '{}'), '.');
     expect(toolContext('read', 'not json'), isNull);
   });
+
+  test('effort, context use, speed and the todo list', () {
+    final state = foldFlitEvents(const FlitFoldState(), <FlitEvent>[
+      const FlitModelChanged(
+        seq: 1,
+        provider: 'llama',
+        model: 'qwen',
+        effort: 'high',
+        contextLength: 262144,
+      ),
+      const FlitMessageStarted(
+        seq: 2,
+        messageId: 'a',
+        role: FlitRole.assistant,
+      ),
+      const FlitUsage(
+        seq: 3,
+        messageId: 'a',
+        inputTokens: 12000,
+        outputTokens: 500,
+        timeToFirstTokenMs: 900,
+        promptTokensPerSecond: 1300,
+        generationTokensPerSecond: 45.5,
+        timingSource: 'llama.cpp',
+      ),
+      const FlitTodoUpdated(
+        seq: 4,
+        items: <FlitTodo>[
+          FlitTodo(content: 'read', status: FlitTodoStatus.completed),
+          FlitTodo(content: 'fix', status: FlitTodoStatus.inProgress),
+        ],
+      ),
+    ]);
+    expect(state.effort, 'high');
+    expect(state.contextLength, 262144, reason: 'kept when Usage has none');
+    expect(state.contextTokens, 12500);
+    expect(state.speed?.generationTokensPerSecond, 45.5);
+    expect(state.speed?.source, 'llama.cpp');
+    expect(state.todos.map((t) => t.status), <FlitTodoStatus>[
+      FlitTodoStatus.completed,
+      FlitTodoStatus.inProgress,
+    ]);
+    expect(state.messages.single.usage?.input, 12000);
+  });
 }

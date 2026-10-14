@@ -112,6 +112,12 @@ CREATE TABLE devices (
 	revoked_at   INTEGER
 );
 `,
+	`
+ALTER TABLE sessions ADD COLUMN effort TEXT NOT NULL DEFAULT '';
+ALTER TABLE sessions ADD COLUMN role TEXT NOT NULL DEFAULT '';
+ALTER TABLE sessions ADD COLUMN context_tokens INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE sessions ADD COLUMN context_length INTEGER NOT NULL DEFAULT 0;
+`,
 }
 
 func (s *Store) migrate(ctx context.Context) error {
@@ -159,15 +165,20 @@ type Session struct {
 	LastSeq    int64
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
+	Effort     string
+	Role       string
+	// Context use after the last model call, and the model's window.
+	ContextTokens int64
+	ContextLength int64
 }
 
-const sessionCols = `id, team_id, project_id, title, working_dir, provider, model, state, last_seq, created_at, updated_at`
+const sessionCols = `id, team_id, project_id, title, working_dir, provider, model, state, last_seq, created_at, updated_at, effort, role, context_tokens, context_length`
 
 func scanSession(row interface{ Scan(...any) error }) (Session, error) {
 	var s Session
 	var created, updated int64
 	err := row.Scan(&s.ID, &s.TeamID, &s.ProjectID, &s.Title, &s.WorkingDir, &s.Provider, &s.Model,
-		&s.State, &s.LastSeq, &created, &updated)
+		&s.State, &s.LastSeq, &created, &updated, &s.Effort, &s.Role, &s.ContextTokens, &s.ContextLength)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Session{}, ErrNotFound
 	}
@@ -179,9 +190,9 @@ func scanSession(row interface{ Scan(...any) error }) (Session, error) {
 func (s *Store) CreateSession(ctx context.Context, sess *Session) error {
 	now := time.Now()
 	sess.CreatedAt, sess.UpdatedAt = now, now
-	_, err := s.db.ExecContext(ctx, `INSERT INTO sessions (`+sessionCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	_, err := s.db.ExecContext(ctx, `INSERT INTO sessions (`+sessionCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		sess.ID, sess.TeamID, sess.ProjectID, sess.Title, sess.WorkingDir, sess.Provider, sess.Model,
-		sess.State, sess.LastSeq, now.UnixNano(), now.UnixNano())
+		sess.State, sess.LastSeq, now.UnixNano(), now.UnixNano(), sess.Effort, sess.Role, sess.ContextTokens, sess.ContextLength)
 	return err
 }
 
@@ -222,6 +233,19 @@ func (s *Store) SetModel(ctx context.Context, id, provider, model string) error 
 	return nil
 }
 
+// SetEffort changes a session's reasoning effort.
+func (s *Store) SetEffort(ctx context.Context, id, effort string) error {
+	res, err := s.db.ExecContext(ctx, `UPDATE sessions SET effort = ?, updated_at = ? WHERE id = ?`,
+		effort, time.Now().UnixNano(), id)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 // SetTitle changes a session's title.
 func (s *Store) SetTitle(ctx context.Context, id, title string) error {
 	_, err := s.db.ExecContext(ctx, `UPDATE sessions SET title = ? WHERE id = ?`, title, id)
@@ -253,8 +277,9 @@ func (s *Store) SessionIDsInStates(ctx context.Context, states ...flitv1.TaskSta
 }
 
 // AppendEvent stores ev, which must carry the session's next sequence
-// number, and advances the session's last_seq (and state, for
-// TaskStateChanged events) in the same transaction.
+// number, and advances the session's last_seq in the same transaction,
+// along with what the event changes: state (TaskStateChanged), context use
+// (Usage) or context window (ModelChanged).
 func (s *Store) AppendEvent(ctx context.Context, sess Session, ev *flitv1.Event) error {
 	payload, err := proto.Marshal(ev)
 	if err != nil {
@@ -272,9 +297,17 @@ func (s *Store) AppendEvent(ctx context.Context, sess Session, ev *flitv1.Event)
 	}
 	q := `UPDATE sessions SET last_seq = ?, updated_at = ? WHERE id = ? AND last_seq = ?`
 	args := []any{ev.Seq, at, ev.SessionId, ev.Seq - 1}
-	if st := ev.GetTaskStateChanged(); st != nil {
+	switch {
+	case ev.GetTaskStateChanged() != nil:
 		q = `UPDATE sessions SET last_seq = ?, updated_at = ?, state = ? WHERE id = ? AND last_seq = ?`
-		args = []any{ev.Seq, at, st.State, ev.SessionId, ev.Seq - 1}
+		args = []any{ev.Seq, at, ev.GetTaskStateChanged().State, ev.SessionId, ev.Seq - 1}
+	case ev.GetUsage() != nil:
+		u := ev.GetUsage()
+		q = `UPDATE sessions SET last_seq = ?, updated_at = ?, context_tokens = ?, context_length = ? WHERE id = ? AND last_seq = ?`
+		args = []any{ev.Seq, at, u.InputTokens + u.OutputTokens, u.ContextLength, ev.SessionId, ev.Seq - 1}
+	case ev.GetModelChanged() != nil:
+		q = `UPDATE sessions SET last_seq = ?, updated_at = ?, context_length = ? WHERE id = ? AND last_seq = ?`
+		args = []any{ev.Seq, at, ev.GetModelChanged().ContextLength, ev.SessionId, ev.Seq - 1}
 	}
 	res, err := tx.ExecContext(ctx, q, args...)
 	if err != nil {

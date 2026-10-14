@@ -31,17 +31,21 @@ var _ flitv1connect.SessionServiceHandler = (*Service)(nil)
 
 func toProto(s store.Session) *flitv1.Session {
 	return &flitv1.Session{
-		Id:         s.ID,
-		TeamId:     s.TeamID,
-		ProjectId:  s.ProjectID,
-		Title:      s.Title,
-		WorkingDir: s.WorkingDir,
-		Provider:   s.Provider,
-		Model:      s.Model,
-		State:      s.State,
-		LastSeq:    s.LastSeq,
-		CreateTime: timestamppb.New(s.CreatedAt),
-		UpdateTime: timestamppb.New(s.UpdatedAt),
+		Id:            s.ID,
+		TeamId:        s.TeamID,
+		ProjectId:     s.ProjectID,
+		Title:         s.Title,
+		WorkingDir:    s.WorkingDir,
+		Provider:      s.Provider,
+		Model:         s.Model,
+		State:         s.State,
+		LastSeq:       s.LastSeq,
+		CreateTime:    timestamppb.New(s.CreatedAt),
+		UpdateTime:    timestamppb.New(s.UpdatedAt),
+		Effort:        s.Effort,
+		Role:          s.Role,
+		ContextTokens: s.ContextTokens,
+		ContextLength: s.ContextLength,
 	}
 }
 
@@ -76,7 +80,9 @@ func required(name, v string) error {
 // CreateSession implements flitv1connect.SessionServiceHandler.
 func (s *Service) CreateSession(ctx context.Context, req *connect.Request[flitv1.CreateSessionRequest]) (*connect.Response[flitv1.CreateSessionResponse], error) {
 	m := req.Msg
-	sess, err := s.M.Create(ctx, agent.CreateOptions{WorkingDir: m.WorkingDir, Title: m.Title, Provider: m.Provider, Model: m.Model})
+	sess, err := s.M.Create(ctx, agent.CreateOptions{
+		WorkingDir: m.WorkingDir, Title: m.Title, Provider: m.Provider, Model: m.Model, Effort: m.Effort, Role: m.Role,
+	})
 	if err != nil {
 		return nil, connectErr(err)
 	}
@@ -208,4 +214,16 @@ func (s *Service) SetModel(ctx context.Context, req *connect.Request[flitv1.SetM
 		return nil, connectErr(err)
 	}
 	return connect.NewResponse(&flitv1.SetModelResponse{Session: toProto(sess)}), nil
+}
+
+// SetEffort implements flitv1connect.SessionServiceHandler.
+func (s *Service) SetEffort(ctx context.Context, req *connect.Request[flitv1.SetEffortRequest]) (*connect.Response[flitv1.SetEffortResponse], error) {
+	if err := required("session_id", req.Msg.SessionId); err != nil {
+		return nil, err
+	}
+	sess, err := s.M.SetEffort(ctx, req.Msg.SessionId, req.Msg.Effort)
+	if err != nil {
+		return nil, connectErr(err)
+	}
+	return connect.NewResponse(&flitv1.SetEffortResponse{Session: toProto(sess)}), nil
 }

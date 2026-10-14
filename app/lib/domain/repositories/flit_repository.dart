@@ -16,6 +16,8 @@ abstract interface class FlitRepository {
     String title = '',
     String provider = '',
     String model = '',
+    String effort = '',
+    String role = '',
   });
 
   Future<FlitSession> getSession(String id);
@@ -45,4 +47,16 @@ abstract interface class FlitRepository {
     required String provider,
     required String model,
   });
+
+  /// Change the session's reasoning effort ('' = the model's default).
+  Future<FlitSession> setEffort(String sessionId, String effort);
+
+  /// The models the server discovered, all providers.
+  Future<List<FlitModel>> listModels();
+
+  /// Re-run model discovery on the server, then list the models.
+  Future<List<FlitModel>> refreshModels();
+
+  /// The roles sessions can be created with.
+  Future<List<FlitAgentRole>> listRoles();
 }

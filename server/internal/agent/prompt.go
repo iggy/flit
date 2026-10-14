@@ -7,6 +7,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/iggy/flit/server/internal/roles"
 )
 
 // instructionFiles are read from the session's working directory, in this
@@ -24,10 +26,10 @@ const basePrompt = `You are flit, a coding agent. You help the user with softwar
 - Shell commands may need the user's approval. If one is denied, don't retry it unchanged.
 - When you're done, reply briefly with what you did.`
 
-// systemPrompt builds the system prompt for a session working in dir. The
-// instruction files are re-read each time, so edits apply on the next model
-// call.
-func systemPrompt(dir string) string {
+// systemPrompt builds the system prompt for a session working in dir with
+// an optional role. The instruction files, role and memory file are re-read
+// each time, so edits apply on the next model call.
+func systemPrompt(dir string, role *roles.Role) string {
 	var b strings.Builder
 	b.WriteString(basePrompt)
 	fmt.Fprintf(&b, "\n\nEnvironment:\n- Working directory: %s\n- OS: %s/%s\n- Date: %s\n",
@@ -52,6 +54,21 @@ func systemPrompt(dir string) string {
 			content = content[:maxInstructionBytes] + "\n[... truncated ...]"
 		}
 		fmt.Fprintf(&b, "\nProject instructions from %s (follow them):\n\n<%s>\n%s\n</%s>\n", name, name, content, name)
+	}
+
+	if role != nil {
+		if role.Prompt != "" {
+			fmt.Fprintf(&b, "\nYour role for this session is %q:\n\n<role>\n%s\n</role>\n", role.Name, role.Prompt)
+		}
+		if path := role.MemoryPath(dir); path != "" {
+			if data, err := os.ReadFile(path); err == nil && strings.TrimSpace(string(data)) != "" {
+				memory := strings.TrimSpace(string(data))
+				if len(memory) > maxInstructionBytes {
+					memory = memory[:maxInstructionBytes] + "\n[... truncated ...]"
+				}
+				fmt.Fprintf(&b, "\nYour memory file (%s) says:\n\n<memory>\n%s\n</memory>\n", path, memory)
+			}
+		}
 	}
 	return b.String()
 }

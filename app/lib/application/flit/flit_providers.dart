@@ -63,3 +63,22 @@ final flitReconnectDelayProvider = Provider<Duration Function(int attempt)>((
     return Duration(seconds: steps[attempt.clamp(0, steps.length - 1)]);
   };
 });
+
+/// Models the server discovered, all providers. Invalidate to re-list;
+/// use [FlitRepository.refreshModels] to re-run discovery.
+final flitModelsProvider = FutureProvider<List<FlitModel>>((ref) async {
+  final repository = ref.watch(flitRepositoryProvider);
+  if (repository == null) {
+    return const <FlitModel>[];
+  }
+  return repository.listModels();
+});
+
+/// Roles sessions can be created with.
+final flitRolesProvider = FutureProvider<List<FlitAgentRole>>((ref) async {
+  final repository = ref.watch(flitRepositoryProvider);
+  if (repository == null) {
+    return const <FlitAgentRole>[];
+  }
+  return repository.listRoles();
+});

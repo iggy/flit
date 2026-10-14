@@ -99,5 +99,30 @@ class PromptDecision extends $pb.ProtobufEnum {
   const PromptDecision._(super.value, super.name);
 }
 
+class TodoStatus extends $pb.ProtobufEnum {
+  static const TodoStatus TODO_STATUS_UNSPECIFIED =
+      TodoStatus._(0, _omitEnumNames ? '' : 'TODO_STATUS_UNSPECIFIED');
+  static const TodoStatus TODO_STATUS_PENDING =
+      TodoStatus._(1, _omitEnumNames ? '' : 'TODO_STATUS_PENDING');
+  static const TodoStatus TODO_STATUS_IN_PROGRESS =
+      TodoStatus._(2, _omitEnumNames ? '' : 'TODO_STATUS_IN_PROGRESS');
+  static const TodoStatus TODO_STATUS_COMPLETED =
+      TodoStatus._(3, _omitEnumNames ? '' : 'TODO_STATUS_COMPLETED');
+
+  static const $core.List<TodoStatus> values = <TodoStatus>[
+    TODO_STATUS_UNSPECIFIED,
+    TODO_STATUS_PENDING,
+    TODO_STATUS_IN_PROGRESS,
+    TODO_STATUS_COMPLETED,
+  ];
+
+  static final $core.List<TodoStatus?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static TodoStatus? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const TodoStatus._(super.value, super.name);
+}
+
 const $core.bool _omitEnumNames =
     $core.bool.fromEnvironment('protobuf.omit_enum_names');

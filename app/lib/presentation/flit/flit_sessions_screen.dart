@@ -19,13 +19,13 @@ class FlitSessionsScreen extends ConsumerWidget {
     WidgetRef ref,
     List<FlitSession> existing,
   ) async {
-    final dir = await showDialog<String>(
+    final choice = await showDialog<({String dir, String role})>(
       context: context,
       builder: (_) => _NewSessionDialog(
         initialDir: existing.isEmpty ? '' : existing.first.workingDir,
       ),
     );
-    if (dir == null || !context.mounted) {
+    if (choice == null || !context.mounted) {
       return;
     }
     final repository = ref.read(flitRepositoryProvider);
@@ -33,7 +33,10 @@ class FlitSessionsScreen extends ConsumerWidget {
       return;
     }
     try {
-      final session = await repository.createSession(workingDir: dir);
+      final session = await repository.createSession(
+        workingDir: choice.dir,
+        role: choice.role,
+      );
       ref.invalidate(flitSessionsProvider);
       if (context.mounted) {
         await context.push('/flit/session/${session.id}');
@@ -163,16 +166,17 @@ class FlitSessionsScreen extends ConsumerWidget {
   }
 }
 
-class _NewSessionDialog extends StatefulWidget {
+class _NewSessionDialog extends ConsumerStatefulWidget {
   const _NewSessionDialog({required this.initialDir});
 
   final String initialDir;
 
   @override
-  State<_NewSessionDialog> createState() => _NewSessionDialogState();
+  ConsumerState<_NewSessionDialog> createState() => _NewSessionDialogState();
 }
 
-class _NewSessionDialogState extends State<_NewSessionDialog> {
+class _NewSessionDialogState extends ConsumerState<_NewSessionDialog> {
+  String _role = '';
   late final TextEditingController _dir = TextEditingController(
     text: widget.initialDir,
   );
@@ -186,7 +190,7 @@ class _NewSessionDialogState extends State<_NewSessionDialog> {
   void _submit() {
     final dir = _dir.text.trim();
     if (dir.isNotEmpty) {
-      Navigator.pop(context, dir);
+      Navigator.pop(context, (dir: dir, role: _role));
     }
   }
 
@@ -194,14 +198,41 @@ class _NewSessionDialogState extends State<_NewSessionDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('New session'),
-      content: TextField(
-        controller: _dir,
-        autofocus: true,
-        decoration: const InputDecoration(
-          labelText: 'Working directory on the server',
-          hintText: '/home/me/projects/app',
-        ),
-        onSubmitted: (_) => _submit(),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          TextField(
+            controller: _dir,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'Working directory on the server',
+              hintText: '/home/me/projects/app',
+            ),
+            onSubmitted: (_) => _submit(),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            initialValue: _role,
+            decoration: const InputDecoration(labelText: 'Role'),
+            items: <DropdownMenuItem<String>>[
+              const DropdownMenuItem<String>(value: '', child: Text('None')),
+              for (final r
+                  in ref.watch(flitRolesProvider).value ??
+                      const <FlitAgentRole>[])
+                if (r.error.isEmpty)
+                  DropdownMenuItem<String>(
+                    value: r.name,
+                    child: Text(
+                      r.description.isEmpty
+                          ? r.name
+                          : '${r.name} — ${r.description}',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+            ],
+            onChanged: (v) => setState(() => _role = v ?? ''),
+          ),
+        ],
       ),
       actions: <Widget>[
         TextButton(
