@@ -1,0 +1,151 @@
+name: Server
+
+# CI for the flit server (server/) and its API schema (proto/). The Flutter
+# app has its own workflow (ci.yaml).
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'server/**'
+      - 'proto/**'
+      - '.github/workflows/server.yaml'
+  pull_request:
+    paths:
+      - 'server/**'
+      - 'proto/**'
+      - '.github/workflows/server.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  proto:
+    name: Proto (lint, format, generated code)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: proto
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up buf
+        uses: bufbuild/buf-action@v1
+        with:
+          version: 1.73.0
+          setup_only: true
+
+      - name: Lint
+        run: buf lint
+
+      - name: Check formatting
+        run: buf format --diff --exit-code
+
+      - name: Check generated code is up to date
+        run: |
+          buf generate
+          if [ -n "$(git status --porcelain -- . ../server/gen)" ]; then
+            git status --porcelain -- . ../server/gen
+            echo "::error::Generated code is stale. Run 'buf generate' in proto/ and commit the result."
+            exit 1
+          fi
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: 3.13.4
+
+      - name: Analyze Dart client
+        working-directory: proto/dart
+        run: |
+          dart pub get
+          dart analyze --fatal-infos
+
+  test:
+    name: Test - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: server
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+
+      - name: Check formatting
+        if: runner.os == 'Linux'
+        run: test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then
+            go test -race ./...
+          else
+            go test ./...
+          fi
+
+  build:
+    name: Build - ${{ matrix.goos }}/${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    needs: test
+    defaults:
+      run:
+        working-directory: server
+    strategy:
+      fail-fast: false
+      matrix:
+        goos: [linux, darwin, windows]
+        goarch: [amd64, arm64]
+    env:
+      CGO_ENABLED: '0'
+      GOOS: ${{ matrix.goos }}
+      GOARCH: ${{ matrix.goarch }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # tags, for `git describe`
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+
+      - name: Build static binary
+        run: |
+          ext=""
+          if [ "$GOOS" = windows ]; then ext=".exe"; fi
+          pkg=github.com/iggy/flit/server/internal/buildinfo
+          version="$(git describe --tags --always --dirty 2>/dev/null || echo dev)"
+          ldflags="-s -w -X ${pkg}.version=${version#v} -X ${pkg}.commit=${GITHUB_SHA} -X ${pkg}.buildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          mkdir -p dist
+          go build -trimpath -ldflags "$ldflags" -o "dist/flit${ext}" ./cmd/flit
+          file "dist/flit${ext}"
+
+      - name: Check Linux binary is static
+        if: matrix.goos == 'linux'
+        run: file dist/flit | grep -q 'statically linked'
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: flit-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: server/dist/
+          if-no-files-found: error
