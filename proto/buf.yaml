@@ -1,0 +1,10 @@
+# buf workspace for flit's API. See proto/README.md.
+version: v2
+modules:
+  - path: .
+lint:
+  use:
+    - STANDARD
+breaking:
+  use:
+    - FILE

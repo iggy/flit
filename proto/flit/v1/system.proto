@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package flit.v1;
+
+option go_package = "github.com/iggy/flit/server/gen/flit/v1;flitv1";
+
+// SystemService reports on the flit server itself. Like every flit RPC it
+// requires the server's auth token, even on localhost.
+service SystemService {
+  // Version returns build and API version information for the server.
+  rpc Version(VersionRequest) returns (VersionResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+
+  // Health reports whether the server is able to serve requests.
+  rpc Health(HealthRequest) returns (HealthResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+}
+
+message VersionRequest {}
+
+message VersionResponse {
+  // Release version of the server binary, e.g. "0.1.0" or "dev".
+  string version = 1;
+  // VCS revision the binary was built from, if known.
+  string commit = 2;
+  // Build time in RFC 3339 format, if known.
+  string build_time = 3;
+  // Go toolchain version the binary was built with.
+  string go_version = 4;
+  // GOOS and GOARCH of the binary.
+  string os = 5;
+  string arch = 6;
+  // Highest API package version the server speaks, e.g. "v1".
+  string api_version = 7;
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    STATUS_SERVING = 1;
+    STATUS_NOT_SERVING = 2;
+  }
+
+  Status status = 1;
+}
