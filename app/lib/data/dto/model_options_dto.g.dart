@@ -26,31 +26,6 @@ Map<String, dynamic> _$ModelOptionsResultDtoToJson(
   'providers': instance.providers,
 };
 
-ModelProviderDto _$ModelProviderDtoFromJson(Map<String, dynamic> json) =>
-    ModelProviderDto(
-      name: json['name'] as String?,
-      slug: json['slug'] as String?,
-      authenticated: json['authenticated'] as bool?,
-      isCurrent: json['is_current'] as bool?,
-      authType: json['auth_type'] as String?,
-      keyEnv: json['key_env'] as String?,
-      models:
-          (json['models'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ??
-          const <String>[],
-      totalModels: (json['total_models'] as num?)?.toInt(),
-      warning: json['warning'] as String?,
-      capabilities:
-          (json['capabilities'] as Map<String, dynamic>?)?.map(
-            (k, e) => MapEntry(
-              k,
-              ModelCapabilitiesDto.fromJson(e as Map<String, dynamic>),
-            ),
-          ) ??
-          const <String, ModelCapabilitiesDto>{},
-    );
-
 ModelCapabilitiesDto _$ModelCapabilitiesDtoFromJson(
   Map<String, dynamic> json,
 ) => ModelCapabilitiesDto(
@@ -93,17 +68,41 @@ Map<String, dynamic> _$ModelCapabilitiesDtoToJson(
   'can_disable_reasoning': instance.canDisableReasoning,
 };
 
-Map<String, dynamic> _$ModelProviderDtoToJson(
-  ModelProviderDto instance,
-) => <String, dynamic>{
-  'name': instance.name,
-  'slug': instance.slug,
-  'authenticated': instance.authenticated,
-  'is_current': instance.isCurrent,
-  'auth_type': instance.authType,
-  'key_env': instance.keyEnv,
-  'models': instance.models,
-  'total_models': instance.totalModels,
-  'warning': instance.warning,
-  'capabilities': instance.capabilities.map((k, e) => MapEntry(k, e.toJson())),
-};
+ModelProviderDto _$ModelProviderDtoFromJson(Map<String, dynamic> json) =>
+    ModelProviderDto(
+      name: json['name'] as String?,
+      slug: json['slug'] as String?,
+      authenticated: json['authenticated'] as bool?,
+      isCurrent: json['is_current'] as bool?,
+      authType: json['auth_type'] as String?,
+      keyEnv: json['key_env'] as String?,
+      models:
+          (json['models'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const <String>[],
+      totalModels: (json['total_models'] as num?)?.toInt(),
+      warning: json['warning'] as String?,
+      capabilities:
+          (json['capabilities'] as Map<String, dynamic>?)?.map(
+            (k, e) => MapEntry(
+              k,
+              ModelCapabilitiesDto.fromJson(e as Map<String, dynamic>),
+            ),
+          ) ??
+          const <String, ModelCapabilitiesDto>{},
+    );
+
+Map<String, dynamic> _$ModelProviderDtoToJson(ModelProviderDto instance) =>
+    <String, dynamic>{
+      'name': instance.name,
+      'slug': instance.slug,
+      'authenticated': instance.authenticated,
+      'is_current': instance.isCurrent,
+      'auth_type': instance.authType,
+      'key_env': instance.keyEnv,
+      'models': instance.models,
+      'total_models': instance.totalModels,
+      'warning': instance.warning,
+      'capabilities': instance.capabilities,
+    };

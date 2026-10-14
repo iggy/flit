@@ -37,6 +37,17 @@ const (
 	SystemServiceVersionProcedure = "/flit.v1.SystemService/Version"
 	// SystemServiceHealthProcedure is the fully-qualified name of the SystemService's Health RPC.
 	SystemServiceHealthProcedure = "/flit.v1.SystemService/Health"
+	// SystemServiceCreatePairingCodeProcedure is the fully-qualified name of the SystemService's
+	// CreatePairingCode RPC.
+	SystemServiceCreatePairingCodeProcedure = "/flit.v1.SystemService/CreatePairingCode"
+	// SystemServicePairProcedure is the fully-qualified name of the SystemService's Pair RPC.
+	SystemServicePairProcedure = "/flit.v1.SystemService/Pair"
+	// SystemServiceListDevicesProcedure is the fully-qualified name of the SystemService's ListDevices
+	// RPC.
+	SystemServiceListDevicesProcedure = "/flit.v1.SystemService/ListDevices"
+	// SystemServiceRevokeDeviceProcedure is the fully-qualified name of the SystemService's
+	// RevokeDevice RPC.
+	SystemServiceRevokeDeviceProcedure = "/flit.v1.SystemService/RevokeDevice"
 )
 
 // SystemServiceClient is a client for the flit.v1.SystemService service.
@@ -45,6 +56,17 @@ type SystemServiceClient interface {
 	Version(context.Context, *connect.Request[v1.VersionRequest]) (*connect.Response[v1.VersionResponse], error)
 	// Health reports whether the server is able to serve requests.
 	Health(context.Context, *connect.Request[v1.HealthRequest]) (*connect.Response[v1.HealthResponse], error)
+	// CreatePairingCode returns a short-lived, single-use code a new device
+	// can trade for its own token with Pair. Admin only. "flit pair" calls
+	// this and shows the code as text and as a QR code.
+	CreatePairingCode(context.Context, *connect.Request[v1.CreatePairingCodeRequest]) (*connect.Response[v1.CreatePairingCodeResponse], error)
+	// Pair trades a pairing code for a device token. Needs no token. A code
+	// works once; too many wrong codes invalidate all outstanding codes.
+	Pair(context.Context, *connect.Request[v1.PairRequest]) (*connect.Response[v1.PairResponse], error)
+	// ListDevices lists paired devices. Admin only.
+	ListDevices(context.Context, *connect.Request[v1.ListDevicesRequest]) (*connect.Response[v1.ListDevicesResponse], error)
+	// RevokeDevice revokes a device's token immediately. Admin only.
+	RevokeDevice(context.Context, *connect.Request[v1.RevokeDeviceRequest]) (*connect.Response[v1.RevokeDeviceResponse], error)
 }
 
 // NewSystemServiceClient constructs a client for the flit.v1.SystemService service. By default, it
@@ -72,13 +94,42 @@ func NewSystemServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 			connect.WithClientOptions(opts...),
 		),
+		createPairingCode: connect.NewClient[v1.CreatePairingCodeRequest, v1.CreatePairingCodeResponse](
+			httpClient,
+			baseURL+SystemServiceCreatePairingCodeProcedure,
+			connect.WithSchema(systemServiceMethods.ByName("CreatePairingCode")),
+			connect.WithClientOptions(opts...),
+		),
+		pair: connect.NewClient[v1.PairRequest, v1.PairResponse](
+			httpClient,
+			baseURL+SystemServicePairProcedure,
+			connect.WithSchema(systemServiceMethods.ByName("Pair")),
+			connect.WithClientOptions(opts...),
+		),
+		listDevices: connect.NewClient[v1.ListDevicesRequest, v1.ListDevicesResponse](
+			httpClient,
+			baseURL+SystemServiceListDevicesProcedure,
+			connect.WithSchema(systemServiceMethods.ByName("ListDevices")),
+			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+			connect.WithClientOptions(opts...),
+		),
+		revokeDevice: connect.NewClient[v1.RevokeDeviceRequest, v1.RevokeDeviceResponse](
+			httpClient,
+			baseURL+SystemServiceRevokeDeviceProcedure,
+			connect.WithSchema(systemServiceMethods.ByName("RevokeDevice")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // systemServiceClient implements SystemServiceClient.
 type systemServiceClient struct {
-	version *connect.Client[v1.VersionRequest, v1.VersionResponse]
-	health  *connect.Client[v1.HealthRequest, v1.HealthResponse]
+	version           *connect.Client[v1.VersionRequest, v1.VersionResponse]
+	health            *connect.Client[v1.HealthRequest, v1.HealthResponse]
+	createPairingCode *connect.Client[v1.CreatePairingCodeRequest, v1.CreatePairingCodeResponse]
+	pair              *connect.Client[v1.PairRequest, v1.PairResponse]
+	listDevices       *connect.Client[v1.ListDevicesRequest, v1.ListDevicesResponse]
+	revokeDevice      *connect.Client[v1.RevokeDeviceRequest, v1.RevokeDeviceResponse]
 }
 
 // Version calls flit.v1.SystemService.Version.
@@ -91,12 +142,43 @@ func (c *systemServiceClient) Health(ctx context.Context, req *connect.Request[v
 	return c.health.CallUnary(ctx, req)
 }
 
+// CreatePairingCode calls flit.v1.SystemService.CreatePairingCode.
+func (c *systemServiceClient) CreatePairingCode(ctx context.Context, req *connect.Request[v1.CreatePairingCodeRequest]) (*connect.Response[v1.CreatePairingCodeResponse], error) {
+	return c.createPairingCode.CallUnary(ctx, req)
+}
+
+// Pair calls flit.v1.SystemService.Pair.
+func (c *systemServiceClient) Pair(ctx context.Context, req *connect.Request[v1.PairRequest]) (*connect.Response[v1.PairResponse], error) {
+	return c.pair.CallUnary(ctx, req)
+}
+
+// ListDevices calls flit.v1.SystemService.ListDevices.
+func (c *systemServiceClient) ListDevices(ctx context.Context, req *connect.Request[v1.ListDevicesRequest]) (*connect.Response[v1.ListDevicesResponse], error) {
+	return c.listDevices.CallUnary(ctx, req)
+}
+
+// RevokeDevice calls flit.v1.SystemService.RevokeDevice.
+func (c *systemServiceClient) RevokeDevice(ctx context.Context, req *connect.Request[v1.RevokeDeviceRequest]) (*connect.Response[v1.RevokeDeviceResponse], error) {
+	return c.revokeDevice.CallUnary(ctx, req)
+}
+
 // SystemServiceHandler is an implementation of the flit.v1.SystemService service.
 type SystemServiceHandler interface {
 	// Version returns build and API version information for the server.
 	Version(context.Context, *connect.Request[v1.VersionRequest]) (*connect.Response[v1.VersionResponse], error)
 	// Health reports whether the server is able to serve requests.
 	Health(context.Context, *connect.Request[v1.HealthRequest]) (*connect.Response[v1.HealthResponse], error)
+	// CreatePairingCode returns a short-lived, single-use code a new device
+	// can trade for its own token with Pair. Admin only. "flit pair" calls
+	// this and shows the code as text and as a QR code.
+	CreatePairingCode(context.Context, *connect.Request[v1.CreatePairingCodeRequest]) (*connect.Response[v1.CreatePairingCodeResponse], error)
+	// Pair trades a pairing code for a device token. Needs no token. A code
+	// works once; too many wrong codes invalidate all outstanding codes.
+	Pair(context.Context, *connect.Request[v1.PairRequest]) (*connect.Response[v1.PairResponse], error)
+	// ListDevices lists paired devices. Admin only.
+	ListDevices(context.Context, *connect.Request[v1.ListDevicesRequest]) (*connect.Response[v1.ListDevicesResponse], error)
+	// RevokeDevice revokes a device's token immediately. Admin only.
+	RevokeDevice(context.Context, *connect.Request[v1.RevokeDeviceRequest]) (*connect.Response[v1.RevokeDeviceResponse], error)
 }
 
 // NewSystemServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -120,12 +202,45 @@ func NewSystemServiceHandler(svc SystemServiceHandler, opts ...connect.HandlerOp
 		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 		connect.WithHandlerOptions(opts...),
 	)
+	systemServiceCreatePairingCodeHandler := connect.NewUnaryHandler(
+		SystemServiceCreatePairingCodeProcedure,
+		svc.CreatePairingCode,
+		connect.WithSchema(systemServiceMethods.ByName("CreatePairingCode")),
+		connect.WithHandlerOptions(opts...),
+	)
+	systemServicePairHandler := connect.NewUnaryHandler(
+		SystemServicePairProcedure,
+		svc.Pair,
+		connect.WithSchema(systemServiceMethods.ByName("Pair")),
+		connect.WithHandlerOptions(opts...),
+	)
+	systemServiceListDevicesHandler := connect.NewUnaryHandler(
+		SystemServiceListDevicesProcedure,
+		svc.ListDevices,
+		connect.WithSchema(systemServiceMethods.ByName("ListDevices")),
+		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+		connect.WithHandlerOptions(opts...),
+	)
+	systemServiceRevokeDeviceHandler := connect.NewUnaryHandler(
+		SystemServiceRevokeDeviceProcedure,
+		svc.RevokeDevice,
+		connect.WithSchema(systemServiceMethods.ByName("RevokeDevice")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/flit.v1.SystemService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case SystemServiceVersionProcedure:
 			systemServiceVersionHandler.ServeHTTP(w, r)
 		case SystemServiceHealthProcedure:
 			systemServiceHealthHandler.ServeHTTP(w, r)
+		case SystemServiceCreatePairingCodeProcedure:
+			systemServiceCreatePairingCodeHandler.ServeHTTP(w, r)
+		case SystemServicePairProcedure:
+			systemServicePairHandler.ServeHTTP(w, r)
+		case SystemServiceListDevicesProcedure:
+			systemServiceListDevicesHandler.ServeHTTP(w, r)
+		case SystemServiceRevokeDeviceProcedure:
+			systemServiceRevokeDeviceHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -141,4 +256,20 @@ func (UnimplementedSystemServiceHandler) Version(context.Context, *connect.Reque
 
 func (UnimplementedSystemServiceHandler) Health(context.Context, *connect.Request[v1.HealthRequest]) (*connect.Response[v1.HealthResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SystemService.Health is not implemented"))
+}
+
+func (UnimplementedSystemServiceHandler) CreatePairingCode(context.Context, *connect.Request[v1.CreatePairingCodeRequest]) (*connect.Response[v1.CreatePairingCodeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SystemService.CreatePairingCode is not implemented"))
+}
+
+func (UnimplementedSystemServiceHandler) Pair(context.Context, *connect.Request[v1.PairRequest]) (*connect.Response[v1.PairResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SystemService.Pair is not implemented"))
+}
+
+func (UnimplementedSystemServiceHandler) ListDevices(context.Context, *connect.Request[v1.ListDevicesRequest]) (*connect.Response[v1.ListDevicesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SystemService.ListDevices is not implemented"))
+}
+
+func (UnimplementedSystemServiceHandler) RevokeDevice(context.Context, *connect.Request[v1.RevokeDeviceRequest]) (*connect.Response[v1.RevokeDeviceResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SystemService.RevokeDevice is not implemented"))
 }

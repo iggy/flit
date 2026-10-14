@@ -1,0 +1,65 @@
+/// Riverpod wiring for the flit backend (M2). Everything here is null or
+/// empty unless the stored connection is a flit one, so Hermes connections
+/// never touch it.
+library;
+
+import 'package:flit/application/connection/connection_providers.dart';
+import 'package:flit/data/flit/flit_repository_impl.dart';
+import 'package:flit/data/flit/flit_transport.dart';
+import 'package:flit/data/transport/connection_config.dart';
+import 'package:flit/domain/models/flit_session.dart';
+import 'package:flit/domain/repositories/flit_repository.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// The flit repository for the current connection, or null when the
+/// connection isn't a paired flit server.
+final flitRepositoryProvider = Provider<FlitRepository?>((ref) {
+  final config = ref.watch(connectionConfigProvider);
+  final token = config?.token;
+  if (config == null ||
+      config.backend != BackendKind.flit ||
+      token == null ||
+      token.isEmpty) {
+    return null;
+  }
+  return FlitRepositoryImpl(
+    createFlitTransport(baseUrl: config.baseUrl, token: token),
+  );
+});
+
+/// The name this device paired under, used when answering prompts.
+final flitDeviceNameProvider = Provider<String>((ref) {
+  return ref.watch(connectionConfigProvider)?.deviceName ?? '';
+});
+
+/// All sessions on the server, most recently updated first.
+final flitSessionsProvider = FutureProvider<List<FlitSession>>((ref) async {
+  final repository = ref.watch(flitRepositoryProvider);
+  if (repository == null) {
+    return const <FlitSession>[];
+  }
+  return repository.listSessions();
+});
+
+/// One session's metadata (title, working dir, model).
+final flitSessionProvider = FutureProvider.family<FlitSession?, String>((
+  ref,
+  id,
+) async {
+  final repository = ref.watch(flitRepositoryProvider);
+  if (repository == null) {
+    return null;
+  }
+  return repository.getSession(id);
+});
+
+/// How long to wait before reattaching after the stream drops, by attempt
+/// (0-based). Overridden in tests.
+final flitReconnectDelayProvider = Provider<Duration Function(int attempt)>((
+  ref,
+) {
+  return (attempt) {
+    const steps = <int>[1, 2, 4, 8, 15, 30];
+    return Duration(seconds: steps[attempt.clamp(0, steps.length - 1)]);
+  };
+});

@@ -4,6 +4,8 @@
 //
 //	flit serve [--config FILE] [--data-dir DIR]
 //	flit token [--config FILE] [--data-dir DIR]
+//	flit pair [--url URL] [--config FILE] [--data-dir DIR]
+//	flit devices [--all] | flit devices revoke ID
 //	flit version
 package main
 
@@ -25,6 +27,7 @@ import (
 	"github.com/iggy/flit/server/internal/auth"
 	"github.com/iggy/flit/server/internal/buildinfo"
 	"github.com/iggy/flit/server/internal/config"
+	"github.com/iggy/flit/server/internal/devices"
 	"github.com/iggy/flit/server/internal/paths"
 	"github.com/iggy/flit/server/internal/server"
 	"github.com/iggy/flit/server/internal/store"
@@ -33,11 +36,14 @@ import (
 const usage = `flit is an open source coding agent.
 
 Usage:
-  flit serve [flags]   run the API server
-  flit token [flags]   print the API token
-  flit version         print version information
+  flit serve [flags]          run the API server
+  flit token [flags]          print the admin API token
+  flit pair [--url URL]       pair a phone or another machine (shows a QR code)
+  flit devices [--all]        list paired devices
+  flit devices revoke ID      revoke a paired device
+  flit version                print version information
 
-Flags for serve and token:
+Flags for serve, token, pair and devices:
   --config FILE    config file (default: %s)
   --data-dir DIR   data directory; overrides data_dir in the config
 `
@@ -64,16 +70,32 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 	}
 
 	switch cmd, args := args[0], args[1:]; cmd {
-	case "serve", "token":
+	case "serve", "token", "pair", "devices":
 		fs := flag.NewFlagSet(cmd, flag.ContinueOnError)
 		fs.SetOutput(stderr)
 		configPath := fs.String("config", defaultConfig, "config file")
 		dataDir := fs.String("data-dir", "", "data directory")
+		pairURL := fs.String("url", "", "server URL to put in the pairing code (pair only)")
+		all := fs.Bool("all", false, "include revoked devices (devices only)")
+		if cmd == "devices" && len(args) > 0 && args[0] == "revoke" {
+			if err := fs.Parse(args[1:]); err != nil {
+				return err
+			}
+			if fs.NArg() != 1 {
+				return errors.New("usage: flit devices revoke ID")
+			}
+			return revokeDevice(ctx, stdout, *configPath, *dataDir, fs.Arg(0))
+		}
 		if err := fs.Parse(args); err != nil {
 			return err
 		}
-		if cmd == "token" {
+		switch cmd {
+		case "token":
 			return printToken(stdout, *configPath, *dataDir)
+		case "pair":
+			return pair(ctx, stdout, *configPath, *dataDir, *pairURL)
+		case "devices":
+			return listDevices(ctx, stdout, *configPath, *dataDir, *all)
 		}
 		return serve(ctx, stderr, *configPath, *dataDir)
 	case "version":
@@ -193,7 +215,7 @@ func serve(ctx context.Context, stderr io.Writer, configPath, dataDirFlag string
 		log.Warn("no providers configured; add one under providers in the config to run sessions", "config", configPath)
 	}
 
-	srv := server.New(server.NewHandler(token, sessions), log)
+	srv := server.New(server.NewHandler(token, server.Deps{Sessions: sessions, Devices: devices.New(st), Config: current}), log)
 	if err := srv.Apply(cfg); err != nil {
 		return err
 	}

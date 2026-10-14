@@ -1,5 +1,5 @@
 name: flit
-description: "Cross-platform (mobile + desktop) Flutter client for the Hermes Agent gateway."
+description: "Cross-platform (mobile + desktop) Flutter client for the flit coding agent and the Hermes Agent gateway."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -68,6 +68,16 @@ dependencies:
   audioplayers: 6.8.1
   # Temp files for TTS clips (promoted from transitive for direct import).
   path_provider: 2.1.6
+  # flit server backend (M2): the generated flit.v1 Connect client lives in
+  # ../proto/dart; connectrpc/protobuf/fixnum are its runtime. Pins match
+  # proto/dart/pubspec.yaml — bump them together.
+  flit_api:
+    path: ../proto/dart
+  connectrpc: 2.0.0
+  protobuf: 6.1.0
+  fixnum: 1.1.1
+  # QR scanning for flit pairing (Android/iOS only).
+  mobile_scanner: 7.4.2
 
 dev_dependencies:
   flutter_test:

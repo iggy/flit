@@ -33,6 +33,10 @@ type Config struct {
 	DataDir string `yaml:"data_dir"`
 	TLS     TLS    `yaml:"tls"`
 	Log     Log    `yaml:"log"`
+	// PublicURL is how clients reach this server, e.g.
+	// https://flit.example.com or http://192.168.1.20:7433. "flit pair" puts
+	// it in the QR code. Empty means a best guess from Listen.
+	PublicURL string `yaml:"public_url"`
 	// Providers are the OpenAI-compatible endpoints flit can use.
 	Providers []Provider `yaml:"providers"`
 	Agent     Agent      `yaml:"agent"`
@@ -212,6 +216,12 @@ func (c Config) Validate() error {
 	if err := lvl.UnmarshalText([]byte(c.Log.Level)); err != nil {
 		return fmt.Errorf("log.level %q: want debug, info, warn or error", c.Log.Level)
 	}
+	if c.PublicURL != "" {
+		u, err := url.Parse(c.PublicURL)
+		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			return fmt.Errorf("public_url %q must be an http(s) URL", c.PublicURL)
+		}
+	}
 	seen := map[string]bool{}
 	for i, p := range c.Providers {
 		if p.Name == "" {
@@ -260,6 +270,12 @@ const defaultFile = `# flit server configuration.
 # Address the API server listens on. Every API call requires the auth token
 # (see "flit token"), even from localhost.
 listen: ` + DefaultListen + `
+
+# How phones and other machines reach this server, e.g.
+# http://192.168.1.20:7433 or https://flit.example.com. "flit pair" puts it in
+# the QR code. Empty means a guess based on listen. To pair a phone, listen on
+# an address it can reach (e.g. 0.0.0.0:7433) and preferably use TLS.
+public_url: ""
 
 # Where flit keeps its databases and files. Empty means the platform default.
 # Read at startup only.

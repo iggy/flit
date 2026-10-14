@@ -11,9 +11,11 @@ app/      Flutter app (iOS, Android, macOS, Windows, Linux, web).
 docs/     Plans, reference docs, phase tickets.
 ```
 
-The app is still the Hermes gateway client it started as; switching it over
-to the flit server (via `proto/dart`) is milestone M2. Until then the app
-section below describes it as it is.
+The app speaks to two backends: flit (via the generated client in
+`proto/dart`, code in `app/lib/{data,application,presentation}/flit/`) and
+Hermes gateways (everything else; described in the app section below).
+`ConnectionConfig.backend` says which one a stored connection is. Keep them
+separate: flit code must not depend on Hermes providers and vice versa.
 
 ## Server (`server/`)
 
@@ -56,6 +58,9 @@ Rules:
   clients, under the session lock, so replay from any seq equals what a
   live client saw. Don't publish anything that isn't in the log, and
   rebuild model context from the log (`agent/history.go`).
+- Auth: the first-run token is the admin token; `SystemService.Pair`
+  issues per-device tokens (stored hashed, revocable). Admin-only and
+  public procedures are listed in `internal/system`.
 - Schema changes: append a migration to `store.migrations`; never edit one
   that has shipped.
 - Test agent behaviour against `llmtest`, not a real model. The real-model
@@ -82,6 +87,20 @@ is versioned from day one (`flit.v1`); breaking changes go in a new package.
 CI fails if generated code is stale.
 
 ## App (`app/`)
+
+### flit backend
+
+- `data/flit/`: Connect transport (device token), proto → domain mappers
+  (the only code that sees generated protobuf types), `FlitRepositoryImpl`,
+  pairing helpers.
+- `application/flit/flit_fold.dart`: PURE fold from the session event log to
+  `ChatMessage`/`ToolCall`. Everything comes from the log (user messages and
+  prompt answers too), so all clients converge; events with seq <= lastSeq
+  are ignored, which makes reattach-and-replay idempotent. Unit-test it.
+- `application/flit/flit_chat_notifier.dart`: attaches from lastSeq+1 and
+  reattaches with backoff when the stream drops.
+- `test/integration/flit_two_clients_test.dart` runs two clients against a
+  real `flit serve` (skipped unless `FLIT_E2E_*` env vars are set).
 
 Flutter client, currently for the Hermes Agent **gateway**. It is a *thin
 gateway client*: it never spawns the Python backend, it connects to a running

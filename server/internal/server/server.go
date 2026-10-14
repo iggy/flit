@@ -20,6 +20,7 @@ import (
 	"github.com/iggy/flit/server/internal/agent"
 	"github.com/iggy/flit/server/internal/auth"
 	"github.com/iggy/flit/server/internal/config"
+	"github.com/iggy/flit/server/internal/devices"
 	"github.com/iggy/flit/server/internal/sessionsvc"
 	"github.com/iggy/flit/server/internal/system"
 )
@@ -28,14 +29,25 @@ import (
 // after a rebind.
 const drainTimeout = 30 * time.Second
 
-// NewHandler returns the API handler. Every RPC requires token. sessions
-// may be nil, in which case SessionService is not served.
-func NewHandler(token string, sessions *agent.Manager) http.Handler {
-	opts := connect.WithInterceptors(auth.NewInterceptor(token))
+// Deps are the services behind the API. Nil fields disable what they back.
+type Deps struct {
+	Sessions *agent.Manager
+	Devices  *devices.Registry
+	Config   func() config.Config
+}
+
+// NewHandler returns the API handler. Every RPC requires the admin token or
+// a device token, except pairing.
+func NewHandler(adminToken string, d Deps) http.Handler {
+	authOpts := auth.Options{Public: system.Public, AdminOnly: system.AdminOnly}
+	if d.Devices != nil {
+		authOpts.Devices = d.Devices
+	}
+	opts := connect.WithInterceptors(auth.NewInterceptor(adminToken, authOpts))
 	mux := http.NewServeMux()
-	mux.Handle(flitv1connect.NewSystemServiceHandler(system.Service{}, opts))
-	if sessions != nil {
-		mux.Handle(flitv1connect.NewSessionServiceHandler(&sessionsvc.Service{M: sessions}, opts))
+	mux.Handle(flitv1connect.NewSystemServiceHandler(&system.Service{Devices: d.Devices, Config: d.Config}, opts))
+	if d.Sessions != nil {
+		mux.Handle(flitv1connect.NewSessionServiceHandler(&sessionsvc.Service{M: d.Sessions}, opts))
 	}
 	return mux
 }

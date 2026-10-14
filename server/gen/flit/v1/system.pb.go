@@ -9,6 +9,7 @@ package flitv1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -284,11 +285,466 @@ func (x *HealthResponse) GetStatus() HealthResponse_Status {
 	return HealthResponse_STATUS_UNSPECIFIED
 }
 
+type CreatePairingCodeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreatePairingCodeRequest) Reset() {
+	*x = CreatePairingCodeRequest{}
+	mi := &file_flit_v1_system_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreatePairingCodeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreatePairingCodeRequest) ProtoMessage() {}
+
+func (x *CreatePairingCodeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_system_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreatePairingCodeRequest.ProtoReflect.Descriptor instead.
+func (*CreatePairingCodeRequest) Descriptor() ([]byte, []int) {
+	return file_flit_v1_system_proto_rawDescGZIP(), []int{4}
+}
+
+type CreatePairingCodeResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The code, e.g. "K7QM-4XPZ". Case and dashes are ignored by Pair.
+	Code       string                 `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
+	ExpireTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=expire_time,json=expireTime,proto3" json:"expire_time,omitempty"`
+	// The URL clients should use to reach this server (config public_url, or
+	// a best guess from the listen address). May be empty if unknown.
+	ServerUrl     string `protobuf:"bytes,3,opt,name=server_url,json=serverUrl,proto3" json:"server_url,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreatePairingCodeResponse) Reset() {
+	*x = CreatePairingCodeResponse{}
+	mi := &file_flit_v1_system_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreatePairingCodeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreatePairingCodeResponse) ProtoMessage() {}
+
+func (x *CreatePairingCodeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_system_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreatePairingCodeResponse.ProtoReflect.Descriptor instead.
+func (*CreatePairingCodeResponse) Descriptor() ([]byte, []int) {
+	return file_flit_v1_system_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *CreatePairingCodeResponse) GetCode() string {
+	if x != nil {
+		return x.Code
+	}
+	return ""
+}
+
+func (x *CreatePairingCodeResponse) GetExpireTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ExpireTime
+	}
+	return nil
+}
+
+func (x *CreatePairingCodeResponse) GetServerUrl() string {
+	if x != nil {
+		return x.ServerUrl
+	}
+	return ""
+}
+
+type PairRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Code  string                 `protobuf:"bytes,1,opt,name=code,proto3" json:"code,omitempty"`
+	// Human-readable device name, e.g. "Pixel 9" or "laptop". Shown in
+	// ListDevices and in PromptResolved.client.
+	DeviceName    string `protobuf:"bytes,2,opt,name=device_name,json=deviceName,proto3" json:"device_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PairRequest) Reset() {
+	*x = PairRequest{}
+	mi := &file_flit_v1_system_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PairRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PairRequest) ProtoMessage() {}
+
+func (x *PairRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_system_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PairRequest.ProtoReflect.Descriptor instead.
+func (*PairRequest) Descriptor() ([]byte, []int) {
+	return file_flit_v1_system_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *PairRequest) GetCode() string {
+	if x != nil {
+		return x.Code
+	}
+	return ""
+}
+
+func (x *PairRequest) GetDeviceName() string {
+	if x != nil {
+		return x.DeviceName
+	}
+	return ""
+}
+
+type PairResponse struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	Device *Device                `protobuf:"bytes,1,opt,name=device,proto3" json:"device,omitempty"`
+	// The device's token. Shown only here; store it securely.
+	Token         string `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PairResponse) Reset() {
+	*x = PairResponse{}
+	mi := &file_flit_v1_system_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PairResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PairResponse) ProtoMessage() {}
+
+func (x *PairResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_system_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PairResponse.ProtoReflect.Descriptor instead.
+func (*PairResponse) Descriptor() ([]byte, []int) {
+	return file_flit_v1_system_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *PairResponse) GetDevice() *Device {
+	if x != nil {
+		return x.Device
+	}
+	return nil
+}
+
+func (x *PairResponse) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+// Device is a paired client.
+type Device struct {
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	Id         string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name       string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	CreateTime *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
+	// Last time the device made an authenticated call (updated at most about
+	// once a minute). Unset if never.
+	LastSeenTime *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=last_seen_time,json=lastSeenTime,proto3" json:"last_seen_time,omitempty"`
+	// Set once revoked; revoked devices' tokens no longer work.
+	RevokeTime    *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=revoke_time,json=revokeTime,proto3" json:"revoke_time,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Device) Reset() {
+	*x = Device{}
+	mi := &file_flit_v1_system_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Device) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Device) ProtoMessage() {}
+
+func (x *Device) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_system_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Device.ProtoReflect.Descriptor instead.
+func (*Device) Descriptor() ([]byte, []int) {
+	return file_flit_v1_system_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *Device) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Device) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Device) GetCreateTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreateTime
+	}
+	return nil
+}
+
+func (x *Device) GetLastSeenTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LastSeenTime
+	}
+	return nil
+}
+
+func (x *Device) GetRevokeTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.RevokeTime
+	}
+	return nil
+}
+
+type ListDevicesRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Include revoked devices.
+	IncludeRevoked bool `protobuf:"varint,1,opt,name=include_revoked,json=includeRevoked,proto3" json:"include_revoked,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *ListDevicesRequest) Reset() {
+	*x = ListDevicesRequest{}
+	mi := &file_flit_v1_system_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListDevicesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListDevicesRequest) ProtoMessage() {}
+
+func (x *ListDevicesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_system_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListDevicesRequest.ProtoReflect.Descriptor instead.
+func (*ListDevicesRequest) Descriptor() ([]byte, []int) {
+	return file_flit_v1_system_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *ListDevicesRequest) GetIncludeRevoked() bool {
+	if x != nil {
+		return x.IncludeRevoked
+	}
+	return false
+}
+
+type ListDevicesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Devices       []*Device              `protobuf:"bytes,1,rep,name=devices,proto3" json:"devices,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListDevicesResponse) Reset() {
+	*x = ListDevicesResponse{}
+	mi := &file_flit_v1_system_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListDevicesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListDevicesResponse) ProtoMessage() {}
+
+func (x *ListDevicesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_system_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListDevicesResponse.ProtoReflect.Descriptor instead.
+func (*ListDevicesResponse) Descriptor() ([]byte, []int) {
+	return file_flit_v1_system_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *ListDevicesResponse) GetDevices() []*Device {
+	if x != nil {
+		return x.Devices
+	}
+	return nil
+}
+
+type RevokeDeviceRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	DeviceId      string                 `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeDeviceRequest) Reset() {
+	*x = RevokeDeviceRequest{}
+	mi := &file_flit_v1_system_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeDeviceRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeDeviceRequest) ProtoMessage() {}
+
+func (x *RevokeDeviceRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_system_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeDeviceRequest.ProtoReflect.Descriptor instead.
+func (*RevokeDeviceRequest) Descriptor() ([]byte, []int) {
+	return file_flit_v1_system_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *RevokeDeviceRequest) GetDeviceId() string {
+	if x != nil {
+		return x.DeviceId
+	}
+	return ""
+}
+
+type RevokeDeviceResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeDeviceResponse) Reset() {
+	*x = RevokeDeviceResponse{}
+	mi := &file_flit_v1_system_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeDeviceResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeDeviceResponse) ProtoMessage() {}
+
+func (x *RevokeDeviceResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_system_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeDeviceResponse.ProtoReflect.Descriptor instead.
+func (*RevokeDeviceResponse) Descriptor() ([]byte, []int) {
+	return file_flit_v1_system_proto_rawDescGZIP(), []int{12}
+}
+
 var File_flit_v1_system_proto protoreflect.FileDescriptor
 
 const file_flit_v1_system_proto_rawDesc = "" +
 	"\n" +
-	"\x14flit/v1/system.proto\x12\aflit.v1\"\x10\n" +
+	"\x14flit/v1/system.proto\x12\aflit.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x10\n" +
 	"\x0eVersionRequest\"\xc6\x01\n" +
 	"\x0fVersionResponse\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\tR\aversion\x12\x16\n" +
@@ -307,10 +763,43 @@ const file_flit_v1_system_proto_rawDesc = "" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\x12\n" +
 	"\x0eSTATUS_SERVING\x10\x01\x12\x16\n" +
-	"\x12STATUS_NOT_SERVING\x10\x022\x92\x01\n" +
+	"\x12STATUS_NOT_SERVING\x10\x02\"\x1a\n" +
+	"\x18CreatePairingCodeRequest\"\x8b\x01\n" +
+	"\x19CreatePairingCodeResponse\x12\x12\n" +
+	"\x04code\x18\x01 \x01(\tR\x04code\x12;\n" +
+	"\vexpire_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"expireTime\x12\x1d\n" +
+	"\n" +
+	"server_url\x18\x03 \x01(\tR\tserverUrl\"B\n" +
+	"\vPairRequest\x12\x12\n" +
+	"\x04code\x18\x01 \x01(\tR\x04code\x12\x1f\n" +
+	"\vdevice_name\x18\x02 \x01(\tR\n" +
+	"deviceName\"M\n" +
+	"\fPairResponse\x12'\n" +
+	"\x06device\x18\x01 \x01(\v2\x0f.flit.v1.DeviceR\x06device\x12\x14\n" +
+	"\x05token\x18\x02 \x01(\tR\x05token\"\xe8\x01\n" +
+	"\x06Device\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12;\n" +
+	"\vcreate_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"createTime\x12@\n" +
+	"\x0elast_seen_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\flastSeenTime\x12;\n" +
+	"\vrevoke_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"revokeTime\"=\n" +
+	"\x12ListDevicesRequest\x12'\n" +
+	"\x0finclude_revoked\x18\x01 \x01(\bR\x0eincludeRevoked\"@\n" +
+	"\x13ListDevicesResponse\x12)\n" +
+	"\adevices\x18\x01 \x03(\v2\x0f.flit.v1.DeviceR\adevices\"2\n" +
+	"\x13RevokeDeviceRequest\x12\x1b\n" +
+	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"\x16\n" +
+	"\x14RevokeDeviceResponse2\xbf\x03\n" +
 	"\rSystemService\x12A\n" +
 	"\aVersion\x12\x17.flit.v1.VersionRequest\x1a\x18.flit.v1.VersionResponse\"\x03\x90\x02\x01\x12>\n" +
-	"\x06Health\x12\x16.flit.v1.HealthRequest\x1a\x17.flit.v1.HealthResponse\"\x03\x90\x02\x01B0Z.github.com/iggy/flit/server/gen/flit/v1;flitv1b\x06proto3"
+	"\x06Health\x12\x16.flit.v1.HealthRequest\x1a\x17.flit.v1.HealthResponse\"\x03\x90\x02\x01\x12Z\n" +
+	"\x11CreatePairingCode\x12!.flit.v1.CreatePairingCodeRequest\x1a\".flit.v1.CreatePairingCodeResponse\x123\n" +
+	"\x04Pair\x12\x14.flit.v1.PairRequest\x1a\x15.flit.v1.PairResponse\x12M\n" +
+	"\vListDevices\x12\x1b.flit.v1.ListDevicesRequest\x1a\x1c.flit.v1.ListDevicesResponse\"\x03\x90\x02\x01\x12K\n" +
+	"\fRevokeDevice\x12\x1c.flit.v1.RevokeDeviceRequest\x1a\x1d.flit.v1.RevokeDeviceResponseB0Z.github.com/iggy/flit/server/gen/flit/v1;flitv1b\x06proto3"
 
 var (
 	file_flit_v1_system_proto_rawDescOnce sync.Once
@@ -325,25 +814,49 @@ func file_flit_v1_system_proto_rawDescGZIP() []byte {
 }
 
 var file_flit_v1_system_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_flit_v1_system_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_flit_v1_system_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_flit_v1_system_proto_goTypes = []any{
-	(HealthResponse_Status)(0), // 0: flit.v1.HealthResponse.Status
-	(*VersionRequest)(nil),     // 1: flit.v1.VersionRequest
-	(*VersionResponse)(nil),    // 2: flit.v1.VersionResponse
-	(*HealthRequest)(nil),      // 3: flit.v1.HealthRequest
-	(*HealthResponse)(nil),     // 4: flit.v1.HealthResponse
+	(HealthResponse_Status)(0),        // 0: flit.v1.HealthResponse.Status
+	(*VersionRequest)(nil),            // 1: flit.v1.VersionRequest
+	(*VersionResponse)(nil),           // 2: flit.v1.VersionResponse
+	(*HealthRequest)(nil),             // 3: flit.v1.HealthRequest
+	(*HealthResponse)(nil),            // 4: flit.v1.HealthResponse
+	(*CreatePairingCodeRequest)(nil),  // 5: flit.v1.CreatePairingCodeRequest
+	(*CreatePairingCodeResponse)(nil), // 6: flit.v1.CreatePairingCodeResponse
+	(*PairRequest)(nil),               // 7: flit.v1.PairRequest
+	(*PairResponse)(nil),              // 8: flit.v1.PairResponse
+	(*Device)(nil),                    // 9: flit.v1.Device
+	(*ListDevicesRequest)(nil),        // 10: flit.v1.ListDevicesRequest
+	(*ListDevicesResponse)(nil),       // 11: flit.v1.ListDevicesResponse
+	(*RevokeDeviceRequest)(nil),       // 12: flit.v1.RevokeDeviceRequest
+	(*RevokeDeviceResponse)(nil),      // 13: flit.v1.RevokeDeviceResponse
+	(*timestamppb.Timestamp)(nil),     // 14: google.protobuf.Timestamp
 }
 var file_flit_v1_system_proto_depIdxs = []int32{
-	0, // 0: flit.v1.HealthResponse.status:type_name -> flit.v1.HealthResponse.Status
-	1, // 1: flit.v1.SystemService.Version:input_type -> flit.v1.VersionRequest
-	3, // 2: flit.v1.SystemService.Health:input_type -> flit.v1.HealthRequest
-	2, // 3: flit.v1.SystemService.Version:output_type -> flit.v1.VersionResponse
-	4, // 4: flit.v1.SystemService.Health:output_type -> flit.v1.HealthResponse
-	3, // [3:5] is the sub-list for method output_type
-	1, // [1:3] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	0,  // 0: flit.v1.HealthResponse.status:type_name -> flit.v1.HealthResponse.Status
+	14, // 1: flit.v1.CreatePairingCodeResponse.expire_time:type_name -> google.protobuf.Timestamp
+	9,  // 2: flit.v1.PairResponse.device:type_name -> flit.v1.Device
+	14, // 3: flit.v1.Device.create_time:type_name -> google.protobuf.Timestamp
+	14, // 4: flit.v1.Device.last_seen_time:type_name -> google.protobuf.Timestamp
+	14, // 5: flit.v1.Device.revoke_time:type_name -> google.protobuf.Timestamp
+	9,  // 6: flit.v1.ListDevicesResponse.devices:type_name -> flit.v1.Device
+	1,  // 7: flit.v1.SystemService.Version:input_type -> flit.v1.VersionRequest
+	3,  // 8: flit.v1.SystemService.Health:input_type -> flit.v1.HealthRequest
+	5,  // 9: flit.v1.SystemService.CreatePairingCode:input_type -> flit.v1.CreatePairingCodeRequest
+	7,  // 10: flit.v1.SystemService.Pair:input_type -> flit.v1.PairRequest
+	10, // 11: flit.v1.SystemService.ListDevices:input_type -> flit.v1.ListDevicesRequest
+	12, // 12: flit.v1.SystemService.RevokeDevice:input_type -> flit.v1.RevokeDeviceRequest
+	2,  // 13: flit.v1.SystemService.Version:output_type -> flit.v1.VersionResponse
+	4,  // 14: flit.v1.SystemService.Health:output_type -> flit.v1.HealthResponse
+	6,  // 15: flit.v1.SystemService.CreatePairingCode:output_type -> flit.v1.CreatePairingCodeResponse
+	8,  // 16: flit.v1.SystemService.Pair:output_type -> flit.v1.PairResponse
+	11, // 17: flit.v1.SystemService.ListDevices:output_type -> flit.v1.ListDevicesResponse
+	13, // 18: flit.v1.SystemService.RevokeDevice:output_type -> flit.v1.RevokeDeviceResponse
+	13, // [13:19] is the sub-list for method output_type
+	7,  // [7:13] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_flit_v1_system_proto_init() }
@@ -357,7 +870,7 @@ func file_flit_v1_system_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_flit_v1_system_proto_rawDesc), len(file_flit_v1_system_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   4,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

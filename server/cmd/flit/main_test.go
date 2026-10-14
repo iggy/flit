@@ -110,6 +110,19 @@ func TestServe(t *testing.T) {
 		t.Fatalf("unauthenticated Version: err = %v, want unauthenticated", err)
 	}
 
+	// flit pair talks to the running server with the admin token.
+	var pairOut bytes.Buffer
+	if err := run(ctx, []string{"pair", "--config", configPath, "--data-dir", dataDir}, &pairOut, &bytes.Buffer{}); err != nil {
+		t.Fatalf("pair: %v", err)
+	}
+	if out := pairOut.String(); !strings.Contains(out, "Code:   ") || !strings.Contains(out, "Server: http://"+addr) || !strings.Contains(out, "█") {
+		t.Fatalf("pair output:\n%s", out)
+	}
+	var devOut bytes.Buffer
+	if err := run(ctx, []string{"devices", "--config", configPath, "--data-dir", dataDir}, &devOut, &bytes.Buffer{}); err != nil || !strings.Contains(devOut.String(), "No paired devices") {
+		t.Fatalf("devices: %v\n%s", err, devOut.String())
+	}
+
 	// Hot reload: move to a new address without restarting.
 	newAddr := freeAddr(t)
 	if err := os.WriteFile(configPath, []byte("listen: "+newAddr+"\n"), 0o600); err != nil {

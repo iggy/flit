@@ -7,6 +7,10 @@
          record plugin surfaces the runtime permission prompt on first use. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <uses-feature android:name="android.hardware.microphone" android:required="false"/>
+    <!-- Scanning the flit pairing QR code ("flit pair"). Only requested when
+         the user taps Scan QR code. -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <application
         android:label="Flit"
         android:name="${applicationName}"

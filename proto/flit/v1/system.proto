@@ -2,10 +2,18 @@ syntax = "proto3";
 
 package flit.v1;
 
+import "google/protobuf/timestamp.proto";
+
 option go_package = "github.com/iggy/flit/server/gen/flit/v1;flitv1";
 
-// SystemService reports on the flit server itself. Like every flit RPC it
-// requires the server's auth token, even on localhost.
+// SystemService reports on the flit server itself and manages the devices
+// allowed to use it. Every RPC requires a token, even on localhost, except
+// Pair, which takes a pairing code instead.
+//
+// There are two kinds of token. The admin token is generated on the
+// server's first run (see "flit token"). Device tokens are issued by Pair,
+// one per device, and can be listed and revoked. Device management RPCs
+// need the admin token; everything else accepts either.
 service SystemService {
   // Version returns build and API version information for the server.
   rpc Version(VersionRequest) returns (VersionResponse) {
@@ -16,6 +24,23 @@ service SystemService {
   rpc Health(HealthRequest) returns (HealthResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
   }
+
+  // CreatePairingCode returns a short-lived, single-use code a new device
+  // can trade for its own token with Pair. Admin only. "flit pair" calls
+  // this and shows the code as text and as a QR code.
+  rpc CreatePairingCode(CreatePairingCodeRequest) returns (CreatePairingCodeResponse);
+
+  // Pair trades a pairing code for a device token. Needs no token. A code
+  // works once; too many wrong codes invalidate all outstanding codes.
+  rpc Pair(PairRequest) returns (PairResponse);
+
+  // ListDevices lists paired devices. Admin only.
+  rpc ListDevices(ListDevicesRequest) returns (ListDevicesResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+
+  // RevokeDevice revokes a device's token immediately. Admin only.
+  rpc RevokeDevice(RevokeDeviceRequest) returns (RevokeDeviceResponse);
 }
 
 message VersionRequest {}
@@ -47,3 +72,54 @@ message HealthResponse {
 
   Status status = 1;
 }
+
+message CreatePairingCodeRequest {}
+
+message CreatePairingCodeResponse {
+  // The code, e.g. "K7QM-4XPZ". Case and dashes are ignored by Pair.
+  string code = 1;
+  google.protobuf.Timestamp expire_time = 2;
+  // The URL clients should use to reach this server (config public_url, or
+  // a best guess from the listen address). May be empty if unknown.
+  string server_url = 3;
+}
+
+message PairRequest {
+  string code = 1;
+  // Human-readable device name, e.g. "Pixel 9" or "laptop". Shown in
+  // ListDevices and in PromptResolved.client.
+  string device_name = 2;
+}
+
+message PairResponse {
+  Device device = 1;
+  // The device's token. Shown only here; store it securely.
+  string token = 2;
+}
+
+// Device is a paired client.
+message Device {
+  string id = 1;
+  string name = 2;
+  google.protobuf.Timestamp create_time = 3;
+  // Last time the device made an authenticated call (updated at most about
+  // once a minute). Unset if never.
+  google.protobuf.Timestamp last_seen_time = 4;
+  // Set once revoked; revoked devices' tokens no longer work.
+  google.protobuf.Timestamp revoke_time = 5;
+}
+
+message ListDevicesRequest {
+  // Include revoked devices.
+  bool include_revoked = 1;
+}
+
+message ListDevicesResponse {
+  repeated Device devices = 1;
+}
+
+message RevokeDeviceRequest {
+  string device_id = 1;
+}
+
+message RevokeDeviceResponse {}

@@ -7,9 +7,9 @@ Windows, Linux, web) as its main front end.
 > **Status:** early. The server runs agent sessions (milestone M1): an
 > OpenAI-compatible model client with streaming and tool calls, built-in
 > file and shell tools, and a persistent, replayable event log per session,
-> all over a versioned protobuf/Connect API with token auth. The app is
-> still a client for Hermes Agent (below) until it is switched over to the
-> flit server in M2.
+> all over a versioned protobuf/Connect API with token auth. The app talks
+> to flit (pair it with `flit pair`) and still works with Hermes Agent
+> gateways too.
 
 ## Repository layout
 
@@ -62,6 +62,24 @@ Config is YAML only, and edits to the file are applied while flit runs,
 including moving to a new listen address or turning TLS on (`tls.cert_file`
 and `tls.key_file`). The one exception is `data_dir`, which is read at
 startup.
+
+### Pairing the app
+
+The app connects with its own per-device token. On the machine running
+`flit serve`:
+
+```sh
+flit pair            # shows a QR code plus the server URL and a one-time code
+flit devices         # list paired devices
+flit devices revoke dev_…
+```
+
+On a phone, pick **flit** on the connect screen and scan the QR code; on
+desktop, type the URL and code. Codes expire after 10 minutes and work once.
+For a phone to reach the server, listen on a reachable address and set
+`public_url` (ideally HTTPS, e.g. behind a reverse proxy; Android blocks
+plain-HTTP connections by default). Every device can open the same session:
+they all see the same conversation, and any of them can answer a prompt.
 
 ### Models
 

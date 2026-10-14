@@ -9,6 +9,8 @@ import 'package:flit/core/router/pending_deep_link_provider.dart';
 import 'package:flit/presentation/chat/chat_screen.dart';
 import 'package:flit/presentation/common/not_found_screen.dart';
 import 'package:flit/presentation/connect/connect_screen.dart';
+import 'package:flit/presentation/flit/flit_chat_screen.dart';
+import 'package:flit/presentation/flit/flit_sessions_screen.dart';
 import 'package:flit/presentation/plugins/kanban/kanban_board_screen.dart';
 import 'package:flit/presentation/plugins/kanban/kanban_deep_link_screen.dart';
 import 'package:flit/presentation/plugins/plugins_screen.dart';
@@ -57,6 +59,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/chat',
         name: 'chat',
         builder: (context, state) => const ChatScreen(),
+      ),
+      GoRoute(
+        path: '/flit',
+        name: 'flit',
+        builder: (context, state) => const FlitSessionsScreen(),
+      ),
+      GoRoute(
+        path: '/flit/session/:id',
+        name: 'flit-session',
+        builder: (context, state) =>
+            FlitChatScreen(sessionId: state.pathParameters['id'] ?? ''),
       ),
       GoRoute(
         path: '/session/:id',
@@ -251,6 +264,7 @@ bool deepLinkNeedsConnection(String location) {
   }
   return location.startsWith('/session/') ||
       location.startsWith('/chat') ||
+      location.startsWith('/flit') ||
       location.startsWith('/plugins') ||
       location.startsWith('/agents') ||
       location.startsWith('/settings');

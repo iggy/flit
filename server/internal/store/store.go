@@ -102,6 +102,16 @@ CREATE TABLE events (
 ) WITHOUT ROWID;
 CREATE INDEX events_by_kind ON events (session_id, kind, seq);
 `,
+	`
+CREATE TABLE devices (
+	id           TEXT PRIMARY KEY,
+	name         TEXT NOT NULL,
+	token_hash   BLOB NOT NULL UNIQUE,
+	created_at   INTEGER NOT NULL,
+	last_seen_at INTEGER,
+	revoked_at   INTEGER
+);
+`,
 }
 
 func (s *Store) migrate(ctx context.Context) error {
@@ -320,4 +330,90 @@ func Kind(ev *flitv1.Event) string {
 		return string(f.Name())
 	}
 	return "unknown"
+}
+
+// Device is a paired client. Its token is stored only as a hash.
+type Device struct {
+	ID         string
+	Name       string
+	TokenHash  []byte
+	CreatedAt  time.Time
+	LastSeenAt time.Time // zero if never
+	RevokedAt  time.Time // zero if not revoked
+}
+
+func nullableTime(ns sql.NullInt64) time.Time {
+	if !ns.Valid {
+		return time.Time{}
+	}
+	return time.Unix(0, ns.Int64)
+}
+
+const deviceCols = `id, name, token_hash, created_at, last_seen_at, revoked_at`
+
+func scanDevice(row interface{ Scan(...any) error }) (Device, error) {
+	var d Device
+	var created int64
+	var seen, revoked sql.NullInt64
+	err := row.Scan(&d.ID, &d.Name, &d.TokenHash, &created, &seen, &revoked)
+	if errors.Is(err, sql.ErrNoRows) {
+		return Device{}, ErrNotFound
+	}
+	d.CreatedAt, d.LastSeenAt, d.RevokedAt = time.Unix(0, created), nullableTime(seen), nullableTime(revoked)
+	return d, err
+}
+
+// CreateDevice stores a new device. CreatedAt is set to now.
+func (s *Store) CreateDevice(ctx context.Context, d *Device) error {
+	d.CreatedAt = time.Now()
+	_, err := s.db.ExecContext(ctx, `INSERT INTO devices (id, name, token_hash, created_at) VALUES (?, ?, ?, ?)`,
+		d.ID, d.Name, d.TokenHash, d.CreatedAt.UnixNano())
+	return err
+}
+
+// DeviceByTokenHash returns the non-revoked device with the given token
+// hash, or ErrNotFound.
+func (s *Store) DeviceByTokenHash(ctx context.Context, hash []byte) (Device, error) {
+	return scanDevice(s.db.QueryRowContext(ctx, `SELECT `+deviceCols+` FROM devices WHERE token_hash = ? AND revoked_at IS NULL`, hash))
+}
+
+// ListDevices returns devices, oldest first.
+func (s *Store) ListDevices(ctx context.Context, includeRevoked bool) ([]Device, error) {
+	q := `SELECT ` + deviceCols + ` FROM devices`
+	if !includeRevoked {
+		q += ` WHERE revoked_at IS NULL`
+	}
+	rows, err := s.db.QueryContext(ctx, q+` ORDER BY created_at`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Device
+	for rows.Next() {
+		d, err := scanDevice(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, d)
+	}
+	return out, rows.Err()
+}
+
+// RevokeDevice revokes a device. Revoking twice is not an error;
+// an unknown id is ErrNotFound.
+func (s *Store) RevokeDevice(ctx context.Context, id string) error {
+	res, err := s.db.ExecContext(ctx, `UPDATE devices SET revoked_at = coalesce(revoked_at, ?) WHERE id = ?`, time.Now().UnixNano(), id)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// TouchDevice records that a device was just seen.
+func (s *Store) TouchDevice(ctx context.Context, id string, at time.Time) error {
+	_, err := s.db.ExecContext(ctx, `UPDATE devices SET last_seen_at = ? WHERE id = ?`, at.UnixNano(), id)
+	return err
 }

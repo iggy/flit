@@ -44,6 +44,8 @@ final class ConnectionStore {
   static const String tokenKey = 'connection.token';
   static const String usernameKey = 'connection.username';
   static const String providerKey = 'connection.auth_provider';
+  static const String backendKey = 'connection.backend';
+  static const String deviceNameKey = 'connection.device_name';
   static const String cookiesKey = 'connection.session_cookies';
   static const String oauthAccessTokenKey = 'connection.oauth_access_token';
   static const String oauthRefreshTokenKey = 'connection.oauth_refresh_token';
@@ -73,6 +75,13 @@ final class ConnectionStore {
     } else {
       await _store.write(providerKey, provider);
     }
+    await _store.write(backendKey, config.backend.name);
+    final deviceName = config.deviceName;
+    if (deviceName == null) {
+      await _store.delete(deviceNameKey);
+    } else {
+      await _store.write(deviceNameKey, deviceName);
+    }
   }
 
   /// Load the stored connection, or null when none was saved.
@@ -90,6 +99,11 @@ final class ConnectionStore {
     final username = await _store.read(usernameKey);
     final provider = await _store.read(providerKey);
     final authMode = AuthMode.values.asNameMap()[authModeRaw] ?? AuthMode.token;
+    // Configs saved before flit support have no backend key: Hermes.
+    final backend =
+        BackendKind.values.asNameMap()[await _store.read(backendKey)] ??
+        BackendKind.hermes;
+    final deviceName = await _store.read(deviceNameKey);
 
     try {
       return ConnectionConfig(
@@ -98,6 +112,8 @@ final class ConnectionStore {
         authMode: authMode,
         username: username,
         authProvider: provider,
+        backend: backend,
+        deviceName: deviceName,
       );
     } on ArgumentError {
       await forget();
@@ -175,6 +191,8 @@ final class ConnectionStore {
     await _store.delete(tokenKey);
     await _store.delete(usernameKey);
     await _store.delete(providerKey);
+    await _store.delete(backendKey);
+    await _store.delete(deviceNameKey);
     await _store.delete(cookiesKey);
     await clearOAuthSession();
   }
