@@ -79,6 +79,7 @@ func fakeConfig(t *testing.T) (config.Config, *llmtest.Server) {
 	cfg := config.Default()
 	cfg.Providers = []config.Provider{{Name: "fake", BaseURL: fake.BaseURL()}}
 	cfg.Agent.Model = "m"
+	cfg.Shell.ReadOnly = new(bool) // so "echo" asks
 	return cfg, fake
 }
 
@@ -243,6 +244,7 @@ func TestLlamaCppCodingTask(t *testing.T) {
 	cfg.Agent.MaxSteps = 25
 	cfg.Shell.Default = "deny" // file tools only; never run model-chosen commands here
 	cfg.Shell.Allow = nil
+	cfg.Shell.ReadOnly = new(bool)
 	c := start(t, cfg)
 
 	dir := t.TempDir()

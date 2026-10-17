@@ -311,6 +311,60 @@ void main() {
     expect(state.projectId, 'proj_x');
   });
 
+  test('yolo mode and safety checks', () {
+    var state = foldFlitEvents(const FlitFoldState(), <FlitEvent>[
+      const FlitYoloChanged(seq: 1, yolo: true, client: 'phone'),
+      const FlitMessageStarted(
+        seq: 2,
+        messageId: 'a1',
+        role: FlitRole.assistant,
+      ),
+      const FlitToolCallStarted(
+        seq: 3,
+        messageId: 'a1',
+        toolCallId: 't1',
+        name: 'shell',
+        arguments: '{"command":"make"}',
+      ),
+      const FlitPermissionCheck(
+        seq: 4,
+        toolCallId: 't1',
+        command: 'make',
+        verdict: FlitPermissionVerdict.safe,
+        reason: 'builds the project',
+      ),
+    ]);
+    expect(state.yolo, isTrue);
+    expect(
+      state.messages[0].toolCalls.single.summary,
+      'safety check: safe, builds the project',
+    );
+    state = foldFlitEvents(state, <FlitEvent>[
+      const FlitToolCallDone(
+        seq: 5,
+        toolCallId: 't1',
+        result: 'ok',
+        isError: false,
+        truncated: true,
+      ),
+      const FlitPromptRequested(
+        seq: 6,
+        promptId: 'p1',
+        toolCallId: 't2',
+        title: 'Run shell command',
+        detail: 'rm -rf build',
+        safetyReason: 'deletes files',
+      ),
+      const FlitYoloChanged(seq: 7, yolo: false),
+    ]);
+    expect(
+      state.messages[0].toolCalls.single.summary,
+      'safety check: safe, builds the project · output shortened',
+    );
+    expect(state.prompts.single.safetyReason, 'deletes files');
+    expect(state.yolo, isFalse);
+  });
+
   test('flitSessionNeedsRefresh', () {
     final events = turn();
     FlitFoldState at(int n) =>

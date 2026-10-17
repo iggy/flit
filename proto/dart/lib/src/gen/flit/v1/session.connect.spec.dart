@@ -94,6 +94,15 @@ abstract final class SessionService {
     flitv1session.SetEffortResponse.new,
   );
 
+  /// SetYolo turns yolo mode on or off for the session: every shell command
+  /// runs unless a deny rule matches. Effective from the next command.
+  static const setYolo = connect.Spec(
+    '/$name/SetYolo',
+    connect.StreamType.unary,
+    flitv1session.SetYoloRequest.new,
+    flitv1session.SetYoloResponse.new,
+  );
+
   /// MoveSession moves a session to another project. Its working directory
   /// stays the same.
   static const moveSession = connect.Spec(

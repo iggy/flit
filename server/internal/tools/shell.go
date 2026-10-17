@@ -41,9 +41,21 @@ var shellTool = Tool{
 			return errorf("%v", err)
 		}
 
-		switch ShellDecisionWith(a.Command, env.Shell, env.SessionAllowed) {
+		check := CheckShell(a.Command, Rules{Shell: env.Shell, Session: env.SessionAllowed, Yolo: env.Yolo})
+		var assessed string
+		if check.Decision == Ask && env.Assess != nil {
+			switch v := env.Assess(ctx, a.Command, rel(env.Dir, dir)); v.Verdict {
+			case VerdictSafe:
+				check.Decision = Allow
+			case VerdictBlock:
+				return errorf("flit's safety check refused this command: %s. Do not retry it; find another way or ask the user", v.Reason)
+			case VerdictAsk, VerdictError:
+				assessed = v.Reason
+			}
+		}
+		switch check.Decision {
 		case Deny:
-			return errorf("the command is denied by flit's shell rules; do not retry it, find another way or ask the user")
+			return errorf("the command is denied by flit's shell rules (%s); do not retry it, find another way or ask the user", check.Reason)
 		case Ask:
 			if env.Approve == nil {
 				return errorf("the command needs approval and no one can approve it")
@@ -52,8 +64,9 @@ var shellTool = Tool{
 			if a.Workdir != "" {
 				detail = fmt.Sprintf("%s\n(in %s)", a.Command, rel(env.Dir, dir))
 			}
-			patterns, _ := SessionPatterns(a.Command)
-			ok, err := env.Approve(ctx, "Run shell command", detail, patterns)
+			ok, err := env.Approve(ctx, Approval{
+				Title: "Run shell command", Detail: detail, SessionPatterns: check.Patterns, Reason: assessed,
+			})
 			if err != nil {
 				return errorf("approval failed: %v", err)
 			}

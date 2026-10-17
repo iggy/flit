@@ -150,15 +150,24 @@ func (g Git) IsEnabled() bool { return g.Enabled == nil || *g.Enabled }
 var ProviderKinds = []string{"auto", "openai", "openrouter", "llamacpp", "gomodel"}
 
 // Tasks are the kinds of work that can have their own model.
-var Tasks = []string{"chat", "planning", "cron", "compaction", "search"}
+var Tasks = []string{"chat", "planning", "cron", "compaction", "search", "permission"}
 
 // TaskModel picks a model for one kind of work.
 type TaskModel struct {
 	Provider string `yaml:"provider"`
 	Model    string `yaml:"model"`
 	// Effort is the reasoning effort, e.g. low, medium or high; empty means
-	// the model's default.
+	// the model's default. "off" turns thinking off on llama.cpp
+	// (chat_template_kwargs enable_thinking=false) and is ignored by other
+	// providers.
 	Effort string `yaml:"effort"`
+}
+
+// Task returns the model configured for task, if it names a provider and
+// model.
+func (c Config) Task(task string) (TaskModel, bool) {
+	t, ok := c.Agent.Tasks[task]
+	return t, ok && t.Provider != "" && t.Model != ""
 }
 
 // Key returns the provider's API key, if any.
@@ -176,9 +185,10 @@ type Agent struct {
 	Provider string `yaml:"provider"`
 	Model    string `yaml:"model"`
 	Effort   string `yaml:"effort"`
-	// Tasks sets a model per kind of work (see Tasks). Only chat is used
-	// so far; the others are for planning, cron jobs, compaction and search
-	// as those features arrive.
+	// Tasks sets a model per kind of work (see Tasks). chat is the
+	// sessions' default model and permission rates shell commands before
+	// flit asks the user (see docs/shell.md); planning, cron, compaction
+	// and search are for those features as they arrive.
 	Tasks map[string]TaskModel `yaml:"tasks"`
 	// ModelPromptAppends adds text to the system prompt for specific
 	// models, keyed "provider/model".
@@ -198,14 +208,25 @@ type Shell struct {
 	Timeout    time.Duration `yaml:"timeout"`
 	MaxTimeout time.Duration `yaml:"max_timeout"`
 	// Allow and Deny are command patterns; "*" matches any run of
-	// characters. Deny wins over Allow. A command with shell operators
-	// (; & | < > ` $( and newlines) never matches Allow.
+	// characters. Commands are split into their parts (chains, pipes,
+	// loops); a command runs without asking when every part is allowed.
+	// Deny is checked against the whole command and every part, and wins
+	// over everything, yolo mode included.
 	Allow []string `yaml:"allow"`
 	Deny  []string `yaml:"deny"`
-	// Default is what happens to commands neither list matches: "ask"
-	// (prompt the user), "allow" or "deny".
+	// ReadOnly allows flit's built-in list of read-only commands (ls, cat,
+	// grep, git status, ...; see docs/shell.md). Default true.
+	ReadOnly *bool `yaml:"read_only"`
+	// Default is what happens to commands nothing allows: "ask" (prompt
+	// the user), "allow" or "deny".
 	Default string `yaml:"default"`
+	// Yolo is whether new sessions start in yolo mode, where every command
+	// runs unless a deny rule matches. Sessions can turn it on or off.
+	Yolo bool `yaml:"yolo"`
 }
+
+// ReadOnlyEnabled reports whether the built-in read-only list applies.
+func (s Shell) ReadOnlyEnabled() bool { return s.ReadOnly == nil || *s.ReadOnly }
 
 // Provider returns the provider named name.
 func (c Config) Provider(name string) (Provider, bool) {
@@ -261,8 +282,9 @@ func Default() Config {
 		Shell: Shell{
 			Timeout:    2 * time.Minute,
 			MaxTimeout: 30 * time.Minute,
-			Allow:      []string{"ls*", "pwd", "git status*", "git diff*", "git log*"},
+			Allow:      []string{},
 			Deny:       []string{},
+			ReadOnly:   ptr(true),
 			Default:    "ask",
 		},
 	}
@@ -502,12 +524,16 @@ agent:
   # their role).
   provider: ""
   model: ""
+  # Reasoning effort: low, medium, high (or a level the model names), or
+  # off to turn thinking off on llama.cpp. Empty means the model's default.
   effort: ""
-  # A model per kind of work: chat, planning, cron, compaction, search.
-  # chat overrides the defaults above. Only chat is used so far.
+  # A model per kind of work: chat, permission, planning, cron, compaction,
+  # search. chat overrides the defaults above. permission rates shell
+  # commands (safe, ask or block) before flit asks you; without it, flit
+  # just asks. planning, cron, compaction and search aren't used yet.
   tasks: {}
-  #   chat:     {provider: local, model: qwen3-coder, effort: medium}
-  #   planning: {provider: openrouter, model: some/bigger-model, effort: high}
+  #   chat:       {provider: local, model: qwen3-coder, effort: medium}
+  #   permission: {provider: local, model: qwen3-4b, effort: off}
   # Extra system prompt text for specific models ("provider/model"); a
   # provider's prompt_append applies to all its models.
   model_prompt_appends: {}
@@ -520,18 +546,23 @@ agent:
 shell:
   timeout: 2m
   max_timeout: 30m
-  # Command patterns; "*" matches anything. deny wins over allow, and a
-  # command using shell operators (; & | < > $( backticks) is never
-  # auto-allowed.
-  allow:
-    - "ls*"
-    - "pwd"
-    - "git status*"
-    - "git diff*"
-    - "git log*"
+  # Commands are split into their parts (cd x && ls | head is three); a
+  # command runs without asking when every part is allowed. Redirecting
+  # output to a file, $(...) and backticks always ask.
+  #
+  # Command patterns; "*" matches anything, e.g. "go test*". deny is
+  # checked against every part and wins over everything, yolo included.
+  allow: []
   deny: []
-  # For commands matching neither list: ask, allow or deny.
+  # Allow flit's built-in read-only commands: cd, ls, cat, head, tail, wc,
+  # grep, rg, find (without -exec/-delete), git status/log/diff/show/branch
+  # and more (see docs/shell.md).
+  read_only: true
+  # For commands nothing allows: ask, allow or deny.
   default: ask
+  # Start new sessions in yolo mode: run everything except deny matches.
+  # Each session can turn it on or off in the app.
+  yolo: false
 `
 
 // EnsureFile writes the default config to path if no file exists there.

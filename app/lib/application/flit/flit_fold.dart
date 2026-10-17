@@ -28,6 +28,7 @@ final class FlitPendingPrompt {
     required this.title,
     required this.detail,
     this.sessionPatterns = const <String>[],
+    this.safetyReason = '',
   });
 
   final String promptId;
@@ -38,6 +39,10 @@ final class FlitPendingPrompt {
   /// Offered for "allow for this session".
   final List<String> sessionPatterns;
 
+  /// Why the server's safety check left this to the user; empty when it
+  /// didn't run.
+  final String safetyReason;
+
   @override
   bool operator ==(Object other) {
     return other is FlitPendingPrompt &&
@@ -45,7 +50,8 @@ final class FlitPendingPrompt {
         other.toolCallId == toolCallId &&
         other.title == title &&
         other.detail == detail &&
-        deepListEquals(other.sessionPatterns, sessionPatterns);
+        deepListEquals(other.sessionPatterns, sessionPatterns) &&
+        other.safetyReason == safetyReason;
   }
 
   @override
@@ -55,6 +61,7 @@ final class FlitPendingPrompt {
     title,
     detail,
     Object.hashAll(sessionPatterns),
+    safetyReason,
   );
 
   @override
@@ -115,7 +122,17 @@ final class FlitFoldState {
     this.ratings = const <String, bool>{},
     this.mcpServers,
     this.projectId,
+    this.yolo,
+    this.safety = const <String, String>{},
   });
+
+  /// Yolo mode, once a change is logged (null until then: fall back to the
+  /// session's).
+  final bool? yolo;
+
+  /// tool call id → the safety check's verdict on it, as shown on the tool
+  /// card (e.g. "safety check: safe, only reads").
+  final Map<String, String> safety;
 
   /// The flit message id of each entry in [messages] (null for messages
   /// the fold made up, like errors).
@@ -193,6 +210,8 @@ final class FlitFoldState {
     Map<String, bool>? ratings,
     List<String>? mcpServers,
     String? projectId,
+    bool? yolo,
+    Map<String, String>? safety,
   }) {
     return FlitFoldState(
       messages: messages ?? this.messages,
@@ -213,6 +232,8 @@ final class FlitFoldState {
       ratings: ratings ?? this.ratings,
       mcpServers: mcpServers ?? this.mcpServers,
       projectId: projectId ?? this.projectId,
+      yolo: yolo ?? this.yolo,
+      safety: safety ?? this.safety,
     );
   }
 
@@ -238,7 +259,9 @@ final class FlitFoldState {
           mcpServers ?? const <String>[],
         ) &&
         (other.mcpServers == null) == (mcpServers == null) &&
-        other.projectId == projectId;
+        other.projectId == projectId &&
+        other.yolo == yolo &&
+        shallowMapEquals(other.safety, safety);
   }
 
   @override
@@ -314,7 +337,7 @@ FlitFoldState foldFlitEvent(FlitFoldState state, FlitEvent event) {
         context: t.context,
         status: event.isError ? ToolCallStatus.error : ToolCallStatus.done,
         result: event.result,
-        summary: event.truncated ? 'output shortened' : null,
+        summary: _toolSummary(s.safety[event.toolCallId], event.truncated),
       ),
     ),
     FlitPromptRequested() => s.copyWith(
@@ -326,6 +349,7 @@ FlitFoldState foldFlitEvent(FlitFoldState state, FlitEvent event) {
           title: event.title,
           detail: event.detail,
           sessionPatterns: event.sessionPatterns,
+          safetyReason: event.safetyReason,
         ),
       ],
     ),
@@ -361,6 +385,8 @@ FlitFoldState foldFlitEvent(FlitFoldState state, FlitEvent event) {
           : s,
     FlitMcpServersChanged() => s.copyWith(mcpServers: event.enabled),
     FlitSessionMoved() => s.copyWith(projectId: event.projectId),
+    FlitYoloChanged() => s.copyWith(yolo: event.yolo),
+    FlitPermissionCheck() => _permissionCheck(s, event),
     FlitTurnError() => s.copyWith(
       messageIds: <String?>[...s.messageIds, null],
       messages: <ChatMessage>[
@@ -377,6 +403,25 @@ FlitFoldState foldFlitEvent(FlitFoldState state, FlitEvent event) {
     ),
     FlitUnknownEvent() => s,
   };
+}
+
+FlitFoldState _permissionCheck(FlitFoldState s, FlitPermissionCheck e) {
+  final text = e.reason.isEmpty
+      ? 'safety check: ${e.verdict.name}'
+      : 'safety check: ${e.verdict.name}, ${e.reason}';
+  final withSafety = s.copyWith(
+    safety: <String, String>{...s.safety, e.toolCallId: text},
+  );
+  return _updateTool(
+    withSafety,
+    e.toolCallId,
+    (t) => t.copyWith(summary: text),
+  );
+}
+
+String? _toolSummary(String? safety, bool truncated) {
+  final parts = <String>[?safety, if (truncated) 'output shortened'];
+  return parts.isEmpty ? null : parts.join(' · ');
 }
 
 FlitFoldState _usage(FlitFoldState s, FlitUsage e) {

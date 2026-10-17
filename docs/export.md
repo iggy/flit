@@ -71,7 +71,7 @@ this response".
 ```json
 {
   "type": "model_call", "format_version": 1,
-  "id": "msg_…", "session_id": "ses_…", "turn_id": "msg_…",
+  "id": "msg_…", "session_id": "ses_…", "turn_id": "msg_…", "task": "chat",
   "project": {"id": "proj_…", "name": "app"},
   "created_at": "2026-10-14T15:30:00Z",
   "provider": "llama", "model": "qwen3-coder", "reasoning_effort": "low",
@@ -91,7 +91,10 @@ this response".
 
 `ratings` are ratings that point at this call (a turn rating given on this
 reply, or a model rating on it); `turn_ratings` are all turn ratings of the
-turn the call belongs to.
+turn the call belongs to. `task` is `chat` for the agent's own calls and
+`permission` for the shell safety check (see [shell.md](shell.md)); its
+`params` include `chat_template_kwargs` when effort was `off` on
+llama.cpp.
 
 ### `turn`
 
@@ -107,9 +110,18 @@ response, so it includes every tool call and tool result in between.
   "messages": [ …system, user, assistant(tool_calls), tool, …, assistant(final)… ],
   "tools": [ … ],
   "finish_reason": "stop",
+  "permission_checks": [
+    {"tool_call_id": "c1", "command": "make build", "verdict": "safe", "reason": "builds the project",
+     "provider": "llama", "model": "qwen3-4b", "model_call_id": "msg_…"}
+  ],
   "ratings": [ … ]
 }
 ```
+
+A turn's conversation comes from its `chat` calls only. `permission_checks`
+are the safety check's verdicts (`safe`, `ask`, `block` or `error`) on the
+turn's shell commands; each one's model call is a separate `model_call`
+record with `task: "permission"`.
 
 ### `session`
 

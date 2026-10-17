@@ -14,6 +14,7 @@ import (
 
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
 	"github.com/iggy/flit/server/internal/store"
+	"github.com/iggy/flit/server/internal/tools"
 )
 
 // subscriberBuffer is how many events an attached client may lag behind
@@ -268,7 +269,8 @@ func (s *session) answer(promptID string, a Answer) error {
 
 // approve raises a prompt and waits for a client to answer it or for the
 // turn to be interrupted.
-func (s *session) approve(ctx context.Context, toolCallID, title, detail string, patterns []string) (bool, error) {
+func (s *session) approve(ctx context.Context, toolCallID string, a tools.Approval) (bool, error) {
+	title, patterns := a.Title, a.SessionPatterns
 	promptID := newID("prm")
 	ch := make(chan promptAnswer, 1)
 	s.mu.Lock()
@@ -276,7 +278,8 @@ func (s *session) approve(ctx context.Context, toolCallID, title, detail string,
 	s.mu.Unlock()
 
 	if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_PromptRequested{PromptRequested: &flitv1.PromptRequested{
-		PromptId: promptID, ToolCallId: toolCallID, Title: title, Detail: detail, SessionPatterns: patterns,
+		PromptId: promptID, ToolCallId: toolCallID, Title: title, Detail: a.Detail, SessionPatterns: patterns,
+		SafetyReason: a.Reason,
 	}}}); err != nil {
 		return false, err
 	}
@@ -287,11 +290,11 @@ func (s *session) approve(ctx context.Context, toolCallID, title, detail string,
 	resolved := &flitv1.PromptResolved{PromptId: promptID}
 	var answerErr error
 	select {
-	case a := <-ch:
-		resolved.Client = a.client
+	case ans := <-ch:
+		resolved.Client = ans.client
 		resolved.Decision = flitv1.PromptDecision_PROMPT_DECISION_DENY
 		switch {
-		case a.forSession:
+		case ans.forSession:
 			resolved.Decision = flitv1.PromptDecision_PROMPT_DECISION_ALLOW_SESSION
 			resolved.SessionPatterns = patterns
 			s.mu.Lock()
@@ -301,7 +304,7 @@ func (s *session) approve(ctx context.Context, toolCallID, title, detail string,
 				}
 			}
 			s.mu.Unlock()
-		case a.allow:
+		case ans.allow:
 			resolved.Decision = flitv1.PromptDecision_PROMPT_DECISION_ALLOW
 		}
 	case <-ctx.Done():
@@ -345,6 +348,24 @@ func (s *session) setEffort(ctx context.Context, effort string) (store.Session, 
 	}
 	s.info.Effort = effort
 	if _, err := s.appendLocked(s.modelChangedLocked()); err != nil {
+		return store.Session{}, err
+	}
+	return s.info, nil
+}
+
+func (s *session) setYolo(ctx context.Context, yolo bool, client string) (store.Session, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.info.Yolo == yolo {
+		return s.info, nil
+	}
+	if err := s.m.store.SetYolo(ctx, s.info.ID, yolo); err != nil {
+		return store.Session{}, err
+	}
+	s.info.Yolo = yolo
+	if _, err := s.appendLocked(&flitv1.Event{Payload: &flitv1.Event_YoloChanged{YoloChanged: &flitv1.YoloChanged{
+		Yolo: yolo, Client: client,
+	}}}); err != nil {
 		return store.Session{}, err
 	}
 	return s.info, nil

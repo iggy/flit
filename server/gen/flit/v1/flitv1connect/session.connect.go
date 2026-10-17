@@ -57,6 +57,8 @@ const (
 	// SessionServiceSetEffortProcedure is the fully-qualified name of the SessionService's SetEffort
 	// RPC.
 	SessionServiceSetEffortProcedure = "/flit.v1.SessionService/SetEffort"
+	// SessionServiceSetYoloProcedure is the fully-qualified name of the SessionService's SetYolo RPC.
+	SessionServiceSetYoloProcedure = "/flit.v1.SessionService/SetYolo"
 	// SessionServiceMoveSessionProcedure is the fully-qualified name of the SessionService's
 	// MoveSession RPC.
 	SessionServiceMoveSessionProcedure = "/flit.v1.SessionService/MoveSession"
@@ -99,6 +101,9 @@ type SessionServiceClient interface {
 	SetModel(context.Context, *connect.Request[v1.SetModelRequest]) (*connect.Response[v1.SetModelResponse], error)
 	// SetEffort changes the reasoning effort used from the next model call.
 	SetEffort(context.Context, *connect.Request[v1.SetEffortRequest]) (*connect.Response[v1.SetEffortResponse], error)
+	// SetYolo turns yolo mode on or off for the session: every shell command
+	// runs unless a deny rule matches. Effective from the next command.
+	SetYolo(context.Context, *connect.Request[v1.SetYoloRequest]) (*connect.Response[v1.SetYoloResponse], error)
 	// MoveSession moves a session to another project. Its working directory
 	// stays the same.
 	MoveSession(context.Context, *connect.Request[v1.MoveSessionRequest]) (*connect.Response[v1.MoveSessionResponse], error)
@@ -183,6 +188,12 @@ func NewSessionServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(sessionServiceMethods.ByName("SetEffort")),
 			connect.WithClientOptions(opts...),
 		),
+		setYolo: connect.NewClient[v1.SetYoloRequest, v1.SetYoloResponse](
+			httpClient,
+			baseURL+SessionServiceSetYoloProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("SetYolo")),
+			connect.WithClientOptions(opts...),
+		),
 		moveSession: connect.NewClient[v1.MoveSessionRequest, v1.MoveSessionResponse](
 			httpClient,
 			baseURL+SessionServiceMoveSessionProcedure,
@@ -229,6 +240,7 @@ type sessionServiceClient struct {
 	answerPrompt   *connect.Client[v1.AnswerPromptRequest, v1.AnswerPromptResponse]
 	setModel       *connect.Client[v1.SetModelRequest, v1.SetModelResponse]
 	setEffort      *connect.Client[v1.SetEffortRequest, v1.SetEffortResponse]
+	setYolo        *connect.Client[v1.SetYoloRequest, v1.SetYoloResponse]
 	moveSession    *connect.Client[v1.MoveSessionRequest, v1.MoveSessionResponse]
 	rate           *connect.Client[v1.RateRequest, v1.RateResponse]
 	listMcpServers *connect.Client[v1.ListMcpServersRequest, v1.ListMcpServersResponse]
@@ -279,6 +291,11 @@ func (c *sessionServiceClient) SetModel(ctx context.Context, req *connect.Reques
 // SetEffort calls flit.v1.SessionService.SetEffort.
 func (c *sessionServiceClient) SetEffort(ctx context.Context, req *connect.Request[v1.SetEffortRequest]) (*connect.Response[v1.SetEffortResponse], error) {
 	return c.setEffort.CallUnary(ctx, req)
+}
+
+// SetYolo calls flit.v1.SessionService.SetYolo.
+func (c *sessionServiceClient) SetYolo(ctx context.Context, req *connect.Request[v1.SetYoloRequest]) (*connect.Response[v1.SetYoloResponse], error) {
+	return c.setYolo.CallUnary(ctx, req)
 }
 
 // MoveSession calls flit.v1.SessionService.MoveSession.
@@ -332,6 +349,9 @@ type SessionServiceHandler interface {
 	SetModel(context.Context, *connect.Request[v1.SetModelRequest]) (*connect.Response[v1.SetModelResponse], error)
 	// SetEffort changes the reasoning effort used from the next model call.
 	SetEffort(context.Context, *connect.Request[v1.SetEffortRequest]) (*connect.Response[v1.SetEffortResponse], error)
+	// SetYolo turns yolo mode on or off for the session: every shell command
+	// runs unless a deny rule matches. Effective from the next command.
+	SetYolo(context.Context, *connect.Request[v1.SetYoloRequest]) (*connect.Response[v1.SetYoloResponse], error)
 	// MoveSession moves a session to another project. Its working directory
 	// stays the same.
 	MoveSession(context.Context, *connect.Request[v1.MoveSessionRequest]) (*connect.Response[v1.MoveSessionResponse], error)
@@ -412,6 +432,12 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 		connect.WithSchema(sessionServiceMethods.ByName("SetEffort")),
 		connect.WithHandlerOptions(opts...),
 	)
+	sessionServiceSetYoloHandler := connect.NewUnaryHandler(
+		SessionServiceSetYoloProcedure,
+		svc.SetYolo,
+		connect.WithSchema(sessionServiceMethods.ByName("SetYolo")),
+		connect.WithHandlerOptions(opts...),
+	)
 	sessionServiceMoveSessionHandler := connect.NewUnaryHandler(
 		SessionServiceMoveSessionProcedure,
 		svc.MoveSession,
@@ -464,6 +490,8 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 			sessionServiceSetModelHandler.ServeHTTP(w, r)
 		case SessionServiceSetEffortProcedure:
 			sessionServiceSetEffortHandler.ServeHTTP(w, r)
+		case SessionServiceSetYoloProcedure:
+			sessionServiceSetYoloHandler.ServeHTTP(w, r)
 		case SessionServiceMoveSessionProcedure:
 			sessionServiceMoveSessionHandler.ServeHTTP(w, r)
 		case SessionServiceRateProcedure:
@@ -517,6 +545,10 @@ func (UnimplementedSessionServiceHandler) SetModel(context.Context, *connect.Req
 
 func (UnimplementedSessionServiceHandler) SetEffort(context.Context, *connect.Request[v1.SetEffortRequest]) (*connect.Response[v1.SetEffortResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.SetEffort is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) SetYolo(context.Context, *connect.Request[v1.SetYoloRequest]) (*connect.Response[v1.SetYoloResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.SetYolo is not implemented"))
 }
 
 func (UnimplementedSessionServiceHandler) MoveSession(context.Context, *connect.Request[v1.MoveSessionRequest]) (*connect.Response[v1.MoveSessionResponse], error) {

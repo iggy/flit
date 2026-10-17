@@ -116,6 +116,25 @@ final $typed_data.Uint8List todoStatusDescriptor = $convert.base64Decode(
     'NfUEVORElORxABEhsKF1RPRE9fU1RBVFVTX0lOX1BST0dSRVNTEAISGQoVVE9ET19TVEFUVVNf'
     'Q09NUExFVEVEEAM=');
 
+@$core.Deprecated('Use permissionVerdictDescriptor instead')
+const PermissionVerdict$json = {
+  '1': 'PermissionVerdict',
+  '2': [
+    {'1': 'PERMISSION_VERDICT_UNSPECIFIED', '2': 0},
+    {'1': 'PERMISSION_VERDICT_SAFE', '2': 1},
+    {'1': 'PERMISSION_VERDICT_ASK', '2': 2},
+    {'1': 'PERMISSION_VERDICT_BLOCK', '2': 3},
+    {'1': 'PERMISSION_VERDICT_ERROR', '2': 4},
+  ],
+};
+
+/// Descriptor for `PermissionVerdict`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List permissionVerdictDescriptor = $convert.base64Decode(
+    'ChFQZXJtaXNzaW9uVmVyZGljdBIiCh5QRVJNSVNTSU9OX1ZFUkRJQ1RfVU5TUEVDSUZJRUQQAB'
+    'IbChdQRVJNSVNTSU9OX1ZFUkRJQ1RfU0FGRRABEhoKFlBFUk1JU1NJT05fVkVSRElDVF9BU0sQ'
+    'AhIcChhQRVJNSVNTSU9OX1ZFUkRJQ1RfQkxPQ0sQAxIcChhQRVJNSVNTSU9OX1ZFUkRJQ1RfRV'
+    'JST1IQBA==');
+
 @$core.Deprecated('Use sessionDescriptor instead')
 const Session$json = {
   '1': 'Session',
@@ -157,6 +176,7 @@ const Session$json = {
     {'1': 'context_tokens', '3': 14, '4': 1, '5': 3, '10': 'contextTokens'},
     {'1': 'context_length', '3': 15, '4': 1, '5': 3, '10': 'contextLength'},
     {'1': 'mcp_servers', '3': 16, '4': 3, '5': 9, '10': 'mcpServers'},
+    {'1': 'yolo', '3': 17, '4': 1, '5': 8, '10': 'yolo'},
   ],
 };
 
@@ -171,7 +191,7 @@ final $typed_data.Uint8List sessionDescriptor = $convert.base64Decode(
     'IAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCnVwZGF0ZVRpbWUSFgoGZWZmb3J0GA'
     'wgASgJUgZlZmZvcnQSEgoEcm9sZRgNIAEoCVIEcm9sZRIlCg5jb250ZXh0X3Rva2VucxgOIAEo'
     'A1INY29udGV4dFRva2VucxIlCg5jb250ZXh0X2xlbmd0aBgPIAEoA1INY29udGV4dExlbmd0aB'
-    'IfCgttY3Bfc2VydmVycxgQIAMoCVIKbWNwU2VydmVycw==');
+    'IfCgttY3Bfc2VydmVycxgQIAMoCVIKbWNwU2VydmVycxISCgR5b2xvGBEgASgIUgR5b2xv');
 
 @$core.Deprecated('Use createSessionRequestDescriptor instead')
 const CreateSessionRequest$json = {
@@ -184,6 +204,10 @@ const CreateSessionRequest$json = {
     {'1': 'role', '3': 5, '4': 1, '5': 9, '10': 'role'},
     {'1': 'effort', '3': 6, '4': 1, '5': 9, '10': 'effort'},
     {'1': 'project_id', '3': 7, '4': 1, '5': 9, '10': 'projectId'},
+    {'1': 'yolo', '3': 8, '4': 1, '5': 8, '9': 0, '10': 'yolo', '17': true},
+  ],
+  '8': [
+    {'1': '_yolo'},
   ],
 };
 
@@ -192,7 +216,8 @@ final $typed_data.Uint8List createSessionRequestDescriptor = $convert.base64Deco
     'ChRDcmVhdGVTZXNzaW9uUmVxdWVzdBIfCgt3b3JraW5nX2RpchgBIAEoCVIKd29ya2luZ0Rpch'
     'IUCgV0aXRsZRgCIAEoCVIFdGl0bGUSGgoIcHJvdmlkZXIYAyABKAlSCHByb3ZpZGVyEhQKBW1v'
     'ZGVsGAQgASgJUgVtb2RlbBISCgRyb2xlGAUgASgJUgRyb2xlEhYKBmVmZm9ydBgGIAEoCVIGZW'
-    'Zmb3J0Eh0KCnByb2plY3RfaWQYByABKAlSCXByb2plY3RJZA==');
+    'Zmb3J0Eh0KCnByb2plY3RfaWQYByABKAlSCXByb2plY3RJZBIXCgR5b2xvGAggASgISABSBHlv'
+    'bG+IAQFCBwoFX3lvbG8=');
 
 @$core.Deprecated('Use createSessionResponseDescriptor instead')
 const CreateSessionResponse$json = {
@@ -677,6 +702,40 @@ final $typed_data.Uint8List setEffortResponseDescriptor = $convert.base64Decode(
     'ChFTZXRFZmZvcnRSZXNwb25zZRIqCgdzZXNzaW9uGAEgASgLMhAuZmxpdC52MS5TZXNzaW9uUg'
     'dzZXNzaW9u');
 
+@$core.Deprecated('Use setYoloRequestDescriptor instead')
+const SetYoloRequest$json = {
+  '1': 'SetYoloRequest',
+  '2': [
+    {'1': 'session_id', '3': 1, '4': 1, '5': 9, '10': 'sessionId'},
+    {'1': 'yolo', '3': 2, '4': 1, '5': 8, '10': 'yolo'},
+  ],
+};
+
+/// Descriptor for `SetYoloRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List setYoloRequestDescriptor = $convert.base64Decode(
+    'Cg5TZXRZb2xvUmVxdWVzdBIdCgpzZXNzaW9uX2lkGAEgASgJUglzZXNzaW9uSWQSEgoEeW9sbx'
+    'gCIAEoCFIEeW9sbw==');
+
+@$core.Deprecated('Use setYoloResponseDescriptor instead')
+const SetYoloResponse$json = {
+  '1': 'SetYoloResponse',
+  '2': [
+    {
+      '1': 'session',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.Session',
+      '10': 'session'
+    },
+  ],
+};
+
+/// Descriptor for `SetYoloResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List setYoloResponseDescriptor = $convert.base64Decode(
+    'Cg9TZXRZb2xvUmVzcG9uc2USKgoHc2Vzc2lvbhgBIAEoCzIQLmZsaXQudjEuU2Vzc2lvblIHc2'
+    'Vzc2lvbg==');
+
 @$core.Deprecated('Use eventDescriptor instead')
 const Event$json = {
   '1': 'Event',
@@ -844,6 +903,24 @@ const Event$json = {
       '9': 0,
       '10': 'sessionMoved'
     },
+    {
+      '1': 'yolo_changed',
+      '3': 27,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.YoloChanged',
+      '9': 0,
+      '10': 'yoloChanged'
+    },
+    {
+      '1': 'permission_check',
+      '3': 28,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.PermissionCheck',
+      '9': 0,
+      '10': 'permissionCheck'
+    },
   ],
   '8': [
     {'1': 'payload'},
@@ -872,7 +949,10 @@ final $typed_data.Uint8List eventDescriptor = $convert.base64Decode(
     'F0ZWRIAFILdG9kb1VwZGF0ZWQSLwoIZmVlZGJhY2sYGCABKAsyES5mbGl0LnYxLkZlZWRiYWNr'
     'SABSCGZlZWRiYWNrEkwKE21jcF9zZXJ2ZXJzX2NoYW5nZWQYGSABKAsyGi5mbGl0LnYxLk1jcF'
     'NlcnZlcnNDaGFuZ2VkSABSEW1jcFNlcnZlcnNDaGFuZ2VkEjwKDXNlc3Npb25fbW92ZWQYGiAB'
-    'KAsyFS5mbGl0LnYxLlNlc3Npb25Nb3ZlZEgAUgxzZXNzaW9uTW92ZWRCCQoHcGF5bG9hZA==');
+    'KAsyFS5mbGl0LnYxLlNlc3Npb25Nb3ZlZEgAUgxzZXNzaW9uTW92ZWQSOQoMeW9sb19jaGFuZ2'
+    'VkGBsgASgLMhQuZmxpdC52MS5Zb2xvQ2hhbmdlZEgAUgt5b2xvQ2hhbmdlZBJFChBwZXJtaXNz'
+    'aW9uX2NoZWNrGBwgASgLMhguZmxpdC52MS5QZXJtaXNzaW9uQ2hlY2tIAFIPcGVybWlzc2lvbk'
+    'NoZWNrQgkKB3BheWxvYWQ=');
 
 @$core.Deprecated('Use messageStartedDescriptor instead')
 const MessageStarted$json = {
@@ -995,6 +1075,7 @@ const PromptRequested$json = {
     {'1': 'title', '3': 3, '4': 1, '5': 9, '10': 'title'},
     {'1': 'detail', '3': 4, '4': 1, '5': 9, '10': 'detail'},
     {'1': 'session_patterns', '3': 5, '4': 3, '5': 9, '10': 'sessionPatterns'},
+    {'1': 'safety_reason', '3': 6, '4': 1, '5': 9, '10': 'safetyReason'},
   ],
 };
 
@@ -1003,7 +1084,7 @@ final $typed_data.Uint8List promptRequestedDescriptor = $convert.base64Decode(
     'Cg9Qcm9tcHRSZXF1ZXN0ZWQSGwoJcHJvbXB0X2lkGAEgASgJUghwcm9tcHRJZBIgCgx0b29sX2'
     'NhbGxfaWQYAiABKAlSCnRvb2xDYWxsSWQSFAoFdGl0bGUYAyABKAlSBXRpdGxlEhYKBmRldGFp'
     'bBgEIAEoCVIGZGV0YWlsEikKEHNlc3Npb25fcGF0dGVybnMYBSADKAlSD3Nlc3Npb25QYXR0ZX'
-    'Jucw==');
+    'JucxIjCg1zYWZldHlfcmVhc29uGAYgASgJUgxzYWZldHlSZWFzb24=');
 
 @$core.Deprecated('Use promptResolvedDescriptor instead')
 const PromptResolved$json = {
@@ -1229,6 +1310,50 @@ const SessionMoved$json = {
 final $typed_data.Uint8List sessionMovedDescriptor = $convert.base64Decode(
     'CgxTZXNzaW9uTW92ZWQSHQoKcHJvamVjdF9pZBgBIAEoCVIJcHJvamVjdElk');
 
+@$core.Deprecated('Use yoloChangedDescriptor instead')
+const YoloChanged$json = {
+  '1': 'YoloChanged',
+  '2': [
+    {'1': 'yolo', '3': 1, '4': 1, '5': 8, '10': 'yolo'},
+    {'1': 'client', '3': 2, '4': 1, '5': 9, '10': 'client'},
+  ],
+};
+
+/// Descriptor for `YoloChanged`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List yoloChangedDescriptor = $convert.base64Decode(
+    'CgtZb2xvQ2hhbmdlZBISCgR5b2xvGAEgASgIUgR5b2xvEhYKBmNsaWVudBgCIAEoCVIGY2xpZW'
+    '50');
+
+@$core.Deprecated('Use permissionCheckDescriptor instead')
+const PermissionCheck$json = {
+  '1': 'PermissionCheck',
+  '2': [
+    {'1': 'tool_call_id', '3': 1, '4': 1, '5': 9, '10': 'toolCallId'},
+    {'1': 'command', '3': 2, '4': 1, '5': 9, '10': 'command'},
+    {
+      '1': 'verdict',
+      '3': 3,
+      '4': 1,
+      '5': 14,
+      '6': '.flit.v1.PermissionVerdict',
+      '10': 'verdict'
+    },
+    {'1': 'reason', '3': 4, '4': 1, '5': 9, '10': 'reason'},
+    {'1': 'provider', '3': 5, '4': 1, '5': 9, '10': 'provider'},
+    {'1': 'model', '3': 6, '4': 1, '5': 9, '10': 'model'},
+    {'1': 'model_call_id', '3': 7, '4': 1, '5': 9, '10': 'modelCallId'},
+    {'1': 'turn_id', '3': 8, '4': 1, '5': 9, '10': 'turnId'},
+  ],
+};
+
+/// Descriptor for `PermissionCheck`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List permissionCheckDescriptor = $convert.base64Decode(
+    'Cg9QZXJtaXNzaW9uQ2hlY2sSIAoMdG9vbF9jYWxsX2lkGAEgASgJUgp0b29sQ2FsbElkEhgKB2'
+    'NvbW1hbmQYAiABKAlSB2NvbW1hbmQSNAoHdmVyZGljdBgDIAEoDjIaLmZsaXQudjEuUGVybWlz'
+    'c2lvblZlcmRpY3RSB3ZlcmRpY3QSFgoGcmVhc29uGAQgASgJUgZyZWFzb24SGgoIcHJvdmlkZX'
+    'IYBSABKAlSCHByb3ZpZGVyEhQKBW1vZGVsGAYgASgJUgVtb2RlbBIiCg1tb2RlbF9jYWxsX2lk'
+    'GAcgASgJUgttb2RlbENhbGxJZBIXCgd0dXJuX2lkGAggASgJUgZ0dXJuSWQ=');
+
 const $core.Map<$core.String, $core.dynamic> SessionServiceBase$json = {
   '1': 'SessionService',
   '2': [
@@ -1275,6 +1400,11 @@ const $core.Map<$core.String, $core.dynamic> SessionServiceBase$json = {
       '1': 'SetEffort',
       '2': '.flit.v1.SetEffortRequest',
       '3': '.flit.v1.SetEffortResponse'
+    },
+    {
+      '1': 'SetYolo',
+      '2': '.flit.v1.SetYoloRequest',
+      '3': '.flit.v1.SetYoloResponse'
     },
     {
       '1': 'MoveSession',
@@ -1334,6 +1464,8 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.flit.v1.Feedback': Feedback$json,
   '.flit.v1.McpServersChanged': McpServersChanged$json,
   '.flit.v1.SessionMoved': SessionMoved$json,
+  '.flit.v1.YoloChanged': YoloChanged$json,
+  '.flit.v1.PermissionCheck': PermissionCheck$json,
   '.flit.v1.SendRequest': SendRequest$json,
   '.flit.v1.SendResponse': SendResponse$json,
   '.flit.v1.InterruptRequest': InterruptRequest$json,
@@ -1344,6 +1476,8 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.flit.v1.SetModelResponse': SetModelResponse$json,
   '.flit.v1.SetEffortRequest': SetEffortRequest$json,
   '.flit.v1.SetEffortResponse': SetEffortResponse$json,
+  '.flit.v1.SetYoloRequest': SetYoloRequest$json,
+  '.flit.v1.SetYoloResponse': SetYoloResponse$json,
   '.flit.v1.MoveSessionRequest': MoveSessionRequest$json,
   '.flit.v1.MoveSessionResponse': MoveSessionResponse$json,
   '.flit.v1.RateRequest': RateRequest$json,
@@ -1371,11 +1505,12 @@ final $typed_data.Uint8List sessionServiceDescriptor = $convert.base64Decode(
     'ZXJQcm9tcHQSHC5mbGl0LnYxLkFuc3dlclByb21wdFJlcXVlc3QaHS5mbGl0LnYxLkFuc3dlcl'
     'Byb21wdFJlc3BvbnNlEj8KCFNldE1vZGVsEhguZmxpdC52MS5TZXRNb2RlbFJlcXVlc3QaGS5m'
     'bGl0LnYxLlNldE1vZGVsUmVzcG9uc2USQgoJU2V0RWZmb3J0EhkuZmxpdC52MS5TZXRFZmZvcn'
-    'RSZXF1ZXN0GhouZmxpdC52MS5TZXRFZmZvcnRSZXNwb25zZRJICgtNb3ZlU2Vzc2lvbhIbLmZs'
-    'aXQudjEuTW92ZVNlc3Npb25SZXF1ZXN0GhwuZmxpdC52MS5Nb3ZlU2Vzc2lvblJlc3BvbnNlEj'
-    'MKBFJhdGUSFC5mbGl0LnYxLlJhdGVSZXF1ZXN0GhUuZmxpdC52MS5SYXRlUmVzcG9uc2USVgoO'
-    'TGlzdE1jcFNlcnZlcnMSHi5mbGl0LnYxLkxpc3RNY3BTZXJ2ZXJzUmVxdWVzdBofLmZsaXQudj'
-    'EuTGlzdE1jcFNlcnZlcnNSZXNwb25zZSIDkAIBEksKDFNldE1jcFNlcnZlchIcLmZsaXQudjEu'
-    'U2V0TWNwU2VydmVyUmVxdWVzdBodLmZsaXQudjEuU2V0TWNwU2VydmVyUmVzcG9uc2USSgoKTG'
-    'lzdFNraWxscxIaLmZsaXQudjEuTGlzdFNraWxsc1JlcXVlc3QaGy5mbGl0LnYxLkxpc3RTa2ls'
-    'bHNSZXNwb25zZSIDkAIB');
+    'RSZXF1ZXN0GhouZmxpdC52MS5TZXRFZmZvcnRSZXNwb25zZRI8CgdTZXRZb2xvEhcuZmxpdC52'
+    'MS5TZXRZb2xvUmVxdWVzdBoYLmZsaXQudjEuU2V0WW9sb1Jlc3BvbnNlEkgKC01vdmVTZXNzaW'
+    '9uEhsuZmxpdC52MS5Nb3ZlU2Vzc2lvblJlcXVlc3QaHC5mbGl0LnYxLk1vdmVTZXNzaW9uUmVz'
+    'cG9uc2USMwoEUmF0ZRIULmZsaXQudjEuUmF0ZVJlcXVlc3QaFS5mbGl0LnYxLlJhdGVSZXNwb2'
+    '5zZRJWCg5MaXN0TWNwU2VydmVycxIeLmZsaXQudjEuTGlzdE1jcFNlcnZlcnNSZXF1ZXN0Gh8u'
+    'ZmxpdC52MS5MaXN0TWNwU2VydmVyc1Jlc3BvbnNlIgOQAgESSwoMU2V0TWNwU2VydmVyEhwuZm'
+    'xpdC52MS5TZXRNY3BTZXJ2ZXJSZXF1ZXN0Gh0uZmxpdC52MS5TZXRNY3BTZXJ2ZXJSZXNwb25z'
+    'ZRJKCgpMaXN0U2tpbGxzEhouZmxpdC52MS5MaXN0U2tpbGxzUmVxdWVzdBobLmZsaXQudjEuTG'
+    'lzdFNraWxsc1Jlc3BvbnNlIgOQAgE=');

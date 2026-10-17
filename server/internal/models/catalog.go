@@ -216,6 +216,17 @@ func (c *Catalog) Providers() []ProviderStatus {
 	return out
 }
 
+// Kind is the provider's kind: as configured, else as discovery detected
+// it; empty when unknown.
+func (c *Catalog) Kind(provider string) Kind {
+	if p, ok := c.cfg().Provider(provider); ok && p.Kind != "" && p.Kind != "auto" {
+		return Kind(p.Kind)
+	}
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.status[provider].Kind
+}
+
 // Models lists models for one provider, or all when provider is empty,
 // with overrides applied, sorted by provider then id.
 func (c *Catalog) Models(provider string) []Model {

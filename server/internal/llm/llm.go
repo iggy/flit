@@ -59,6 +59,9 @@ type Request struct {
 	// ReasoningEffort ("low", "medium", "high", …) is sent as
 	// reasoning_effort when set; OpenAI, OpenRouter and llama.cpp accept it.
 	ReasoningEffort string `json:"reasoning_effort,omitempty"`
+	// ChatTemplateKwargs are passed to the model's chat template by
+	// llama.cpp, e.g. {"enable_thinking": false} to turn thinking off.
+	ChatTemplateKwargs map[string]any `json:"chat_template_kwargs,omitempty"`
 }
 
 // Usage is token usage reported by the endpoint.

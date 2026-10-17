@@ -41,10 +41,14 @@ final class FlitSession {
     this.contextTokens = 0,
     this.contextLength = 0,
     this.mcpServers = const <String>[],
+    this.yolo = false,
   });
 
   /// MCP servers enabled for the session.
   final List<String> mcpServers;
+
+  /// Yolo mode: every shell command runs unless a deny rule matches.
+  final bool yolo;
 
   /// Reasoning effort; empty means the model's default.
   final String effort;
@@ -97,7 +101,8 @@ final class FlitSession {
         other.effort == effort &&
         other.role == role &&
         other.contextTokens == contextTokens &&
-        other.contextLength == contextLength;
+        other.contextLength == contextLength &&
+        other.yolo == yolo;
   }
 
   @override
@@ -117,6 +122,7 @@ final class FlitSession {
     role,
     contextTokens,
     contextLength,
+    yolo,
   );
 
   @override

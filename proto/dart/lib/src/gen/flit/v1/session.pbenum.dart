@@ -179,5 +179,42 @@ class TodoStatus extends $pb.ProtobufEnum {
   const TodoStatus._(super.value, super.name);
 }
 
+class PermissionVerdict extends $pb.ProtobufEnum {
+  static const PermissionVerdict PERMISSION_VERDICT_UNSPECIFIED =
+      PermissionVerdict._(
+          0, _omitEnumNames ? '' : 'PERMISSION_VERDICT_UNSPECIFIED');
+
+  /// Runs without asking.
+  static const PermissionVerdict PERMISSION_VERDICT_SAFE =
+      PermissionVerdict._(1, _omitEnumNames ? '' : 'PERMISSION_VERDICT_SAFE');
+
+  /// The user is asked.
+  static const PermissionVerdict PERMISSION_VERDICT_ASK =
+      PermissionVerdict._(2, _omitEnumNames ? '' : 'PERMISSION_VERDICT_ASK');
+
+  /// Refused; the model is told why.
+  static const PermissionVerdict PERMISSION_VERDICT_BLOCK =
+      PermissionVerdict._(3, _omitEnumNames ? '' : 'PERMISSION_VERDICT_BLOCK');
+
+  /// The check failed (no or unreadable answer); the user is asked.
+  static const PermissionVerdict PERMISSION_VERDICT_ERROR =
+      PermissionVerdict._(4, _omitEnumNames ? '' : 'PERMISSION_VERDICT_ERROR');
+
+  static const $core.List<PermissionVerdict> values = <PermissionVerdict>[
+    PERMISSION_VERDICT_UNSPECIFIED,
+    PERMISSION_VERDICT_SAFE,
+    PERMISSION_VERDICT_ASK,
+    PERMISSION_VERDICT_BLOCK,
+    PERMISSION_VERDICT_ERROR,
+  ];
+
+  static final $core.List<PermissionVerdict?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
+  static PermissionVerdict? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const PermissionVerdict._(super.value, super.name);
+}
+
 const $core.bool _omitEnumNames =
     $core.bool.fromEnvironment('protobuf.omit_enum_names');

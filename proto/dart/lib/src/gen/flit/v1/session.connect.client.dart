@@ -180,6 +180,25 @@ extension type SessionServiceClient (connect.Transport _transport) {
     );
   }
 
+  /// SetYolo turns yolo mode on or off for the session: every shell command
+  /// runs unless a deny rule matches. Effective from the next command.
+  Future<flitv1session.SetYoloResponse> setYolo(
+    flitv1session.SetYoloRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.SessionService.setYolo,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
+
   /// MoveSession moves a session to another project. Its working directory
   /// stays the same.
   Future<flitv1session.MoveSessionResponse> moveSession(

@@ -9,6 +9,9 @@ import 'package:flutter/material.dart';
 /// The "allow for this session" button.
 const Key flitAllowSessionButtonKey = Key('flit_allow_session');
 
+/// The safety check's reason for asking, when it ran.
+const Key flitSafetyReasonKey = Key('flit_safety_reason');
+
 class FlitPromptCard extends StatefulWidget {
   const FlitPromptCard({
     required this.prompt,
@@ -88,6 +91,16 @@ class _FlitPromptCardState extends State<FlitPromptCard> {
                 style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
               ),
             ),
+            if (widget.prompt.safetyReason.isNotEmpty) ...<Widget>[
+              const SizedBox(height: 6),
+              Text(
+                'Safety check: ${widget.prompt.safetyReason}',
+                key: flitSafetyReasonKey,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: scheme.onTertiaryContainer,
+                ),
+              ),
+            ],
             const SizedBox(height: 8),
             Wrap(
               alignment: WrapAlignment.end,
