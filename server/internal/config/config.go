@@ -76,7 +76,7 @@ func (c Config) ChatModel() TaskModel {
 	if t, ok := c.Agent.Tasks["chat"]; ok && t.Provider != "" {
 		return t
 	}
-	return TaskModel{Provider: c.Agent.Provider, Model: c.Agent.Model, Effort: c.Agent.Effort, Reasoning: c.Agent.Reasoning}
+	return TaskModel{Provider: c.Agent.Provider, Model: c.Agent.Model, Effort: c.Agent.Effort}
 }
 
 // Provider is an OpenAI-compatible chat completions endpoint.
@@ -152,30 +152,15 @@ var ProviderKinds = []string{"auto", "openai", "openrouter", "llamacpp", "gomode
 // Tasks are the kinds of work that can have their own model.
 var Tasks = []string{"chat", "planning", "cron", "compaction", "search", "permission"}
 
-// ReasoningLevels are the accepted TaskModel.Reasoning values.
-var ReasoningLevels = []string{"off", "low", "medium", "high"}
-
 // TaskModel picks a model for one kind of work.
 type TaskModel struct {
 	Provider string `yaml:"provider"`
 	Model    string `yaml:"model"`
-	// Reasoning is off, low, medium or high; empty means the model's
-	// default. "off" turns thinking off where the provider supports it
-	// (llama.cpp); the levels are sent as reasoning_effort to models that
-	// support reasoning. It wins over Effort.
-	Reasoning string `yaml:"reasoning"`
-	// Effort is the reasoning effort as the provider names it (low,
-	// medium, high, or a model-specific level). Prefer Reasoning.
+	// Effort is the reasoning effort, e.g. low, medium or high; empty means
+	// the model's default. "off" turns thinking off on llama.cpp
+	// (chat_template_kwargs enable_thinking=false) and is ignored by other
+	// providers.
 	Effort string `yaml:"effort"`
-}
-
-// EffortLevel is the reasoning setting to use: Reasoning if set, else
-// Effort.
-func (t TaskModel) EffortLevel() string {
-	if t.Reasoning != "" {
-		return t.Reasoning
-	}
-	return t.Effort
 }
 
 // Task returns the model configured for task, if it names a provider and
@@ -197,10 +182,9 @@ func (p Provider) Key() string {
 type Agent struct {
 	// Provider, Model and Effort are used by sessions that don't pick
 	// their own (or get one from their role). tasks.chat, if set, wins.
-	Provider  string `yaml:"provider"`
-	Model     string `yaml:"model"`
-	Effort    string `yaml:"effort"`
-	Reasoning string `yaml:"reasoning"`
+	Provider string `yaml:"provider"`
+	Model    string `yaml:"model"`
+	Effort   string `yaml:"effort"`
 	// Tasks sets a model per kind of work (see Tasks). chat is the
 	// sessions' default model and permission rates shell commands before
 	// flit asks the user (see docs/shell.md); planning, cron, compaction
@@ -441,12 +425,6 @@ func (c Config) Validate() error {
 		if t.Provider != "" && !seen[t.Provider] {
 			return fmt.Errorf("agent.tasks.%s.provider %q is not in providers", task, t.Provider)
 		}
-		if t.Reasoning != "" && !slices.Contains(ReasoningLevels, t.Reasoning) {
-			return fmt.Errorf("agent.tasks.%s.reasoning %q: want one of %s", task, t.Reasoning, strings.Join(ReasoningLevels, ", "))
-		}
-	}
-	if c.Agent.Reasoning != "" && !slices.Contains(ReasoningLevels, c.Agent.Reasoning) {
-		return fmt.Errorf("agent.reasoning %q: want one of %s", c.Agent.Reasoning, strings.Join(ReasoningLevels, ", "))
 	}
 	if c.Agent.MaxSteps < 0 || c.Agent.ToolOutputMaxBytes < 0 || c.Agent.ToolOutputMaxLines < 0 {
 		return errors.New("agent: limits must not be negative")
@@ -546,18 +524,16 @@ agent:
   # their role).
   provider: ""
   model: ""
-  # Reasoning: off, low, medium or high; empty means the model's default.
-  # off turns thinking off on llama.cpp; elsewhere the level is sent as
-  # reasoning_effort to models that reason. (effort: also works, with the
-  # provider's own level names.)
-  reasoning: ""
+  # Reasoning effort: low, medium, high (or a level the model names), or
+  # off to turn thinking off on llama.cpp. Empty means the model's default.
+  effort: ""
   # A model per kind of work: chat, permission, planning, cron, compaction,
   # search. chat overrides the defaults above. permission rates shell
   # commands (safe, ask or block) before flit asks you; without it, flit
   # just asks. planning, cron, compaction and search aren't used yet.
   tasks: {}
-  #   chat:       {provider: local, model: qwen3-coder, reasoning: medium}
-  #   permission: {provider: local, model: qwen3-4b, reasoning: off}
+  #   chat:       {provider: local, model: qwen3-coder, effort: medium}
+  #   permission: {provider: local, model: qwen3-4b, effort: off}
   # Extra system prompt text for specific models ("provider/model"); a
   # provider's prompt_append applies to all its models.
   model_prompt_appends: {}

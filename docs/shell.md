@@ -77,7 +77,7 @@ A small, fast model can rate commands before you're asked. Configure the
 ```yaml
 agent:
   tasks:
-    permission: {provider: local, model: qwen3-4b, reasoning: off}
+    permission: {provider: local, model: qwen3-4b, effort: off}
 ```
 
 For a command the rules would ask about, flit sends the command, the
@@ -96,15 +96,14 @@ Each verdict is a `permission_check` event in the session log, and each
 check's model call is recorded with task `permission`, so both appear in
 [`flit export`](export.md).
 
-## Reasoning per task
+## Effort per task
 
-Any task (and `agent` itself) can set `reasoning: off | low | medium | high`:
+Any task (and `agent` itself) can set `effort`: `low`, `medium`, `high` (or
+a level the model names), or `off`.
 
 - `off` turns thinking off on llama.cpp (`chat_template_kwargs:
   {enable_thinking: false}`) and is ignored by other providers.
-- `low`, `medium` and `high` are sent as `reasoning_effort`, except to
-  models the catalog knows don't reason (llama.cpp always gets it).
+- Levels are sent as `reasoning_effort`, except to models the catalog
+  knows don't reason (llama.cpp always gets it).
 
-`reasoning` wins over the older `effort` key, which takes the provider's
-own level names. A quick model with `reasoning: off` suits the
-`permission` task.
+A quick model with `effort: off` suits the `permission` task.

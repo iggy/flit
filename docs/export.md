@@ -93,7 +93,7 @@ this response".
 reply, or a model rating on it); `turn_ratings` are all turn ratings of the
 turn the call belongs to. `task` is `chat` for the agent's own calls and
 `permission` for the shell safety check (see [shell.md](shell.md)); its
-`params` include `chat_template_kwargs` when reasoning was turned off on
+`params` include `chat_template_kwargs` when effort was `off` on
 llama.cpp.
 
 ### `turn`

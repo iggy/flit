@@ -65,7 +65,7 @@ func TestYolo(t *testing.T) {
 
 func TestPermissionCheck(t *testing.T) {
 	h := newHarness(t)
-	h.cfg.Agent.Tasks = map[string]config.TaskModel{"permission": {Provider: "fake", Model: "guard", Reasoning: "off"}}
+	h.cfg.Agent.Tasks = map[string]config.TaskModel{"permission": {Provider: "fake", Model: "guard", Effort: "off"}}
 	h.cfg.Shell.Allow = []string{"echo plain"}
 	verdict := func(v, reason string) llmtest.Response {
 		return llmtest.Response{Chunks: llmtest.Text(`{"verdict": "` + v + `", "reason": "` + reason + `"}`)}

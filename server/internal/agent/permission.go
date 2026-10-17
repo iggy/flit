@@ -50,7 +50,7 @@ func (s *session) assessor(cfg config.Config, turnID, toolCallID string) func(co
 			Model:    task.Model,
 			Messages: []llm.Message{{Role: "system", Content: permissionPrompt}, {Role: "user", Content: user}},
 		}
-		s.m.applyReasoning(&req, task.Provider, task.Model, task.EffortLevel())
+		s.m.applyReasoning(&req, task.Provider, task.Model, task.Effort)
 		client := &llm.Client{BaseURL: provider.BaseURL, APIKey: provider.Key(), HTTP: s.m.http}
 		res, err := client.Stream(ctx, req, llm.Handler{})
 
@@ -126,7 +126,7 @@ func (s *session) recordPermissionCall(info store.Session, turnID, callID string
 	}
 	c := &store.ModelCall{
 		ID: callID, SessionID: info.ID, TeamID: info.TeamID, ProjectID: info.ProjectID, TurnID: turnID, Task: "permission",
-		Provider: task.Provider, Model: task.Model, Effort: task.EffortLevel(), FlitVersion: buildinfo.Get().Version, Params: requestParams(req),
+		Provider: task.Provider, Model: task.Model, Effort: task.Effort, FlitVersion: buildinfo.Get().Version, Params: requestParams(req),
 	}
 	resp := map[string]any{"role": "assistant", "content": ""}
 	if res != nil {

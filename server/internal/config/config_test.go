@@ -189,13 +189,13 @@ agent:
 	}
 }
 
-func TestShellAndReasoningSettings(t *testing.T) {
+func TestShellAndEffortSettings(t *testing.T) {
 	cfg, err := Parse([]byte(`
 providers: [{name: local, base_url: "http://localhost:8080/v1"}]
 agent:
-  reasoning: low
+  effort: low
   tasks:
-    permission: {provider: local, model: guard, reasoning: "off"}
+    permission: {provider: local, model: guard, effort: off}
 shell:
   read_only: false
   yolo: true
@@ -206,24 +206,16 @@ shell:
 	if cfg.Shell.ReadOnlyEnabled() || !cfg.Shell.Yolo {
 		t.Fatalf("shell = %+v", cfg.Shell)
 	}
-	if p, ok := cfg.Task("permission"); !ok || p.EffortLevel() != "off" {
+	if p, ok := cfg.Task("permission"); !ok || p.Effort != "off" {
 		t.Fatalf("permission task = %+v, %v", p, ok)
 	}
 	if _, ok := cfg.Task("planning"); ok {
 		t.Fatal("unset task reported")
 	}
-	if c := cfg.ChatModel(); c.EffortLevel() != "low" {
+	if c := cfg.ChatModel(); c.Effort != "low" {
 		t.Fatalf("chat model = %+v", c)
 	}
 	if d, _ := Parse(nil); !d.Shell.ReadOnlyEnabled() || d.Shell.Yolo {
 		t.Fatal("defaults: read_only should be on, yolo off")
-	}
-	for _, bad := range []string{
-		"agent: {reasoning: max}",
-		"providers: [{name: l, base_url: \"http://x/v1\"}]\nagent: {tasks: {permission: {provider: l, model: m, reasoning: lots}}}",
-	} {
-		if _, err := Parse([]byte(bad)); err == nil {
-			t.Errorf("accepted %q", bad)
-		}
 	}
 }

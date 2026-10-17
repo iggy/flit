@@ -208,7 +208,7 @@ func (m *Manager) Create(ctx context.Context, o CreateOptions) (store.Session, e
 		if chat.Provider != "" {
 			provider, model = chat.Provider, chat.Model
 			if effort == "" {
-				effort = chat.EffortLevel()
+				effort = chat.Effort
 			}
 		}
 	}
