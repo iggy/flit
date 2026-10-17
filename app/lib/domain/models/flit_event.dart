@@ -137,6 +137,7 @@ final class FlitPromptRequested extends FlitEvent {
     required this.title,
     required this.detail,
     this.sessionPatterns = const <String>[],
+    this.safetyReason = '',
     super.time,
   });
 
@@ -148,6 +149,10 @@ final class FlitPromptRequested extends FlitEvent {
   /// What "allow for this session" would allow, e.g. `go test *`; empty
   /// when it isn't offered.
   final List<String> sessionPatterns;
+
+  /// Why the server's safety check wants the user to decide; empty when it
+  /// didn't run.
+  final String safetyReason;
 }
 
 /// A prompt was answered (by [client]) or resolved by the server.
@@ -324,4 +329,55 @@ final class FlitSessionMoved extends FlitEvent {
   });
 
   final String projectId;
+}
+
+/// Yolo mode was turned on or off: every shell command runs unless a deny
+/// rule matches.
+final class FlitYoloChanged extends FlitEvent {
+  const FlitYoloChanged({
+    required super.seq,
+    required this.yolo,
+    this.client = '',
+    super.time,
+  });
+
+  final bool yolo;
+  final String client;
+}
+
+/// The safety check's rating of a shell command (flit.v1
+/// `PermissionVerdict`).
+enum FlitPermissionVerdict {
+  /// Runs without asking.
+  safe,
+
+  /// The user is asked.
+  ask,
+
+  /// Refused.
+  block,
+
+  /// The check failed; the user is asked.
+  error,
+}
+
+/// The server's safety check rated a shell command before it ran.
+final class FlitPermissionCheck extends FlitEvent {
+  const FlitPermissionCheck({
+    required super.seq,
+    required this.toolCallId,
+    required this.command,
+    required this.verdict,
+    this.reason = '',
+    this.provider = '',
+    this.model = '',
+    super.time,
+  });
+
+  final String toolCallId;
+  final String command;
+  final FlitPermissionVerdict verdict;
+  final String reason;
+  final String provider;
+  final String model;
 }

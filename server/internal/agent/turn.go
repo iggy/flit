@@ -85,11 +85,11 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 		set, extra, skillNames := s.toolSet(ctx, cfg, info)
 		system := systemPrompt(info.WorkingDir, role) + extra + promptAppends(cfg, info.Provider, info.Model)
 		req := llm.Request{
-			Model:           info.Model,
-			Messages:        append([]llm.Message{{Role: "system", Content: system}}, buildMessages(history)...),
-			Tools:           tools.Definitions(set),
-			ReasoningEffort: info.Effort,
+			Model:    info.Model,
+			Messages: append([]llm.Message{{Role: "system", Content: system}}, buildMessages(history)...),
+			Tools:    tools.Definitions(set),
 		}
+		s.m.applyReasoning(&req, info.Provider, info.Model, info.Effort)
 
 		msgID := newID("msg")
 		if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_MessageStarted{MessageStarted: &flitv1.MessageStarted{
@@ -170,7 +170,7 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 				}
 				continue
 			}
-			res, err := s.runTool(ctx, set, tc)
+			res, err := s.runTool(ctx, turnID, set, tc)
 			if err != nil {
 				return end{}, err
 			}
@@ -185,12 +185,14 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 	}
 }
 
-func (s *session) runTool(ctx context.Context, set []tools.Tool, tc llm.ToolCall) (tools.Result, error) {
+func (s *session) runTool(ctx context.Context, turnID string, set []tools.Tool, tc llm.ToolCall) (tools.Result, error) {
 	var live int
 	var appendErr error
+	cfg, info := s.m.cfg(), s.snapshot()
 	env := &tools.Env{
-		Dir:   s.snapshot().WorkingDir,
-		Shell: s.m.cfg().Shell,
+		Dir:   info.WorkingDir,
+		Shell: cfg.Shell,
+		Yolo:  info.Yolo,
 		Output: func(out string) {
 			if live >= maxLiveToolOutput {
 				return
@@ -205,10 +207,11 @@ func (s *session) runTool(ctx context.Context, set []tools.Tool, tc llm.ToolCall
 				appendErr = err
 			}
 		},
-		Approve: func(ctx context.Context, title, detail string, patterns []string) (bool, error) {
-			return s.approve(ctx, tc.ID, title, detail, patterns)
+		Approve: func(ctx context.Context, a tools.Approval) (bool, error) {
+			return s.approve(ctx, tc.ID, a)
 		},
 		SessionAllowed: s.sessionAllowed(),
+		Assess:         s.assessor(cfg, turnID, tc.ID),
 		Todo: func(items []tools.TodoItem) {
 			ev := &flitv1.TodoUpdated{}
 			for _, it := range items {
@@ -326,13 +329,7 @@ func (s *session) recordCall(info store.Session, turnID, msgID string, role *rol
 	if len(req.Tools) > 0 {
 		toolsJSON, _ = json.Marshal(req.Tools)
 	}
-	params, _ := json.Marshal(map[string]any{
-		"model":            req.Model,
-		"reasoning_effort": req.ReasoningEffort,
-		"stream":           true,
-		// flit sends no sampling parameters; the provider's defaults apply.
-		"sampling": "provider defaults",
-	})
+	params := requestParams(req)
 	resp := map[string]any{"role": "assistant", "content": text}
 	if reasoning != "" {
 		resp["reasoning_content"] = reasoning
@@ -406,4 +403,21 @@ func promptAppends(cfg config.Config, provider, model string) string {
 		return ""
 	}
 	return "\n" + strings.Join(parts, "\n\n") + "\n"
+}
+
+// requestParams is the request apart from messages and tools, as recorded
+// for export.
+func requestParams(req llm.Request) json.RawMessage {
+	p := map[string]any{
+		"model":            req.Model,
+		"reasoning_effort": req.ReasoningEffort,
+		"stream":           true,
+		// flit sends no sampling parameters; the provider's defaults apply.
+		"sampling": "provider defaults",
+	}
+	if req.ChatTemplateKwargs != nil {
+		p["chat_template_kwargs"] = req.ChatTemplateKwargs
+	}
+	b, _ := json.Marshal(p)
+	return b
 }

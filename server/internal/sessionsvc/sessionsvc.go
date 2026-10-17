@@ -47,6 +47,7 @@ func toProto(s store.Session) *flitv1.Session {
 		ContextTokens: s.ContextTokens,
 		ContextLength: s.ContextLength,
 		McpServers:    s.MCPServers,
+		Yolo:          s.Yolo,
 	}
 }
 
@@ -83,7 +84,7 @@ func (s *Service) CreateSession(ctx context.Context, req *connect.Request[flitv1
 	m := req.Msg
 	sess, err := s.M.Create(ctx, agent.CreateOptions{
 		WorkingDir: m.WorkingDir, Title: m.Title, Provider: m.Provider, Model: m.Model, Effort: m.Effort, Role: m.Role,
-		ProjectID: m.ProjectId,
+		ProjectID: m.ProjectId, Yolo: m.Yolo,
 	})
 	if err != nil {
 		return nil, connectErr(err)
@@ -229,6 +230,18 @@ func (s *Service) SetEffort(ctx context.Context, req *connect.Request[flitv1.Set
 		return nil, connectErr(err)
 	}
 	return connect.NewResponse(&flitv1.SetEffortResponse{Session: toProto(sess)}), nil
+}
+
+// SetYolo implements flitv1connect.SessionServiceHandler.
+func (s *Service) SetYolo(ctx context.Context, req *connect.Request[flitv1.SetYoloRequest]) (*connect.Response[flitv1.SetYoloResponse], error) {
+	if err := required("session_id", req.Msg.SessionId); err != nil {
+		return nil, err
+	}
+	sess, err := s.M.SetYolo(ctx, req.Msg.SessionId, req.Msg.Yolo, clientName(ctx))
+	if err != nil {
+		return nil, connectErr(err)
+	}
+	return connect.NewResponse(&flitv1.SetYoloResponse{Session: toProto(sess)}), nil
 }
 
 func clientName(ctx context.Context) string {

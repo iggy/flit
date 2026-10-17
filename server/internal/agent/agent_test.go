@@ -43,6 +43,9 @@ func newHarness(t *testing.T) *harness {
 		{Name: "other", BaseURL: h.llm.BaseURL()},
 	}
 	h.cfg.Agent.Provider, h.cfg.Agent.Model = "fake", "test-model"
+	// Tests use echo (read-only, and portable to cmd.exe) as a command that
+	// needs approval.
+	h.cfg.Shell.ReadOnly = new(bool)
 
 	st, err := store.Open(context.Background(), filepath.Join(t.TempDir(), store.FileName))
 	if err != nil {

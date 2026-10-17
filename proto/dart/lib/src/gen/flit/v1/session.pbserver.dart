@@ -39,6 +39,8 @@ abstract class SessionServiceBase extends $pb.GeneratedService {
       $pb.ServerContext ctx, $1.SetModelRequest request);
   $async.Future<$1.SetEffortResponse> setEffort(
       $pb.ServerContext ctx, $1.SetEffortRequest request);
+  $async.Future<$1.SetYoloResponse> setYolo(
+      $pb.ServerContext ctx, $1.SetYoloRequest request);
   $async.Future<$1.MoveSessionResponse> moveSession(
       $pb.ServerContext ctx, $1.MoveSessionRequest request);
   $async.Future<$1.RateResponse> rate(
@@ -70,6 +72,8 @@ abstract class SessionServiceBase extends $pb.GeneratedService {
         return $1.SetModelRequest();
       case 'SetEffort':
         return $1.SetEffortRequest();
+      case 'SetYolo':
+        return $1.SetYoloRequest();
       case 'MoveSession':
         return $1.MoveSessionRequest();
       case 'Rate':
@@ -106,6 +110,8 @@ abstract class SessionServiceBase extends $pb.GeneratedService {
         return setModel(ctx, request as $1.SetModelRequest);
       case 'SetEffort':
         return setEffort(ctx, request as $1.SetEffortRequest);
+      case 'SetYolo':
+        return setYolo(ctx, request as $1.SetYoloRequest);
       case 'MoveSession':
         return moveSession(ctx, request as $1.MoveSessionRequest);
       case 'Rate':

@@ -59,4 +59,36 @@ void main() {
     await tester.pumpAndSettle();
     expect(answers, <String>['true:false']);
   });
+
+  testWidgets('shows the safety check reason when there is one', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      const FlitPendingPrompt(
+        promptId: 'p',
+        toolCallId: 't',
+        title: 'Run shell command',
+        detail: 'rm -rf build',
+        safetyReason: 'deletes the build directory',
+      ),
+    );
+    expect(
+      find.text('Safety check: deletes the build directory'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('no safety line without a check', (tester) async {
+    await pump(
+      tester,
+      const FlitPendingPrompt(
+        promptId: 'p',
+        toolCallId: 't',
+        title: 'Run shell command',
+        detail: 'make',
+      ),
+    );
+    expect(find.byKey(flitSafetyReasonKey), findsNothing);
+  });
 }

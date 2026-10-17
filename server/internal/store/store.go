@@ -170,6 +170,10 @@ CREATE TABLE ratings (
 );
 CREATE INDEX ratings_by_session ON ratings (session_id, created_at);
 `,
+	`
+ALTER TABLE sessions ADD COLUMN yolo INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE model_calls ADD COLUMN task TEXT NOT NULL DEFAULT 'chat';
+`,
 }
 
 func (s *Store) migrate(ctx context.Context) error {
@@ -224,9 +228,11 @@ type Session struct {
 	ContextLength int64
 	// MCPServers are the MCP servers enabled for the session.
 	MCPServers []string
+	// Yolo runs every shell command no deny rule matches.
+	Yolo bool
 }
 
-const sessionCols = `id, team_id, project_id, title, working_dir, provider, model, state, last_seq, created_at, updated_at, effort, role, context_tokens, context_length, mcp_servers`
+const sessionCols = `id, team_id, project_id, title, working_dir, provider, model, state, last_seq, created_at, updated_at, effort, role, context_tokens, context_length, mcp_servers, yolo`
 
 func joinNames(names []string) string { return strings.Join(names, "\n") }
 
@@ -242,7 +248,7 @@ func scanSession(row interface{ Scan(...any) error }) (Session, error) {
 	var created, updated int64
 	var mcp string
 	err := row.Scan(&s.ID, &s.TeamID, &s.ProjectID, &s.Title, &s.WorkingDir, &s.Provider, &s.Model,
-		&s.State, &s.LastSeq, &created, &updated, &s.Effort, &s.Role, &s.ContextTokens, &s.ContextLength, &mcp)
+		&s.State, &s.LastSeq, &created, &updated, &s.Effort, &s.Role, &s.ContextTokens, &s.ContextLength, &mcp, &s.Yolo)
 	s.MCPServers = splitNames(mcp)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Session{}, ErrNotFound
@@ -255,10 +261,10 @@ func scanSession(row interface{ Scan(...any) error }) (Session, error) {
 func (s *Store) CreateSession(ctx context.Context, sess *Session) error {
 	now := time.Now()
 	sess.CreatedAt, sess.UpdatedAt = now, now
-	_, err := s.db.ExecContext(ctx, `INSERT INTO sessions (`+sessionCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	_, err := s.db.ExecContext(ctx, `INSERT INTO sessions (`+sessionCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		sess.ID, sess.TeamID, sess.ProjectID, sess.Title, sess.WorkingDir, sess.Provider, sess.Model,
 		sess.State, sess.LastSeq, now.UnixNano(), now.UnixNano(), sess.Effort, sess.Role, sess.ContextTokens, sess.ContextLength,
-		joinNames(sess.MCPServers))
+		joinNames(sess.MCPServers), sess.Yolo)
 	return err
 }
 
@@ -392,6 +398,19 @@ func (s *Store) ListProjects(ctx context.Context, teamID string) ([]Project, err
 func (s *Store) SetEffort(ctx context.Context, id, effort string) error {
 	res, err := s.db.ExecContext(ctx, `UPDATE sessions SET effort = ?, updated_at = ? WHERE id = ?`,
 		effort, time.Now().UnixNano(), id)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// SetYolo turns a session's yolo mode on or off.
+func (s *Store) SetYolo(ctx context.Context, id string, yolo bool) error {
+	res, err := s.db.ExecContext(ctx, `UPDATE sessions SET yolo = ?, updated_at = ? WHERE id = ?`,
+		yolo, time.Now().UnixNano(), id)
 	if err != nil {
 		return err
 	}

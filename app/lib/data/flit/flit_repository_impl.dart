@@ -194,6 +194,16 @@ final class FlitRepositoryImpl implements FlitRepository {
   }
 
   @override
+  Future<FlitSession> setYolo(String sessionId, {required bool yolo}) {
+    return flitCall(() async {
+      final res = await _sessions.setYolo(
+        pb.SetYoloRequest(sessionId: sessionId, yolo: yolo),
+      );
+      return sessionFromProto(res.session);
+    });
+  }
+
+  @override
   Future<List<FlitModel>> listModels() {
     return flitCall(() async {
       final res = await _models.listModels(pb.ListModelsRequest());

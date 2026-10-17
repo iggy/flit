@@ -54,6 +54,10 @@ abstract interface class FlitRepository {
   /// Change the session's reasoning effort ('' = the model's default).
   Future<FlitSession> setEffort(String sessionId, String effort);
 
+  /// Turn yolo mode on or off: every shell command runs unless a deny rule
+  /// matches.
+  Future<FlitSession> setYolo(String sessionId, {required bool yolo});
+
   /// The models the server discovered, all providers.
   Future<List<FlitModel>> listModels();
 

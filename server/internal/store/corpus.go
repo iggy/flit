@@ -25,6 +25,9 @@ type ModelCall struct {
 	// TurnID is the id of the user message that started the turn.
 	TurnID    string
 	CreatedAt time.Time
+	// Task is the kind of work: "chat" (the agent's own calls) or
+	// "permission" (a shell command safety check). Empty means chat.
+	Task string
 
 	Provider    string
 	Model       string
@@ -103,14 +106,21 @@ func (s *Store) RecordModelCall(ctx context.Context, c *ModelCall, messages [][]
 	}
 	_, err = tx.ExecContext(ctx, `INSERT INTO model_calls (id, session_id, team_id, project_id, turn_id, created_at,
 		provider, model, effort, flit_version, role, skills, request_messages, request_tools, request_params,
-		response, finish_reason, usage, metrics, error) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		response, finish_reason, usage, metrics, error, task) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		c.ID, c.SessionID, c.TeamID, c.ProjectID, c.TurnID, c.CreatedAt.UnixNano(),
 		c.Provider, c.Model, c.Effort, c.FlitVersion, c.Role, string(skills), string(msgs), toolsHash, nullJSON(c.Params),
-		nullJSON(c.Response), c.FinishReason, nullJSON(c.Usage), nullJSON(c.Metrics), c.Error)
+		nullJSON(c.Response), c.FinishReason, nullJSON(c.Usage), nullJSON(c.Metrics), c.Error, taskOrChat(c.Task))
 	if err != nil {
 		return err
 	}
 	return tx.Commit()
+}
+
+func taskOrChat(t string) string {
+	if t == "" {
+		return "chat"
+	}
+	return t
 }
 
 func nullJSON(b json.RawMessage) string {
@@ -214,7 +224,7 @@ type ExportCall struct {
 func (s *Store) ExportModelCalls(ctx context.Context, f ExportFilter, fn func(ExportCall) error) error {
 	q := `SELECT c.id, c.session_id, c.team_id, c.project_id, c.turn_id, c.created_at, c.provider, c.model, c.effort,
 		c.flit_version, c.role, c.skills, c.request_params, c.response, c.finish_reason, c.usage, c.metrics, c.error,
-		p.name, s.working_dir
+		c.task, p.name, s.working_dir
 		FROM model_calls c JOIN projects p ON p.id = c.project_id JOIN sessions s ON s.id = c.session_id
 		WHERE p.export_enabled = 1`
 	var args []any
@@ -246,7 +256,7 @@ func (s *Store) ExportModelCalls(ctx context.Context, f ExportFilter, fn func(Ex
 		var skills, params, response, usage, metrics string
 		if err := rows.Scan(&c.ID, &c.SessionID, &c.TeamID, &c.ProjectID, &c.TurnID, &created, &c.Provider, &c.Model,
 			&c.Effort, &c.FlitVersion, &c.Role, &skills, &params, &response, &c.FinishReason, &usage, &metrics, &c.Error,
-			&c.ProjectName, &c.WorkingDir); err != nil {
+			&c.Task, &c.ProjectName, &c.WorkingDir); err != nil {
 			rows.Close()
 			return err
 		}

@@ -136,6 +136,8 @@ type CreateOptions struct {
 	// ProjectID is the project; empty means Scratch. Without a WorkingDir,
 	// the project's directory is used.
 	ProjectID string
+	// Yolo turns yolo mode on or off; nil means the config's shell.yolo.
+	Yolo *bool
 }
 
 // contextLength is the model's context window, if the catalog knows it.
@@ -206,7 +208,7 @@ func (m *Manager) Create(ctx context.Context, o CreateOptions) (store.Session, e
 		if chat.Provider != "" {
 			provider, model = chat.Provider, chat.Model
 			if effort == "" {
-				effort = chat.Effort
+				effort = chat.EffortLevel()
 			}
 		}
 	}
@@ -225,6 +227,10 @@ func (m *Manager) Create(ctx context.Context, o CreateOptions) (store.Session, e
 		State:      flitv1.TaskState_TASK_STATE_IDLE,
 		Effort:     effort,
 		Role:       o.Role,
+		Yolo:       m.cfg().Shell.Yolo,
+	}
+	if o.Yolo != nil {
+		info.Yolo = *o.Yolo
 	}
 	for _, srv := range m.cfg().MCPServers {
 		if srv.EnabledByDefault() {
@@ -368,6 +374,16 @@ func (m *Manager) SetEffort(ctx context.Context, id, effort string) (store.Sessi
 		return store.Session{}, err
 	}
 	return s.setEffort(ctx, effort)
+}
+
+// SetYolo turns the session's yolo mode on or off, effective from its next
+// shell command. client names who changed it, for the log.
+func (m *Manager) SetYolo(ctx context.Context, id string, yolo bool, client string) (store.Session, error) {
+	s, err := m.session(ctx, id)
+	if err != nil {
+		return store.Session{}, err
+	}
+	return s.setYolo(ctx, yolo, client)
 }
 
 // Projects lists the default team's projects.

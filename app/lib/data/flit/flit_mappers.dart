@@ -35,6 +35,7 @@ FlitSession sessionFromProto(pb.Session s) {
     contextTokens: s.contextTokens.toInt(),
     contextLength: s.contextLength.toInt(),
     mcpServers: List<String>.unmodifiable(s.mcpServers),
+    yolo: s.yolo,
   );
 }
 
@@ -170,6 +171,7 @@ FlitEvent eventFromProto(pb.Event e) {
         title: p.title,
         detail: p.detail,
         sessionPatterns: List<String>.unmodifiable(p.sessionPatterns),
+        safetyReason: p.safetyReason,
       );
     case pb.Event_Payload.promptResolved:
       final p = e.promptResolved;
@@ -258,6 +260,33 @@ FlitEvent eventFromProto(pb.Event e) {
         seq: seq,
         time: time,
         projectId: e.sessionMoved.projectId,
+      );
+    case pb.Event_Payload.yoloChanged:
+      return FlitYoloChanged(
+        seq: seq,
+        time: time,
+        yolo: e.yoloChanged.yolo,
+        client: e.yoloChanged.client,
+      );
+    case pb.Event_Payload.permissionCheck:
+      final c = e.permissionCheck;
+      return FlitPermissionCheck(
+        seq: seq,
+        time: time,
+        toolCallId: c.toolCallId,
+        command: c.command,
+        verdict: switch (c.verdict) {
+          pb.PermissionVerdict.PERMISSION_VERDICT_SAFE =>
+            FlitPermissionVerdict.safe,
+          pb.PermissionVerdict.PERMISSION_VERDICT_ASK =>
+            FlitPermissionVerdict.ask,
+          pb.PermissionVerdict.PERMISSION_VERDICT_BLOCK =>
+            FlitPermissionVerdict.block,
+          _ => FlitPermissionVerdict.error,
+        },
+        reason: c.reason,
+        provider: c.provider,
+        model: c.model,
       );
     case pb.Event_Payload.notSet:
       return FlitUnknownEvent(seq: seq, time: time);

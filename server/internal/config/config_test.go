@@ -188,3 +188,42 @@ agent:
 		t.Fatalf("ChatModel with tasks.chat = %+v", got)
 	}
 }
+
+func TestShellAndReasoningSettings(t *testing.T) {
+	cfg, err := Parse([]byte(`
+providers: [{name: local, base_url: "http://localhost:8080/v1"}]
+agent:
+  reasoning: low
+  tasks:
+    permission: {provider: local, model: guard, reasoning: "off"}
+shell:
+  read_only: false
+  yolo: true
+`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Shell.ReadOnlyEnabled() || !cfg.Shell.Yolo {
+		t.Fatalf("shell = %+v", cfg.Shell)
+	}
+	if p, ok := cfg.Task("permission"); !ok || p.EffortLevel() != "off" {
+		t.Fatalf("permission task = %+v, %v", p, ok)
+	}
+	if _, ok := cfg.Task("planning"); ok {
+		t.Fatal("unset task reported")
+	}
+	if c := cfg.ChatModel(); c.EffortLevel() != "low" {
+		t.Fatalf("chat model = %+v", c)
+	}
+	if d, _ := Parse(nil); !d.Shell.ReadOnlyEnabled() || d.Shell.Yolo {
+		t.Fatal("defaults: read_only should be on, yolo off")
+	}
+	for _, bad := range []string{
+		"agent: {reasoning: max}",
+		"providers: [{name: l, base_url: \"http://x/v1\"}]\nagent: {tasks: {permission: {provider: l, model: m, reasoning: lots}}}",
+	} {
+		if _, err := Parse([]byte(bad)); err == nil {
+			t.Errorf("accepted %q", bad)
+		}
+	}
+}

@@ -48,6 +48,10 @@ service SessionService {
   // SetEffort changes the reasoning effort used from the next model call.
   rpc SetEffort(SetEffortRequest) returns (SetEffortResponse);
 
+  // SetYolo turns yolo mode on or off for the session: every shell command
+  // runs unless a deny rule matches. Effective from the next command.
+  rpc SetYolo(SetYoloRequest) returns (SetYoloResponse);
+
   // MoveSession moves a session to another project. Its working directory
   // stays the same.
   rpc MoveSession(MoveSessionRequest) returns (MoveSessionResponse);
@@ -114,6 +118,8 @@ message Session {
   int64 context_length = 15;
   // MCP servers enabled for the session.
   repeated string mcp_servers = 16;
+  // Yolo mode: every shell command runs unless a deny rule matches.
+  bool yolo = 17;
 }
 
 message CreateSessionRequest {
@@ -131,6 +137,8 @@ message CreateSessionRequest {
   // Project to create the session in; empty means Scratch. If
   // working_dir is empty, the project's directory is used.
   string project_id = 7;
+  // Yolo mode (see Session.yolo); unset means the config's shell.yolo.
+  optional bool yolo = 8;
 }
 
 message CreateSessionResponse {
@@ -301,6 +309,15 @@ message SetEffortResponse {
   Session session = 1;
 }
 
+message SetYoloRequest {
+  string session_id = 1;
+  bool yolo = 2;
+}
+
+message SetYoloResponse {
+  Session session = 1;
+}
+
 // Event is one entry in a session's event log.
 message Event {
   string session_id = 1;
@@ -326,6 +343,8 @@ message Event {
     Feedback feedback = 24;
     McpServersChanged mcp_servers_changed = 25;
     SessionMoved session_moved = 26;
+    YoloChanged yolo_changed = 27;
+    PermissionCheck permission_check = 28;
   }
 }
 
@@ -416,6 +435,9 @@ message PromptRequested {
   // leading "cd ... &&" and variable assignments. Empty when it isn't
   // offered.
   repeated string session_patterns = 5;
+  // Why the safety check (the permission task's model) wants the user to
+  // decide; empty when it didn't run.
+  string safety_reason = 6;
 }
 
 message PromptResolved {
@@ -516,4 +538,38 @@ message McpServersChanged {
 // SessionMoved says the session moved to another project.
 message SessionMoved {
   string project_id = 1;
+}
+
+// YoloChanged records yolo mode being turned on or off for the session.
+message YoloChanged {
+  bool yolo = 1;
+  // Client that changed it (its device name), if known.
+  string client = 2;
+}
+
+enum PermissionVerdict {
+  PERMISSION_VERDICT_UNSPECIFIED = 0;
+  // Runs without asking.
+  PERMISSION_VERDICT_SAFE = 1;
+  // The user is asked.
+  PERMISSION_VERDICT_ASK = 2;
+  // Refused; the model is told why.
+  PERMISSION_VERDICT_BLOCK = 3;
+  // The check failed (no or unreadable answer); the user is asked.
+  PERMISSION_VERDICT_ERROR = 4;
+}
+
+// PermissionCheck is the safety check's rating of a shell command that the
+// shell rules would have asked about, recorded before it takes effect.
+message PermissionCheck {
+  string tool_call_id = 1;
+  string command = 2;
+  PermissionVerdict verdict = 3;
+  string reason = 4;
+  // The model that rated it (agent.tasks.permission).
+  string provider = 5;
+  string model = 6;
+  // The recorded model call (see flit export) and the turn it ran in.
+  string model_call_id = 7;
+  string turn_id = 8;
 }

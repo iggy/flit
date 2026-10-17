@@ -25,15 +25,52 @@ type Env struct {
 	// Output receives live output (shell). May be nil.
 	Output func(string)
 	// Approve asks the user to allow something and blocks until they
-	// answer or ctx ends. sessionPatterns, if any, are offered as "allow for
-	// this session". Nil means nothing can be approved.
-	Approve func(ctx context.Context, title, detail string, sessionPatterns []string) (bool, error)
+	// answer or ctx ends. Nil means nothing can be approved.
+	Approve func(ctx context.Context, a Approval) (bool, error)
 	// SessionAllowed are shell patterns the user allowed for the rest of
-	// the session (see SessionPatterns).
+	// the session (see Check.Patterns).
 	SessionAllowed []string
+	// Yolo runs every shell command no deny rule matches.
+	Yolo bool
+	// Assess rates a shell command the rules would ask about, before the
+	// user is asked (the permission task's model). Nil means no rating.
+	Assess func(ctx context.Context, command, workdir string) Assessment
 	// Todo receives the agent's task list whenever the todo tool changes
 	// it. May be nil.
 	Todo func([]TodoItem)
+}
+
+// Approval is what the user is asked to allow.
+type Approval struct {
+	// Title is short, e.g. "Run shell command"; Detail is exactly what
+	// would happen, e.g. the command line.
+	Title, Detail string
+	// SessionPatterns, if any, are offered as "allow for this session".
+	SessionPatterns []string
+	// Reason is the safety check's reason for asking, if it ran.
+	Reason string
+}
+
+// Verdict is the safety check's rating of a shell command.
+type Verdict int
+
+const (
+	// VerdictError means the check failed (no answer, unreadable answer);
+	// the user is asked.
+	VerdictError Verdict = iota
+	VerdictSafe
+	VerdictAsk
+	VerdictBlock
+)
+
+func (v Verdict) String() string {
+	return [...]string{"error", "safe", "ask", "block"}[v]
+}
+
+// Assessment is the safety check's verdict and why.
+type Assessment struct {
+	Verdict Verdict
+	Reason  string
 }
 
 // Result is what the model gets back.

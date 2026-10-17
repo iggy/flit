@@ -42,6 +42,7 @@ class Session extends $pb.GeneratedMessage {
     $fixnum.Int64? contextTokens,
     $fixnum.Int64? contextLength,
     $core.Iterable<$core.String>? mcpServers,
+    $core.bool? yolo,
   }) {
     final result = Session._();
     if (id != null) result.id = id;
@@ -60,6 +61,7 @@ class Session extends $pb.GeneratedMessage {
     if (contextTokens != null) result.contextTokens = contextTokens;
     if (contextLength != null) result.contextLength = contextLength;
     if (mcpServers != null) result.mcpServers.addAll(mcpServers);
+    if (yolo != null) result.yolo = yolo;
     return result;
   }
 
@@ -95,6 +97,7 @@ class Session extends $pb.GeneratedMessage {
     ..aInt64(14, _omitFieldNames ? '' : 'contextTokens')
     ..aInt64(15, _omitFieldNames ? '' : 'contextLength')
     ..pPS(16, _omitFieldNames ? '' : 'mcpServers')
+    ..aOB(17, _omitFieldNames ? '' : 'yolo')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -267,6 +270,16 @@ class Session extends $pb.GeneratedMessage {
   /// MCP servers enabled for the session.
   @$pb.TagNumber(16)
   $pb.PbList<$core.String> get mcpServers => $_getList(15);
+
+  /// Yolo mode: every shell command runs unless a deny rule matches.
+  @$pb.TagNumber(17)
+  $core.bool get yolo => $_getBF(16);
+  @$pb.TagNumber(17)
+  set yolo($core.bool value) => $_setBool(16, value);
+  @$pb.TagNumber(17)
+  $core.bool hasYolo() => $_has(16);
+  @$pb.TagNumber(17)
+  void clearYolo() => $_clearField(17);
 }
 
 class CreateSessionRequest extends $pb.GeneratedMessage {
@@ -278,6 +291,7 @@ class CreateSessionRequest extends $pb.GeneratedMessage {
     $core.String? role,
     $core.String? effort,
     $core.String? projectId,
+    $core.bool? yolo,
   }) {
     final result = CreateSessionRequest._();
     if (workingDir != null) result.workingDir = workingDir;
@@ -287,6 +301,7 @@ class CreateSessionRequest extends $pb.GeneratedMessage {
     if (role != null) result.role = role;
     if (effort != null) result.effort = effort;
     if (projectId != null) result.projectId = projectId;
+    if (yolo != null) result.yolo = yolo;
     return result;
   }
 
@@ -310,6 +325,7 @@ class CreateSessionRequest extends $pb.GeneratedMessage {
     ..aOS(5, _omitFieldNames ? '' : 'role')
     ..aOS(6, _omitFieldNames ? '' : 'effort')
     ..aOS(7, _omitFieldNames ? '' : 'projectId')
+    ..aOB(8, _omitFieldNames ? '' : 'yolo')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -404,6 +420,16 @@ class CreateSessionRequest extends $pb.GeneratedMessage {
   $core.bool hasProjectId() => $_has(6);
   @$pb.TagNumber(7)
   void clearProjectId() => $_clearField(7);
+
+  /// Yolo mode (see Session.yolo); unset means the config's shell.yolo.
+  @$pb.TagNumber(8)
+  $core.bool get yolo => $_getBF(7);
+  @$pb.TagNumber(8)
+  set yolo($core.bool value) => $_setBool(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasYolo() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearYolo() => $_clearField(8);
 }
 
 class CreateSessionResponse extends $pb.GeneratedMessage {
@@ -2350,6 +2376,135 @@ class SetEffortResponse extends $pb.GeneratedMessage {
   Session ensureSession() => $_ensure(0);
 }
 
+class SetYoloRequest extends $pb.GeneratedMessage {
+  factory SetYoloRequest({
+    $core.String? sessionId,
+    $core.bool? yolo,
+  }) {
+    final result = SetYoloRequest._();
+    if (sessionId != null) result.sessionId = sessionId;
+    if (yolo != null) result.yolo = yolo;
+    return result;
+  }
+
+  SetYoloRequest._();
+
+  factory SetYoloRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetYoloRequest()..mergeFromBuffer(data, registry);
+  factory SetYoloRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetYoloRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SetYoloRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: SetYoloRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'sessionId')
+    ..aOB(2, _omitFieldNames ? '' : 'yolo')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetYoloRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetYoloRequest copyWith(void Function(SetYoloRequest) updates) =>
+      super.copyWith((message) => updates(message as SetYoloRequest))
+          as SetYoloRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use SetYoloRequest() / SetYoloRequest.new instead')
+  static SetYoloRequest create() => SetYoloRequest._();
+  static $pb.GeneratedMessage $_createMessage() => SetYoloRequest._();
+  @$core.override
+  SetYoloRequest createEmptyInstance() => SetYoloRequest._();
+  @$core.pragma('dart2js:noInline')
+  static SetYoloRequest getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SetYoloRequest>(
+          SetYoloRequest.$_createMessage);
+  static SetYoloRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get sessionId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set sessionId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSessionId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSessionId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.bool get yolo => $_getBF(1);
+  @$pb.TagNumber(2)
+  set yolo($core.bool value) => $_setBool(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasYolo() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearYolo() => $_clearField(2);
+}
+
+class SetYoloResponse extends $pb.GeneratedMessage {
+  factory SetYoloResponse({
+    Session? session,
+  }) {
+    final result = SetYoloResponse._();
+    if (session != null) result.session = session;
+    return result;
+  }
+
+  SetYoloResponse._();
+
+  factory SetYoloResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetYoloResponse()..mergeFromBuffer(data, registry);
+  factory SetYoloResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetYoloResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SetYoloResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: SetYoloResponse.$_createMessage)
+    ..aOM<Session>(1, _omitFieldNames ? '' : 'session',
+        subBuilder: Session.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetYoloResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetYoloResponse copyWith(void Function(SetYoloResponse) updates) =>
+      super.copyWith((message) => updates(message as SetYoloResponse))
+          as SetYoloResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use SetYoloResponse() / SetYoloResponse.new instead')
+  static SetYoloResponse create() => SetYoloResponse._();
+  static $pb.GeneratedMessage $_createMessage() => SetYoloResponse._();
+  @$core.override
+  SetYoloResponse createEmptyInstance() => SetYoloResponse._();
+  @$core.pragma('dart2js:noInline')
+  static SetYoloResponse getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SetYoloResponse>(
+          SetYoloResponse.$_createMessage);
+  static SetYoloResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  Session get session => $_getN(0);
+  @$pb.TagNumber(1)
+  set session(Session value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSession() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSession() => $_clearField(1);
+  @$pb.TagNumber(1)
+  Session ensureSession() => $_ensure(0);
+}
+
 enum Event_Payload {
   messageStarted,
   textDelta,
@@ -2368,6 +2523,8 @@ enum Event_Payload {
   feedback,
   mcpServersChanged,
   sessionMoved,
+  yoloChanged,
+  permissionCheck,
   notSet
 }
 
@@ -2394,6 +2551,8 @@ class Event extends $pb.GeneratedMessage {
     Feedback? feedback,
     McpServersChanged? mcpServersChanged,
     SessionMoved? sessionMoved,
+    YoloChanged? yoloChanged,
+    PermissionCheck? permissionCheck,
   }) {
     final result = Event._();
     if (sessionId != null) result.sessionId = sessionId;
@@ -2416,6 +2575,8 @@ class Event extends $pb.GeneratedMessage {
     if (feedback != null) result.feedback = feedback;
     if (mcpServersChanged != null) result.mcpServersChanged = mcpServersChanged;
     if (sessionMoved != null) result.sessionMoved = sessionMoved;
+    if (yoloChanged != null) result.yoloChanged = yoloChanged;
+    if (permissionCheck != null) result.permissionCheck = permissionCheck;
     return result;
   }
 
@@ -2446,14 +2607,35 @@ class Event extends $pb.GeneratedMessage {
     24: Event_Payload.feedback,
     25: Event_Payload.mcpServersChanged,
     26: Event_Payload.sessionMoved,
+    27: Event_Payload.yoloChanged,
+    28: Event_Payload.permissionCheck,
     0: Event_Payload.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
       _omitMessageNames ? '' : 'Event',
       package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
       createEmptyInstance: Event.$_createMessage)
-    ..oo(
-        0, [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26])
+    ..oo(0, [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28
+    ])
     ..aOS(1, _omitFieldNames ? '' : 'sessionId')
     ..aInt64(2, _omitFieldNames ? '' : 'seq')
     ..aOM<$0.Timestamp>(3, _omitFieldNames ? '' : 'time',
@@ -2492,6 +2674,10 @@ class Event extends $pb.GeneratedMessage {
         subBuilder: McpServersChanged.$_createMessage)
     ..aOM<SessionMoved>(26, _omitFieldNames ? '' : 'sessionMoved',
         subBuilder: SessionMoved.$_createMessage)
+    ..aOM<YoloChanged>(27, _omitFieldNames ? '' : 'yoloChanged',
+        subBuilder: YoloChanged.$_createMessage)
+    ..aOM<PermissionCheck>(28, _omitFieldNames ? '' : 'permissionCheck',
+        subBuilder: PermissionCheck.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -2531,6 +2717,8 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(24)
   @$pb.TagNumber(25)
   @$pb.TagNumber(26)
+  @$pb.TagNumber(27)
+  @$pb.TagNumber(28)
   Event_Payload whichPayload() => _Event_PayloadByTag[$_whichOneof(0)]!;
   @$pb.TagNumber(10)
   @$pb.TagNumber(11)
@@ -2549,6 +2737,8 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(24)
   @$pb.TagNumber(25)
   @$pb.TagNumber(26)
+  @$pb.TagNumber(27)
+  @$pb.TagNumber(28)
   void clearPayload() => $_clearField($_whichOneof(0));
 
   @$pb.TagNumber(1)
@@ -2767,6 +2957,28 @@ class Event extends $pb.GeneratedMessage {
   void clearSessionMoved() => $_clearField(26);
   @$pb.TagNumber(26)
   SessionMoved ensureSessionMoved() => $_ensure(19);
+
+  @$pb.TagNumber(27)
+  YoloChanged get yoloChanged => $_getN(20);
+  @$pb.TagNumber(27)
+  set yoloChanged(YoloChanged value) => $_setField(27, value);
+  @$pb.TagNumber(27)
+  $core.bool hasYoloChanged() => $_has(20);
+  @$pb.TagNumber(27)
+  void clearYoloChanged() => $_clearField(27);
+  @$pb.TagNumber(27)
+  YoloChanged ensureYoloChanged() => $_ensure(20);
+
+  @$pb.TagNumber(28)
+  PermissionCheck get permissionCheck => $_getN(21);
+  @$pb.TagNumber(28)
+  set permissionCheck(PermissionCheck value) => $_setField(28, value);
+  @$pb.TagNumber(28)
+  $core.bool hasPermissionCheck() => $_has(21);
+  @$pb.TagNumber(28)
+  void clearPermissionCheck() => $_clearField(28);
+  @$pb.TagNumber(28)
+  PermissionCheck ensurePermissionCheck() => $_ensure(21);
 }
 
 /// MessageStarted opens a message. Its text arrives as TextDelta events and
@@ -3378,6 +3590,7 @@ class PromptRequested extends $pb.GeneratedMessage {
     $core.String? title,
     $core.String? detail,
     $core.Iterable<$core.String>? sessionPatterns,
+    $core.String? safetyReason,
   }) {
     final result = PromptRequested._();
     if (promptId != null) result.promptId = promptId;
@@ -3385,6 +3598,7 @@ class PromptRequested extends $pb.GeneratedMessage {
     if (title != null) result.title = title;
     if (detail != null) result.detail = detail;
     if (sessionPatterns != null) result.sessionPatterns.addAll(sessionPatterns);
+    if (safetyReason != null) result.safetyReason = safetyReason;
     return result;
   }
 
@@ -3406,6 +3620,7 @@ class PromptRequested extends $pb.GeneratedMessage {
     ..aOS(3, _omitFieldNames ? '' : 'title')
     ..aOS(4, _omitFieldNames ? '' : 'detail')
     ..pPS(5, _omitFieldNames ? '' : 'sessionPatterns')
+    ..aOS(6, _omitFieldNames ? '' : 'safetyReason')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -3474,6 +3689,17 @@ class PromptRequested extends $pb.GeneratedMessage {
   /// offered.
   @$pb.TagNumber(5)
   $pb.PbList<$core.String> get sessionPatterns => $_getList(4);
+
+  /// Why the safety check (the permission task's model) wants the user to
+  /// decide; empty when it didn't run.
+  @$pb.TagNumber(6)
+  $core.String get safetyReason => $_getSZ(5);
+  @$pb.TagNumber(6)
+  set safetyReason($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasSafetyReason() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearSafetyReason() => $_clearField(6);
 }
 
 class PromptResolved extends $pb.GeneratedMessage {
@@ -4356,6 +4582,223 @@ class SessionMoved extends $pb.GeneratedMessage {
   void clearProjectId() => $_clearField(1);
 }
 
+/// YoloChanged records yolo mode being turned on or off for the session.
+class YoloChanged extends $pb.GeneratedMessage {
+  factory YoloChanged({
+    $core.bool? yolo,
+    $core.String? client,
+  }) {
+    final result = YoloChanged._();
+    if (yolo != null) result.yolo = yolo;
+    if (client != null) result.client = client;
+    return result;
+  }
+
+  YoloChanged._();
+
+  factory YoloChanged.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      YoloChanged()..mergeFromBuffer(data, registry);
+  factory YoloChanged.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      YoloChanged()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'YoloChanged',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: YoloChanged.$_createMessage)
+    ..aOB(1, _omitFieldNames ? '' : 'yolo')
+    ..aOS(2, _omitFieldNames ? '' : 'client')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  YoloChanged clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  YoloChanged copyWith(void Function(YoloChanged) updates) =>
+      super.copyWith((message) => updates(message as YoloChanged))
+          as YoloChanged;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use YoloChanged() / YoloChanged.new instead')
+  static YoloChanged create() => YoloChanged._();
+  static $pb.GeneratedMessage $_createMessage() => YoloChanged._();
+  @$core.override
+  YoloChanged createEmptyInstance() => YoloChanged._();
+  @$core.pragma('dart2js:noInline')
+  static YoloChanged getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<YoloChanged>(
+          YoloChanged.$_createMessage);
+  static YoloChanged? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.bool get yolo => $_getBF(0);
+  @$pb.TagNumber(1)
+  set yolo($core.bool value) => $_setBool(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasYolo() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearYolo() => $_clearField(1);
+
+  /// Client that changed it (its device name), if known.
+  @$pb.TagNumber(2)
+  $core.String get client => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set client($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasClient() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearClient() => $_clearField(2);
+}
+
+/// PermissionCheck is the safety check's rating of a shell command that the
+/// shell rules would have asked about, recorded before it takes effect.
+class PermissionCheck extends $pb.GeneratedMessage {
+  factory PermissionCheck({
+    $core.String? toolCallId,
+    $core.String? command,
+    PermissionVerdict? verdict,
+    $core.String? reason,
+    $core.String? provider,
+    $core.String? model,
+    $core.String? modelCallId,
+    $core.String? turnId,
+  }) {
+    final result = PermissionCheck._();
+    if (toolCallId != null) result.toolCallId = toolCallId;
+    if (command != null) result.command = command;
+    if (verdict != null) result.verdict = verdict;
+    if (reason != null) result.reason = reason;
+    if (provider != null) result.provider = provider;
+    if (model != null) result.model = model;
+    if (modelCallId != null) result.modelCallId = modelCallId;
+    if (turnId != null) result.turnId = turnId;
+    return result;
+  }
+
+  PermissionCheck._();
+
+  factory PermissionCheck.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      PermissionCheck()..mergeFromBuffer(data, registry);
+  factory PermissionCheck.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      PermissionCheck()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'PermissionCheck',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: PermissionCheck.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'toolCallId')
+    ..aOS(2, _omitFieldNames ? '' : 'command')
+    ..aE<PermissionVerdict>(3, _omitFieldNames ? '' : 'verdict',
+        enumValues: PermissionVerdict.values)
+    ..aOS(4, _omitFieldNames ? '' : 'reason')
+    ..aOS(5, _omitFieldNames ? '' : 'provider')
+    ..aOS(6, _omitFieldNames ? '' : 'model')
+    ..aOS(7, _omitFieldNames ? '' : 'modelCallId')
+    ..aOS(8, _omitFieldNames ? '' : 'turnId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  PermissionCheck clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  PermissionCheck copyWith(void Function(PermissionCheck) updates) =>
+      super.copyWith((message) => updates(message as PermissionCheck))
+          as PermissionCheck;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use PermissionCheck() / PermissionCheck.new instead')
+  static PermissionCheck create() => PermissionCheck._();
+  static $pb.GeneratedMessage $_createMessage() => PermissionCheck._();
+  @$core.override
+  PermissionCheck createEmptyInstance() => PermissionCheck._();
+  @$core.pragma('dart2js:noInline')
+  static PermissionCheck getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<PermissionCheck>(
+          PermissionCheck.$_createMessage);
+  static PermissionCheck? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get toolCallId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set toolCallId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasToolCallId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearToolCallId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get command => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set command($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasCommand() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearCommand() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  PermissionVerdict get verdict => $_getN(2);
+  @$pb.TagNumber(3)
+  set verdict(PermissionVerdict value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasVerdict() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearVerdict() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get reason => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set reason($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasReason() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearReason() => $_clearField(4);
+
+  /// The model that rated it (agent.tasks.permission).
+  @$pb.TagNumber(5)
+  $core.String get provider => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set provider($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasProvider() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearProvider() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.String get model => $_getSZ(5);
+  @$pb.TagNumber(6)
+  set model($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasModel() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearModel() => $_clearField(6);
+
+  /// The recorded model call (see flit export) and the turn it ran in.
+  @$pb.TagNumber(7)
+  $core.String get modelCallId => $_getSZ(6);
+  @$pb.TagNumber(7)
+  set modelCallId($core.String value) => $_setString(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasModelCallId() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearModelCallId() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.String get turnId => $_getSZ(7);
+  @$pb.TagNumber(8)
+  set turnId($core.String value) => $_setString(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasTurnId() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearTurnId() => $_clearField(8);
+}
+
 /// SessionService runs agent sessions. A session is a conversation with the
 /// agent in a working directory. Everything that happens in it is recorded as
 /// an append-only, numbered event log, so a client can attach at any point,
@@ -4424,6 +4867,13 @@ class SessionServiceApi {
           $pb.ClientContext? ctx, SetEffortRequest request) =>
       _client.invoke<SetEffortResponse>(
           ctx, 'SessionService', 'SetEffort', request, SetEffortResponse());
+
+  /// SetYolo turns yolo mode on or off for the session: every shell command
+  /// runs unless a deny rule matches. Effective from the next command.
+  $async.Future<SetYoloResponse> setYolo(
+          $pb.ClientContext? ctx, SetYoloRequest request) =>
+      _client.invoke<SetYoloResponse>(
+          ctx, 'SessionService', 'SetYolo', request, SetYoloResponse());
 
   /// MoveSession moves a session to another project. Its working directory
   /// stays the same.

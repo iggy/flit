@@ -9,6 +9,9 @@ import (
 	"testing"
 	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
 	"github.com/iggy/flit/server/internal/store"
 )
 
@@ -178,6 +181,58 @@ func TestRedact(t *testing.T) {
 	} {
 		if got := Redact(in, map[string]string{`C:\Users\me`: "<home>"}); got != want {
 			t.Errorf("Redact(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestExportPermissionChecks(t *testing.T) {
+	st := setup(t)
+	ctx := context.Background()
+	base := time.Date(2026, 10, 1, 12, 0, 30, 0, time.UTC)
+	c := store.ModelCall{ID: "msg_check", SessionID: "ses_a", TeamID: store.DefaultTeamID, ProjectID: store.DefaultProjectID,
+		TurnID: "turn_1", Task: "permission", CreatedAt: base, Provider: "llama", Model: "guard", FlitVersion: "test",
+		Params: json.RawMessage(`{"model":"guard"}`), Response: json.RawMessage(`{"role":"assistant","content":"{\"verdict\":\"safe\"}"}`)}
+	if err := st.RecordModelCall(ctx, &c, [][]byte{[]byte(`{"role":"user","content":"ls"}`)}, nil); err != nil {
+		t.Fatal(err)
+	}
+	sess, err := st.GetSession(ctx, "ses_a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ev := &flitv1.Event{SessionId: "ses_a", Seq: 1, Time: timestamppb.New(base), Payload: &flitv1.Event_PermissionCheck{
+		PermissionCheck: &flitv1.PermissionCheck{ToolCallId: "c1", Command: "ls", Verdict: flitv1.PermissionVerdict_PERMISSION_VERDICT_SAFE,
+			Reason: "reads", Provider: "llama", Model: "guard", ModelCallId: "msg_check", TurnId: "turn_1"}}}
+	if err := st.AppendEvent(ctx, sess, ev); err != nil {
+		t.Fatal(err)
+	}
+
+	recs, _ := export(t, st, Options{})
+	if count(recs, "model_call") != 4 || count(recs, "turn") != 2 {
+		t.Fatalf("counts: %d calls, %d turns", count(recs, "model_call"), count(recs, "turn"))
+	}
+	for _, r := range recs {
+		switch {
+		case r["type"] == "model_call" && r["id"] == "msg_check":
+			if r["task"] != "permission" {
+				t.Errorf("check call %v", r)
+			}
+		case r["type"] == "model_call":
+			if r["task"] != "chat" {
+				t.Errorf("chat call %v", r)
+			}
+		case r["type"] == "turn" && r["turn_id"] == "turn_1":
+			// The check doesn't replace the conversation; it's listed.
+			if msgs := r["messages"].([]any); len(msgs) != 5 || len(r["model_calls"].([]any)) != 2 {
+				t.Errorf("turn 1 = %v", r)
+			}
+			checks := r["permission_checks"].([]any)
+			if len(checks) != 1 || checks[0].(map[string]any)["verdict"] != "safe" || checks[0].(map[string]any)["model_call_id"] != "msg_check" {
+				t.Errorf("turn 1 checks = %v", checks)
+			}
+		case r["type"] == "turn":
+			if len(r["permission_checks"].([]any)) != 0 {
+				t.Errorf("turn 2 checks = %v", r["permission_checks"])
+			}
 		}
 	}
 }

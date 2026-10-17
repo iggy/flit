@@ -18,6 +18,10 @@ import 'package:flit/presentation/flit/flit_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+/// The app bar's yolo mode toggle, and the confirm button of its dialog.
+const Key flitYoloButtonKey = Key('flit_yolo');
+const Key flitYoloConfirmKey = Key('flit_yolo_confirm');
+
 class FlitChatScreen extends ConsumerStatefulWidget {
   const FlitChatScreen({required this.sessionId, super.key});
 
@@ -128,6 +132,48 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
     }
   }
 
+  /// Turns yolo mode on (after confirming) or off.
+  Future<void> _setYolo({required bool on}) async {
+    if (on) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Turn on yolo mode?'),
+          content: const Text(
+            'Every shell command in this session runs without asking. '
+            "Commands matching the server's deny rules are still refused.",
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              key: flitYoloConfirmKey,
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Turn on'),
+            ),
+          ],
+        ),
+      );
+      if (ok != true) {
+        return;
+      }
+    }
+    final repository = ref.read(flitRepositoryProvider);
+    if (repository == null) {
+      return;
+    }
+    try {
+      await repository.setYolo(widget.sessionId, yolo: on);
+      ref.invalidate(flitSessionProvider(widget.sessionId));
+    } on GatewayException catch (error) {
+      if (mounted) {
+        _snack('Could not change yolo mode: ${error.message}');
+      }
+    }
+  }
+
   /// Turn results can be rated on the last assistant message of a finished
   /// model call that produced text.
   static bool _rateable(FlitFoldState fold, int i) {
@@ -180,6 +226,7 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
         ? fold.taskState
         : (session?.state ?? FlitTaskState.idle);
     final effort = fold.effort ?? session?.effort ?? '';
+    final yolo = fold.yolo ?? session?.yolo ?? false;
     final contextLength = fold.contextLength > 0
         ? fold.contextLength
         : (session?.contextLength ?? 0);
@@ -195,6 +242,19 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
           overflow: TextOverflow.ellipsis,
         ),
         actions: <Widget>[
+          IconButton(
+            key: flitYoloButtonKey,
+            tooltip: yolo
+                ? 'Yolo mode is on: shell commands run without asking'
+                : 'Yolo mode is off',
+            isSelected: yolo,
+            onPressed: () => _setYolo(on: !yolo),
+            icon: const Icon(Icons.bolt_outlined),
+            selectedIcon: Icon(
+              Icons.bolt,
+              color: Theme.of(context).colorScheme.error,
+            ),
+          ),
           IconButton(
             tooltip: 'MCP servers',
             onPressed: () => showFlitMcpSheet(context, widget.sessionId),

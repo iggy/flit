@@ -184,10 +184,15 @@ agent has `read`, `write`, `patch`, `list`, `grep` and `shell` tools; file
 tools can't leave the working directory. `AGENTS.md` and `CLAUDE.md` in the
 working directory are added to the system prompt.
 
-Shell commands are checked against `shell.allow` / `shell.deny` patterns in
-the config; anything else follows `shell.default` (`ask` by default), which
-pauses the turn until a client answers the prompt. These rules reduce
-prompts; they are not a sandbox.
+Shell commands are split into their parts (chains, pipes, loops) and run
+without asking when every part is allowed: by `shell.allow` patterns, the
+built-in read-only list (`ls`, `cat`, `grep`, `git log`, ...), or "allow for
+this session". `shell.deny` always wins. Anything else follows
+`shell.default` (`ask` by default), which pauses the turn until a client
+answers the prompt. A session can switch to yolo mode (everything but deny
+matches runs), and an optional small model can rate commands before you're
+asked. These rules reduce prompts; they are not a sandbox. See
+[docs/shell.md](docs/shell.md).
 
 Everything a session does is stored as numbered events in `flit.db` in the
 data dir. A client can attach from any event number, replay, and then follow

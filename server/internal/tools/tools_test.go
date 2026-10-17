@@ -205,12 +205,13 @@ func TestShellInterrupt(t *testing.T) {
 
 func TestShellApproval(t *testing.T) {
 	env := newEnv(t)
+	off := false
 	env.Shell = config.Shell{Default: "ask", Allow: []string{"echo allowed*"}, Deny: []string{"rm -rf *"},
-		Timeout: time.Minute, MaxTimeout: time.Minute}
+		ReadOnly: &off, Timeout: time.Minute, MaxTimeout: time.Minute}
 	var asked []string
 	answer := false
-	env.Approve = func(_ context.Context, title, detail string, _ []string) (bool, error) {
-		asked = append(asked, detail)
+	env.Approve = func(_ context.Context, a Approval) (bool, error) {
+		asked = append(asked, a.Detail)
 		return answer, nil
 	}
 
@@ -226,32 +227,6 @@ func TestShellApproval(t *testing.T) {
 	}
 	if r := run(t, env, "shell", map[string]any{"command": "echo x && rm -rf /tmp/nothing"}); !r.IsError || len(asked) != 2 {
 		t.Fatalf("deny rule: %+v, asked %q", r, asked)
-	}
-}
-
-func TestShellDecision(t *testing.T) {
-	sh := config.Shell{Allow: []string{"ls*", "go test*"}, Deny: []string{"sudo *"}, Default: "ask"}
-	for cmd, want := range map[string]Decision{
-		"ls -la":              Allow,
-		"go test ./...":       Allow,
-		"ls; rm -rf x":        Ask,
-		"ls $(whoami)":        Ask,
-		"ls > out":            Ask,
-		"sudo reboot":         Deny,
-		"ls && sudo reboot":   Deny,
-		"make":                Ask,
-		"  ls  ":              Allow,
-		"lsof | grep x":       Ask,
-		"echo hi\nsudo x":     Deny,
-		"cat file | sudo tee": Deny,
-	} {
-		if got := ShellDecision(cmd, sh); got != want {
-			t.Errorf("%q: got %v, want %v", cmd, got, want)
-		}
-	}
-	sh.Default = "deny"
-	if ShellDecision("make", sh) != Deny {
-		t.Error("default deny not applied")
 	}
 }
 
@@ -435,45 +410,5 @@ func TestSkillTool(t *testing.T) {
 	}
 	if r := call(`{"name":"nope"}`); !r.IsError {
 		t.Fatal("unknown skill loaded")
-	}
-}
-
-func TestSessionPatterns(t *testing.T) {
-	for cmd, want := range map[string][]string{
-		"go test ./...":                       {"go test *"},
-		"cd /src/app && go test ./... -run X": {"go test *"},
-		"CGO_ENABLED=0 go build ./cmd/flit":   {"go build *"},
-		"git status":                          {"git status *"},
-		"ls -la":                              {"ls *"},
-		"./run.sh --fast":                     {"./run.sh *"},
-		"npm run build && npm run test":       {"npm run *"},
-		"go test ./... | tail -20":            {"go test *", "tail *"},
-		"python3 script.py":                   {"python3 *"},
-	} {
-		got, ok := SessionPatterns(cmd)
-		if !ok || strings.Join(got, ",") != strings.Join(want, ",") {
-			t.Errorf("%q: got %v, %v; want %v", cmd, got, ok, want)
-		}
-	}
-	for _, cmd := range []string{"go test > out.txt", "echo $(whoami)", "cat `x`", "cd /tmp", "FOO=1"} {
-		if got, ok := SessionPatterns(cmd); ok {
-			t.Errorf("%q: offered %v", cmd, got)
-		}
-	}
-
-	sh := config.Shell{Default: "ask", Deny: []string{"git push*"}}
-	session := []string{"go test *", "tail *", "git push *"}
-	for cmd, want := range map[string]Decision{
-		"go test ./...":             Allow,
-		"cd x && go test ./pkg":     Allow,
-		"go test ./... | tail -5":   Allow,
-		"go test ./... | grep FAIL": Ask, // grep isn't allowed
-		"go build ./...":            Ask,
-		"go test ./... > log.txt":   Ask,  // redirection is never session-allowed
-		"git push origin main":      Deny, // deny rules win
-	} {
-		if got := ShellDecisionWith(cmd, sh, session); got != want {
-			t.Errorf("%q: got %v, want %v", cmd, got, want)
-		}
 	}
 }

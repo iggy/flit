@@ -64,6 +64,7 @@ type modelCallRecord struct {
 	ID            string            `json:"id"`
 	SessionID     string            `json:"session_id"`
 	TurnID        string            `json:"turn_id"`
+	Task          string            `json:"task"`
 	Project       project           `json:"project"`
 	CreatedAt     time.Time         `json:"created_at"`
 	Provider      string            `json:"provider"`
@@ -98,7 +99,20 @@ type turnRecord struct {
 	Messages      []json.RawMessage `json:"messages"`
 	Tools         json.RawMessage   `json:"tools,omitempty"`
 	FinishReason  string            `json:"finish_reason"`
-	Ratings       []rating          `json:"ratings"`
+	// PermissionChecks are the safety check's verdicts on shell commands
+	// in this turn.
+	PermissionChecks []permissionCheck `json:"permission_checks"`
+	Ratings          []rating          `json:"ratings"`
+}
+
+type permissionCheck struct {
+	ToolCallID  string `json:"tool_call_id"`
+	Command     string `json:"command"`
+	Verdict     string `json:"verdict"`
+	Reason      string `json:"reason"`
+	Provider    string `json:"provider"`
+	Model       string `json:"model"`
+	ModelCallID string `json:"model_call_id"`
 }
 
 type sessionRecord struct {
@@ -199,7 +213,7 @@ func Write(ctx context.Context, st *store.Store, w io.Writer, opts Options) (Sta
 		proj := project{ID: c.ProjectID, Name: c.ProjectName}
 		if want(opts, "model_call") {
 			rec := modelCallRecord{
-				Type: "model_call", FormatVersion: FormatVersion, ID: c.ID, SessionID: c.SessionID, TurnID: c.TurnID,
+				Type: "model_call", FormatVersion: FormatVersion, ID: c.ID, SessionID: c.SessionID, TurnID: c.TurnID, Task: c.Task,
 				Project: proj, CreatedAt: c.CreatedAt, Provider: c.Provider, Model: c.Model, Effort: c.Effort,
 				FlitVersion: c.FlitVersion, Role: c.Role, Skills: c.Skills, Params: c.Params, Messages: msgs,
 				Tools: tools, Response: c.Response, FinishReason: c.FinishReason, Usage: nonNull(c.Usage),
@@ -212,6 +226,9 @@ func Write(ctx context.Context, st *store.Store, w io.Writer, opts Options) (Sta
 				}
 				stats.ModelCalls++
 			}
+		}
+		if c.Task != "chat" {
+			continue // safety checks aren't part of the conversation
 		}
 		// A turn's conversation is its last call's request plus that
 		// call's response.
@@ -243,8 +260,16 @@ func Write(ctx context.Context, st *store.Store, w io.Writer, opts Options) (Sta
 		}
 	}
 	if want(opts, "turn") {
+		checks, err := permissionChecks(ctx, st, sessionOrder)
+		if err != nil {
+			return stats, err
+		}
 		for _, id := range turnOrder {
 			t := turns[id]
+			t.rec.PermissionChecks = checks[id]
+			if t.rec.PermissionChecks == nil {
+				t.rec.PermissionChecks = []permissionCheck{}
+			}
 			t.rec.Ratings = orEmpty(byTurn[id])
 			if !keep(opts, t.rec.Ratings) {
 				continue
@@ -271,6 +296,27 @@ func Write(ctx context.Context, st *store.Store, w io.Writer, opts Options) (Sta
 		}
 	}
 	return stats, nil
+}
+
+// permissionChecks reads the sessions' safety check verdicts from their
+// event logs, by turn.
+func permissionChecks(ctx context.Context, st *store.Store, sessions []string) (map[string][]permissionCheck, error) {
+	out := map[string][]permissionCheck{}
+	for _, id := range sessions {
+		evs, err := st.EventsOfKinds(ctx, id, "permission_check")
+		if err != nil {
+			return nil, err
+		}
+		for _, ev := range evs {
+			c := ev.GetPermissionCheck()
+			verdict := strings.ToLower(strings.TrimPrefix(c.Verdict.String(), "PERMISSION_VERDICT_"))
+			out[c.TurnId] = append(out[c.TurnId], permissionCheck{
+				ToolCallID: c.ToolCallId, Command: c.Command, Verdict: verdict, Reason: c.Reason,
+				Provider: c.Provider, Model: c.Model, ModelCallID: c.ModelCallId,
+			})
+		}
+	}
+	return out, nil
 }
 
 func orEmpty(rs []rating) []rating {
