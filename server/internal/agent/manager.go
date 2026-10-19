@@ -20,6 +20,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
@@ -41,7 +42,9 @@ var (
 	// ErrNoCallToRetry: RetryModelCall with no model call waiting (none
 	// running, or the reply is already streaming).
 	ErrNoCallToRetry = errors.New("no model call is waiting for the model to answer")
-	errInterrupted   = errors.New("interrupted")
+	// ErrQueueGone: the queued message was delivered or cancelled already.
+	ErrQueueGone   = errors.New("message is not queued (already delivered or cancelled)")
+	errInterrupted = errors.New("interrupted")
 )
 
 func invalid(format string, args ...any) error {
@@ -67,7 +70,9 @@ type Manager struct {
 	mu       sync.Mutex
 	sessions map[string]*session
 	closed   bool
-	turns    sync.WaitGroup
+	// closing is closed without the lock, for sessions holding theirs.
+	closing atomic.Bool
+	turns   sync.WaitGroup
 }
 
 // NewManager returns a Manager. cfg is called whenever the current config
@@ -93,6 +98,7 @@ func NewManager(ctx context.Context, st *store.Store, cfg func() config.Config, 
 
 // Close interrupts all running turns and waits for them to stop.
 func (m *Manager) Close() {
+	m.closing.Store(true)
 	m.mu.Lock()
 	m.closed = true
 	for _, s := range m.sessions {
@@ -121,6 +127,9 @@ func (m *Manager) session(ctx context.Context, id string) (*session, error) {
 	}
 	s := newSession(m, info)
 	if err := s.loadAllowed(ctx); err != nil {
+		return nil, err
+	}
+	if err := s.loadQueue(ctx); err != nil {
 		return nil, err
 	}
 	m.sessions[id] = s
@@ -312,17 +321,43 @@ func (m *Manager) Send(ctx context.Context, id, text string) (int64, error) {
 	if strings.TrimSpace(text) == "" {
 		return 0, invalid("text is empty")
 	}
+	res, err := m.SendMessage(ctx, id, text, "")
+	return res.Seq, err
+}
+
+// SendMessage adds a user message from client: it starts a turn, or is
+// queued for the running turn's next step (see SendResult). Empty text
+// delivers the queue, if there is one.
+func (m *Manager) SendMessage(ctx context.Context, id, text, client string) (SendResult, error) {
 	s, err := m.session(ctx, id)
 	if err != nil {
-		return 0, err
+		return SendResult{}, err
 	}
-	m.mu.Lock()
-	closed := m.closed
-	m.mu.Unlock()
-	if closed {
-		return 0, errors.New("flit is shutting down")
+	if m.closing.Load() {
+		return SendResult{}, errors.New("flit is shutting down")
 	}
-	return s.send(text)
+	return s.send(text, client)
+}
+
+// EditQueuedMessage changes a queued message's text.
+func (m *Manager) EditQueuedMessage(ctx context.Context, id, queueID, text string) error {
+	if strings.TrimSpace(text) == "" {
+		return invalid("text is empty")
+	}
+	s, err := m.session(ctx, id)
+	if err != nil {
+		return err
+	}
+	return s.updateQueued(queueID, text, false)
+}
+
+// CancelQueuedMessage withdraws a queued message.
+func (m *Manager) CancelQueuedMessage(ctx context.Context, id, queueID string) error {
+	s, err := m.session(ctx, id)
+	if err != nil {
+		return err
+	}
+	return s.updateQueued(queueID, "", true)
 }
 
 // Interrupt stops the session's running turn. It reports whether one was

@@ -326,8 +326,9 @@ func TestInterruptDuringStream(t *testing.T) {
 	}
 	w.waitFor("assistant text", func(ev *flitv1.Event) bool { return ev.GetTextDelta().GetText() == "partial " })
 
-	if _, err := h.m.Send(context.Background(), sess.ID, "again"); !errors.Is(err, ErrBusy) {
-		t.Fatalf("Send while busy: %v", err)
+	// Sent mid-turn: queued. The interrupt leaves it for the next Send.
+	if res, err := h.m.SendMessage(context.Background(), sess.ID, "again", "phone"); err != nil || res.QueueID == "" {
+		t.Fatalf("Send while busy: %+v, %v", res, err)
 	}
 	ok, err := h.m.Interrupt(context.Background(), sess.ID)
 	if err != nil || !ok {
@@ -358,7 +359,7 @@ func TestInterruptDuringStream(t *testing.T) {
 		return ev.GetMessageDone().GetText() == "ok"
 	})
 	msgs := h.llm.Requests()[1].Messages
-	if msgs[2].Role != "assistant" || msgs[2].Content != "partial " || msgs[3].Content != "short version" {
+	if msgs[2].Role != "assistant" || msgs[2].Content != "partial " || msgs[3].Content != "again" || msgs[4].Content != "short version" {
 		t.Fatalf("history after interrupt: %+v", msgs)
 	}
 }

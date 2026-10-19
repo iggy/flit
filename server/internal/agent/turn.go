@@ -54,6 +54,19 @@ func (s *session) runTurn(ctx context.Context, turnID string) {
 	s.cancelTurn = nil
 	if _, err := s.appendLocked(stateChanged(e.state, e.reason)); err != nil {
 		s.m.log.Error("could not record end of turn", "session", s.info.ID, "err", err)
+		return
+	}
+	// Messages queued during a turn that ended without another model call
+	// start the next one. An interrupted turn leaves them for the next Send.
+	if len(s.queue) == 0 || e == endInterrupted || s.m.closing.Load() {
+		return
+	}
+	_, next, err := s.deliverQueuedLocked()
+	if err == nil {
+		err = s.startTurnLocked(next)
+	}
+	if err != nil {
+		s.m.log.Error("could not start the queued turn", "session", s.info.ID, "err", err)
 	}
 }
 
@@ -79,6 +92,10 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 
 		if step == 0 {
 			s.m.touchModel(info)
+		} else if err := s.deliverQueued(); err != nil {
+			// A step boundary: messages sent meanwhile join the
+			// conversation before the next model call.
+			return end{}, err
 		}
 		history, err := s.m.store.EventsOfKinds(context.Background(), info.ID, historyKinds...)
 		if err != nil {

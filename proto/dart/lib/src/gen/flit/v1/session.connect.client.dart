@@ -87,8 +87,13 @@ extension type SessionServiceClient (connect.Transport _transport) {
     );
   }
 
-  /// Send adds a user message and starts a turn. Fails with
-  /// FAILED_PRECONDITION while a turn is already running.
+  /// Send adds a user message and starts a turn. While a turn is running
+  /// the message is queued instead (MessageQueued) and delivered at the
+  /// turn's next step: after the current model call or tool, before the
+  /// next model call; if the turn ends without another call, it starts the
+  /// next turn. Messages still queued when a turn is interrupted wait for
+  /// the next Send, which delivers them first; with an empty text, Send
+  /// just delivers the queue.
   Future<flitv1session.SendResponse> send(
     flitv1session.SendRequest input, {
     connect.Headers? headers,
@@ -98,6 +103,43 @@ extension type SessionServiceClient (connect.Transport _transport) {
   }) {
     return connect.Client(_transport).unary(
       specs.SessionService.send,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
+
+  /// EditQueuedMessage changes, and CancelQueuedMessage withdraws, a queued
+  /// message that hasn't been delivered yet. Once it has, they fail with
+  /// FAILED_PRECONDITION.
+  Future<flitv1session.EditQueuedMessageResponse> editQueuedMessage(
+    flitv1session.EditQueuedMessageRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.SessionService.editQueuedMessage,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
+
+  Future<flitv1session.CancelQueuedMessageResponse> cancelQueuedMessage(
+    flitv1session.CancelQueuedMessageRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.SessionService.cancelQueuedMessage,
       input,
       signal: signal,
       headers: headers,

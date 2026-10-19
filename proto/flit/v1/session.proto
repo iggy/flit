@@ -30,9 +30,20 @@ service SessionService {
   // to what a live client saw, deltas included.
   rpc Attach(AttachRequest) returns (stream AttachResponse);
 
-  // Send adds a user message and starts a turn. Fails with
-  // FAILED_PRECONDITION while a turn is already running.
+  // Send adds a user message and starts a turn. While a turn is running
+  // the message is queued instead (MessageQueued) and delivered at the
+  // turn's next step: after the current model call or tool, before the
+  // next model call; if the turn ends without another call, it starts the
+  // next turn. Messages still queued when a turn is interrupted wait for
+  // the next Send, which delivers them first; with an empty text, Send
+  // just delivers the queue.
   rpc Send(SendRequest) returns (SendResponse);
+
+  // EditQueuedMessage changes, and CancelQueuedMessage withdraws, a queued
+  // message that hasn't been delivered yet. Once it has, they fail with
+  // FAILED_PRECONDITION.
+  rpc EditQueuedMessage(EditQueuedMessageRequest) returns (EditQueuedMessageResponse);
+  rpc CancelQueuedMessage(CancelQueuedMessageRequest) returns (CancelQueuedMessageResponse);
 
   // Interrupt stops the running turn, if any. Pending prompts are resolved
   // as denied.
@@ -188,12 +199,32 @@ message AttachResponse {
 message SendRequest {
   string session_id = 1;
   string text = 2;
+  // Who sent it, for the log (like AnswerPromptRequest.client).
+  string client = 3;
 }
 
 message SendResponse {
-  // Sequence number of the user message's first event.
+  // Sequence number of the user message's first event (or of its
+  // MessageQueued event).
   int64 seq = 1;
+  // Set when the message was queued because a turn is running.
+  string queue_id = 2;
 }
+
+message EditQueuedMessageRequest {
+  string session_id = 1;
+  string queue_id = 2;
+  string text = 3;
+}
+
+message EditQueuedMessageResponse {}
+
+message CancelQueuedMessageRequest {
+  string session_id = 1;
+  string queue_id = 2;
+}
+
+message CancelQueuedMessageResponse {}
 
 message InterruptRequest {
   string session_id = 1;
@@ -360,6 +391,9 @@ message Event {
     ModelCallStarted model_call_started = 29;
     PromptProgress prompt_progress = 30;
     ModelCallEnded model_call_ended = 31;
+    MessageQueued message_queued = 32;
+    QueuedMessageUpdated queued_message_updated = 33;
+    QueuedMessageDelivered queued_message_delivered = 34;
   }
 }
 
@@ -659,4 +693,29 @@ message ModelCallEnded {
   // Whether flit tries the call again (agent.model_retries, or
   // RetryModelCall).
   bool will_retry = 18;
+}
+
+// MessageQueued is a user message sent while a turn was running. It waits
+// for the turn's next step (see Send); QueuedMessageUpdated edits or
+// cancels it and QueuedMessageDelivered turns it into a user message.
+message MessageQueued {
+  string queue_id = 1;
+  string text = 2;
+  // Who sent it (SendRequest.client).
+  string client = 3;
+}
+
+// QueuedMessageUpdated is a queued message edited (text) or withdrawn
+// (cancelled).
+message QueuedMessageUpdated {
+  string queue_id = 1;
+  string text = 2;
+  bool cancelled = 3;
+}
+
+// QueuedMessageDelivered is a queued message delivered as user message
+// message_id, whose MessageStarted follows.
+message QueuedMessageDelivered {
+  string queue_id = 1;
+  string message_id = 2;
 }
