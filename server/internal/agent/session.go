@@ -38,6 +38,12 @@ type session struct {
 	// callOutput says whether any of its reply has arrived.
 	cancelCall context.CancelCauseFunc
 	callOutput bool
+	// call is the model call in flight, for EndReasoning and the waiting
+	// watcher (see llamacpp.go).
+	call *liveCall
+	// lastSlot is the llama.cpp slot this turn's last call was pinned to;
+	// only the turn's goroutine uses it.
+	lastSlot *slotRef
 	// queue holds messages sent while a turn ran, in order, until the
 	// turn's next step delivers them (see queue.go).
 	queue   []queuedMessage
@@ -334,16 +340,33 @@ func (s *session) retryCall() error {
 }
 
 // setCall records the model call in progress (cancel nil: none).
-func (s *session) setCall(cancel context.CancelCauseFunc) {
+func (s *session) setCall(cancel context.CancelCauseFunc, c *liveCall) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.cancelCall, s.callOutput = cancel, false
+	s.cancelCall, s.callOutput, s.call = cancel, false, c
 }
 
-func (s *session) callProduced() {
+// callActivity records what the call in flight produced: reply text or
+// reasoning (n bytes), or just that the server started on it.
+func (s *session) callActivity(text, reasoning int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.callOutput = true
+	if text > 0 || reasoning > 0 {
+		s.callOutput = true
+	}
+	if c := s.call; c != nil {
+		c.started = true
+		c.text += text
+		c.reasoning += reasoning
+	}
+}
+
+func (s *session) callID(id string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.call != nil {
+		s.call.id = id
+	}
 }
 
 func (s *session) answer(promptID string, a Answer) error {

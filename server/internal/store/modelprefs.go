@@ -14,6 +14,9 @@ type ModelKey struct{ Provider, Model string }
 type ModelPref struct {
 	Favorite bool
 	LastUsed time.Time
+	// NoReasoningEnd: the model kept thinking after being asked to answer
+	// now, so flit stops offering it.
+	NoReasoningEnd bool
 }
 
 // SetFavorite stars or unstars a model for a team.
@@ -34,9 +37,18 @@ ON CONFLICT (team_id, provider, model) DO UPDATE SET last_used = MAX(COALESCE(la
 	return err
 }
 
+// SetNoReasoningEnd records that the model ignores "answer now".
+func (s *Store) SetNoReasoningEnd(ctx context.Context, teamID string, m ModelKey) error {
+	_, err := s.db.ExecContext(ctx, `
+INSERT INTO model_prefs (team_id, provider, model, no_reasoning_end) VALUES (?, ?, ?, 1)
+ON CONFLICT (team_id, provider, model) DO UPDATE SET no_reasoning_end = 1`,
+		teamID, m.Provider, m.Model)
+	return err
+}
+
 // ModelPrefs returns the team's favorites and last-used times.
 func (s *Store) ModelPrefs(ctx context.Context, teamID string) (map[ModelKey]ModelPref, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT provider, model, favorite, last_used FROM model_prefs WHERE team_id = ?`, teamID)
+	rows, err := s.db.QueryContext(ctx, `SELECT provider, model, favorite, last_used, no_reasoning_end FROM model_prefs WHERE team_id = ?`, teamID)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +58,7 @@ func (s *Store) ModelPrefs(ctx context.Context, teamID string) (map[ModelKey]Mod
 		var k ModelKey
 		var p ModelPref
 		var used sql.NullInt64
-		if err := rows.Scan(&k.Provider, &k.Model, &p.Favorite, &used); err != nil {
+		if err := rows.Scan(&k.Provider, &k.Model, &p.Favorite, &used, &p.NoReasoningEnd); err != nil {
 			return nil, err
 		}
 		p.LastUsed = nullableTime(used)

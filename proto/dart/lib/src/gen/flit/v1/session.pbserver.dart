@@ -39,6 +39,8 @@ abstract class SessionServiceBase extends $pb.GeneratedService {
       $pb.ServerContext ctx, $1.InterruptRequest request);
   $async.Future<$1.RetryModelCallResponse> retryModelCall(
       $pb.ServerContext ctx, $1.RetryModelCallRequest request);
+  $async.Future<$1.EndReasoningResponse> endReasoning(
+      $pb.ServerContext ctx, $1.EndReasoningRequest request);
   $async.Future<$1.AnswerPromptResponse> answerPrompt(
       $pb.ServerContext ctx, $1.AnswerPromptRequest request);
   $async.Future<$1.SetModelResponse> setModel(
@@ -78,6 +80,8 @@ abstract class SessionServiceBase extends $pb.GeneratedService {
         return $1.InterruptRequest();
       case 'RetryModelCall':
         return $1.RetryModelCallRequest();
+      case 'EndReasoning':
+        return $1.EndReasoningRequest();
       case 'AnswerPrompt':
         return $1.AnswerPromptRequest();
       case 'SetModel':
@@ -123,6 +127,8 @@ abstract class SessionServiceBase extends $pb.GeneratedService {
         return interrupt(ctx, request as $1.InterruptRequest);
       case 'RetryModelCall':
         return retryModelCall(ctx, request as $1.RetryModelCallRequest);
+      case 'EndReasoning':
+        return endReasoning(ctx, request as $1.EndReasoningRequest);
       case 'AnswerPrompt':
         return answerPrompt(ctx, request as $1.AnswerPromptRequest);
       case 'SetModel':

@@ -102,6 +102,18 @@ abstract final class SessionService {
     flitv1session.RetryModelCallResponse.new,
   );
 
+  /// EndReasoning asks the model to stop thinking and answer now (llama.cpp
+  /// only, for models where it can: ListModels' can_end_reasoning). Only
+  /// while the model is thinking and hasn't started its answer; otherwise
+  /// FAILED_PRECONDITION. If the model keeps thinking anyway, the log gets
+  /// ReasoningEndIgnored and the model is marked as not supporting it.
+  static const endReasoning = connect.Spec(
+    '/$name/EndReasoning',
+    connect.StreamType.unary,
+    flitv1session.EndReasoningRequest.new,
+    flitv1session.EndReasoningResponse.new,
+  );
+
   /// AnswerPrompt answers a prompt the agent is waiting on. The first answer
   /// wins; later answers fail with FAILED_PRECONDITION.
   static const answerPrompt = connect.Spec(

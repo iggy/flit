@@ -13,7 +13,6 @@ import (
 	"github.com/iggy/flit/server/internal/config"
 	"github.com/iggy/flit/server/internal/llm"
 	"github.com/iggy/flit/server/internal/mcpclient"
-	"github.com/iggy/flit/server/internal/models"
 	"github.com/iggy/flit/server/internal/roles"
 	"github.com/iggy/flit/server/internal/skills"
 	"github.com/iggy/flit/server/internal/store"
@@ -48,6 +47,12 @@ func (s *session) runTurn(ctx context.Context, turnID string) {
 	if err != nil {
 		s.m.log.Error("turn failed", "session", s.info.ID, "err", err)
 		e = end{flitv1.TaskState_TASK_STATE_STUCK, "internal error: " + err.Error()}
+	}
+	// The turn is over: keep its llama.cpp prompt cache before anything
+	// else on the server wipes it.
+	if ref := s.lastSlot; ref != nil {
+		s.lastSlot = nil
+		s.m.saveAfterTurn(s, ref.provider, ref.router, ref.model, ref.slot)
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -129,10 +134,27 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 			BaseURL: provider.BaseURL, APIKey: provider.Key(), HTTP: s.m.http,
 			FirstTokenTimeout: cfg.Agent.ModelFirstTokenTimeout, StallTimeout: cfg.Agent.ModelStallTimeout,
 		}
-		if s.m.Catalog != nil && s.m.Catalog.Kind(info.Provider) == models.KindLlamaCpp {
+		llama, router := s.m.isLlamaCpp(info.Provider)
+		var slot *int
+		if llama {
 			req.ReturnProgress = true
+			prefs, _ := s.m.store.ModelPrefs(context.Background(), info.TeamID)
+			req.ReasoningControl = !prefs[store.ModelKey{Provider: info.Provider, Model: info.Model}].NoReasoningEnd
+			var restored *flitv1.Event
+			slot, restored = s.m.prepareSlot(ctx, cfg, info, provider, router, msgID, step == 0)
+			if restored != nil {
+				if _, err := s.append(restored); err != nil {
+					return end{}, err
+				}
+			}
+			if slot != nil {
+				cachePrompt := true
+				req.IDSlot, req.CachePrompt = slot, &cachePrompt
+				s.lastSlot = &slotRef{provider: provider, router: router, model: info.Model, slot: *slot}
+			}
 		}
 		var res *llm.Result
+		var lastTrace *llm.Trace
 		autoRetries := 0
 		for attempt := int32(1); ; attempt++ {
 			if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_ModelCallStarted{ModelCallStarted: &flitv1.ModelCallStarted{
@@ -145,23 +167,30 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 			var lastProgress time.Time
 			var trace *llm.Trace
 			callCtx, cancelCall := context.WithCancelCause(ctx)
-			s.setCall(cancelCall)
+			live := &liveCall{msgID: msgID, provider: provider, model: info.Model, router: router}
+			s.setCall(cancelCall, live)
+			stopWait := func() {}
+			if llama {
+				stopWait = s.watchWait(callCtx, s.m.llamaClient(provider, router), live, attempt, slot)
+			}
 			res, trace, err = client.StreamTrace(callCtx, req, llm.Handler{
+				ID: s.callID,
 				Text: func(d string) {
-					s.callProduced()
+					s.callActivity(len(d), 0)
 					text.WriteString(d)
 					if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_TextDelta{TextDelta: &flitv1.TextDelta{MessageId: msgID, Text: d}}}); err != nil {
 						appendErr = err
 					}
 				},
 				Reasoning: func(d string) {
-					s.callProduced()
+					s.callActivity(0, len(d))
 					reasoning.WriteString(d)
 					if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_ReasoningDelta{ReasoningDelta: &flitv1.ReasoningDelta{MessageId: msgID, Text: d}}}); err != nil {
 						appendErr = err
 					}
 				},
 				Progress: func(p llm.PromptProgress) {
+					s.callActivity(0, 0)
 					// llama.cpp reports every batch; about once a second is
 					// plenty, plus the last one.
 					if time.Since(lastProgress) < progressInterval && p.Processed < p.Total {
@@ -176,8 +205,10 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 					}
 				},
 			})
+			stopWait()
+			lastTrace = trace
 			userRetry := err != nil && ctx.Err() == nil && errors.Is(context.Cause(callCtx), errUserRetry)
-			s.setCall(nil)
+			s.setCall(nil, nil)
 			cancelCall(nil)
 			if appendErr != nil {
 				return end{}, appendErr
@@ -237,6 +268,9 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 				PromptTokensPerSecond:     res.Metrics.PromptPerSecond,
 				GenerationTokensPerSecond: res.Metrics.GenerationPerSecond,
 				TimingSource:              res.Metrics.Source,
+			}
+			if lastTrace != nil && lastTrace.Timings != nil {
+				u.CachedTokens = lastTrace.Timings.CacheN
 			}
 			if res.Usage != nil {
 				u.InputTokens, u.OutputTokens, u.TotalTokens = res.Usage.PromptTokens, res.Usage.CompletionTokens, res.Usage.TotalTokens
@@ -309,6 +343,7 @@ func callEnded(msgID string, attempt int32, tr *llm.Trace, res *llm.Result, err 
 	}
 	if t := tr.Timings; t != nil {
 		e.PromptTokens, e.PromptMs, e.PredictedTokens, e.PredictedMs = t.PromptN, int64(t.PromptMS), t.PredictedN, int64(t.PredictedMS)
+		e.CachedTokens = t.CacheN
 	}
 	return &flitv1.Event{Payload: &flitv1.Event_ModelCallEnded{ModelCallEnded: e}}
 }

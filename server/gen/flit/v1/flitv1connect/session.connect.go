@@ -58,6 +58,9 @@ const (
 	// SessionServiceRetryModelCallProcedure is the fully-qualified name of the SessionService's
 	// RetryModelCall RPC.
 	SessionServiceRetryModelCallProcedure = "/flit.v1.SessionService/RetryModelCall"
+	// SessionServiceEndReasoningProcedure is the fully-qualified name of the SessionService's
+	// EndReasoning RPC.
+	SessionServiceEndReasoningProcedure = "/flit.v1.SessionService/EndReasoning"
 	// SessionServiceAnswerPromptProcedure is the fully-qualified name of the SessionService's
 	// AnswerPrompt RPC.
 	SessionServiceAnswerPromptProcedure = "/flit.v1.SessionService/AnswerPrompt"
@@ -118,6 +121,12 @@ type SessionServiceClient interface {
 	// has arrived: once it is streaming, the call fails with
 	// FAILED_PRECONDITION (interrupt instead).
 	RetryModelCall(context.Context, *connect.Request[v1.RetryModelCallRequest]) (*connect.Response[v1.RetryModelCallResponse], error)
+	// EndReasoning asks the model to stop thinking and answer now (llama.cpp
+	// only, for models where it can: ListModels' can_end_reasoning). Only
+	// while the model is thinking and hasn't started its answer; otherwise
+	// FAILED_PRECONDITION. If the model keeps thinking anyway, the log gets
+	// ReasoningEndIgnored and the model is marked as not supporting it.
+	EndReasoning(context.Context, *connect.Request[v1.EndReasoningRequest]) (*connect.Response[v1.EndReasoningResponse], error)
 	// AnswerPrompt answers a prompt the agent is waiting on. The first answer
 	// wins; later answers fail with FAILED_PRECONDITION.
 	AnswerPrompt(context.Context, *connect.Request[v1.AnswerPromptRequest]) (*connect.Response[v1.AnswerPromptResponse], error)
@@ -212,6 +221,12 @@ func NewSessionServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(sessionServiceMethods.ByName("RetryModelCall")),
 			connect.WithClientOptions(opts...),
 		),
+		endReasoning: connect.NewClient[v1.EndReasoningRequest, v1.EndReasoningResponse](
+			httpClient,
+			baseURL+SessionServiceEndReasoningProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("EndReasoning")),
+			connect.WithClientOptions(opts...),
+		),
 		answerPrompt: connect.NewClient[v1.AnswerPromptRequest, v1.AnswerPromptResponse](
 			httpClient,
 			baseURL+SessionServiceAnswerPromptProcedure,
@@ -282,6 +297,7 @@ type sessionServiceClient struct {
 	cancelQueuedMessage *connect.Client[v1.CancelQueuedMessageRequest, v1.CancelQueuedMessageResponse]
 	interrupt           *connect.Client[v1.InterruptRequest, v1.InterruptResponse]
 	retryModelCall      *connect.Client[v1.RetryModelCallRequest, v1.RetryModelCallResponse]
+	endReasoning        *connect.Client[v1.EndReasoningRequest, v1.EndReasoningResponse]
 	answerPrompt        *connect.Client[v1.AnswerPromptRequest, v1.AnswerPromptResponse]
 	setModel            *connect.Client[v1.SetModelRequest, v1.SetModelResponse]
 	setEffort           *connect.Client[v1.SetEffortRequest, v1.SetEffortResponse]
@@ -336,6 +352,11 @@ func (c *sessionServiceClient) Interrupt(ctx context.Context, req *connect.Reque
 // RetryModelCall calls flit.v1.SessionService.RetryModelCall.
 func (c *sessionServiceClient) RetryModelCall(ctx context.Context, req *connect.Request[v1.RetryModelCallRequest]) (*connect.Response[v1.RetryModelCallResponse], error) {
 	return c.retryModelCall.CallUnary(ctx, req)
+}
+
+// EndReasoning calls flit.v1.SessionService.EndReasoning.
+func (c *sessionServiceClient) EndReasoning(ctx context.Context, req *connect.Request[v1.EndReasoningRequest]) (*connect.Response[v1.EndReasoningResponse], error) {
+	return c.endReasoning.CallUnary(ctx, req)
 }
 
 // AnswerPrompt calls flit.v1.SessionService.AnswerPrompt.
@@ -417,6 +438,12 @@ type SessionServiceHandler interface {
 	// has arrived: once it is streaming, the call fails with
 	// FAILED_PRECONDITION (interrupt instead).
 	RetryModelCall(context.Context, *connect.Request[v1.RetryModelCallRequest]) (*connect.Response[v1.RetryModelCallResponse], error)
+	// EndReasoning asks the model to stop thinking and answer now (llama.cpp
+	// only, for models where it can: ListModels' can_end_reasoning). Only
+	// while the model is thinking and hasn't started its answer; otherwise
+	// FAILED_PRECONDITION. If the model keeps thinking anyway, the log gets
+	// ReasoningEndIgnored and the model is marked as not supporting it.
+	EndReasoning(context.Context, *connect.Request[v1.EndReasoningRequest]) (*connect.Response[v1.EndReasoningResponse], error)
 	// AnswerPrompt answers a prompt the agent is waiting on. The first answer
 	// wins; later answers fail with FAILED_PRECONDITION.
 	AnswerPrompt(context.Context, *connect.Request[v1.AnswerPromptRequest]) (*connect.Response[v1.AnswerPromptResponse], error)
@@ -507,6 +534,12 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 		connect.WithSchema(sessionServiceMethods.ByName("RetryModelCall")),
 		connect.WithHandlerOptions(opts...),
 	)
+	sessionServiceEndReasoningHandler := connect.NewUnaryHandler(
+		SessionServiceEndReasoningProcedure,
+		svc.EndReasoning,
+		connect.WithSchema(sessionServiceMethods.ByName("EndReasoning")),
+		connect.WithHandlerOptions(opts...),
+	)
 	sessionServiceAnswerPromptHandler := connect.NewUnaryHandler(
 		SessionServiceAnswerPromptProcedure,
 		svc.AnswerPrompt,
@@ -583,6 +616,8 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 			sessionServiceInterruptHandler.ServeHTTP(w, r)
 		case SessionServiceRetryModelCallProcedure:
 			sessionServiceRetryModelCallHandler.ServeHTTP(w, r)
+		case SessionServiceEndReasoningProcedure:
+			sessionServiceEndReasoningHandler.ServeHTTP(w, r)
 		case SessionServiceAnswerPromptProcedure:
 			sessionServiceAnswerPromptHandler.ServeHTTP(w, r)
 		case SessionServiceSetModelProcedure:
@@ -644,6 +679,10 @@ func (UnimplementedSessionServiceHandler) Interrupt(context.Context, *connect.Re
 
 func (UnimplementedSessionServiceHandler) RetryModelCall(context.Context, *connect.Request[v1.RetryModelCallRequest]) (*connect.Response[v1.RetryModelCallResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.RetryModelCall is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) EndReasoning(context.Context, *connect.Request[v1.EndReasoningRequest]) (*connect.Response[v1.EndReasoningResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.EndReasoning is not implemented"))
 }
 
 func (UnimplementedSessionServiceHandler) AnswerPrompt(context.Context, *connect.Request[v1.AnswerPromptRequest]) (*connect.Response[v1.AnswerPromptResponse], error) {

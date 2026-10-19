@@ -113,3 +113,21 @@ func TestTimelineQueue(t *testing.T) {
 		}
 	}
 }
+
+func TestTimelineLlamaCpp(t *testing.T) {
+	l := &log{t0: time.Date(2026, 10, 18, 17, 0, 0, 0, time.Local)}
+	l.add(0, &flitv1.Event{Payload: &flitv1.Event_PromptCache{PromptCache: &flitv1.PromptCache{Action: flitv1.PromptCacheAction_PROMPT_CACHE_ACTION_RESTORED, Slot: 1, File: "flit-kv-2.bin", Tokens: 48000, ElapsedMs: 1200}}})
+	l.add(0, &flitv1.Event{Payload: &flitv1.Event_ModelCallStarted{ModelCallStarted: &flitv1.ModelCallStarted{MessageId: "m1", Attempt: 1}}})
+	l.add(3*time.Second, &flitv1.Event{Payload: &flitv1.Event_ModelCallWaiting{ModelCallWaiting: &flitv1.ModelCallWaiting{MessageId: "m1", Attempt: 1, Reason: flitv1.ModelWaitReason_MODEL_WAIT_REASON_SLOTS_BUSY, TotalSlots: 2}}})
+	var b strings.Builder
+	_ = Write(&b, store.Session{ID: "s1"}, l.evs, l.t0.Add(time.Minute))
+	for _, want := range []string{
+		"prompt cache (slot 1) restored from flit-kv-2.bin: 48000 tokens in 1.2s",
+		"waiting for a free llama.cpp slot (all 2 busy)",
+		"never ended; waiting for a free llama.cpp slot (all 2 busy)",
+	} {
+		if !strings.Contains(b.String(), want) {
+			t.Errorf("missing %q in:\n%s", want, b.String())
+		}
+	}
+}

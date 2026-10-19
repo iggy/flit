@@ -55,6 +55,13 @@ service SessionService {
   // FAILED_PRECONDITION (interrupt instead).
   rpc RetryModelCall(RetryModelCallRequest) returns (RetryModelCallResponse);
 
+  // EndReasoning asks the model to stop thinking and answer now (llama.cpp
+  // only, for models where it can: ListModels' can_end_reasoning). Only
+  // while the model is thinking and hasn't started its answer; otherwise
+  // FAILED_PRECONDITION. If the model keeps thinking anyway, the log gets
+  // ReasoningEndIgnored and the model is marked as not supporting it.
+  rpc EndReasoning(EndReasoningRequest) returns (EndReasoningResponse);
+
   // AnswerPrompt answers a prompt the agent is waiting on. The first answer
   // wins; later answers fail with FAILED_PRECONDITION.
   rpc AnswerPrompt(AnswerPromptRequest) returns (AnswerPromptResponse);
@@ -241,6 +248,14 @@ message RetryModelCallRequest {
 
 message RetryModelCallResponse {}
 
+message EndReasoningRequest {
+  string session_id = 1;
+  // Who asked, for the log.
+  string client = 2;
+}
+
+message EndReasoningResponse {}
+
 message AnswerPromptRequest {
   string session_id = 1;
   string prompt_id = 2;
@@ -394,6 +409,10 @@ message Event {
     MessageQueued message_queued = 32;
     QueuedMessageUpdated queued_message_updated = 33;
     QueuedMessageDelivered queued_message_delivered = 34;
+    ModelCallWaiting model_call_waiting = 35;
+    PromptCache prompt_cache = 36;
+    ReasoningEndRequested reasoning_end_requested = 37;
+    ReasoningEndIgnored reasoning_end_ignored = 38;
   }
 }
 
@@ -535,6 +554,9 @@ message Usage {
   // Where the timings came from: "llama.cpp" when the server reported its
   // own timings, "measured" when flit timed the stream itself.
   string timing_source = 9;
+  // Prompt tokens the server reused from its cache instead of reading
+  // again (llama.cpp); part of input_tokens.
+  int64 cached_tokens = 10;
 }
 
 // TodoUpdated is the agent's task list after it changed (the todo tool).
@@ -693,6 +715,8 @@ message ModelCallEnded {
   // Whether flit tries the call again (agent.model_retries, or
   // RetryModelCall).
   bool will_retry = 18;
+  // Prompt tokens llama.cpp reused from its cache.
+  int64 cached_tokens = 19;
 }
 
 // MessageQueued is a user message sent while a turn was running. It waits
@@ -718,4 +742,66 @@ message QueuedMessageUpdated {
 message QueuedMessageDelivered {
   string queue_id = 1;
   string message_id = 2;
+}
+
+// ModelWaitReason is why a model call hasn't started, as the model server
+// reports it.
+enum ModelWaitReason {
+  MODEL_WAIT_REASON_UNSPECIFIED = 0;
+  // Every slot of the llama.cpp server is busy with other requests; this
+  // one waits for a free one.
+  MODEL_WAIT_REASON_SLOTS_BUSY = 1;
+  // The model is asleep (idle, swapped out) and wakes up first.
+  MODEL_WAIT_REASON_SLEEPING = 2;
+  // The llama.cpp router is loading the model.
+  MODEL_WAIT_REASON_LOADING = 3;
+}
+
+// ModelCallWaiting says why the model call for message_id hasn't started
+// yet (llama.cpp only). Sent when the reason changes, until the server
+// starts on the call (PromptProgress or reply text follow).
+message ModelCallWaiting {
+  string message_id = 1;
+  int32 attempt = 2;
+  ModelWaitReason reason = 3;
+  // For SLOTS_BUSY: how many slots there are (all busy).
+  int32 total_slots = 4;
+}
+
+enum PromptCacheAction {
+  PROMPT_CACHE_ACTION_UNSPECIFIED = 0;
+  // The session's cache was written to a save file on the llama.cpp server
+  // (another session needed its slot, or it sat idle).
+  PROMPT_CACHE_ACTION_SAVED = 1;
+  // The session's saved cache was loaded back into a slot before a call.
+  PROMPT_CACHE_ACTION_RESTORED = 2;
+}
+
+// PromptCache is flit saving or restoring the session's llama.cpp prompt
+// cache (config llamacpp.kv_cache).
+message PromptCache {
+  PromptCacheAction action = 1;
+  // The call it was for, when restoring.
+  string message_id = 2;
+  int32 slot = 3;
+  // Save file on the server, e.g. flit-kv-2.bin.
+  string file = 4;
+  int64 tokens = 5;
+  int64 elapsed_ms = 6;
+  // Set when it failed (the call goes ahead without it).
+  string error = 7;
+}
+
+// ReasoningEndRequested is someone asking the model to stop thinking and
+// answer now (EndReasoning).
+message ReasoningEndRequested {
+  string message_id = 1;
+  string client = 2;
+}
+
+// ReasoningEndIgnored is the model still thinking a while after
+// EndReasoning: its server can't cut it short. flit won't offer it for
+// that model again.
+message ReasoningEndIgnored {
+  string message_id = 1;
 }

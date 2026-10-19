@@ -67,7 +67,7 @@ func (s *Models) ListModels(ctx context.Context, req *connect.Request[flitv1.Lis
 	}
 	res := &flitv1.ListModelsResponse{}
 	for _, m := range s.Catalog.Models(req.Msg.Provider) {
-		res.Models = append(res.Models, modelProto(m, prefs[store.ModelKey{Provider: m.Provider, Model: m.ID}]))
+		res.Models = append(res.Models, modelProto(m, prefs[store.ModelKey{Provider: m.Provider, Model: m.ID}], s.Catalog.Kind(m.Provider) == models.KindLlamaCpp))
 	}
 	return connect.NewResponse(res), nil
 }
@@ -79,7 +79,7 @@ func (s *Models) prefs(ctx context.Context) (map[store.ModelKey]store.ModelPref,
 	return s.Store.ModelPrefs(ctx, prefsTeam)
 }
 
-func modelProto(m models.Model, pref store.ModelPref) *flitv1.Model {
+func modelProto(m models.Model, pref store.ModelPref, llama bool) *flitv1.Model {
 	pm := &flitv1.Model{
 		Provider:          m.Provider,
 		Id:                m.ID,
@@ -94,6 +94,7 @@ func modelProto(m models.Model, pref store.ModelPref) *flitv1.Model {
 		Overridden:        m.Overridden,
 		Favorite:          pref.Favorite,
 		State:             stateProto(m.State),
+		CanEndReasoning:   llama && !pref.NoReasoningEnd,
 	}
 	if !pref.LastUsed.IsZero() {
 		pm.LastUsed = timestamppb.New(pref.LastUsed)
@@ -165,7 +166,7 @@ func (s *Models) setLoaded(ctx context.Context, provider, model string, load boo
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	return modelProto(m, prefs[store.ModelKey{Provider: m.Provider, Model: m.ID}]), nil
+	return modelProto(m, prefs[store.ModelKey{Provider: m.Provider, Model: m.ID}], s.Catalog.Kind(m.Provider) == models.KindLlamaCpp), nil
 }
 
 // Refresh implements flitv1connect.ModelServiceHandler.

@@ -188,6 +188,28 @@ extension type SessionServiceClient (connect.Transport _transport) {
     );
   }
 
+  /// EndReasoning asks the model to stop thinking and answer now (llama.cpp
+  /// only, for models where it can: ListModels' can_end_reasoning). Only
+  /// while the model is thinking and hasn't started its answer; otherwise
+  /// FAILED_PRECONDITION. If the model keeps thinking anyway, the log gets
+  /// ReasoningEndIgnored and the model is marked as not supporting it.
+  Future<flitv1session.EndReasoningResponse> endReasoning(
+    flitv1session.EndReasoningRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.SessionService.endReasoning,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
+
   /// AnswerPrompt answers a prompt the agent is waiting on. The first answer
   /// wins; later answers fail with FAILED_PRECONDITION.
   Future<flitv1session.AnswerPromptResponse> answerPrompt(

@@ -258,10 +258,13 @@ type Model struct {
 	Favorite bool `protobuf:"varint,12,opt,name=favorite,proto3" json:"favorite,omitempty"`
 	// When a session last used it (set its model, or ran a turn on it);
 	// unset if never.
-	LastUsed      *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=last_used,json=lastUsed,proto3" json:"last_used,omitempty"`
-	State         ModelState             `protobuf:"varint,14,opt,name=state,proto3,enum=flit.v1.ModelState" json:"state,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	LastUsed *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=last_used,json=lastUsed,proto3" json:"last_used,omitempty"`
+	State    ModelState             `protobuf:"varint,14,opt,name=state,proto3,enum=flit.v1.ModelState" json:"state,omitempty"`
+	// Whether EndReasoning ("answer now") may work: a llama.cpp model that
+	// hasn't been seen ignoring it.
+	CanEndReasoning bool `protobuf:"varint,15,opt,name=can_end_reasoning,json=canEndReasoning,proto3" json:"can_end_reasoning,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *Model) Reset() {
@@ -390,6 +393,13 @@ func (x *Model) GetState() ModelState {
 		return x.State
 	}
 	return ModelState_MODEL_STATE_UNSPECIFIED
+}
+
+func (x *Model) GetCanEndReasoning() bool {
+	if x != nil {
+		return x.CanEndReasoning
+	}
+	return false
 }
 
 type ListProvidersRequest struct {
@@ -952,7 +962,7 @@ const file_flit_v1_model_proto_rawDesc = "" +
 	"modelCount\x12=\n" +
 	"\frefresh_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\vrefreshTime\x12\x14\n" +
 	"\x05error\x18\x06 \x01(\tR\x05error\x12&\n" +
-	"\x0fcan_load_models\x18\a \x01(\bR\rcanLoadModels\"\xee\x03\n" +
+	"\x0fcan_load_models\x18\a \x01(\bR\rcanLoadModels\"\x9a\x04\n" +
 	"\x05Model\x12\x1a\n" +
 	"\bprovider\x18\x01 \x01(\tR\bprovider\x12\x0e\n" +
 	"\x02id\x18\x02 \x01(\tR\x02id\x12!\n" +
@@ -972,7 +982,8 @@ const file_flit_v1_model_proto_rawDesc = "" +
 	"overridden\x12\x1a\n" +
 	"\bfavorite\x18\f \x01(\bR\bfavorite\x127\n" +
 	"\tlast_used\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\blastUsed\x12)\n" +
-	"\x05state\x18\x0e \x01(\x0e2\x13.flit.v1.ModelStateR\x05state\"\x16\n" +
+	"\x05state\x18\x0e \x01(\x0e2\x13.flit.v1.ModelStateR\x05state\x12*\n" +
+	"\x11can_end_reasoning\x18\x0f \x01(\bR\x0fcanEndReasoning\"\x16\n" +
 	"\x14ListProvidersRequest\"H\n" +
 	"\x15ListProvidersResponse\x12/\n" +
 	"\tproviders\x18\x01 \x03(\v2\x11.flit.v1.ProviderR\tproviders\"/\n" +

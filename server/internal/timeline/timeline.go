@@ -21,7 +21,7 @@ import (
 func Write(w io.Writer, sess store.Session, events []*flitv1.Event, now time.Time) error {
 	p := &printer{w: w, now: now,
 		msgs: map[string]*message{}, calls: map[string]callStart{}, tools: map[string]toolStart{}, prompts: map[string]promptStart{},
-		queued: map[string]promptStart{}}
+		queued: map[string]promptStart{}, waiting: map[string]*flitv1.ModelCallWaiting{}}
 	p.header(sess, events)
 	for _, ev := range events {
 		p.event(ev)
@@ -62,6 +62,7 @@ type printer struct {
 	tools   map[string]toolStart
 	prompts map[string]promptStart
 	queued  map[string]promptStart // queued messages, by queue id
+	waiting map[string]*flitv1.ModelCallWaiting
 	// lastProgress is the latest prompt progress of each open call.
 	lastProgress map[string]*flitv1.PromptProgress
 	last         time.Time
@@ -184,6 +185,32 @@ func (p *printer) event(ev *flitv1.Event) {
 	case ev.GetModelChanged() != nil:
 		m := ev.GetModelChanged()
 		p.line(at, 0, "model set to %s/%s%s", m.Provider, m.Model, paren(m.Effort))
+	case ev.GetModelCallWaiting() != nil:
+		w := ev.GetModelCallWaiting()
+		switch w.Reason {
+		case flitv1.ModelWaitReason_MODEL_WAIT_REASON_SLOTS_BUSY:
+			p.line(at, 2, "waiting for a free llama.cpp slot (all %d busy)", w.TotalSlots)
+		case flitv1.ModelWaitReason_MODEL_WAIT_REASON_SLEEPING:
+			p.line(at, 2, "waiting: the model is asleep and waking up")
+		case flitv1.ModelWaitReason_MODEL_WAIT_REASON_LOADING:
+			p.line(at, 2, "waiting: llama.cpp is loading the model")
+		}
+		p.waiting[callKey(w.MessageId, w.Attempt)] = w
+	case ev.GetPromptCache() != nil:
+		c := ev.GetPromptCache()
+		what := "saved to"
+		if c.Action == flitv1.PromptCacheAction_PROMPT_CACHE_ACTION_RESTORED {
+			what = "restored from"
+		}
+		if c.Error != "" {
+			p.line(at, 1, "prompt cache (slot %d) not %s %s: %s", c.Slot, what, c.File, c.Error)
+		} else {
+			p.line(at, 1, "prompt cache (slot %d) %s %s: %d tokens in %s", c.Slot, what, c.File, c.Tokens, dur(ms(c.ElapsedMs)))
+		}
+	case ev.GetReasoningEndRequested() != nil:
+		p.line(at, 2, "asked the model to stop thinking%s", paren(ev.GetReasoningEndRequested().Client))
+	case ev.GetReasoningEndIgnored() != nil:
+		p.line(at, 2, "the model kept thinking: it can't be cut short")
 	case ev.GetMessageQueued() != nil:
 		q := ev.GetMessageQueued()
 		p.queued[q.QueueId] = promptStart{title: q.Text, at: at}
@@ -260,6 +287,9 @@ func (p *printer) callEnded(at time.Time, e *flitv1.ModelCallEnded) {
 	if e.InputTokens > 0 || e.OutputTokens > 0 {
 		fmt.Fprintf(&b, ", %d in / %d out", e.InputTokens, e.OutputTokens)
 	}
+	if e.CachedTokens > 0 {
+		fmt.Fprintf(&b, " (%d cached)", e.CachedTokens)
+	}
 	if e.PromptMs > 0 || e.PredictedMs > 0 {
 		fmt.Fprintf(&b, "; llama.cpp: prompt %d tok in %s, generated %d tok in %s",
 			e.PromptTokens, dur(ms(e.PromptMs)), e.PredictedTokens, dur(ms(e.PredictedMs)))
@@ -284,6 +314,8 @@ func (p *printer) open(sess store.Session) {
 		text := fmt.Sprintf("model call for %s (attempt %d) sent %s ago and never ended", c.msg, c.attempt, dur(p.now.Sub(c.at)))
 		if m := p.msgs[c.msg]; m != nil && !m.lastDelta.IsZero() {
 			text += fmt.Sprintf("; last output %s ago (%d chars of text, %d of reasoning so far)", dur(p.now.Sub(m.lastDelta)), m.text, m.reasoning)
+		} else if w := p.waiting[key]; w != nil && w.Reason == flitv1.ModelWaitReason_MODEL_WAIT_REASON_SLOTS_BUSY {
+			text += fmt.Sprintf("; waiting for a free llama.cpp slot (all %d busy)", w.TotalSlots)
 		} else if pp := p.lastProgress[key]; pp != nil {
 			text += fmt.Sprintf("; no output yet, last prompt progress %d/%d", pp.Processed, pp.Total)
 		} else {

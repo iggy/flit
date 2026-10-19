@@ -1514,6 +1514,119 @@ class RetryModelCallResponse extends $pb.GeneratedMessage {
   static RetryModelCallResponse? _defaultInstance;
 }
 
+class EndReasoningRequest extends $pb.GeneratedMessage {
+  factory EndReasoningRequest({
+    $core.String? sessionId,
+    $core.String? client,
+  }) {
+    final result = EndReasoningRequest._();
+    if (sessionId != null) result.sessionId = sessionId;
+    if (client != null) result.client = client;
+    return result;
+  }
+
+  EndReasoningRequest._();
+
+  factory EndReasoningRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      EndReasoningRequest()..mergeFromBuffer(data, registry);
+  factory EndReasoningRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      EndReasoningRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'EndReasoningRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: EndReasoningRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'sessionId')
+    ..aOS(2, _omitFieldNames ? '' : 'client')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  EndReasoningRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  EndReasoningRequest copyWith(void Function(EndReasoningRequest) updates) =>
+      super.copyWith((message) => updates(message as EndReasoningRequest))
+          as EndReasoningRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core
+      .Deprecated('Use EndReasoningRequest() / EndReasoningRequest.new instead')
+  static EndReasoningRequest create() => EndReasoningRequest._();
+  static $pb.GeneratedMessage $_createMessage() => EndReasoningRequest._();
+  @$core.override
+  EndReasoningRequest createEmptyInstance() => EndReasoningRequest._();
+  @$core.pragma('dart2js:noInline')
+  static EndReasoningRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<EndReasoningRequest>(
+          EndReasoningRequest.$_createMessage);
+  static EndReasoningRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get sessionId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set sessionId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSessionId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSessionId() => $_clearField(1);
+
+  /// Who asked, for the log.
+  @$pb.TagNumber(2)
+  $core.String get client => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set client($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasClient() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearClient() => $_clearField(2);
+}
+
+class EndReasoningResponse extends $pb.GeneratedMessage {
+  factory EndReasoningResponse() => EndReasoningResponse._();
+
+  EndReasoningResponse._();
+
+  factory EndReasoningResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      EndReasoningResponse()..mergeFromBuffer(data, registry);
+  factory EndReasoningResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      EndReasoningResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'EndReasoningResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: EndReasoningResponse.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  EndReasoningResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  EndReasoningResponse copyWith(void Function(EndReasoningResponse) updates) =>
+      super.copyWith((message) => updates(message as EndReasoningResponse))
+          as EndReasoningResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use EndReasoningResponse() / EndReasoningResponse.new instead')
+  static EndReasoningResponse create() => EndReasoningResponse._();
+  static $pb.GeneratedMessage $_createMessage() => EndReasoningResponse._();
+  @$core.override
+  EndReasoningResponse createEmptyInstance() => EndReasoningResponse._();
+  @$core.pragma('dart2js:noInline')
+  static EndReasoningResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<EndReasoningResponse>(
+          EndReasoningResponse.$_createMessage);
+  static EndReasoningResponse? _defaultInstance;
+}
+
 class AnswerPromptRequest extends $pb.GeneratedMessage {
   factory AnswerPromptRequest({
     $core.String? sessionId,
@@ -2910,6 +3023,10 @@ enum Event_Payload {
   messageQueued,
   queuedMessageUpdated,
   queuedMessageDelivered,
+  modelCallWaiting,
+  promptCache,
+  reasoningEndRequested,
+  reasoningEndIgnored,
   notSet
 }
 
@@ -2944,6 +3061,10 @@ class Event extends $pb.GeneratedMessage {
     MessageQueued? messageQueued,
     QueuedMessageUpdated? queuedMessageUpdated,
     QueuedMessageDelivered? queuedMessageDelivered,
+    ModelCallWaiting? modelCallWaiting,
+    PromptCache? promptCache,
+    ReasoningEndRequested? reasoningEndRequested,
+    ReasoningEndIgnored? reasoningEndIgnored,
   }) {
     final result = Event._();
     if (sessionId != null) result.sessionId = sessionId;
@@ -2976,6 +3097,12 @@ class Event extends $pb.GeneratedMessage {
       result.queuedMessageUpdated = queuedMessageUpdated;
     if (queuedMessageDelivered != null)
       result.queuedMessageDelivered = queuedMessageDelivered;
+    if (modelCallWaiting != null) result.modelCallWaiting = modelCallWaiting;
+    if (promptCache != null) result.promptCache = promptCache;
+    if (reasoningEndRequested != null)
+      result.reasoningEndRequested = reasoningEndRequested;
+    if (reasoningEndIgnored != null)
+      result.reasoningEndIgnored = reasoningEndIgnored;
     return result;
   }
 
@@ -3014,6 +3141,10 @@ class Event extends $pb.GeneratedMessage {
     32: Event_Payload.messageQueued,
     33: Event_Payload.queuedMessageUpdated,
     34: Event_Payload.queuedMessageDelivered,
+    35: Event_Payload.modelCallWaiting,
+    36: Event_Payload.promptCache,
+    37: Event_Payload.reasoningEndRequested,
+    38: Event_Payload.reasoningEndIgnored,
     0: Event_Payload.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
@@ -3045,7 +3176,11 @@ class Event extends $pb.GeneratedMessage {
       31,
       32,
       33,
-      34
+      34,
+      35,
+      36,
+      37,
+      38
     ])
     ..aOS(1, _omitFieldNames ? '' : 'sessionId')
     ..aInt64(2, _omitFieldNames ? '' : 'seq')
@@ -3103,6 +3238,15 @@ class Event extends $pb.GeneratedMessage {
     ..aOM<QueuedMessageDelivered>(
         34, _omitFieldNames ? '' : 'queuedMessageDelivered',
         subBuilder: QueuedMessageDelivered.$_createMessage)
+    ..aOM<ModelCallWaiting>(35, _omitFieldNames ? '' : 'modelCallWaiting',
+        subBuilder: ModelCallWaiting.$_createMessage)
+    ..aOM<PromptCache>(36, _omitFieldNames ? '' : 'promptCache',
+        subBuilder: PromptCache.$_createMessage)
+    ..aOM<ReasoningEndRequested>(
+        37, _omitFieldNames ? '' : 'reasoningEndRequested',
+        subBuilder: ReasoningEndRequested.$_createMessage)
+    ..aOM<ReasoningEndIgnored>(38, _omitFieldNames ? '' : 'reasoningEndIgnored',
+        subBuilder: ReasoningEndIgnored.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -3150,6 +3294,10 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(32)
   @$pb.TagNumber(33)
   @$pb.TagNumber(34)
+  @$pb.TagNumber(35)
+  @$pb.TagNumber(36)
+  @$pb.TagNumber(37)
+  @$pb.TagNumber(38)
   Event_Payload whichPayload() => _Event_PayloadByTag[$_whichOneof(0)]!;
   @$pb.TagNumber(10)
   @$pb.TagNumber(11)
@@ -3176,6 +3324,10 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(32)
   @$pb.TagNumber(33)
   @$pb.TagNumber(34)
+  @$pb.TagNumber(35)
+  @$pb.TagNumber(36)
+  @$pb.TagNumber(37)
+  @$pb.TagNumber(38)
   void clearPayload() => $_clearField($_whichOneof(0));
 
   @$pb.TagNumber(1)
@@ -3483,6 +3635,51 @@ class Event extends $pb.GeneratedMessage {
   void clearQueuedMessageDelivered() => $_clearField(34);
   @$pb.TagNumber(34)
   QueuedMessageDelivered ensureQueuedMessageDelivered() => $_ensure(27);
+
+  @$pb.TagNumber(35)
+  ModelCallWaiting get modelCallWaiting => $_getN(28);
+  @$pb.TagNumber(35)
+  set modelCallWaiting(ModelCallWaiting value) => $_setField(35, value);
+  @$pb.TagNumber(35)
+  $core.bool hasModelCallWaiting() => $_has(28);
+  @$pb.TagNumber(35)
+  void clearModelCallWaiting() => $_clearField(35);
+  @$pb.TagNumber(35)
+  ModelCallWaiting ensureModelCallWaiting() => $_ensure(28);
+
+  @$pb.TagNumber(36)
+  PromptCache get promptCache => $_getN(29);
+  @$pb.TagNumber(36)
+  set promptCache(PromptCache value) => $_setField(36, value);
+  @$pb.TagNumber(36)
+  $core.bool hasPromptCache() => $_has(29);
+  @$pb.TagNumber(36)
+  void clearPromptCache() => $_clearField(36);
+  @$pb.TagNumber(36)
+  PromptCache ensurePromptCache() => $_ensure(29);
+
+  @$pb.TagNumber(37)
+  ReasoningEndRequested get reasoningEndRequested => $_getN(30);
+  @$pb.TagNumber(37)
+  set reasoningEndRequested(ReasoningEndRequested value) =>
+      $_setField(37, value);
+  @$pb.TagNumber(37)
+  $core.bool hasReasoningEndRequested() => $_has(30);
+  @$pb.TagNumber(37)
+  void clearReasoningEndRequested() => $_clearField(37);
+  @$pb.TagNumber(37)
+  ReasoningEndRequested ensureReasoningEndRequested() => $_ensure(30);
+
+  @$pb.TagNumber(38)
+  ReasoningEndIgnored get reasoningEndIgnored => $_getN(31);
+  @$pb.TagNumber(38)
+  set reasoningEndIgnored(ReasoningEndIgnored value) => $_setField(38, value);
+  @$pb.TagNumber(38)
+  $core.bool hasReasoningEndIgnored() => $_has(31);
+  @$pb.TagNumber(38)
+  void clearReasoningEndIgnored() => $_clearField(38);
+  @$pb.TagNumber(38)
+  ReasoningEndIgnored ensureReasoningEndIgnored() => $_ensure(31);
 }
 
 /// MessageStarted opens a message. Its text arrives as TextDelta events and
@@ -4489,6 +4686,7 @@ class Usage extends $pb.GeneratedMessage {
     $core.double? promptTokensPerSecond,
     $core.double? generationTokensPerSecond,
     $core.String? timingSource,
+    $fixnum.Int64? cachedTokens,
   }) {
     final result = Usage._();
     if (messageId != null) result.messageId = messageId;
@@ -4503,6 +4701,7 @@ class Usage extends $pb.GeneratedMessage {
     if (generationTokensPerSecond != null)
       result.generationTokensPerSecond = generationTokensPerSecond;
     if (timingSource != null) result.timingSource = timingSource;
+    if (cachedTokens != null) result.cachedTokens = cachedTokens;
     return result;
   }
 
@@ -4528,6 +4727,7 @@ class Usage extends $pb.GeneratedMessage {
     ..aD(7, _omitFieldNames ? '' : 'promptTokensPerSecond')
     ..aD(8, _omitFieldNames ? '' : 'generationTokensPerSecond')
     ..aOS(9, _omitFieldNames ? '' : 'timingSource')
+    ..aInt64(10, _omitFieldNames ? '' : 'cachedTokens')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -4637,6 +4837,17 @@ class Usage extends $pb.GeneratedMessage {
   $core.bool hasTimingSource() => $_has(8);
   @$pb.TagNumber(9)
   void clearTimingSource() => $_clearField(9);
+
+  /// Prompt tokens the server reused from its cache instead of reading
+  /// again (llama.cpp); part of input_tokens.
+  @$pb.TagNumber(10)
+  $fixnum.Int64 get cachedTokens => $_getI64(9);
+  @$pb.TagNumber(10)
+  set cachedTokens($fixnum.Int64 value) => $_setInt64(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasCachedTokens() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearCachedTokens() => $_clearField(10);
 }
 
 /// TodoUpdated is the agent's task list after it changed (the todo tool).
@@ -5549,6 +5760,7 @@ class ModelCallEnded extends $pb.GeneratedMessage {
     $fixnum.Int64? predictedTokens,
     $fixnum.Int64? predictedMs,
     $core.bool? willRetry,
+    $fixnum.Int64? cachedTokens,
   }) {
     final result = ModelCallEnded._();
     if (messageId != null) result.messageId = messageId;
@@ -5569,6 +5781,7 @@ class ModelCallEnded extends $pb.GeneratedMessage {
     if (predictedTokens != null) result.predictedTokens = predictedTokens;
     if (predictedMs != null) result.predictedMs = predictedMs;
     if (willRetry != null) result.willRetry = willRetry;
+    if (cachedTokens != null) result.cachedTokens = cachedTokens;
     return result;
   }
 
@@ -5604,6 +5817,7 @@ class ModelCallEnded extends $pb.GeneratedMessage {
     ..aInt64(16, _omitFieldNames ? '' : 'predictedTokens')
     ..aInt64(17, _omitFieldNames ? '' : 'predictedMs')
     ..aOB(18, _omitFieldNames ? '' : 'willRetry')
+    ..aInt64(19, _omitFieldNames ? '' : 'cachedTokens')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -5796,6 +6010,16 @@ class ModelCallEnded extends $pb.GeneratedMessage {
   $core.bool hasWillRetry() => $_has(17);
   @$pb.TagNumber(18)
   void clearWillRetry() => $_clearField(18);
+
+  /// Prompt tokens llama.cpp reused from its cache.
+  @$pb.TagNumber(19)
+  $fixnum.Int64 get cachedTokens => $_getI64(18);
+  @$pb.TagNumber(19)
+  set cachedTokens($fixnum.Int64 value) => $_setInt64(18, value);
+  @$pb.TagNumber(19)
+  $core.bool hasCachedTokens() => $_has(18);
+  @$pb.TagNumber(19)
+  void clearCachedTokens() => $_clearField(19);
 }
 
 /// MessageQueued is a user message sent while a turn was running. It waits
@@ -6040,6 +6264,373 @@ class QueuedMessageDelivered extends $pb.GeneratedMessage {
   void clearMessageId() => $_clearField(2);
 }
 
+/// ModelCallWaiting says why the model call for message_id hasn't started
+/// yet (llama.cpp only). Sent when the reason changes, until the server
+/// starts on the call (PromptProgress or reply text follow).
+class ModelCallWaiting extends $pb.GeneratedMessage {
+  factory ModelCallWaiting({
+    $core.String? messageId,
+    $core.int? attempt,
+    ModelWaitReason? reason,
+    $core.int? totalSlots,
+  }) {
+    final result = ModelCallWaiting._();
+    if (messageId != null) result.messageId = messageId;
+    if (attempt != null) result.attempt = attempt;
+    if (reason != null) result.reason = reason;
+    if (totalSlots != null) result.totalSlots = totalSlots;
+    return result;
+  }
+
+  ModelCallWaiting._();
+
+  factory ModelCallWaiting.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ModelCallWaiting()..mergeFromBuffer(data, registry);
+  factory ModelCallWaiting.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ModelCallWaiting()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ModelCallWaiting',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: ModelCallWaiting.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'messageId')
+    ..aI(2, _omitFieldNames ? '' : 'attempt')
+    ..aE<ModelWaitReason>(3, _omitFieldNames ? '' : 'reason',
+        enumValues: ModelWaitReason.values)
+    ..aI(4, _omitFieldNames ? '' : 'totalSlots')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ModelCallWaiting clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ModelCallWaiting copyWith(void Function(ModelCallWaiting) updates) =>
+      super.copyWith((message) => updates(message as ModelCallWaiting))
+          as ModelCallWaiting;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ModelCallWaiting() / ModelCallWaiting.new instead')
+  static ModelCallWaiting create() => ModelCallWaiting._();
+  static $pb.GeneratedMessage $_createMessage() => ModelCallWaiting._();
+  @$core.override
+  ModelCallWaiting createEmptyInstance() => ModelCallWaiting._();
+  @$core.pragma('dart2js:noInline')
+  static ModelCallWaiting getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ModelCallWaiting>(
+          ModelCallWaiting.$_createMessage);
+  static ModelCallWaiting? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get messageId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set messageId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasMessageId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearMessageId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.int get attempt => $_getIZ(1);
+  @$pb.TagNumber(2)
+  set attempt($core.int value) => $_setSignedInt32(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasAttempt() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearAttempt() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  ModelWaitReason get reason => $_getN(2);
+  @$pb.TagNumber(3)
+  set reason(ModelWaitReason value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasReason() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearReason() => $_clearField(3);
+
+  /// For SLOTS_BUSY: how many slots there are (all busy).
+  @$pb.TagNumber(4)
+  $core.int get totalSlots => $_getIZ(3);
+  @$pb.TagNumber(4)
+  set totalSlots($core.int value) => $_setSignedInt32(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasTotalSlots() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearTotalSlots() => $_clearField(4);
+}
+
+/// PromptCache is flit saving or restoring the session's llama.cpp prompt
+/// cache (config llamacpp.kv_cache).
+class PromptCache extends $pb.GeneratedMessage {
+  factory PromptCache({
+    PromptCacheAction? action,
+    $core.String? messageId,
+    $core.int? slot,
+    $core.String? file,
+    $fixnum.Int64? tokens,
+    $fixnum.Int64? elapsedMs,
+    $core.String? error,
+  }) {
+    final result = PromptCache._();
+    if (action != null) result.action = action;
+    if (messageId != null) result.messageId = messageId;
+    if (slot != null) result.slot = slot;
+    if (file != null) result.file = file;
+    if (tokens != null) result.tokens = tokens;
+    if (elapsedMs != null) result.elapsedMs = elapsedMs;
+    if (error != null) result.error = error;
+    return result;
+  }
+
+  PromptCache._();
+
+  factory PromptCache.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      PromptCache()..mergeFromBuffer(data, registry);
+  factory PromptCache.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      PromptCache()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'PromptCache',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: PromptCache.$_createMessage)
+    ..aE<PromptCacheAction>(1, _omitFieldNames ? '' : 'action',
+        enumValues: PromptCacheAction.values)
+    ..aOS(2, _omitFieldNames ? '' : 'messageId')
+    ..aI(3, _omitFieldNames ? '' : 'slot')
+    ..aOS(4, _omitFieldNames ? '' : 'file')
+    ..aInt64(5, _omitFieldNames ? '' : 'tokens')
+    ..aInt64(6, _omitFieldNames ? '' : 'elapsedMs')
+    ..aOS(7, _omitFieldNames ? '' : 'error')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  PromptCache clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  PromptCache copyWith(void Function(PromptCache) updates) =>
+      super.copyWith((message) => updates(message as PromptCache))
+          as PromptCache;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use PromptCache() / PromptCache.new instead')
+  static PromptCache create() => PromptCache._();
+  static $pb.GeneratedMessage $_createMessage() => PromptCache._();
+  @$core.override
+  PromptCache createEmptyInstance() => PromptCache._();
+  @$core.pragma('dart2js:noInline')
+  static PromptCache getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<PromptCache>(
+          PromptCache.$_createMessage);
+  static PromptCache? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  PromptCacheAction get action => $_getN(0);
+  @$pb.TagNumber(1)
+  set action(PromptCacheAction value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasAction() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearAction() => $_clearField(1);
+
+  /// The call it was for, when restoring.
+  @$pb.TagNumber(2)
+  $core.String get messageId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set messageId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasMessageId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearMessageId() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.int get slot => $_getIZ(2);
+  @$pb.TagNumber(3)
+  set slot($core.int value) => $_setSignedInt32(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasSlot() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearSlot() => $_clearField(3);
+
+  /// Save file on the server, e.g. flit-kv-2.bin.
+  @$pb.TagNumber(4)
+  $core.String get file => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set file($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasFile() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearFile() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $fixnum.Int64 get tokens => $_getI64(4);
+  @$pb.TagNumber(5)
+  set tokens($fixnum.Int64 value) => $_setInt64(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasTokens() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearTokens() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $fixnum.Int64 get elapsedMs => $_getI64(5);
+  @$pb.TagNumber(6)
+  set elapsedMs($fixnum.Int64 value) => $_setInt64(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasElapsedMs() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearElapsedMs() => $_clearField(6);
+
+  /// Set when it failed (the call goes ahead without it).
+  @$pb.TagNumber(7)
+  $core.String get error => $_getSZ(6);
+  @$pb.TagNumber(7)
+  set error($core.String value) => $_setString(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasError() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearError() => $_clearField(7);
+}
+
+/// ReasoningEndRequested is someone asking the model to stop thinking and
+/// answer now (EndReasoning).
+class ReasoningEndRequested extends $pb.GeneratedMessage {
+  factory ReasoningEndRequested({
+    $core.String? messageId,
+    $core.String? client,
+  }) {
+    final result = ReasoningEndRequested._();
+    if (messageId != null) result.messageId = messageId;
+    if (client != null) result.client = client;
+    return result;
+  }
+
+  ReasoningEndRequested._();
+
+  factory ReasoningEndRequested.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ReasoningEndRequested()..mergeFromBuffer(data, registry);
+  factory ReasoningEndRequested.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ReasoningEndRequested()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ReasoningEndRequested',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: ReasoningEndRequested.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'messageId')
+    ..aOS(2, _omitFieldNames ? '' : 'client')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ReasoningEndRequested clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ReasoningEndRequested copyWith(
+          void Function(ReasoningEndRequested) updates) =>
+      super.copyWith((message) => updates(message as ReasoningEndRequested))
+          as ReasoningEndRequested;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ReasoningEndRequested() / ReasoningEndRequested.new instead')
+  static ReasoningEndRequested create() => ReasoningEndRequested._();
+  static $pb.GeneratedMessage $_createMessage() => ReasoningEndRequested._();
+  @$core.override
+  ReasoningEndRequested createEmptyInstance() => ReasoningEndRequested._();
+  @$core.pragma('dart2js:noInline')
+  static ReasoningEndRequested getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ReasoningEndRequested>(
+          ReasoningEndRequested.$_createMessage);
+  static ReasoningEndRequested? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get messageId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set messageId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasMessageId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearMessageId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get client => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set client($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasClient() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearClient() => $_clearField(2);
+}
+
+/// ReasoningEndIgnored is the model still thinking a while after
+/// EndReasoning: its server can't cut it short. flit won't offer it for
+/// that model again.
+class ReasoningEndIgnored extends $pb.GeneratedMessage {
+  factory ReasoningEndIgnored({
+    $core.String? messageId,
+  }) {
+    final result = ReasoningEndIgnored._();
+    if (messageId != null) result.messageId = messageId;
+    return result;
+  }
+
+  ReasoningEndIgnored._();
+
+  factory ReasoningEndIgnored.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ReasoningEndIgnored()..mergeFromBuffer(data, registry);
+  factory ReasoningEndIgnored.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ReasoningEndIgnored()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ReasoningEndIgnored',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: ReasoningEndIgnored.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'messageId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ReasoningEndIgnored clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ReasoningEndIgnored copyWith(void Function(ReasoningEndIgnored) updates) =>
+      super.copyWith((message) => updates(message as ReasoningEndIgnored))
+          as ReasoningEndIgnored;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core
+      .Deprecated('Use ReasoningEndIgnored() / ReasoningEndIgnored.new instead')
+  static ReasoningEndIgnored create() => ReasoningEndIgnored._();
+  static $pb.GeneratedMessage $_createMessage() => ReasoningEndIgnored._();
+  @$core.override
+  ReasoningEndIgnored createEmptyInstance() => ReasoningEndIgnored._();
+  @$core.pragma('dart2js:noInline')
+  static ReasoningEndIgnored getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ReasoningEndIgnored>(
+          ReasoningEndIgnored.$_createMessage);
+  static ReasoningEndIgnored? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get messageId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set messageId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasMessageId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearMessageId() => $_clearField(1);
+}
+
 /// SessionService runs agent sessions. A session is a conversation with the
 /// agent in a working directory. Everything that happens in it is recorded as
 /// an append-only, numbered event log, so a client can attach at any point,
@@ -6115,6 +6706,16 @@ class SessionServiceApi {
           $pb.ClientContext? ctx, RetryModelCallRequest request) =>
       _client.invoke<RetryModelCallResponse>(ctx, 'SessionService',
           'RetryModelCall', request, RetryModelCallResponse());
+
+  /// EndReasoning asks the model to stop thinking and answer now (llama.cpp
+  /// only, for models where it can: ListModels' can_end_reasoning). Only
+  /// while the model is thinking and hasn't started its answer; otherwise
+  /// FAILED_PRECONDITION. If the model keeps thinking anyway, the log gets
+  /// ReasoningEndIgnored and the model is marked as not supporting it.
+  $async.Future<EndReasoningResponse> endReasoning(
+          $pb.ClientContext? ctx, EndReasoningRequest request) =>
+      _client.invoke<EndReasoningResponse>(ctx, 'SessionService',
+          'EndReasoning', request, EndReasoningResponse());
 
   /// AnswerPrompt answers a prompt the agent is waiting on. The first answer
   /// wins; later answers fail with FAILED_PRECONDITION.

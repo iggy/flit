@@ -58,6 +58,7 @@ type Config struct {
 	SkillsDirs []string `yaml:"skills_dirs"`
 	Web        Web      `yaml:"web"`
 	Git        Git      `yaml:"git"`
+	LlamaCpp   LlamaCpp `yaml:"llamacpp"`
 }
 
 // MCPServer returns the MCP server named name.
@@ -122,6 +123,24 @@ type MCPServer struct {
 
 // EnabledByDefault reports whether new sessions get this server.
 func (m MCPServer) EnabledByDefault() bool { return m.Enabled == nil || *m.Enabled }
+
+// LlamaCpp configures what flit does with llama.cpp servers beyond the
+// OpenAI API.
+type LlamaCpp struct {
+	// KVCache saves each session's prompt cache to the server's
+	// --slot-save-path when a turn ends and restores it before the
+	// session's next turn, so a long session doesn't re-read its whole
+	// prompt after other requests used the server. Default true; skipped
+	// quietly where the server can't save.
+	KVCache *bool `yaml:"kv_cache"`
+	// KVCacheFiles is how many save files flit uses per server, reused
+	// least recently used first (llama.cpp can't delete them, and each can
+	// be gigabytes).
+	KVCacheFiles int `yaml:"kv_cache_files"`
+}
+
+// KVCacheOn reports whether prompt cache saving is on.
+func (l LlamaCpp) KVCacheOn() bool { return l.KVCache == nil || *l.KVCache }
 
 // Web configures the web tools.
 type Web struct {
@@ -289,6 +308,7 @@ func Default() Config {
 		SkillsDirs:         []string{"skills"},
 		Web:                Web{Fetch: ptr(true)},
 		Git:                Git{Enabled: ptr(true)},
+		LlamaCpp:           LlamaCpp{KVCache: ptr(true), KVCacheFiles: 4},
 		Agent: Agent{
 			Tasks:              map[string]TaskModel{},
 			ModelPromptAppends: map[string]string{},
@@ -350,6 +370,10 @@ func (c *Config) fillDefaults() {
 	if c.Shell.Timeout == 0 {
 		c.Shell.Timeout = d.Shell.Timeout
 	}
+	if c.LlamaCpp.KVCacheFiles == 0 {
+		c.LlamaCpp.KVCacheFiles = d.LlamaCpp.KVCacheFiles
+	}
+
 	if c.Shell.MaxTimeout == 0 {
 		c.Shell.MaxTimeout = d.Shell.MaxTimeout
 	}
@@ -462,6 +486,9 @@ func (c Config) Validate() error {
 		c.Agent.ModelFirstTokenTimeout < 0 || c.Agent.ModelStallTimeout < 0 {
 		return errors.New("agent: limits must not be negative")
 	}
+	if c.LlamaCpp.KVCacheFiles < 0 || c.LlamaCpp.KVCacheFiles > 64 {
+		return errors.New("llamacpp.kv_cache_files must be 1-64")
+	}
 	if c.Agent.ModelRetries < 0 || c.Agent.ModelRetries > 5 {
 		return errors.New("agent.model_retries must be between 0 and 5")
 	}
@@ -561,6 +588,18 @@ git:
   # git_status, git_diff, git_log and git_commit on the session's repo.
   # Nothing pushes.
   enabled: true
+
+llamacpp:
+  # Keep each session's prompt cache on llama.cpp servers started with
+  # --slot-save-path: saved when a turn ends, restored before the session's
+  # next turn. Coming back to a long session after other requests used the
+  # server then skips re-reading its whole prompt. Servers that can't save
+  # are skipped.
+  kv_cache: true
+  # Save files per server, reused least recently used first. Each holds a
+  # whole context and can be gigabytes; llama.cpp can't delete them, so
+  # flit sticks to flit-kv-0.bin .. flit-kv-<n-1>.bin.
+  kv_cache_files: 4
 
 agent:
   # Defaults for sessions that don't choose their own (or get one from

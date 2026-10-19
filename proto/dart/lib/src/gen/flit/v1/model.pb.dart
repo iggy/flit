@@ -175,6 +175,7 @@ class Model extends $pb.GeneratedMessage {
     $core.bool? favorite,
     $0.Timestamp? lastUsed,
     ModelState? state,
+    $core.bool? canEndReasoning,
   }) {
     final result = Model._();
     if (provider != null) result.provider = provider;
@@ -191,6 +192,7 @@ class Model extends $pb.GeneratedMessage {
     if (favorite != null) result.favorite = favorite;
     if (lastUsed != null) result.lastUsed = lastUsed;
     if (state != null) result.state = state;
+    if (canEndReasoning != null) result.canEndReasoning = canEndReasoning;
     return result;
   }
 
@@ -223,6 +225,7 @@ class Model extends $pb.GeneratedMessage {
         subBuilder: $0.Timestamp.$_createMessage)
     ..aE<ModelState>(14, _omitFieldNames ? '' : 'state',
         enumValues: ModelState.values)
+    ..aOB(15, _omitFieldNames ? '' : 'canEndReasoning')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -373,6 +376,17 @@ class Model extends $pb.GeneratedMessage {
   $core.bool hasState() => $_has(13);
   @$pb.TagNumber(14)
   void clearState() => $_clearField(14);
+
+  /// Whether EndReasoning ("answer now") may work: a llama.cpp model that
+  /// hasn't been seen ignoring it.
+  @$pb.TagNumber(15)
+  $core.bool get canEndReasoning => $_getBF(14);
+  @$pb.TagNumber(15)
+  set canEndReasoning($core.bool value) => $_setBool(14, value);
+  @$pb.TagNumber(15)
+  $core.bool hasCanEndReasoning() => $_has(14);
+  @$pb.TagNumber(15)
+  void clearCanEndReasoning() => $_clearField(15);
 }
 
 class ListProvidersRequest extends $pb.GeneratedMessage {
