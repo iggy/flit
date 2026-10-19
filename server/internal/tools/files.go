@@ -1,16 +1,12 @@
 package tools
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/fs"
 	"os"
-	"path"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strings"
 )
@@ -258,104 +254,5 @@ var listTool = Tool{
 			out += fmt.Sprintf("\n[stopped after %d entries]", listMaxEntries)
 		}
 		return Result{Text: out}
-	},
-}
-
-var grepTool = Tool{
-	Name:        "grep",
-	Description: "Search file contents with a regular expression (RE2 syntax). Returns path:line: text for each match. Skips binary files, .git and node_modules.",
-	Schema: `{"type":"object","properties":{
-"pattern":{"type":"string","description":"Regular expression"},
-"path":{"type":"string","description":"File or directory to search, relative to the working directory (default .)"},
-"glob":{"type":"string","description":"Only search files whose name matches this glob, e.g. *.go"},
-"ignore_case":{"type":"boolean"}
-},"required":["pattern"]}`,
-	Run: func(ctx context.Context, env *Env, raw json.RawMessage) Result {
-		var a struct {
-			Pattern    string `json:"pattern"`
-			Path       string `json:"path"`
-			Glob       string `json:"glob"`
-			IgnoreCase bool   `json:"ignore_case"`
-		}
-		if err := decode(raw, &a); err != nil {
-			return errorf("%v", err)
-		}
-		expr := a.Pattern
-		if a.IgnoreCase {
-			expr = "(?i)" + expr
-		}
-		re, err := regexp.Compile(expr)
-		if err != nil {
-			return errorf("bad pattern: %v", err)
-		}
-		if a.Glob != "" {
-			if _, err := path.Match(a.Glob, ""); err != nil {
-				return errorf("bad glob: %v", err)
-			}
-		}
-		root, err := resolve(env.Dir, a.Path)
-		if err != nil {
-			return errorf("%v", err)
-		}
-
-		var out strings.Builder
-		matches := 0
-		errFull := errors.New("full")
-		err = filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
-			if err != nil {
-				if p == root {
-					return err
-				}
-				return nil
-			}
-			if ctx.Err() != nil {
-				return ctx.Err()
-			}
-			if d.IsDir() {
-				if p != root && skipDir(d.Name()) {
-					return filepath.SkipDir
-				}
-				return nil
-			}
-			if a.Glob != "" {
-				if ok, _ := path.Match(a.Glob, d.Name()); !ok {
-					return nil
-				}
-			}
-			if info, err := d.Info(); err != nil || !info.Mode().IsRegular() || info.Size() > grepMaxFileSize {
-				return nil
-			}
-			b, err := os.ReadFile(p)
-			if err != nil || isBinary(b) {
-				return nil
-			}
-			sc := bufio.NewScanner(strings.NewReader(string(b)))
-			sc.Buffer(make([]byte, 64<<10), grepMaxFileSize)
-			for n := 1; sc.Scan(); n++ {
-				line := sc.Text()
-				if !re.MatchString(line) {
-					continue
-				}
-				if len(line) > grepMaxLineLen {
-					line = line[:grepMaxLineLen] + "…"
-				}
-				fmt.Fprintf(&out, "%s:%d: %s\n", rel(env.Dir, p), n, line)
-				matches++
-				if matches >= grepMaxMatches {
-					return errFull
-				}
-			}
-			return nil
-		})
-		if err != nil && !errors.Is(err, errFull) {
-			return errorf("%v", err)
-		}
-		if matches == 0 {
-			return Result{Text: "no matches"}
-		}
-		if errors.Is(err, errFull) {
-			fmt.Fprintf(&out, "[stopped after %d matches; narrow the pattern or path]\n", grepMaxMatches)
-		}
-		return Result{Text: out.String()}
 	},
 }

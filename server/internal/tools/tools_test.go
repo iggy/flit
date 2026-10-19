@@ -142,21 +142,6 @@ func TestListAndGrep(t *testing.T) {
 		t.Fatalf("list depth 3 = %q", r.Text)
 	}
 
-	r = run(t, env, "grep", map[string]any{"pattern": "Hello", "glob": "*.go"})
-	if r.IsError || !strings.Contains(r.Text, "lib/hello.go:2: func Hello() {}") || !strings.Contains(r.Text, "main.go:2:") ||
-		strings.Contains(r.Text, ".git") || strings.Contains(r.Text, "x.txt") {
-		t.Fatalf("grep = %q", r.Text)
-	}
-	r = run(t, env, "grep", map[string]any{"pattern": "HELLO WORLD", "ignore_case": true})
-	if !strings.Contains(r.Text, "lib/deep/x.txt:1:") {
-		t.Fatalf("grep -i = %q", r.Text)
-	}
-	if r := run(t, env, "grep", map[string]any{"pattern": "nothing-here"}); r.Text != "no matches" {
-		t.Fatalf("grep none = %q", r.Text)
-	}
-	if r := run(t, env, "grep", map[string]any{"pattern": "("}); !r.IsError {
-		t.Fatal("bad regexp should fail")
-	}
 }
 
 func TestShell(t *testing.T) {
