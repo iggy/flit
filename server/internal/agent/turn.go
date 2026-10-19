@@ -287,6 +287,7 @@ func (s *session) toolSet(ctx context.Context, cfg config.Config, info store.Ses
 	}
 	{
 		list, problems := skills.Load(skills.SessionDirs(info.WorkingDir, global))
+		list = skills.WithBuiltin(list)
 		for _, p := range problems {
 			s.m.log.Warn("skill skipped", "err", p)
 		}

@@ -396,4 +396,13 @@ func TestSkillTool(t *testing.T) {
 	if r := call(`{"name":"nope"}`); !r.IsError {
 		t.Fatal("unknown skill loaded")
 	}
+
+	// Built-in skills have instructions but no directory or files.
+	set = []Tool{SkillTool(skills.WithBuiltin(list))}
+	if r := call(`{"name":"init"}`); r.IsError || !strings.Contains(r.Text, "Skill init (built in)") || !strings.Contains(r.Text, "AGENTS.md") {
+		t.Fatalf("built-in load = %+v", r)
+	}
+	if r := call(`{"name":"init","file":"go.mod"}`); !r.IsError {
+		t.Fatalf("built-in file = %+v", r)
+	}
 }

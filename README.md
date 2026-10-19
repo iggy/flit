@@ -169,7 +169,10 @@ state, and the agent's todo list.
   for compatibility, at the working directory and the git root) and from
   `skills/` next to the config (`skills_dirs`). A repo skill wins over a
   global one with the same name. The model sees names and descriptions and
-  loads a skill's instructions and files when needed.
+  loads a skill's instructions and files when needed. A message starting
+  with `/<skill>` asks for that skill (the app's composer suggests them
+  when you type `/`). flit ships one: **/init** surveys the repo and writes
+  or updates its `AGENTS.md`, asking before it changes an existing one.
 - **git** tools (status, diff, log, commit; nothing pushes), **web_fetch**,
   and **web_search** through a SearXNG instance (`web.search`); paid search
   APIs aren't supported.
