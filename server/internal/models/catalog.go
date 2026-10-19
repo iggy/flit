@@ -6,7 +6,9 @@
 package models
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -34,9 +36,23 @@ type Model struct {
 	SupportsVision    bool
 	Efforts           []string
 	Loaded            bool
-	Discovered        bool
-	Overridden        bool
+	// State is a llama.cpp router model's state ("" for other servers).
+	State      State
+	Discovered bool
+	Overridden bool
 }
+
+// State is a llama.cpp router model's state, as it reports it.
+type State string
+
+// States a llama.cpp router reports (and StateFailed for a failed load).
+const (
+	StateUnloaded State = "unloaded"
+	StateLoading  State = "loading"
+	StateLoaded   State = "loaded"
+	StateSleeping State = "sleeping"
+	StateFailed   State = "failed"
+)
 
 // ProviderStatus is how discovery went for one provider.
 type ProviderStatus struct {
@@ -46,6 +62,8 @@ type ProviderStatus struct {
 	ModelCount int
 	Refreshed  time.Time
 	Err        string
+	// CanLoad: a llama.cpp router, whose models flit can load and unload.
+	CanLoad bool
 }
 
 // Override corrects or adds a model. Unset fields leave discovered values
@@ -145,6 +163,7 @@ func (c *Catalog) refreshOne(ctx context.Context, p config.Provider) {
 		c.discovered[p.Name] = list
 	}
 	st.ModelCount = len(c.discovered[p.Name])
+	st.CanLoad = st.Kind == KindLlamaCpp && slices.ContainsFunc(c.discovered[p.Name], func(m Model) bool { return m.State != "" })
 	c.status[p.Name] = st
 }
 
@@ -309,5 +328,82 @@ func applyOverride(m *Model, o Override) {
 	}
 	if o.Efforts != nil {
 		m.Efforts = o.Efforts
+	}
+}
+
+// ErrCantLoad is returned for load and unload on a provider that isn't a
+// llama.cpp router.
+var ErrCantLoad = errors.New("this provider can't load or unload models (only a llama.cpp router can)")
+
+// loadSettle bounds how long SetLoaded waits for the router to finish.
+var loadSettle = 90 * time.Second
+
+// SetLoaded asks a llama.cpp router to load or unload a model, then
+// refreshes the provider until the model has settled (or loadSettle
+// passes) and returns it as it is then.
+func (c *Catalog) SetLoaded(ctx context.Context, provider, model string, load bool) (Model, error) {
+	p, ok := c.cfg().Provider(provider)
+	if !ok {
+		return Model{}, fmt.Errorf("no provider %q in the config", provider)
+	}
+	c.mu.RLock()
+	canLoad := c.status[provider].CanLoad
+	c.mu.RUnlock()
+	if !canLoad {
+		return Model{}, ErrCantLoad
+	}
+	action := "unload"
+	if load {
+		action = "load"
+	}
+	// The router's own endpoints sit at the server root, beside /v1.
+	root := strings.TrimSuffix(strings.TrimSuffix(p.BaseURL, "/"), "/v1")
+	body, _ := json.Marshal(map[string]string{"model": model})
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, root+"/models/"+action, bytes.NewReader(body))
+	if err != nil {
+		return Model{}, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if key := p.Key(); key != "" {
+		req.Header.Set("Authorization", "Bearer "+key)
+	}
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return Model{}, err
+	}
+	defer resp.Body.Close()
+	b, _ := io.ReadAll(io.LimitReader(resp.Body, 64<<10))
+	var res struct {
+		Success bool `json:"success"`
+	}
+	if resp.StatusCode != http.StatusOK || json.Unmarshal(b, &res) != nil || !res.Success {
+		msg := strings.TrimSpace(string(b))
+		if len(msg) > 300 {
+			msg = msg[:300] + "…"
+		}
+		return Model{}, fmt.Errorf("%s %s: HTTP %d: %s", action, model, resp.StatusCode, msg)
+	}
+
+	settled := func(m Model) bool {
+		if load {
+			return m.State != StateLoading && m.State != StateUnloaded
+		}
+		return m.State != StateLoaded && m.State != StateSleeping
+	}
+	deadline := time.Now().Add(loadSettle)
+	for {
+		c.refreshOne(ctx, p)
+		m, ok := c.Lookup(provider, model)
+		if !ok {
+			return Model{}, fmt.Errorf("%s is no longer listed by %s", model, provider)
+		}
+		if settled(m) || !time.Now().Before(deadline) {
+			return m, nil
+		}
+		select {
+		case <-ctx.Done():
+			return m, ctx.Err()
+		case <-time.After(time.Second):
+		}
 	}
 }

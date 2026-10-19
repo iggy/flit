@@ -24,6 +24,7 @@ import (
 	"github.com/iggy/flit/server/internal/models"
 	"github.com/iggy/flit/server/internal/modelsvc"
 	"github.com/iggy/flit/server/internal/sessionsvc"
+	"github.com/iggy/flit/server/internal/store"
 	"github.com/iggy/flit/server/internal/system"
 )
 
@@ -38,6 +39,8 @@ type Deps struct {
 	Config   func() config.Config
 	Catalog  *models.Catalog
 	RolesDir func() string
+	// Store keeps model favorites and recents; nil leaves them out.
+	Store *store.Store
 }
 
 // NewHandler returns the API handler. Every RPC requires the admin token or
@@ -55,7 +58,7 @@ func NewHandler(adminToken string, d Deps) http.Handler {
 		mux.Handle(flitv1connect.NewProjectServiceHandler(&sessionsvc.Projects{M: d.Sessions}, opts))
 	}
 	if d.Catalog != nil {
-		mux.Handle(flitv1connect.NewModelServiceHandler(&modelsvc.Models{Catalog: d.Catalog}, opts))
+		mux.Handle(flitv1connect.NewModelServiceHandler(&modelsvc.Models{Catalog: d.Catalog, Store: d.Store}, opts))
 	}
 	if d.RolesDir != nil {
 		mux.Handle(flitv1connect.NewRoleServiceHandler(&modelsvc.Roles{Dir: d.RolesDir}, opts))

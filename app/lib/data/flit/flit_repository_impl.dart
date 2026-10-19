@@ -230,6 +230,43 @@ final class FlitRepositoryImpl implements FlitRepository {
   }
 
   @override
+  Future<void> setFavorite(
+    String provider,
+    String model, {
+    required bool favorite,
+  }) {
+    return flitCall(() async {
+      await _models.setFavorite(
+        pb.SetFavoriteRequest(
+          provider: provider,
+          model: model,
+          favorite: favorite,
+        ),
+      );
+    });
+  }
+
+  @override
+  Future<FlitModel> setModelLoaded(
+    String provider,
+    String model, {
+    required bool load,
+  }) {
+    return flitCall(() async {
+      if (load) {
+        final res = await _models.loadModel(
+          pb.LoadModelRequest(provider: provider, model: model),
+        );
+        return modelFromProto(res.model);
+      }
+      final res = await _models.unloadModel(
+        pb.UnloadModelRequest(provider: provider, model: model),
+      );
+      return modelFromProto(res.model);
+    });
+  }
+
+  @override
   Future<List<FlitAgentRole>> listRoles() {
     return flitCall(() async {
       final res = await _roles.listRoles(pb.ListRolesRequest());

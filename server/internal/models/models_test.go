@@ -2,13 +2,18 @@ package models
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/iggy/flit/server/internal/config"
 )
@@ -167,5 +172,92 @@ local:
 	_ = c.Refresh(context.Background(), "local")
 	if tiny := byID(c.Models("local"))["tiny"]; tiny.Overridden || tiny.ContextLength != 8192 {
 		t.Errorf("with broken overrides = %+v", tiny)
+	}
+}
+
+// A fake llama.cpp router: loading takes two /models polls.
+type fakeRouter struct {
+	mu    sync.Mutex
+	state map[string]string
+	polls int
+	calls []string
+}
+
+func (f *fakeRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	switch r.URL.Path {
+	case "/v1/models":
+		f.polls++
+		var data []map[string]any
+		for _, id := range []string{"big", "tiny"} {
+			st := f.state[id]
+			if st == "loading" && f.polls > 2 {
+				st, f.state[id] = "loaded", "loaded"
+			}
+			data = append(data, map[string]any{"id": id, "owned_by": "llamacpp", "status": map[string]any{"value": st, "args": []string{"--jinja"}}})
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"data": data})
+	case "/models/load", "/models/unload":
+		var body struct{ Model string }
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		f.calls = append(f.calls, r.URL.Path+" "+body.Model)
+		if _, ok := f.state[body.Model]; !ok {
+			http.Error(w, `{"error":{"message":"model not found"}}`, http.StatusBadRequest)
+			return
+		}
+		f.polls = 0
+		if r.URL.Path == "/models/load" {
+			f.state[body.Model] = "loading"
+		} else {
+			f.state[body.Model] = "unloaded"
+		}
+		_, _ = w.Write([]byte(`{"success":true}`))
+	default:
+		http.NotFound(w, r)
+	}
+}
+
+func TestSetLoaded(t *testing.T) {
+	router := &fakeRouter{state: map[string]string{"big": "loaded", "tiny": "unloaded"}}
+	srv := httptest.NewServer(router)
+	defer srv.Close()
+	plain := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte(plainOpenAI)) }))
+	defer plain.Close()
+	cfg := config.Default()
+	cfg.Providers = []config.Provider{{Name: "llama", BaseURL: srv.URL + "/v1"}, {Name: "plain", BaseURL: plain.URL + "/v1"}}
+	c := NewCatalog(func() config.Config { return cfg }, func() string { return "" }, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	ctx := context.Background()
+	if err := c.Refresh(ctx, ""); err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range c.Providers() {
+		if p.CanLoad != (p.Name == "llama") {
+			t.Fatalf("%s CanLoad = %v", p.Name, p.CanLoad)
+		}
+	}
+	if m, _ := c.Lookup("llama", "big"); m.State != StateLoaded || !m.Loaded {
+		t.Fatalf("big = %+v", m)
+	}
+
+	orig := loadSettle
+	t.Cleanup(func() { loadSettle = orig })
+	loadSettle = 10 * time.Second
+	m, err := c.SetLoaded(ctx, "llama", "tiny", true)
+	if err != nil || m.State != StateLoaded {
+		t.Fatalf("load = %+v, %v", m, err)
+	}
+	m, err = c.SetLoaded(ctx, "llama", "big", false)
+	if err != nil || m.State != StateUnloaded || m.Loaded {
+		t.Fatalf("unload = %+v, %v", m, err)
+	}
+	if got := strings.Join(router.calls, ","); got != "/models/load tiny,/models/unload big" {
+		t.Fatalf("router calls %s", got)
+	}
+	if _, err := c.SetLoaded(ctx, "llama", "nope", true); err == nil || !strings.Contains(err.Error(), "model not found") {
+		t.Fatalf("unknown model: %v", err)
+	}
+	if _, err := c.SetLoaded(ctx, "plain", "m1", false); !errors.Is(err, ErrCantLoad) {
+		t.Fatalf("plain provider: %v", err)
 	}
 }

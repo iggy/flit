@@ -131,6 +131,9 @@ final class FlitSession {
       'model: $provider/$model, lastSeq: $lastSeq)';
 }
 
+/// A llama.cpp router model's state; [none] for other servers.
+enum FlitModelState { none, unloaded, loading, loaded, sleeping, failed }
+
 /// A model a flit server can use, as discovered from its provider.
 final class FlitModel {
   const FlitModel({
@@ -143,11 +146,26 @@ final class FlitModel {
     this.supportsVision = false,
     this.efforts = const <String>[],
     this.loaded = false,
+    this.favorite = false,
+    this.lastUsed,
+    this.state = FlitModelState.none,
   });
 
   final String provider;
   final String id;
   final String displayName;
+
+  /// Starred; favorites are kept on the server, shared by every device.
+  final bool favorite;
+
+  /// When a session last used it; null if never.
+  final DateTime? lastUsed;
+
+  /// llama.cpp router state. Only routers report one, and only their
+  /// models can be loaded and unloaded ([canLoad]).
+  final FlitModelState state;
+
+  bool get canLoad => state != FlitModelState.none;
 
   /// Context window in tokens; 0 if unknown.
   final int contextLength;

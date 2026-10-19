@@ -68,6 +68,21 @@ abstract interface class FlitRepository {
   /// Re-run model discovery on the server, then list the models.
   Future<List<FlitModel>> refreshModels();
 
+  /// Stars or unstars a model (for every device).
+  Future<void> setFavorite(
+    String provider,
+    String model, {
+    required bool favorite,
+  });
+
+  /// Loads or unloads a llama.cpp router model ([FlitModel.canLoad]) and
+  /// returns it once it has settled.
+  Future<FlitModel> setModelLoaded(
+    String provider,
+    String model, {
+    required bool load,
+  });
+
   /// The roles sessions can be created with.
   Future<List<FlitAgentRole>> listRoles();
 

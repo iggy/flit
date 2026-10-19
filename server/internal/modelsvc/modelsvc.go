@@ -3,6 +3,7 @@ package modelsvc
 
 import (
 	"context"
+	"errors"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -11,12 +12,19 @@ import (
 	"github.com/iggy/flit/server/gen/flit/v1/flitv1connect"
 	"github.com/iggy/flit/server/internal/models"
 	"github.com/iggy/flit/server/internal/roles"
+	"github.com/iggy/flit/server/internal/store"
 )
 
 // Models implements flitv1connect.ModelServiceHandler.
 type Models struct {
 	Catalog *models.Catalog
+	// Store holds favorites and recents; nil means none.
+	Store *store.Store
 }
+
+// prefsTeam is whose favorites and recents the API reads and writes. There
+// is one team for now; this becomes the caller's team when there are more.
+const prefsTeam = store.DefaultTeamID
 
 var _ flitv1connect.ModelServiceHandler = (*Models)(nil)
 
@@ -37,7 +45,7 @@ func kindProto(k models.Kind) flitv1.ProviderKind {
 func (s *Models) providers() []*flitv1.Provider {
 	var out []*flitv1.Provider
 	for _, p := range s.Catalog.Providers() {
-		pp := &flitv1.Provider{Name: p.Name, BaseUrl: p.BaseURL, Kind: kindProto(p.Kind), ModelCount: int32(p.ModelCount), Error: p.Err}
+		pp := &flitv1.Provider{Name: p.Name, BaseUrl: p.BaseURL, Kind: kindProto(p.Kind), ModelCount: int32(p.ModelCount), Error: p.Err, CanLoadModels: p.CanLoad}
 		if !p.Refreshed.IsZero() {
 			pp.RefreshTime = timestamppb.New(p.Refreshed)
 		}
@@ -52,24 +60,112 @@ func (s *Models) ListProviders(context.Context, *connect.Request[flitv1.ListProv
 }
 
 // ListModels implements flitv1connect.ModelServiceHandler.
-func (s *Models) ListModels(_ context.Context, req *connect.Request[flitv1.ListModelsRequest]) (*connect.Response[flitv1.ListModelsResponse], error) {
+func (s *Models) ListModels(ctx context.Context, req *connect.Request[flitv1.ListModelsRequest]) (*connect.Response[flitv1.ListModelsResponse], error) {
+	prefs, err := s.prefs(ctx)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
 	res := &flitv1.ListModelsResponse{}
 	for _, m := range s.Catalog.Models(req.Msg.Provider) {
-		res.Models = append(res.Models, &flitv1.Model{
-			Provider:          m.Provider,
-			Id:                m.ID,
-			DisplayName:       m.DisplayName,
-			ContextLength:     m.ContextLength,
-			SupportsTools:     m.SupportsTools,
-			SupportsReasoning: m.SupportsReasoning,
-			SupportsVision:    m.SupportsVision,
-			Efforts:           m.Efforts,
-			Loaded:            m.Loaded,
-			Discovered:        m.Discovered,
-			Overridden:        m.Overridden,
-		})
+		res.Models = append(res.Models, modelProto(m, prefs[store.ModelKey{Provider: m.Provider, Model: m.ID}]))
 	}
 	return connect.NewResponse(res), nil
+}
+
+func (s *Models) prefs(ctx context.Context) (map[store.ModelKey]store.ModelPref, error) {
+	if s.Store == nil {
+		return nil, nil
+	}
+	return s.Store.ModelPrefs(ctx, prefsTeam)
+}
+
+func modelProto(m models.Model, pref store.ModelPref) *flitv1.Model {
+	pm := &flitv1.Model{
+		Provider:          m.Provider,
+		Id:                m.ID,
+		DisplayName:       m.DisplayName,
+		ContextLength:     m.ContextLength,
+		SupportsTools:     m.SupportsTools,
+		SupportsReasoning: m.SupportsReasoning,
+		SupportsVision:    m.SupportsVision,
+		Efforts:           m.Efforts,
+		Loaded:            m.Loaded,
+		Discovered:        m.Discovered,
+		Overridden:        m.Overridden,
+		Favorite:          pref.Favorite,
+		State:             stateProto(m.State),
+	}
+	if !pref.LastUsed.IsZero() {
+		pm.LastUsed = timestamppb.New(pref.LastUsed)
+	}
+	return pm
+}
+
+func stateProto(st models.State) flitv1.ModelState {
+	switch st {
+	case models.StateUnloaded:
+		return flitv1.ModelState_MODEL_STATE_UNLOADED
+	case models.StateLoading:
+		return flitv1.ModelState_MODEL_STATE_LOADING
+	case models.StateLoaded:
+		return flitv1.ModelState_MODEL_STATE_LOADED
+	case models.StateSleeping:
+		return flitv1.ModelState_MODEL_STATE_SLEEPING
+	case models.StateFailed:
+		return flitv1.ModelState_MODEL_STATE_FAILED
+	}
+	return flitv1.ModelState_MODEL_STATE_UNSPECIFIED
+}
+
+// SetFavorite implements flitv1connect.ModelServiceHandler.
+func (s *Models) SetFavorite(ctx context.Context, req *connect.Request[flitv1.SetFavoriteRequest]) (*connect.Response[flitv1.SetFavoriteResponse], error) {
+	m := req.Msg
+	if m.Provider == "" || m.Model == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("provider and model are required"))
+	}
+	if s.Store == nil {
+		return nil, connect.NewError(connect.CodeUnimplemented, errors.New("favorites are not enabled"))
+	}
+	if err := s.Store.SetFavorite(ctx, prefsTeam, store.ModelKey{Provider: m.Provider, Model: m.Model}, m.Favorite); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	return connect.NewResponse(&flitv1.SetFavoriteResponse{}), nil
+}
+
+// LoadModel implements flitv1connect.ModelServiceHandler.
+func (s *Models) LoadModel(ctx context.Context, req *connect.Request[flitv1.LoadModelRequest]) (*connect.Response[flitv1.LoadModelResponse], error) {
+	m, err := s.setLoaded(ctx, req.Msg.Provider, req.Msg.Model, true)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(&flitv1.LoadModelResponse{Model: m}), nil
+}
+
+// UnloadModel implements flitv1connect.ModelServiceHandler.
+func (s *Models) UnloadModel(ctx context.Context, req *connect.Request[flitv1.UnloadModelRequest]) (*connect.Response[flitv1.UnloadModelResponse], error) {
+	m, err := s.setLoaded(ctx, req.Msg.Provider, req.Msg.Model, false)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(&flitv1.UnloadModelResponse{Model: m}), nil
+}
+
+func (s *Models) setLoaded(ctx context.Context, provider, model string, load bool) (*flitv1.Model, error) {
+	if provider == "" || model == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("provider and model are required"))
+	}
+	m, err := s.Catalog.SetLoaded(ctx, provider, model, load)
+	switch {
+	case errors.Is(err, models.ErrCantLoad):
+		return nil, connect.NewError(connect.CodeFailedPrecondition, err)
+	case err != nil:
+		return nil, connect.NewError(connect.CodeUnavailable, err)
+	}
+	prefs, err := s.prefs(ctx)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	return modelProto(m, prefs[store.ModelKey{Provider: m.Provider, Model: m.ID}]), nil
 }
 
 // Refresh implements flitv1connect.ModelServiceHandler.

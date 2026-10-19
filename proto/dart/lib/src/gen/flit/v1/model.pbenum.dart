@@ -44,5 +44,42 @@ class ProviderKind extends $pb.ProtobufEnum {
   const ProviderKind._(super.value, super.name);
 }
 
+/// ModelState is a llama.cpp router model's state.
+class ModelState extends $pb.ProtobufEnum {
+  /// Not reported (not a router).
+  static const ModelState MODEL_STATE_UNSPECIFIED =
+      ModelState._(0, _omitEnumNames ? '' : 'MODEL_STATE_UNSPECIFIED');
+  static const ModelState MODEL_STATE_UNLOADED =
+      ModelState._(1, _omitEnumNames ? '' : 'MODEL_STATE_UNLOADED');
+  static const ModelState MODEL_STATE_LOADING =
+      ModelState._(2, _omitEnumNames ? '' : 'MODEL_STATE_LOADING');
+  static const ModelState MODEL_STATE_LOADED =
+      ModelState._(3, _omitEnumNames ? '' : 'MODEL_STATE_LOADED');
+
+  /// Loaded but idle and swapped out; wakes on the next request.
+  static const ModelState MODEL_STATE_SLEEPING =
+      ModelState._(4, _omitEnumNames ? '' : 'MODEL_STATE_SLEEPING');
+
+  /// The last load failed.
+  static const ModelState MODEL_STATE_FAILED =
+      ModelState._(5, _omitEnumNames ? '' : 'MODEL_STATE_FAILED');
+
+  static const $core.List<ModelState> values = <ModelState>[
+    MODEL_STATE_UNSPECIFIED,
+    MODEL_STATE_UNLOADED,
+    MODEL_STATE_LOADING,
+    MODEL_STATE_LOADED,
+    MODEL_STATE_SLEEPING,
+    MODEL_STATE_FAILED,
+  ];
+
+  static final $core.List<ModelState?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 5);
+  static ModelState? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ModelState._(super.value, super.name);
+}
+
 const $core.bool _omitEnumNames =
     $core.bool.fromEnvironment('protobuf.omit_enum_names');

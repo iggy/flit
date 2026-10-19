@@ -70,6 +70,16 @@ FlitModel modelFromProto(pb.Model m) {
     supportsVision: m.supportsVision,
     efforts: List<String>.unmodifiable(m.efforts),
     loaded: m.loaded,
+    favorite: m.favorite,
+    lastUsed: m.hasLastUsed() ? m.lastUsed.toDateTime() : null,
+    state: switch (m.state) {
+      pb.ModelState.MODEL_STATE_UNLOADED => FlitModelState.unloaded,
+      pb.ModelState.MODEL_STATE_LOADING => FlitModelState.loading,
+      pb.ModelState.MODEL_STATE_LOADED => FlitModelState.loaded,
+      pb.ModelState.MODEL_STATE_SLEEPING => FlitModelState.sleeping,
+      pb.ModelState.MODEL_STATE_FAILED => FlitModelState.failed,
+      _ => FlitModelState.none,
+    },
   );
 }
 

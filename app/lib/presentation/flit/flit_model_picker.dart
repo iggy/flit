@@ -13,6 +13,48 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// What the user picked. [effort] '' means the model's default.
 typedef FlitModelChoice = ({String provider, String model, String effort});
 
+/// How many recently used models the picker lists.
+const int flitRecentModels = 5;
+
+/// The star and load/unload buttons of a model row.
+Key flitStarKey(FlitModel m) => Key('flit_star_${m.provider}/${m.id}');
+Key flitLoadKey(FlitModel m) => Key('flit_load_${m.provider}/${m.id}');
+
+/// The picker's sections: Favorites, Recent (the latest used models that
+/// aren't starred) and All models; just the matches while filtering.
+/// Empty sections are left out.
+List<({String title, List<FlitModel> models})> flitModelSections(
+  List<FlitModel> all,
+  String query,
+) {
+  final q = query.trim().toLowerCase();
+  if (q.isNotEmpty) {
+    return <({String title, List<FlitModel> models})>[
+      (
+        title: '',
+        models: all
+            .where(
+              (m) =>
+                  m.id.toLowerCase().contains(q) ||
+                  m.label.toLowerCase().contains(q) ||
+                  m.provider.toLowerCase().contains(q),
+            )
+            .toList(),
+      ),
+    ];
+  }
+  final favorites = all.where((m) => m.favorite).toList()
+    ..sort((a, b) => a.label.toLowerCase().compareTo(b.label.toLowerCase()));
+  final recent = all.where((m) => !m.favorite && m.lastUsed != null).toList()
+    ..sort((a, b) => b.lastUsed!.compareTo(a.lastUsed!));
+  return <({String title, List<FlitModel> models})>[
+    if (favorites.isNotEmpty) (title: 'Favorites', models: favorites),
+    if (recent.isNotEmpty)
+      (title: 'Recent', models: recent.take(flitRecentModels).toList()),
+    if (all.isNotEmpty) (title: 'All models', models: all),
+  ];
+}
+
 Future<FlitModelChoice?> showFlitModelPicker(
   BuildContext context, {
   required String provider,
@@ -61,6 +103,103 @@ class _PickerState extends ConsumerState<_Picker> {
   bool _refreshing = false;
   bool? _rated;
 
+  /// Models being loaded or unloaded ("provider/id").
+  final Set<String> _loading = <String>{};
+
+  void _snack(String text) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+    }
+  }
+
+  Future<void> _star(FlitModel m) async {
+    final repository = ref.read(flitRepositoryProvider);
+    if (repository == null) {
+      return;
+    }
+    try {
+      await repository.setFavorite(m.provider, m.id, favorite: !m.favorite);
+      ref.invalidate(flitModelsProvider);
+    } on GatewayException catch (error) {
+      _snack('Could not change favorites: ${error.message}');
+    }
+  }
+
+  Future<void> _setLoaded(FlitModel m, {required bool load}) async {
+    final repository = ref.read(flitRepositoryProvider);
+    if (repository == null) {
+      return;
+    }
+    final key = '${m.provider}/${m.id}';
+    setState(() => _loading.add(key));
+    try {
+      final now = await repository.setModelLoaded(m.provider, m.id, load: load);
+      if (now.state == FlitModelState.failed) {
+        _snack('${m.label} failed to load; see the llama.cpp server log.');
+      }
+      ref.invalidate(flitModelsProvider);
+    } on GatewayException catch (error) {
+      _snack(
+        'Could not ${load ? 'load' : 'unload'} ${m.label}: ${error.message}',
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _loading.remove(key));
+      }
+    }
+  }
+
+  Widget _row(FlitModel m) {
+    final isSelected = m.provider == _provider && m.id == _model;
+    final busy =
+        _loading.contains('${m.provider}/${m.id}') ||
+        m.state == FlitModelState.loading;
+    final up =
+        m.state == FlitModelState.loaded || m.state == FlitModelState.sleeping;
+    return ListTile(
+      dense: true,
+      selected: isSelected,
+      leading: Icon(
+        isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+      ),
+      title: Text(m.label),
+      subtitle: Text(_describe(m)),
+      onTap: () => setState(() {
+        _provider = m.provider;
+        _model = m.id;
+        if (!m.efforts.contains(_effort)) {
+          _effort = '';
+        }
+      }),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          if (m.canLoad)
+            busy
+                ? const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                : IconButton(
+                    key: flitLoadKey(m),
+                    tooltip: up ? 'Unload from llama.cpp' : 'Load in llama.cpp',
+                    onPressed: () => _setLoaded(m, load: !up),
+                    icon: Icon(up ? Icons.eject : Icons.play_arrow_outlined),
+                  ),
+          IconButton(
+            key: flitStarKey(m),
+            tooltip: m.favorite ? 'Remove from favorites' : 'Add to favorites',
+            onPressed: () => _star(m),
+            icon: Icon(m.favorite ? Icons.star : Icons.star_border),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _refresh() async {
     final repository = ref.read(flitRepositoryProvider);
     if (repository == null) {
@@ -95,16 +234,8 @@ class _PickerState extends ConsumerState<_Picker> {
       }
     }
     final efforts = selected?.efforts ?? const <String>[];
-    final q = _query.toLowerCase();
-    final shown = all
-        .where(
-          (m) =>
-              q.isEmpty ||
-              m.id.toLowerCase().contains(q) ||
-              m.label.toLowerCase().contains(q) ||
-              m.provider.toLowerCase().contains(q),
-        )
-        .toList();
+    final sections = flitModelSections(all, _query);
+    final shown = sections.expand((s) => s.models).toList();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -178,31 +309,22 @@ class _PickerState extends ConsumerState<_Picker> {
                         'No models. Check the providers in the server config.',
                       ),
                     )
-                  : ListView.builder(
-                      itemCount: shown.length,
-                      itemBuilder: (context, i) {
-                        final m = shown[i];
-                        final isSelected =
-                            m.provider == _provider && m.id == _model;
-                        return ListTile(
-                          dense: true,
-                          selected: isSelected,
-                          leading: Icon(
-                            isSelected
-                                ? Icons.radio_button_checked
-                                : Icons.radio_button_off,
-                          ),
-                          title: Text(m.label),
-                          subtitle: Text(_describe(m)),
-                          onTap: () => setState(() {
-                            _provider = m.provider;
-                            _model = m.id;
-                            if (!m.efforts.contains(_effort)) {
-                              _effort = '';
-                            }
-                          }),
-                        );
-                      },
+                  : ListView(
+                      children: <Widget>[
+                        for (final section in sections) ...<Widget>[
+                          if (section.title.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(4, 12, 4, 4),
+                              child: Text(
+                                section.title,
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                            ),
+                          for (final m in section.models) _row(m),
+                        ],
+                      ],
                     ),
             ),
           ),
@@ -259,13 +381,20 @@ class _PickerState extends ConsumerState<_Picker> {
   }
 
   static String _describe(FlitModel m) {
-    return <String>[
+    return <String?>[
       m.provider,
       if (m.contextLength > 0) '${formatTokens(m.contextLength)} context',
       if (m.supportsTools) 'tools',
       if (m.supportsReasoning) 'reasoning',
       if (m.supportsVision) 'vision',
-      if (m.loaded) 'loaded',
-    ].join(' · ');
+      switch (m.state) {
+        FlitModelState.none => m.loaded ? 'loaded' : null,
+        FlitModelState.loaded => 'loaded',
+        FlitModelState.loading => 'loading…',
+        FlitModelState.sleeping => 'sleeping',
+        FlitModelState.failed => 'failed to load',
+        FlitModelState.unloaded => null,
+      },
+    ].nonNulls.join(' · ');
   }
 }

@@ -77,6 +77,9 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 			return s.stop("no model chosen for this session; call SetModel or set agent.model in the config", false)
 		}
 
+		if step == 0 {
+			s.m.touchModel(info)
+		}
 		history, err := s.m.store.EventsOfKinds(context.Background(), info.ID, historyKinds...)
 		if err != nil {
 			return end{}, err

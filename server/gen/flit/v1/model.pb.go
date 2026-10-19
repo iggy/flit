@@ -79,6 +79,68 @@ func (ProviderKind) EnumDescriptor() ([]byte, []int) {
 	return file_flit_v1_model_proto_rawDescGZIP(), []int{0}
 }
 
+// ModelState is a llama.cpp router model's state.
+type ModelState int32
+
+const (
+	// Not reported (not a router).
+	ModelState_MODEL_STATE_UNSPECIFIED ModelState = 0
+	ModelState_MODEL_STATE_UNLOADED    ModelState = 1
+	ModelState_MODEL_STATE_LOADING     ModelState = 2
+	ModelState_MODEL_STATE_LOADED      ModelState = 3
+	// Loaded but idle and swapped out; wakes on the next request.
+	ModelState_MODEL_STATE_SLEEPING ModelState = 4
+	// The last load failed.
+	ModelState_MODEL_STATE_FAILED ModelState = 5
+)
+
+// Enum value maps for ModelState.
+var (
+	ModelState_name = map[int32]string{
+		0: "MODEL_STATE_UNSPECIFIED",
+		1: "MODEL_STATE_UNLOADED",
+		2: "MODEL_STATE_LOADING",
+		3: "MODEL_STATE_LOADED",
+		4: "MODEL_STATE_SLEEPING",
+		5: "MODEL_STATE_FAILED",
+	}
+	ModelState_value = map[string]int32{
+		"MODEL_STATE_UNSPECIFIED": 0,
+		"MODEL_STATE_UNLOADED":    1,
+		"MODEL_STATE_LOADING":     2,
+		"MODEL_STATE_LOADED":      3,
+		"MODEL_STATE_SLEEPING":    4,
+		"MODEL_STATE_FAILED":      5,
+	}
+)
+
+func (x ModelState) Enum() *ModelState {
+	p := new(ModelState)
+	*p = x
+	return p
+}
+
+func (x ModelState) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ModelState) Descriptor() protoreflect.EnumDescriptor {
+	return file_flit_v1_model_proto_enumTypes[1].Descriptor()
+}
+
+func (ModelState) Type() protoreflect.EnumType {
+	return &file_flit_v1_model_proto_enumTypes[1]
+}
+
+func (x ModelState) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ModelState.Descriptor instead.
+func (ModelState) EnumDescriptor() ([]byte, []int) {
+	return file_flit_v1_model_proto_rawDescGZIP(), []int{1}
+}
+
 type Provider struct {
 	state   protoimpl.MessageState `protogen:"open.v1"`
 	Name    string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -87,8 +149,11 @@ type Provider struct {
 	Kind       ProviderKind `protobuf:"varint,3,opt,name=kind,proto3,enum=flit.v1.ProviderKind" json:"kind,omitempty"`
 	ModelCount int32        `protobuf:"varint,4,opt,name=model_count,json=modelCount,proto3" json:"model_count,omitempty"`
 	// When discovery last finished, and its error if it failed.
-	RefreshTime   *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=refresh_time,json=refreshTime,proto3" json:"refresh_time,omitempty"`
-	Error         string                 `protobuf:"bytes,6,opt,name=error,proto3" json:"error,omitempty"`
+	RefreshTime *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=refresh_time,json=refreshTime,proto3" json:"refresh_time,omitempty"`
+	Error       string                 `protobuf:"bytes,6,opt,name=error,proto3" json:"error,omitempty"`
+	// Whether flit can load and unload this provider's models (a llama.cpp
+	// router).
+	CanLoadModels bool `protobuf:"varint,7,opt,name=can_load_models,json=canLoadModels,proto3" json:"can_load_models,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -165,6 +230,13 @@ func (x *Provider) GetError() string {
 	return ""
 }
 
+func (x *Provider) GetCanLoadModels() bool {
+	if x != nil {
+		return x.CanLoadModels
+	}
+	return false
+}
+
 type Model struct {
 	state       protoimpl.MessageState `protogen:"open.v1"`
 	Provider    string                 `protobuf:"bytes,1,opt,name=provider,proto3" json:"provider,omitempty"`
@@ -180,8 +252,14 @@ type Model struct {
 	// llama.cpp router: whether the model is loaded right now.
 	Loaded bool `protobuf:"varint,9,opt,name=loaded,proto3" json:"loaded,omitempty"`
 	// Whether discovery found it and whether the override file touched it.
-	Discovered    bool `protobuf:"varint,10,opt,name=discovered,proto3" json:"discovered,omitempty"`
-	Overridden    bool `protobuf:"varint,11,opt,name=overridden,proto3" json:"overridden,omitempty"`
+	Discovered bool `protobuf:"varint,10,opt,name=discovered,proto3" json:"discovered,omitempty"`
+	Overridden bool `protobuf:"varint,11,opt,name=overridden,proto3" json:"overridden,omitempty"`
+	// Starred (SetFavorite).
+	Favorite bool `protobuf:"varint,12,opt,name=favorite,proto3" json:"favorite,omitempty"`
+	// When a session last used it (set its model, or ran a turn on it);
+	// unset if never.
+	LastUsed      *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=last_used,json=lastUsed,proto3" json:"last_used,omitempty"`
+	State         ModelState             `protobuf:"varint,14,opt,name=state,proto3,enum=flit.v1.ModelState" json:"state,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -291,6 +369,27 @@ func (x *Model) GetOverridden() bool {
 		return x.Overridden
 	}
 	return false
+}
+
+func (x *Model) GetFavorite() bool {
+	if x != nil {
+		return x.Favorite
+	}
+	return false
+}
+
+func (x *Model) GetLastUsed() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LastUsed
+	}
+	return nil
+}
+
+func (x *Model) GetState() ModelState {
+	if x != nil {
+		return x.State
+	}
+	return ModelState_MODEL_STATE_UNSPECIFIED
 }
 
 type ListProvidersRequest struct {
@@ -551,11 +650,300 @@ func (x *RefreshResponse) GetProviders() []*Provider {
 	return nil
 }
 
+type SetFavoriteRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Provider      string                 `protobuf:"bytes,1,opt,name=provider,proto3" json:"provider,omitempty"`
+	Model         string                 `protobuf:"bytes,2,opt,name=model,proto3" json:"model,omitempty"`
+	Favorite      bool                   `protobuf:"varint,3,opt,name=favorite,proto3" json:"favorite,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetFavoriteRequest) Reset() {
+	*x = SetFavoriteRequest{}
+	mi := &file_flit_v1_model_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetFavoriteRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetFavoriteRequest) ProtoMessage() {}
+
+func (x *SetFavoriteRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_model_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetFavoriteRequest.ProtoReflect.Descriptor instead.
+func (*SetFavoriteRequest) Descriptor() ([]byte, []int) {
+	return file_flit_v1_model_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *SetFavoriteRequest) GetProvider() string {
+	if x != nil {
+		return x.Provider
+	}
+	return ""
+}
+
+func (x *SetFavoriteRequest) GetModel() string {
+	if x != nil {
+		return x.Model
+	}
+	return ""
+}
+
+func (x *SetFavoriteRequest) GetFavorite() bool {
+	if x != nil {
+		return x.Favorite
+	}
+	return false
+}
+
+type SetFavoriteResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetFavoriteResponse) Reset() {
+	*x = SetFavoriteResponse{}
+	mi := &file_flit_v1_model_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetFavoriteResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetFavoriteResponse) ProtoMessage() {}
+
+func (x *SetFavoriteResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_model_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetFavoriteResponse.ProtoReflect.Descriptor instead.
+func (*SetFavoriteResponse) Descriptor() ([]byte, []int) {
+	return file_flit_v1_model_proto_rawDescGZIP(), []int{9}
+}
+
+type LoadModelRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Provider      string                 `protobuf:"bytes,1,opt,name=provider,proto3" json:"provider,omitempty"`
+	Model         string                 `protobuf:"bytes,2,opt,name=model,proto3" json:"model,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LoadModelRequest) Reset() {
+	*x = LoadModelRequest{}
+	mi := &file_flit_v1_model_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LoadModelRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LoadModelRequest) ProtoMessage() {}
+
+func (x *LoadModelRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_model_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LoadModelRequest.ProtoReflect.Descriptor instead.
+func (*LoadModelRequest) Descriptor() ([]byte, []int) {
+	return file_flit_v1_model_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *LoadModelRequest) GetProvider() string {
+	if x != nil {
+		return x.Provider
+	}
+	return ""
+}
+
+func (x *LoadModelRequest) GetModel() string {
+	if x != nil {
+		return x.Model
+	}
+	return ""
+}
+
+type LoadModelResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The model as it is after the provider was refreshed.
+	Model         *Model `protobuf:"bytes,1,opt,name=model,proto3" json:"model,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LoadModelResponse) Reset() {
+	*x = LoadModelResponse{}
+	mi := &file_flit_v1_model_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LoadModelResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LoadModelResponse) ProtoMessage() {}
+
+func (x *LoadModelResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_model_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LoadModelResponse.ProtoReflect.Descriptor instead.
+func (*LoadModelResponse) Descriptor() ([]byte, []int) {
+	return file_flit_v1_model_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *LoadModelResponse) GetModel() *Model {
+	if x != nil {
+		return x.Model
+	}
+	return nil
+}
+
+type UnloadModelRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Provider      string                 `protobuf:"bytes,1,opt,name=provider,proto3" json:"provider,omitempty"`
+	Model         string                 `protobuf:"bytes,2,opt,name=model,proto3" json:"model,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UnloadModelRequest) Reset() {
+	*x = UnloadModelRequest{}
+	mi := &file_flit_v1_model_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UnloadModelRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UnloadModelRequest) ProtoMessage() {}
+
+func (x *UnloadModelRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_model_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UnloadModelRequest.ProtoReflect.Descriptor instead.
+func (*UnloadModelRequest) Descriptor() ([]byte, []int) {
+	return file_flit_v1_model_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *UnloadModelRequest) GetProvider() string {
+	if x != nil {
+		return x.Provider
+	}
+	return ""
+}
+
+func (x *UnloadModelRequest) GetModel() string {
+	if x != nil {
+		return x.Model
+	}
+	return ""
+}
+
+type UnloadModelResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Model         *Model                 `protobuf:"bytes,1,opt,name=model,proto3" json:"model,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UnloadModelResponse) Reset() {
+	*x = UnloadModelResponse{}
+	mi := &file_flit_v1_model_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UnloadModelResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UnloadModelResponse) ProtoMessage() {}
+
+func (x *UnloadModelResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_model_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UnloadModelResponse.ProtoReflect.Descriptor instead.
+func (*UnloadModelResponse) Descriptor() ([]byte, []int) {
+	return file_flit_v1_model_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *UnloadModelResponse) GetModel() *Model {
+	if x != nil {
+		return x.Model
+	}
+	return nil
+}
+
 var File_flit_v1_model_proto protoreflect.FileDescriptor
 
 const file_flit_v1_model_proto_rawDesc = "" +
 	"\n" +
-	"\x13flit/v1/model.proto\x12\aflit.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xda\x01\n" +
+	"\x13flit/v1/model.proto\x12\aflit.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x82\x02\n" +
 	"\bProvider\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x19\n" +
 	"\bbase_url\x18\x02 \x01(\tR\abaseUrl\x12)\n" +
@@ -563,7 +951,8 @@ const file_flit_v1_model_proto_rawDesc = "" +
 	"\vmodel_count\x18\x04 \x01(\x05R\n" +
 	"modelCount\x12=\n" +
 	"\frefresh_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\vrefreshTime\x12\x14\n" +
-	"\x05error\x18\x06 \x01(\tR\x05error\"\xee\x02\n" +
+	"\x05error\x18\x06 \x01(\tR\x05error\x12&\n" +
+	"\x0fcan_load_models\x18\a \x01(\bR\rcanLoadModels\"\xee\x03\n" +
 	"\x05Model\x12\x1a\n" +
 	"\bprovider\x18\x01 \x01(\tR\bprovider\x12\x0e\n" +
 	"\x02id\x18\x02 \x01(\tR\x02id\x12!\n" +
@@ -580,7 +969,10 @@ const file_flit_v1_model_proto_rawDesc = "" +
 	"discovered\x12\x1e\n" +
 	"\n" +
 	"overridden\x18\v \x01(\bR\n" +
-	"overridden\"\x16\n" +
+	"overridden\x12\x1a\n" +
+	"\bfavorite\x18\f \x01(\bR\bfavorite\x127\n" +
+	"\tlast_used\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\blastUsed\x12)\n" +
+	"\x05state\x18\x0e \x01(\x0e2\x13.flit.v1.ModelStateR\x05state\"\x16\n" +
 	"\x14ListProvidersRequest\"H\n" +
 	"\x15ListProvidersResponse\x12/\n" +
 	"\tproviders\x18\x01 \x03(\v2\x11.flit.v1.ProviderR\tproviders\"/\n" +
@@ -591,18 +983,44 @@ const file_flit_v1_model_proto_rawDesc = "" +
 	"\x0eRefreshRequest\x12\x1a\n" +
 	"\bprovider\x18\x01 \x01(\tR\bprovider\"B\n" +
 	"\x0fRefreshResponse\x12/\n" +
-	"\tproviders\x18\x01 \x03(\v2\x11.flit.v1.ProviderR\tproviders*\x9c\x01\n" +
+	"\tproviders\x18\x01 \x03(\v2\x11.flit.v1.ProviderR\tproviders\"b\n" +
+	"\x12SetFavoriteRequest\x12\x1a\n" +
+	"\bprovider\x18\x01 \x01(\tR\bprovider\x12\x14\n" +
+	"\x05model\x18\x02 \x01(\tR\x05model\x12\x1a\n" +
+	"\bfavorite\x18\x03 \x01(\bR\bfavorite\"\x15\n" +
+	"\x13SetFavoriteResponse\"D\n" +
+	"\x10LoadModelRequest\x12\x1a\n" +
+	"\bprovider\x18\x01 \x01(\tR\bprovider\x12\x14\n" +
+	"\x05model\x18\x02 \x01(\tR\x05model\"9\n" +
+	"\x11LoadModelResponse\x12$\n" +
+	"\x05model\x18\x01 \x01(\v2\x0e.flit.v1.ModelR\x05model\"F\n" +
+	"\x12UnloadModelRequest\x12\x1a\n" +
+	"\bprovider\x18\x01 \x01(\tR\bprovider\x12\x14\n" +
+	"\x05model\x18\x02 \x01(\tR\x05model\";\n" +
+	"\x13UnloadModelResponse\x12$\n" +
+	"\x05model\x18\x01 \x01(\v2\x0e.flit.v1.ModelR\x05model*\x9c\x01\n" +
 	"\fProviderKind\x12\x1d\n" +
 	"\x19PROVIDER_KIND_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14PROVIDER_KIND_OPENAI\x10\x01\x12\x1c\n" +
 	"\x18PROVIDER_KIND_OPENROUTER\x10\x02\x12\x1a\n" +
 	"\x16PROVIDER_KIND_LLAMACPP\x10\x03\x12\x19\n" +
-	"\x15PROVIDER_KIND_GOMODEL\x10\x042\xed\x01\n" +
+	"\x15PROVIDER_KIND_GOMODEL\x10\x04*\xa6\x01\n" +
+	"\n" +
+	"ModelState\x12\x1b\n" +
+	"\x17MODEL_STATE_UNSPECIFIED\x10\x00\x12\x18\n" +
+	"\x14MODEL_STATE_UNLOADED\x10\x01\x12\x17\n" +
+	"\x13MODEL_STATE_LOADING\x10\x02\x12\x16\n" +
+	"\x12MODEL_STATE_LOADED\x10\x03\x12\x18\n" +
+	"\x14MODEL_STATE_SLEEPING\x10\x04\x12\x16\n" +
+	"\x12MODEL_STATE_FAILED\x10\x052\xca\x03\n" +
 	"\fModelService\x12S\n" +
 	"\rListProviders\x12\x1d.flit.v1.ListProvidersRequest\x1a\x1e.flit.v1.ListProvidersResponse\"\x03\x90\x02\x01\x12J\n" +
 	"\n" +
 	"ListModels\x12\x1a.flit.v1.ListModelsRequest\x1a\x1b.flit.v1.ListModelsResponse\"\x03\x90\x02\x01\x12<\n" +
-	"\aRefresh\x12\x17.flit.v1.RefreshRequest\x1a\x18.flit.v1.RefreshResponseB0Z.github.com/iggy/flit/server/gen/flit/v1;flitv1b\x06proto3"
+	"\aRefresh\x12\x17.flit.v1.RefreshRequest\x1a\x18.flit.v1.RefreshResponse\x12M\n" +
+	"\vSetFavorite\x12\x1b.flit.v1.SetFavoriteRequest\x1a\x1c.flit.v1.SetFavoriteResponse\"\x03\x90\x02\x02\x12B\n" +
+	"\tLoadModel\x12\x19.flit.v1.LoadModelRequest\x1a\x1a.flit.v1.LoadModelResponse\x12H\n" +
+	"\vUnloadModel\x12\x1b.flit.v1.UnloadModelRequest\x1a\x1c.flit.v1.UnloadModelResponseB0Z.github.com/iggy/flit/server/gen/flit/v1;flitv1b\x06proto3"
 
 var (
 	file_flit_v1_model_proto_rawDescOnce sync.Once
@@ -616,37 +1034,54 @@ func file_flit_v1_model_proto_rawDescGZIP() []byte {
 	return file_flit_v1_model_proto_rawDescData
 }
 
-var file_flit_v1_model_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_flit_v1_model_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_flit_v1_model_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_flit_v1_model_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_flit_v1_model_proto_goTypes = []any{
 	(ProviderKind)(0),             // 0: flit.v1.ProviderKind
-	(*Provider)(nil),              // 1: flit.v1.Provider
-	(*Model)(nil),                 // 2: flit.v1.Model
-	(*ListProvidersRequest)(nil),  // 3: flit.v1.ListProvidersRequest
-	(*ListProvidersResponse)(nil), // 4: flit.v1.ListProvidersResponse
-	(*ListModelsRequest)(nil),     // 5: flit.v1.ListModelsRequest
-	(*ListModelsResponse)(nil),    // 6: flit.v1.ListModelsResponse
-	(*RefreshRequest)(nil),        // 7: flit.v1.RefreshRequest
-	(*RefreshResponse)(nil),       // 8: flit.v1.RefreshResponse
-	(*timestamppb.Timestamp)(nil), // 9: google.protobuf.Timestamp
+	(ModelState)(0),               // 1: flit.v1.ModelState
+	(*Provider)(nil),              // 2: flit.v1.Provider
+	(*Model)(nil),                 // 3: flit.v1.Model
+	(*ListProvidersRequest)(nil),  // 4: flit.v1.ListProvidersRequest
+	(*ListProvidersResponse)(nil), // 5: flit.v1.ListProvidersResponse
+	(*ListModelsRequest)(nil),     // 6: flit.v1.ListModelsRequest
+	(*ListModelsResponse)(nil),    // 7: flit.v1.ListModelsResponse
+	(*RefreshRequest)(nil),        // 8: flit.v1.RefreshRequest
+	(*RefreshResponse)(nil),       // 9: flit.v1.RefreshResponse
+	(*SetFavoriteRequest)(nil),    // 10: flit.v1.SetFavoriteRequest
+	(*SetFavoriteResponse)(nil),   // 11: flit.v1.SetFavoriteResponse
+	(*LoadModelRequest)(nil),      // 12: flit.v1.LoadModelRequest
+	(*LoadModelResponse)(nil),     // 13: flit.v1.LoadModelResponse
+	(*UnloadModelRequest)(nil),    // 14: flit.v1.UnloadModelRequest
+	(*UnloadModelResponse)(nil),   // 15: flit.v1.UnloadModelResponse
+	(*timestamppb.Timestamp)(nil), // 16: google.protobuf.Timestamp
 }
 var file_flit_v1_model_proto_depIdxs = []int32{
-	0, // 0: flit.v1.Provider.kind:type_name -> flit.v1.ProviderKind
-	9, // 1: flit.v1.Provider.refresh_time:type_name -> google.protobuf.Timestamp
-	1, // 2: flit.v1.ListProvidersResponse.providers:type_name -> flit.v1.Provider
-	2, // 3: flit.v1.ListModelsResponse.models:type_name -> flit.v1.Model
-	1, // 4: flit.v1.RefreshResponse.providers:type_name -> flit.v1.Provider
-	3, // 5: flit.v1.ModelService.ListProviders:input_type -> flit.v1.ListProvidersRequest
-	5, // 6: flit.v1.ModelService.ListModels:input_type -> flit.v1.ListModelsRequest
-	7, // 7: flit.v1.ModelService.Refresh:input_type -> flit.v1.RefreshRequest
-	4, // 8: flit.v1.ModelService.ListProviders:output_type -> flit.v1.ListProvidersResponse
-	6, // 9: flit.v1.ModelService.ListModels:output_type -> flit.v1.ListModelsResponse
-	8, // 10: flit.v1.ModelService.Refresh:output_type -> flit.v1.RefreshResponse
-	8, // [8:11] is the sub-list for method output_type
-	5, // [5:8] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	0,  // 0: flit.v1.Provider.kind:type_name -> flit.v1.ProviderKind
+	16, // 1: flit.v1.Provider.refresh_time:type_name -> google.protobuf.Timestamp
+	16, // 2: flit.v1.Model.last_used:type_name -> google.protobuf.Timestamp
+	1,  // 3: flit.v1.Model.state:type_name -> flit.v1.ModelState
+	2,  // 4: flit.v1.ListProvidersResponse.providers:type_name -> flit.v1.Provider
+	3,  // 5: flit.v1.ListModelsResponse.models:type_name -> flit.v1.Model
+	2,  // 6: flit.v1.RefreshResponse.providers:type_name -> flit.v1.Provider
+	3,  // 7: flit.v1.LoadModelResponse.model:type_name -> flit.v1.Model
+	3,  // 8: flit.v1.UnloadModelResponse.model:type_name -> flit.v1.Model
+	4,  // 9: flit.v1.ModelService.ListProviders:input_type -> flit.v1.ListProvidersRequest
+	6,  // 10: flit.v1.ModelService.ListModels:input_type -> flit.v1.ListModelsRequest
+	8,  // 11: flit.v1.ModelService.Refresh:input_type -> flit.v1.RefreshRequest
+	10, // 12: flit.v1.ModelService.SetFavorite:input_type -> flit.v1.SetFavoriteRequest
+	12, // 13: flit.v1.ModelService.LoadModel:input_type -> flit.v1.LoadModelRequest
+	14, // 14: flit.v1.ModelService.UnloadModel:input_type -> flit.v1.UnloadModelRequest
+	5,  // 15: flit.v1.ModelService.ListProviders:output_type -> flit.v1.ListProvidersResponse
+	7,  // 16: flit.v1.ModelService.ListModels:output_type -> flit.v1.ListModelsResponse
+	9,  // 17: flit.v1.ModelService.Refresh:output_type -> flit.v1.RefreshResponse
+	11, // 18: flit.v1.ModelService.SetFavorite:output_type -> flit.v1.SetFavoriteResponse
+	13, // 19: flit.v1.ModelService.LoadModel:output_type -> flit.v1.LoadModelResponse
+	15, // 20: flit.v1.ModelService.UnloadModel:output_type -> flit.v1.UnloadModelResponse
+	15, // [15:21] is the sub-list for method output_type
+	9,  // [9:15] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_flit_v1_model_proto_init() }
@@ -659,8 +1094,8 @@ func file_flit_v1_model_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_flit_v1_model_proto_rawDesc), len(file_flit_v1_model_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   8,
+			NumEnums:      2,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
