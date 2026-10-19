@@ -145,8 +145,10 @@ state, and the agent's todo list.
 - **Projects** group sessions by directory: create one from a directory on
   the server, switch between them in the app, and move sessions out of
   Scratch.
-- **MCP servers** (stdio) are configured in the YAML config, never an
-  `mcp.json`:
+- **MCP servers** are configured in the YAML config, never an `mcp.json`.
+  Each has either a `command` (a subprocess, over stdio) or a `url` (a
+  remote server, over streamable HTTP, falling back to legacy SSE), with
+  optional `headers` for things like auth:
 
   ```yaml
   mcp_servers:
@@ -154,6 +156,10 @@ state, and the agent's todo list.
       command: uvx
       args: [mcp-server-fetch]
       enabled: true    # on for new sessions
+    - name: docs
+      url: https://example.com/mcp
+      headers:
+        Authorization: Bearer your-token
   ```
 
   Each session turns servers on or off at runtime; only enabled servers'
