@@ -62,7 +62,7 @@ func connectErr(err error) error {
 		code = connect.CodeNotFound
 	case errors.Is(err, agent.ErrInvalid):
 		code = connect.CodeInvalidArgument
-	case errors.Is(err, agent.ErrBusy), errors.Is(err, agent.ErrPromptGone), errors.Is(err, agent.ErrNoCallToRetry), errors.Is(err, agent.ErrQueueGone):
+	case errors.Is(err, agent.ErrBusy), errors.Is(err, agent.ErrPromptGone), errors.Is(err, agent.ErrNoCallToRetry), errors.Is(err, agent.ErrQueueGone), errors.Is(err, agent.ErrCantEndReasoning):
 		code = connect.CodeFailedPrecondition
 	case errors.Is(err, agent.ErrSlowClient):
 		code = connect.CodeResourceExhausted
@@ -167,6 +167,17 @@ func (s *Service) Send(ctx context.Context, req *connect.Request[flitv1.SendRequ
 		return nil, connectErr(err)
 	}
 	return connect.NewResponse(&flitv1.SendResponse{Seq: res.Seq, QueueId: res.QueueID}), nil
+}
+
+// EndReasoning implements flitv1connect.SessionServiceHandler.
+func (s *Service) EndReasoning(ctx context.Context, req *connect.Request[flitv1.EndReasoningRequest]) (*connect.Response[flitv1.EndReasoningResponse], error) {
+	if err := required("session_id", req.Msg.SessionId); err != nil {
+		return nil, err
+	}
+	if err := s.M.EndReasoning(ctx, req.Msg.SessionId, req.Msg.Client); err != nil {
+		return nil, connectErr(err)
+	}
+	return connect.NewResponse(&flitv1.EndReasoningResponse{}), nil
 }
 
 // EditQueuedMessage implements flitv1connect.SessionServiceHandler.

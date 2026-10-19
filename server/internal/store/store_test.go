@@ -179,8 +179,9 @@ func TestModelPrefs(t *testing.T) {
 		t.Fatalf("b = %+v (another team's star leaked?)", p)
 	}
 	must(t, st.SetFavorite(ctx, DefaultTeamID, a, false))
+	must(t, st.SetNoReasoningEnd(ctx, DefaultTeamID, a))
 	prefs, _ = st.ModelPrefs(ctx, DefaultTeamID)
-	if p := prefs[a]; p.Favorite || !p.LastUsed.Equal(t1) {
+	if p := prefs[a]; p.Favorite || !p.LastUsed.Equal(t1) || !p.NoReasoningEnd {
 		t.Fatalf("unstarred a = %+v", p)
 	}
 }

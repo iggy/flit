@@ -184,6 +184,9 @@ CREATE TABLE model_prefs (
 	PRIMARY KEY (team_id, provider, model)
 ) WITHOUT ROWID;
 `,
+	`
+ALTER TABLE model_prefs ADD COLUMN no_reasoning_end INTEGER NOT NULL DEFAULT 0;
+`,
 }
 
 func (s *Store) migrate(ctx context.Context) error {

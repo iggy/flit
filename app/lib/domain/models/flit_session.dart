@@ -149,7 +149,12 @@ final class FlitModel {
     this.favorite = false,
     this.lastUsed,
     this.state = FlitModelState.none,
+    this.canEndReasoning = false,
   });
+
+  /// Whether "answer now" may work: a llama.cpp model not yet seen
+  /// ignoring it.
+  final bool canEndReasoning;
 
   final String provider;
   final String id;

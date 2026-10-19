@@ -170,6 +170,15 @@ final class FlitRepositoryImpl implements FlitRepository {
   }
 
   @override
+  Future<void> endReasoning(String sessionId, {String client = ''}) {
+    return flitCall(() async {
+      await _sessions.endReasoning(
+        pb.EndReasoningRequest(sessionId: sessionId, client: client),
+      );
+    });
+  }
+
+  @override
   Future<void> retryModelCall(String sessionId) {
     return flitCall(() async {
       await _sessions.retryModelCall(

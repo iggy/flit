@@ -29,6 +29,7 @@ const Key flitYoloConfirmKey = Key('flit_yolo_confirm');
 /// The composer's send and stop buttons.
 const Key flitSendKey = Key('flit_send');
 const Key flitStopKey = Key('flit_stop');
+const Key flitAnswerNowKey = Key('flit_answer_now');
 
 /// The button that scrolls back to new output after the user scrolled up.
 const Key flitJumpToLatestKey = Key('flit_jump_to_latest');
@@ -117,6 +118,35 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
         .interrupt();
     if (error != null && mounted) {
       _snack('Could not stop: $error');
+    }
+  }
+
+  /// "Answer now" is offered while the model is thinking, on models where
+  /// it may work and hasn't been seen not to.
+  bool _canAnswerNow(FlitFoldState fold, String provider, String model) {
+    final call = fold.call;
+    if (!fold.busy ||
+        call == null ||
+        !call.thinking ||
+        call.endRequested ||
+        fold.reasoningEndIgnored.contains(call.messageId)) {
+      return false;
+    }
+    for (final m
+        in ref.watch(flitModelsProvider).value ?? const <FlitModel>[]) {
+      if (m.provider == provider && m.id == model) {
+        return m.canEndReasoning;
+      }
+    }
+    return false;
+  }
+
+  Future<void> _answerNow() async {
+    final error = await ref
+        .read(flitChatProvider(widget.sessionId).notifier)
+        .endReasoning();
+    if (error != null && mounted) {
+      _snack('Could not stop the thinking: $error');
     }
   }
 
@@ -293,6 +323,16 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
       // The server names a session from its first message (and may rename
       // it later), so re-read the session when one arrives and after each
       // turn instead of keeping the title it had when the screen opened.
+      if (next.fold.reasoningEndIgnored.length >
+          (prev?.fold.reasoningEndIgnored.length ?? 0)) {
+        if (prev != null && prev.fold.lastSeq > 0) {
+          _snack(
+            "This model can't be cut short, so flit won't offer "
+            '"Answer now" for it again.',
+          );
+        }
+        ref.invalidate(flitModelsProvider);
+      }
       if (flitSessionNeedsRefresh(prev?.fold, next.fold)) {
         ref
           ..invalidate(flitSessionProvider(widget.sessionId))
@@ -364,6 +404,8 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
               state: taskState,
               generationTokensPerSecond: fold.speed?.generationTokensPerSecond,
               timeToFirstTokenMs: fold.speed?.timeToFirstTokenMs,
+              inputTokens: fold.speed?.inputTokens ?? 0,
+              cachedTokens: fold.speed?.cachedTokens ?? 0,
               onModelTap: () => _changeModel(provider, model, effort),
             ),
             if (chat.link == FlitLink.reconnecting)
@@ -442,6 +484,9 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
               onSend: _send,
               onStop: _interrupt,
               queued: fold.queued.length,
+              onAnswerNow: _canAnswerNow(fold, provider, model)
+                  ? _answerNow
+                  : null,
             ),
           ],
         ),
@@ -514,7 +559,11 @@ class _Composer extends StatelessWidget {
     required this.onSend,
     required this.onStop,
     this.queued = 0,
+    this.onAnswerNow,
   });
+
+  /// Shown beside Stop while the model is thinking, where it can work.
+  final VoidCallback? onAnswerNow;
 
   final TextEditingController controller;
   final bool busy;
@@ -551,6 +600,15 @@ class _Composer extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
+          if (busy && onAnswerNow != null) ...<Widget>[
+            IconButton.filledTonal(
+              key: flitAnswerNowKey,
+              tooltip: 'Stop thinking and answer now',
+              onPressed: onAnswerNow,
+              icon: const Icon(Icons.fast_forward),
+            ),
+            const SizedBox(width: 4),
+          ],
           if (busy) ...<Widget>[
             IconButton.filledTonal(
               key: flitStopKey,

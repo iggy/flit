@@ -222,12 +222,17 @@ final class FlitUsage extends FlitEvent {
     this.promptTokensPerSecond = 0,
     this.generationTokensPerSecond = 0,
     this.timingSource = '',
+    this.cachedTokens = 0,
     super.time,
   });
 
   final String messageId;
   final int inputTokens;
   final int outputTokens;
+
+  /// Prompt tokens the server reused from its cache (llama.cpp); part of
+  /// [inputTokens].
+  final int cachedTokens;
 
   /// The model's context window; 0 if unknown. Input plus output tokens is
   /// how much of it the call used.
@@ -423,6 +428,48 @@ final class FlitQueuedMessageDelivered extends FlitEvent {
   });
 
   final String queueId;
+  final String messageId;
+}
+
+/// Why a llama.cpp call hasn't started (flit.v1 `ModelWaitReason`).
+enum FlitWaitReason { slotsBusy, sleeping, loading, unknown }
+
+/// The model server says why the call for [messageId] is waiting.
+final class FlitModelCallWaiting extends FlitEvent {
+  const FlitModelCallWaiting({
+    required super.seq,
+    required this.messageId,
+    required this.reason,
+    this.totalSlots = 0,
+    super.time,
+  });
+
+  final String messageId;
+  final FlitWaitReason reason;
+  final int totalSlots;
+}
+
+/// Someone asked the model to stop thinking and answer now.
+final class FlitReasoningEndRequested extends FlitEvent {
+  const FlitReasoningEndRequested({
+    required super.seq,
+    required this.messageId,
+    this.client = '',
+    super.time,
+  });
+
+  final String messageId;
+  final String client;
+}
+
+/// The model kept thinking anyway: it can't be cut short.
+final class FlitReasoningEndIgnored extends FlitEvent {
+  const FlitReasoningEndIgnored({
+    required super.seq,
+    required this.messageId,
+    super.time,
+  });
+
   final String messageId;
 }
 

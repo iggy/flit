@@ -67,6 +67,9 @@ type Manager struct {
 	// SkillsDirs, if set, returns the skills directories. Set before use.
 	SkillsDirs func() []string
 
+	// kv tracks llama.cpp slots and prompt cache save files.
+	kv kvPool
+
 	mu       sync.Mutex
 	sessions map[string]*session
 	closed   bool
@@ -390,6 +393,16 @@ func (m *Manager) RetryModelCall(ctx context.Context, id string) error {
 		return err
 	}
 	return s.retryCall()
+}
+
+// EndReasoning asks the model of the session's running call to stop
+// thinking and answer (llama.cpp).
+func (m *Manager) EndReasoning(ctx context.Context, id, client string) error {
+	s, err := m.session(ctx, id)
+	if err != nil {
+		return err
+	}
+	return s.endReasoning(ctx, client)
 }
 
 // Answer is a reply to a prompt.

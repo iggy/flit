@@ -67,6 +67,13 @@ type Request struct {
 	// (Handler.Progress), which also keeps the watchdog fed while a long
 	// prompt is read. Only send it to llama.cpp.
 	ReturnProgress bool `json:"return_progress,omitempty"`
+	// ReasoningControl lets llama.cpp end the reasoning block early while
+	// the completion runs (llamacpp.Client.EndReasoning).
+	ReasoningControl bool `json:"reasoning_control,omitempty"`
+	// IDSlot pins the request to one llama.cpp slot (with CachePrompt, so
+	// a cache restored into it is used).
+	IDSlot      *int  `json:"id_slot,omitempty"`
+	CachePrompt *bool `json:"cache_prompt,omitempty"`
 }
 
 // Usage is token usage reported by the endpoint.
@@ -105,6 +112,8 @@ type Metrics struct {
 // Timings is the timings block llama.cpp's server adds to the last
 // streamed chunk.
 type Timings struct {
+	// CacheN is how many prompt tokens came from the server's cache.
+	CacheN             int64   `json:"cache_n"`
 	PromptN            int64   `json:"prompt_n"`
 	PromptMS           float64 `json:"prompt_ms"`
 	PromptPerSecond    float64 `json:"prompt_per_second"`
@@ -119,6 +128,8 @@ type Handler struct {
 	Reasoning func(string)
 	// Progress reports prompt processing (llama.cpp with ReturnProgress).
 	Progress func(PromptProgress)
+	// ID receives the completion's id once, from the first chunk.
+	ID func(string)
 }
 
 // PromptProgress is how far the server has got reading the prompt.
@@ -452,6 +463,7 @@ type chunk struct {
 		} `json:"delta"`
 		FinishReason *string `json:"finish_reason"`
 	} `json:"choices"`
+	ID             string   `json:"id"`
 	Usage          *Usage   `json:"usage"`
 	Timings        *Timings `json:"timings"`
 	PromptProgress *struct {
@@ -479,7 +491,7 @@ func readStream(r io.Reader, h Handler, start time.Time, w *watch) (*Result, err
 
 	sc := bufio.NewScanner(r)
 	sc.Buffer(make([]byte, 64<<10), 16<<20)
-	done := false
+	done, sawID := false, false
 	for !done && sc.Scan() {
 		line := sc.Text()
 		data, ok := strings.CutPrefix(line, "data:")
@@ -497,6 +509,12 @@ func readStream(r io.Reader, h Handler, start time.Time, w *watch) (*Result, err
 		}
 		if len(c.Error) > 0 && string(c.Error) != "null" {
 			return nil, &APIError{StatusCode: 0, Message: errorMessage([]byte(data))}
+		}
+		if c.ID != "" && !sawID {
+			sawID = true
+			if h.ID != nil {
+				h.ID(c.ID)
+			}
 		}
 		if c.Usage != nil {
 			res.Usage = c.Usage

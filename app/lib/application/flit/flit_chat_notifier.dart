@@ -172,6 +172,12 @@ class FlitChatNotifier extends Notifier<FlitChatState> {
     return _run((r) => r.interrupt(sessionId));
   }
 
+  /// Asks the model to stop thinking and answer now.
+  Future<String?> endReasoning() {
+    final client = ref.read(flitDeviceNameProvider);
+    return _run((r) => r.endReasoning(sessionId, client: client));
+  }
+
   /// Sends the waiting model call again (the model hasn't answered).
   Future<String?> retryModelCall() {
     return _run((r) => r.retryModelCall(sessionId));

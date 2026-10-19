@@ -96,6 +96,9 @@ message Model {
   // unset if never.
   google.protobuf.Timestamp last_used = 13;
   ModelState state = 14;
+  // Whether EndReasoning ("answer now") may work: a llama.cpp model that
+  // hasn't been seen ignoring it.
+  bool can_end_reasoning = 15;
 }
 
 message ListProvidersRequest {}

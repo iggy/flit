@@ -52,6 +52,9 @@ func wait(r *http.Request, d time.Duration) bool {
 // Server is a fake endpoint. Push responses; each request takes the next.
 type Server struct {
 	*httptest.Server
+	// Llama, if set before requests, also answers llama.cpp's own
+	// endpoints.
+	Llama *Llama
 
 	mu        sync.Mutex
 	responses []Response
@@ -92,6 +95,9 @@ func (s *Server) AuthHeaders() []string {
 }
 
 func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
+	if s.Llama != nil && s.Llama.handle(w, r) {
+		return
+	}
 	if r.URL.Path != "/v1/chat/completions" || r.Method != http.MethodPost {
 		http.NotFound(w, r)
 		return
@@ -153,8 +159,12 @@ func mustJSON(v any) string {
 	return string(b)
 }
 
+// CompletionID is the id every scripted chunk carries.
+const CompletionID = "chatcmpl-test"
+
 func delta(d map[string]any, finish any) string {
 	return mustJSON(map[string]any{
+		"id":      CompletionID,
 		"choices": []any{map[string]any{"index": 0, "delta": d, "finish_reason": finish}},
 	})
 }
@@ -216,7 +226,7 @@ func Timings(promptPerSec, genPerSec float64) string {
 		"choices": []any{},
 		"usage":   map[string]any{"prompt_tokens": 40, "completion_tokens": 8, "total_tokens": 48},
 		"timings": map[string]any{
-			"prompt_n": 40, "prompt_ms": 400.0, "prompt_per_second": promptPerSec,
+			"cache_n": 30, "prompt_n": 40, "prompt_ms": 400.0, "prompt_per_second": promptPerSec,
 			"predicted_n": 8, "predicted_ms": 200.0, "predicted_per_second": genPerSec,
 		},
 	})
@@ -228,4 +238,93 @@ func Progress(processed, total, cache int64, ms float64) string {
 		"choices":         []any{map[string]any{"index": 0, "delta": map[string]any{"role": "assistant", "content": nil}, "finish_reason": nil}},
 		"prompt_progress": map[string]any{"total": total, "cache": cache, "processed": processed, "time_ms": ms},
 	})
+}
+
+// Llama fakes llama.cpp's own endpoints: /slots (and slot save, restore,
+// erase), /models (router state), /props and the completion control
+// endpoint. Calls are recorded as "METHOD path [action] [filename|id]".
+type Llama struct {
+	mu sync.Mutex
+	// Busy marks slots as processing; NSlots is how many there are.
+	Busy   map[int]bool
+	NSlots int
+	// State is the model's router state ("" = loaded).
+	State string
+	// NoSlots answers /slots with 501, as with --no-slots; NoSave answers
+	// save and restore with 501, as without --slot-save-path.
+	NoSlots, NoSave bool
+	// Saved is how many tokens a save writes and a restore reads.
+	Saved int
+	calls []string
+}
+
+// Calls returns the recorded calls.
+func (l *Llama) Calls() []string {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return append([]string(nil), l.calls...)
+}
+
+// SetBusy marks slot busy or free.
+func (l *Llama) SetBusy(slot int, busy bool) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.Busy == nil {
+		l.Busy = map[int]bool{}
+	}
+	l.Busy[slot] = busy
+}
+
+// SetState sets the model's router state.
+func (l *Llama) SetState(state string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.State = state
+}
+
+func (l *Llama) handle(w http.ResponseWriter, r *http.Request) bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	path := r.URL.Path
+	switch {
+	case path == "/slots" && r.Method == http.MethodGet:
+		if l.NoSlots {
+			http.Error(w, `{"error":{"code":501,"message":"This server does not support slots endpoint."}}`, http.StatusNotImplemented)
+			return true
+		}
+		var out []map[string]any
+		for i := range max(l.NSlots, 1) {
+			out = append(out, map[string]any{"id": i, "n_ctx": 4096, "is_processing": l.Busy[i]})
+		}
+		_ = json.NewEncoder(w).Encode(out)
+		return true
+	case strings.HasPrefix(path, "/slots/") && r.Method == http.MethodPost:
+		var body struct{ Filename string }
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		action := r.URL.Query().Get("action")
+		l.calls = append(l.calls, strings.TrimSpace(fmt.Sprintf("POST %s %s %s", path, action, body.Filename)))
+		if l.NoSave && action != "erase" {
+			http.Error(w, `{"error":{"code":501,"message":"This server does not support slot save"}}`, http.StatusNotImplemented)
+			return true
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"n_saved": l.Saved, "n_restored": l.Saved, "n_erased": l.Saved})
+		return true
+	case path == "/models" && r.Method == http.MethodGet:
+		state := l.State
+		if state == "" {
+			state = "loaded"
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"data": []any{map[string]any{"id": "test-model", "status": map[string]any{"value": state}}}})
+		return true
+	case path == "/props":
+		_ = json.NewEncoder(w).Encode(map[string]any{"is_sleeping": l.State == "sleeping"})
+		return true
+	case path == "/v1/chat/completions/control":
+		var body struct{ ID, Action string }
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		l.calls = append(l.calls, "POST control "+body.Action+" "+body.ID)
+		_, _ = w.Write([]byte(`{"success":true}`))
+		return true
+	}
+	return false
 }

@@ -257,5 +257,69 @@ class ModelCallOutcome extends $pb.ProtobufEnum {
   const ModelCallOutcome._(super.value, super.name);
 }
 
+/// ModelWaitReason is why a model call hasn't started, as the model server
+/// reports it.
+class ModelWaitReason extends $pb.ProtobufEnum {
+  static const ModelWaitReason MODEL_WAIT_REASON_UNSPECIFIED =
+      ModelWaitReason._(
+          0, _omitEnumNames ? '' : 'MODEL_WAIT_REASON_UNSPECIFIED');
+
+  /// Every slot of the llama.cpp server is busy with other requests; this
+  /// one waits for a free one.
+  static const ModelWaitReason MODEL_WAIT_REASON_SLOTS_BUSY = ModelWaitReason._(
+      1, _omitEnumNames ? '' : 'MODEL_WAIT_REASON_SLOTS_BUSY');
+
+  /// The model is asleep (idle, swapped out) and wakes up first.
+  static const ModelWaitReason MODEL_WAIT_REASON_SLEEPING =
+      ModelWaitReason._(2, _omitEnumNames ? '' : 'MODEL_WAIT_REASON_SLEEPING');
+
+  /// The llama.cpp router is loading the model.
+  static const ModelWaitReason MODEL_WAIT_REASON_LOADING =
+      ModelWaitReason._(3, _omitEnumNames ? '' : 'MODEL_WAIT_REASON_LOADING');
+
+  static const $core.List<ModelWaitReason> values = <ModelWaitReason>[
+    MODEL_WAIT_REASON_UNSPECIFIED,
+    MODEL_WAIT_REASON_SLOTS_BUSY,
+    MODEL_WAIT_REASON_SLEEPING,
+    MODEL_WAIT_REASON_LOADING,
+  ];
+
+  static final $core.List<ModelWaitReason?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static ModelWaitReason? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ModelWaitReason._(super.value, super.name);
+}
+
+class PromptCacheAction extends $pb.ProtobufEnum {
+  static const PromptCacheAction PROMPT_CACHE_ACTION_UNSPECIFIED =
+      PromptCacheAction._(
+          0, _omitEnumNames ? '' : 'PROMPT_CACHE_ACTION_UNSPECIFIED');
+
+  /// The session's cache was written to a save file on the llama.cpp server
+  /// (another session needed its slot, or it sat idle).
+  static const PromptCacheAction PROMPT_CACHE_ACTION_SAVED =
+      PromptCacheAction._(1, _omitEnumNames ? '' : 'PROMPT_CACHE_ACTION_SAVED');
+
+  /// The session's saved cache was loaded back into a slot before a call.
+  static const PromptCacheAction PROMPT_CACHE_ACTION_RESTORED =
+      PromptCacheAction._(
+          2, _omitEnumNames ? '' : 'PROMPT_CACHE_ACTION_RESTORED');
+
+  static const $core.List<PromptCacheAction> values = <PromptCacheAction>[
+    PROMPT_CACHE_ACTION_UNSPECIFIED,
+    PROMPT_CACHE_ACTION_SAVED,
+    PROMPT_CACHE_ACTION_RESTORED,
+  ];
+
+  static final $core.List<PromptCacheAction?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 2);
+  static PromptCacheAction? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const PromptCacheAction._(super.value, super.name);
+}
+
 const $core.bool _omitEnumNames =
     $core.bool.fromEnvironment('protobuf.omit_enum_names');

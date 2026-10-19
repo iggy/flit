@@ -130,6 +130,13 @@ const Model$json = {
       '6': '.flit.v1.ModelState',
       '10': 'state'
     },
+    {
+      '1': 'can_end_reasoning',
+      '3': 15,
+      '4': 1,
+      '5': 8,
+      '10': 'canEndReasoning'
+    },
   ],
 };
 
@@ -143,7 +150,8 @@ final $typed_data.Uint8List modelDescriptor = $convert.base64Decode(
     'MSFgoGbG9hZGVkGAkgASgIUgZsb2FkZWQSHgoKZGlzY292ZXJlZBgKIAEoCFIKZGlzY292ZXJl'
     'ZBIeCgpvdmVycmlkZGVuGAsgASgIUgpvdmVycmlkZGVuEhoKCGZhdm9yaXRlGAwgASgIUghmYX'
     'Zvcml0ZRI3CglsYXN0X3VzZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wUghs'
-    'YXN0VXNlZBIpCgVzdGF0ZRgOIAEoDjITLmZsaXQudjEuTW9kZWxTdGF0ZVIFc3RhdGU=');
+    'YXN0VXNlZBIpCgVzdGF0ZRgOIAEoDjITLmZsaXQudjEuTW9kZWxTdGF0ZVIFc3RhdGUSKgoRY2'
+    'FuX2VuZF9yZWFzb25pbmcYDyABKAhSD2NhbkVuZFJlYXNvbmluZw==');
 
 @$core.Deprecated('Use listProvidersRequestDescriptor instead')
 const ListProvidersRequest$json = {

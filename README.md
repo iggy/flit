@@ -207,6 +207,14 @@ matches runs), and an optional small model can rate commands before you're
 asked. These rules reduce prompts; they are not a sandbox. See
 [docs/shell.md](docs/shell.md).
 
+With llama.cpp, flit also says why a call is waiting (every slot busy with
+other requests, the model asleep or loading), shows how much of each prompt
+came from llama.cpp's cache, keeps each session's prompt cache in a save
+file between turns (`llamacpp.kv_cache`, for servers started with
+`--slot-save-path`) so a long session doesn't re-read its whole prompt after
+other requests, and offers **Answer now** while a model is thinking, on
+models where llama.cpp can cut the thinking short.
+
 You can keep typing while the agent works: a message sent mid-turn is
 queued and joins the conversation at the agent's next step (after the
 current model call or tool, before the next call), or starts the next turn

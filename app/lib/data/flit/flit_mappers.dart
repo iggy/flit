@@ -71,6 +71,7 @@ FlitModel modelFromProto(pb.Model m) {
     efforts: List<String>.unmodifiable(m.efforts),
     loaded: m.loaded,
     favorite: m.favorite,
+    canEndReasoning: m.canEndReasoning,
     lastUsed: m.hasLastUsed() ? m.lastUsed.toDateTime() : null,
     state: switch (m.state) {
       pb.ModelState.MODEL_STATE_UNLOADED => FlitModelState.unloaded,
@@ -226,6 +227,7 @@ FlitEvent eventFromProto(pb.Event e) {
         promptTokensPerSecond: u.promptTokensPerSecond,
         generationTokensPerSecond: u.generationTokensPerSecond,
         timingSource: u.timingSource,
+        cachedTokens: u.cachedTokens.toInt(),
       );
     case pb.Event_Payload.todoUpdated:
       return FlitTodoUpdated(
@@ -301,6 +303,36 @@ FlitEvent eventFromProto(pb.Event e) {
         queueId: e.queuedMessageDelivered.queueId,
         messageId: e.queuedMessageDelivered.messageId,
       );
+    case pb.Event_Payload.modelCallWaiting:
+      final w = e.modelCallWaiting;
+      return FlitModelCallWaiting(
+        seq: seq,
+        time: time,
+        messageId: w.messageId,
+        totalSlots: w.totalSlots,
+        reason: switch (w.reason) {
+          pb.ModelWaitReason.MODEL_WAIT_REASON_SLOTS_BUSY =>
+            FlitWaitReason.slotsBusy,
+          pb.ModelWaitReason.MODEL_WAIT_REASON_SLEEPING =>
+            FlitWaitReason.sleeping,
+          pb.ModelWaitReason.MODEL_WAIT_REASON_LOADING =>
+            FlitWaitReason.loading,
+          _ => FlitWaitReason.unknown,
+        },
+      );
+    case pb.Event_Payload.reasoningEndRequested:
+      return FlitReasoningEndRequested(
+        seq: seq,
+        time: time,
+        messageId: e.reasoningEndRequested.messageId,
+        client: e.reasoningEndRequested.client,
+      );
+    case pb.Event_Payload.reasoningEndIgnored:
+      return FlitReasoningEndIgnored(
+        seq: seq,
+        time: time,
+        messageId: e.reasoningEndIgnored.messageId,
+      );
     case pb.Event_Payload.modelCallStarted:
       return FlitModelCallStarted(
         seq: seq,
@@ -359,6 +391,9 @@ FlitEvent eventFromProto(pb.Event e) {
         provider: c.provider,
         model: c.model,
       );
+    // Prompt cache saves and restores are for flit debug session; the chat
+    // has nothing to show for them.
+    case pb.Event_Payload.promptCache:
     case pb.Event_Payload.notSet:
       return FlitUnknownEvent(seq: seq, time: time);
   }
