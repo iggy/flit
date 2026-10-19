@@ -114,13 +114,14 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
       return;
     }
     try {
-      if (choice.provider != provider || choice.model != model) {
-        await repository.setModel(
-          widget.sessionId,
-          provider: choice.provider,
-          model: choice.model,
-        );
-      }
+      // Sent even for the current model: after a catalog refresh its
+      // context window may have changed, and the server only logs a new
+      // ModelChanged (which the header reads) when something did.
+      await repository.setModel(
+        widget.sessionId,
+        provider: choice.provider,
+        model: choice.model,
+      );
       if (choice.effort != effort) {
         await repository.setEffort(widget.sessionId, choice.effort);
       }
