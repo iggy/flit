@@ -33,15 +33,15 @@ import (
 
 // Errors returned by Manager. The API layer maps them to status codes.
 var (
-	ErrNotFound    = store.ErrNotFound
-	ErrBusy        = errors.New("a turn is already running in this session")
-	ErrPromptGone  = errors.New("prompt is not pending (already answered, or the turn ended)")
-	ErrInvalid     = errors.New("invalid argument")
-	ErrSlowClient  = errors.New("client fell too far behind")
+	ErrNotFound   = store.ErrNotFound
+	ErrBusy       = errors.New("a turn is already running in this session")
+	ErrPromptGone = errors.New("prompt is not pending (already answered, or the turn ended)")
+	ErrInvalid    = errors.New("invalid argument")
+	ErrSlowClient = errors.New("client fell too far behind")
 	// ErrNoCallToRetry: RetryModelCall with no model call waiting (none
 	// running, or the reply is already streaming).
 	ErrNoCallToRetry = errors.New("no model call is waiting for the model to answer")
-	errInterrupted = errors.New("interrupted")
+	errInterrupted   = errors.New("interrupted")
 )
 
 func invalid(format string, args ...any) error {
