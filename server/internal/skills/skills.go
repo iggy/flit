@@ -10,6 +10,7 @@ package skills
 
 import (
 	"bytes"
+	"embed"
 	"errors"
 	"fmt"
 	"io"
@@ -139,6 +140,18 @@ func Read(dir string) (Skill, error) {
 	if err != nil {
 		return Skill{}, err
 	}
+	s, err := parse(data, dir, filepath.Base(dir))
+	if err != nil {
+		return Skill{}, err
+	}
+	s.Dir = dir
+	return s, nil
+}
+
+// parse reads a SKILL.md; where names it in errors and dirName is the name
+// the skill must have.
+func parse(data []byte, where, dirName string) (Skill, error) {
+	dir := where
 	data = bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n"))
 	rest, ok := bytes.CutPrefix(data, []byte("---\n"))
 	if !ok {
@@ -157,11 +170,11 @@ func Read(dir string) (Skill, error) {
 	} else {
 		body = nil
 	}
-	s.Dir, s.Body = dir, strings.TrimSpace(string(body))
+	s.Body = strings.TrimSpace(string(body))
 	switch {
 	case !nameRE.MatchString(s.Name) || len(s.Name) > 64:
 		return Skill{}, fmt.Errorf("%s: name %q must be 1-64 lowercase letters, digits and single hyphens", dir, s.Name)
-	case s.Name != filepath.Base(dir):
+	case s.Name != dirName:
 		return Skill{}, fmt.Errorf("%s: name %q must match the directory name", dir, s.Name)
 	case strings.TrimSpace(s.Description) == "" || len(s.Description) > 1024:
 		return Skill{}, fmt.Errorf("%s: description must be 1-1024 characters", dir)
@@ -169,10 +182,58 @@ func Read(dir string) (Skill, error) {
 	return s, nil
 }
 
+// builtinFS holds the skills that ship with flit.
+//
+//go:embed builtin/*/SKILL.md
+var builtinFS embed.FS
+
+// BuiltinSource is the Source of skills that ship with flit.
+const BuiltinSource = "built-in"
+
+// Builtin returns the skills that ship with flit. They have no directory
+// and no files besides their instructions.
+func Builtin() []Skill {
+	entries, _ := builtinFS.ReadDir("builtin")
+	var out []Skill
+	for _, e := range entries {
+		data, err := builtinFS.ReadFile("builtin/" + e.Name() + "/" + FileName)
+		if err != nil {
+			panic(err)
+		}
+		s, err := parse(data, "built-in skill "+e.Name(), e.Name())
+		if err != nil {
+			panic(err) // tested
+		}
+		s.Source = BuiltinSource
+		out = append(out, s)
+	}
+	return out
+}
+
+// WithBuiltin adds the built-in skills to list, below everything already
+// in it: a repo or global skill with the same name wins.
+func WithBuiltin(list []Skill) []Skill {
+	seen := map[string]bool{}
+	for _, s := range list {
+		seen[s.Name] = true
+	}
+	out := slices.Clone(list)
+	for _, s := range Builtin() {
+		if !seen[s.Name] {
+			out = append(out, s)
+		}
+	}
+	slices.SortFunc(out, func(a, b Skill) int { return strings.Compare(a.Name, b.Name) })
+	return out
+}
+
 // Files lists the skill's files other than SKILL.md, relative to its
 // directory, up to limit.
 func (s Skill) Files(limit int) []string {
 	var out []string
+	if s.Dir == "" {
+		return nil
+	}
 	_ = filepath.WalkDir(s.Dir, func(p string, d os.DirEntry, err error) error {
 		if err != nil || len(out) >= limit {
 			return filepath.SkipAll
@@ -194,7 +255,9 @@ func PromptSection(list []Skill) string {
 		return ""
 	}
 	var b strings.Builder
-	b.WriteString("\nSkills you can load with the skill tool when a task matches (load before acting on it):\n")
+	b.WriteString("\nSkills you can load with the skill tool when a task matches (load before acting on it). " +
+		"A user message starting with /<name> (e.g. /init) asks for that skill: load it and follow it, " +
+		"treating any text after the name as the user's input to it.\n")
 	for _, s := range list {
 		fmt.Fprintf(&b, "- %s: %s\n", s.Name, strings.Join(strings.Fields(s.Description), " "))
 	}

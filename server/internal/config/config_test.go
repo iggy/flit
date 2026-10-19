@@ -32,6 +32,18 @@ func TestParse(t *testing.T) {
 	}
 }
 
+func TestParseMCPServers(t *testing.T) {
+	cfg, err := Parse([]byte("mcp_servers:\n" +
+		"  - {name: local, command: uvx, args: [mcp-server-fetch]}\n" +
+		"  - name: remote\n    url: https://example.com/mcp\n    headers:\n      Authorization: Bearer t\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r, ok := cfg.MCPServer("remote"); !ok || r.URL != "https://example.com/mcp" || r.Headers["Authorization"] != "Bearer t" {
+		t.Fatalf("remote = %+v", r)
+	}
+}
+
 func TestParseErrors(t *testing.T) {
 	for name, in := range map[string]string{
 		"unknown key":            "lisen: 127.0.0.1:1\n",
@@ -46,6 +58,11 @@ func TestParseErrors(t *testing.T) {
 		"unknown agent provider": "agent:\n  provider: nope\n",
 		"bad shell default":      "shell:\n  default: maybe\n",
 		"timeout over max":       "shell:\n  timeout: 1h\n  max_timeout: 1m\n",
+		"mcp neither":            "mcp_servers:\n  - name: a\n",
+		"mcp both":               "mcp_servers:\n  - {name: a, command: x, url: http://h/mcp}\n",
+		"mcp bad url":            "mcp_servers:\n  - {name: a, url: h/mcp}\n",
+		"mcp url with args":      "mcp_servers:\n  - {name: a, url: http://h/mcp, args: [x]}\n",
+		"mcp command headers":    "mcp_servers:\n  - {name: a, command: x, headers: {A: b}}\n",
 	} {
 		t.Run(name, func(t *testing.T) {
 			if _, err := Parse([]byte(in)); err == nil {

@@ -145,8 +145,11 @@ state, and the agent's todo list.
 - **Projects** group sessions by directory: create one from a directory on
   the server, switch between them in the app, and move sessions out of
   Scratch.
-- **MCP servers** (stdio) are configured in the YAML config, never an
-  `mcp.json`:
+- **MCP servers** are configured in the YAML config, never an `mcp.json`.
+  Each has either a `command` (a subprocess, over stdio) or a `url` (a
+  remote server, over streamable HTTP, falling back to legacy SSE), with
+  optional `headers` for things like auth (`${VAR}` in a header value is
+  read from the environment, so tokens needn't sit in the config):
 
   ```yaml
   mcp_servers:
@@ -154,6 +157,10 @@ state, and the agent's todo list.
       command: uvx
       args: [mcp-server-fetch]
       enabled: true    # on for new sessions
+    - name: docs
+      url: https://example.com/mcp
+      headers:
+        Authorization: Bearer ${DOCS_MCP_TOKEN}
   ```
 
   Each session turns servers on or off at runtime; only enabled servers'
@@ -163,7 +170,10 @@ state, and the agent's todo list.
   for compatibility, at the working directory and the git root) and from
   `skills/` next to the config (`skills_dirs`). A repo skill wins over a
   global one with the same name. The model sees names and descriptions and
-  loads a skill's instructions and files when needed.
+  loads a skill's instructions and files when needed. A message starting
+  with `/<skill>` asks for that skill (the app's composer suggests them
+  when you type `/`). flit ships one: **/init** surveys the repo and writes
+  or updates its `AGENTS.md`, asking before it changes an existing one.
 - **git** tools (status, diff, log, commit; nothing pushes), **web_fetch**,
   and **web_search** through a SearXNG instance (`web.search`); paid search
   APIs aren't supported.

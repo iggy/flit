@@ -49,7 +49,7 @@ type Config struct {
 	// RolesDir holds role files (*.md with YAML frontmatter). Relative
 	// paths are relative to the config file.
 	RolesDir string `yaml:"roles_dir"`
-	// MCPServers are MCP servers (stdio). Configured here, never in an
+	// MCPServers are MCP servers (stdio or HTTP). Configured here, never in an
 	// mcp.json.
 	MCPServers []MCPServer `yaml:"mcp_servers"`
 	// SkillsDirs hold skills in the Agent Skills format (one directory per
@@ -99,8 +99,9 @@ type Provider struct {
 	PromptAppend string `yaml:"prompt_append"`
 }
 
-// MCPServer is an MCP server flit starts as a subprocess and talks to over
-// stdio.
+// MCPServer is an MCP server: either a subprocess flit starts and talks to
+// over stdio (Command), or a remote one it reaches over HTTP (URL).
+// Exactly one of the two is set.
 type MCPServer struct {
 	Name    string            `yaml:"name"`
 	Command string            `yaml:"command"`
@@ -108,6 +109,13 @@ type MCPServer struct {
 	Env     map[string]string `yaml:"env"`
 	// Dir is the working directory for the process; empty means flit's.
 	Dir string `yaml:"dir"`
+	// URL is a remote server's endpoint, spoken to with the streamable
+	// HTTP transport, or legacy SSE if the server only speaks that.
+	URL string `yaml:"url"`
+	// Headers are sent with every HTTP request (e.g. Authorization).
+	// ${VAR} in a value is replaced with that environment variable when
+	// connecting; an unset one fails the server.
+	Headers map[string]string `yaml:"headers"`
 	// Enabled is whether new sessions start with it on. Default true.
 	Enabled *bool `yaml:"enabled"`
 }
@@ -404,8 +412,17 @@ func (c Config) Validate() error {
 			return fmt.Errorf("mcp_servers %q: name may only use letters, digits, - and _", m.Name)
 		case mcpSeen[m.Name]:
 			return fmt.Errorf("mcp_servers: duplicate name %q", m.Name)
-		case m.Command == "":
-			return fmt.Errorf("mcp_servers %q: command is required", m.Name)
+		case (m.Command == "") == (m.URL == ""):
+			return fmt.Errorf("mcp_servers %q: set exactly one of command and url", m.Name)
+		case m.URL != "" && (len(m.Args) > 0 || len(m.Env) > 0 || m.Dir != ""):
+			return fmt.Errorf("mcp_servers %q: args, env and dir only apply to command servers", m.Name)
+		case m.Command != "" && len(m.Headers) > 0:
+			return fmt.Errorf("mcp_servers %q: headers only apply to url servers", m.Name)
+		}
+		if m.URL != "" {
+			if u, err := url.Parse(m.URL); err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+				return fmt.Errorf("mcp_servers %q: url must be an http(s) URL", m.Name)
+			}
 		}
 		mcpSeen[m.Name] = true
 	}
@@ -496,13 +513,20 @@ roles_dir: roles
 # skill when it needs it.
 skills_dirs: [skills]
 
-# MCP servers, started on demand and spoken to over stdio. Sessions can turn
+# MCP servers, connected on demand. Each has either a command (started as a
+# subprocess, spoken to over stdio) or a url (a remote server, spoken to with
+# streamable HTTP, or legacy SSE if that's all it speaks). Sessions can turn
 # each one on or off; enabled says whether new sessions start with it on.
 mcp_servers: []
 #  - name: fetch
 #    command: uvx
 #    args: [mcp-server-fetch]
 #    env: {}
+#    enabled: true
+#  - name: docs
+#    url: https://example.com/mcp
+#    headers:                            # ${VAR} is read from the environment
+#      Authorization: Bearer ${DOCS_MCP_TOKEN}
 #    enabled: true
 
 web:

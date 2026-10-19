@@ -15,6 +15,7 @@ import 'package:flit/presentation/flit/flit_model_picker.dart';
 import 'package:flit/presentation/flit/flit_nav.dart';
 import 'package:flit/presentation/flit/flit_prompt_card.dart';
 import 'package:flit/presentation/flit/flit_rating.dart';
+import 'package:flit/presentation/flit/flit_slash_menu.dart';
 import 'package:flit/presentation/flit/flit_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -401,6 +402,12 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
                     ),
             ),
             FlitTodoPanel(todos: fold.todos),
+            FlitSlashMenu(
+              controller: _input,
+              skills:
+                  ref.watch(flitSkillsProvider(widget.sessionId)).value ??
+                  const <FlitSkill>[],
+            ),
             _Composer(
               controller: _input,
               busy: fold.busy,

@@ -1,6 +1,6 @@
 // Package mcpclient runs the MCP servers configured in flit's YAML config
-// (stdio transport) and exposes their tools to the agent. Servers start on
-// first use and are shared by all sessions; a server whose config changes is
+// (stdio subprocesses, or remote servers over streamable HTTP or legacy
+// SSE) and exposes their tools to the agent. Servers start on first use and are shared by all sessions; a server whose config changes is
 // restarted on its next use.
 package mcpclient
 
@@ -10,9 +10,11 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/exec"
 	"reflect"
+	"regexp"
 	"slices"
 	"strings"
 	"sync"
@@ -138,15 +140,7 @@ func (m *Manager) start(ctx context.Context, cfg config.MCPServer) *server {
 	ctx, cancel := context.WithTimeout(ctx, startTimeout)
 	defer cancel()
 
-	cmd := exec.Command(cfg.Command, cfg.Args...)
-	cmd.Dir = cfg.Dir
-	cmd.Env = os.Environ()
-	for k, v := range cfg.Env {
-		cmd.Env = append(cmd.Env, k+"="+v)
-	}
-	cmd.Stderr = &logWriter{log: m.log, server: cfg.Name}
-	client := mcp.NewClient(&mcp.Implementation{Name: "flit", Version: buildinfo.Get().Version}, nil)
-	session, err := client.Connect(ctx, &mcp.CommandTransport{Command: cmd}, nil)
+	session, err := m.connect(ctx, cfg)
 	if err != nil {
 		s.err = fmt.Errorf("start MCP server %q: %w", cfg.Name, err)
 		return s
@@ -166,6 +160,89 @@ func (m *Manager) start(ctx context.Context, cfg config.MCPServer) *server {
 	s.session = session
 	m.log.Info("MCP server started", "server", cfg.Name, "tools", len(s.tools))
 	return s
+}
+
+// connect starts a command server, or connects to a url server: streamable
+// HTTP first, then legacy SSE for servers that only speak that.
+func (m *Manager) connect(ctx context.Context, cfg config.MCPServer) (*mcp.ClientSession, error) {
+	client := mcp.NewClient(&mcp.Implementation{Name: "flit", Version: buildinfo.Get().Version}, nil)
+	if cfg.URL == "" {
+		cmd := exec.Command(cfg.Command, cfg.Args...)
+		cmd.Dir = cfg.Dir
+		cmd.Env = os.Environ()
+		for k, v := range cfg.Env {
+			cmd.Env = append(cmd.Env, k+"="+v)
+		}
+		cmd.Stderr = &logWriter{log: m.log, server: cfg.Name}
+		return client.Connect(ctx, &mcp.CommandTransport{Command: cmd}, nil)
+	}
+	// The transports keep their event streams on the Connect context, so
+	// it must outlive this call; only the handshake is bounded.
+	connCtx, timeOut := context.WithCancel(context.WithoutCancel(ctx))
+	timer := time.AfterFunc(startTimeout, timeOut)
+	defer timer.Stop()
+	stop := context.AfterFunc(ctx, timeOut) // ctx ending also aborts the handshake
+	defer stop()
+	ctx = connCtx
+	headers, err := expandHeaders(cfg.Headers)
+	if err != nil {
+		return nil, err
+	}
+	httpClient := &http.Client{Transport: headerTransport{headers: headers, base: http.DefaultTransport}}
+	session, err := client.Connect(ctx, &mcp.StreamableClientTransport{
+		Endpoint: cfg.URL, HTTPClient: httpClient, MaxRetries: -1,
+	}, nil)
+	if err == nil {
+		return session, nil
+	}
+	session, sseErr := client.Connect(ctx, &mcp.SSEClientTransport{Endpoint: cfg.URL, HTTPClient: httpClient}, nil)
+	if sseErr != nil {
+		return nil, fmt.Errorf("streamable HTTP: %w; SSE: %w", err, sseErr)
+	}
+	m.log.Info("MCP server speaks legacy SSE", "server", cfg.Name)
+	return session, nil
+}
+
+// envRef is a ${VAR} reference in a header value.
+var envRef = regexp.MustCompile(`\$\{([A-Za-z_][A-Za-z0-9_]*)\}`)
+
+// expandHeaders replaces ${VAR} in header values with the environment
+// variable, so secrets needn't sit in the config. A variable that isn't
+// set is an error. Nothing else (a bare $ included) is touched.
+func expandHeaders(in map[string]string) (map[string]string, error) {
+	out := make(map[string]string, len(in))
+	var missing []string
+	for k, v := range in {
+		out[k] = envRef.ReplaceAllStringFunc(v, func(ref string) string {
+			name := envRef.FindStringSubmatch(ref)[1]
+			val, ok := os.LookupEnv(name)
+			if !ok {
+				missing = append(missing, name)
+			}
+			return val
+		})
+	}
+	if len(missing) > 0 {
+		slices.Sort(missing)
+		return nil, fmt.Errorf("headers use unset environment variables: %s", strings.Join(slices.Compact(missing), ", "))
+	}
+	return out, nil
+}
+
+// headerTransport adds the configured headers to every request.
+type headerTransport struct {
+	headers map[string]string
+	base    http.RoundTripper
+}
+
+func (t headerTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	if len(t.headers) > 0 {
+		r = r.Clone(r.Context())
+		for k, v := range t.headers {
+			r.Header.Set(k, v)
+		}
+	}
+	return t.base.RoundTrip(r)
 }
 
 // Tools returns the tools of the named servers, starting them if needed.

@@ -41,6 +41,9 @@ func SkillTool(list []skills.Skill) Tool {
 				return errorf("no skill named %q", a.Name)
 			}
 			if a.File != "" {
+				if s.Dir == "" {
+					return errorf("skill %s is built in and has no files", s.Name)
+				}
 				p, err := resolve(s.Dir, a.File)
 				if err != nil {
 					return errorf("%v", err)
@@ -55,7 +58,11 @@ func SkillTool(list []skills.Skill) Tool {
 				return Result{Text: string(b)}
 			}
 			var b strings.Builder
-			fmt.Fprintf(&b, "Skill %s (directory: %s)\n\n%s\n", s.Name, s.Dir, s.Body)
+			if s.Dir == "" {
+				fmt.Fprintf(&b, "Skill %s (built in)\n\n%s\n", s.Name, s.Body)
+			} else {
+				fmt.Fprintf(&b, "Skill %s (directory: %s)\n\n%s\n", s.Name, s.Dir, s.Body)
+			}
 			if files := s.Files(skillFileLimit); len(files) > 0 {
 				b.WriteString("\nFiles in this skill (read with file=..., run scripts by absolute path):\n")
 				for _, f := range files {

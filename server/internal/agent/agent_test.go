@@ -246,7 +246,8 @@ func TestTurnWithToolCall(t *testing.T) {
 	if sys.Role != "system" || !strings.Contains(sys.Content, "Always say please.") || !strings.Contains(sys.Content, h.dir) {
 		t.Fatalf("system prompt: %s", sys.Content)
 	}
-	if len(reqs[0].Tools) != 12 || reqs[0].Model != "test-model" {
+	// The built-ins plus skill (flit's own /init skill is always there).
+	if len(reqs[0].Tools) != 13 || reqs[0].Model != "test-model" {
 		t.Fatalf("first request tools=%d model=%s", len(reqs[0].Tools), reqs[0].Model)
 	}
 	second := reqs[1].Messages
@@ -874,7 +875,7 @@ func TestToolSetSkillsAppendsAndMCPToggle(t *testing.T) {
 		}
 	}
 	sys := req.Messages[0].Content
-	for _, want := range []string{"- deploy: How to deploy this app.", "Provider note.", "Model note.", "could not be started"} {
+	for _, want := range []string{"- deploy: How to deploy this app.", "- init: ", "/<name>", "Provider note.", "Model note.", "could not be started"} {
 		if !strings.Contains(sys, want) {
 			t.Errorf("system prompt lacks %q", want)
 		}

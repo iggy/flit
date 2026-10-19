@@ -508,5 +508,5 @@ func (m *Manager) Skills(ctx context.Context, id string) ([]skills.Skill, error)
 		global = m.SkillsDirs()
 	}
 	list, _ := skills.Load(skills.SessionDirs(s.snapshot().WorkingDir, global))
-	return list, nil
+	return skills.WithBuiltin(list), nil
 }

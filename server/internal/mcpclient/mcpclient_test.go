@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"io"
 	"log/slog"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
@@ -28,6 +30,10 @@ type echoIn struct {
 }
 
 func serve() {
+	_ = newTestServer().Run(context.Background(), &mcp.StdioTransport{})
+}
+
+func newTestServer() *mcp.Server {
 	s := mcp.NewServer(&mcp.Implementation{Name: "test", Version: "1"}, nil)
 	mcp.AddTool(s, &mcp.Tool{Name: "echo", Description: "Echo text back."},
 		func(_ context.Context, _ *mcp.CallToolRequest, in echoIn) (*mcp.CallToolResult, any, error) {
@@ -37,7 +43,7 @@ func serve() {
 		func(_ context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, any, error) {
 			return &mcp.CallToolResult{IsError: true, Content: []mcp.Content{&mcp.TextContent{Text: "nope"}}}, nil, nil
 		})
-	_ = s.Run(context.Background(), &mcp.StdioTransport{})
+	return s
 }
 
 func TestManager(t *testing.T) {
@@ -98,5 +104,77 @@ func TestManager(t *testing.T) {
 	}
 	if _, err := m.Tools(ctx, []string{"test"}); err != nil {
 		t.Fatalf("restart: %v", err)
+	}
+}
+
+// requireToken rejects requests without the configured header.
+func requireToken(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer sekrit" {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		h.ServeHTTP(w, r)
+	})
+}
+
+// Remote servers: streamable HTTP, and legacy SSE through the fallback,
+// both getting the configured headers.
+func TestManagerHTTP(t *testing.T) {
+	getServer := func(*http.Request) *mcp.Server { return newTestServer() }
+	streamable := httptest.NewServer(requireToken(mcp.NewStreamableHTTPHandler(getServer, nil)))
+	defer streamable.Close()
+	sse := httptest.NewServer(requireToken(mcp.NewSSEHandler(getServer, nil)))
+	defer sse.Close()
+	t.Setenv("FLIT_TEST_MCP_TOKEN", "sekrit")
+	auth := map[string]string{"Authorization": "Bearer ${FLIT_TEST_MCP_TOKEN}"}
+
+	cfg := config.Default()
+	cfg.MCPServers = []config.MCPServer{
+		{Name: "streamable", URL: streamable.URL, Headers: auth},
+		{Name: "sse", URL: sse.URL, Headers: auth},
+		{Name: "noauth", URL: streamable.URL},
+		{Name: "unset", URL: streamable.URL, Headers: map[string]string{"Authorization": "Bearer ${FLIT_TEST_MCP_UNSET}"}},
+	}
+	m := New(func() config.Config { return cfg }, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	defer m.Close()
+	ctx := context.Background()
+
+	for _, name := range []string{"streamable", "sse"} {
+		tools, err := m.Tools(ctx, []string{name})
+		if err != nil || len(tools) != 2 {
+			t.Fatalf("%s: tools = %+v, %v", name, tools, err)
+		}
+		for _, tl := range tools {
+			if tl.Name != "echo" {
+				continue
+			}
+			out, isErr, err := m.Call(ctx, tl, json.RawMessage(`{"text":"hi"}`))
+			if err != nil || isErr || out != "echo: hi" {
+				t.Fatalf("%s: call = %q, %v, %v", name, out, isErr, err)
+			}
+		}
+	}
+	if _, err := m.Tools(ctx, []string{"noauth"}); err == nil {
+		t.Fatal("server without the header should fail")
+	}
+	if _, err := m.Tools(ctx, []string{"unset"}); err == nil || !strings.Contains(err.Error(), "FLIT_TEST_MCP_UNSET") {
+		t.Fatalf("unset variable: %v", err)
+	}
+	if st := m.Status(); st[3].Running || !strings.Contains(st[3].Err, "FLIT_TEST_MCP_UNSET") {
+		t.Fatalf("status = %+v", st[3])
+	}
+}
+
+func TestExpandHeaders(t *testing.T) {
+	t.Setenv("FLIT_A", "x")
+	t.Setenv("FLIT_EMPTY", "")
+	got, err := expandHeaders(map[string]string{"A": "${FLIT_A}-${FLIT_A}", "B": "$FLIT_A ${", "C": "${FLIT_EMPTY}"})
+	if err != nil || got["A"] != "x-x" || got["B"] != "$FLIT_A ${" || got["C"] != "" {
+		t.Fatalf("got %v, %v", got, err)
+	}
+	if _, err := expandHeaders(map[string]string{"A": "${FLIT_NOPE_2}", "B": "${FLIT_NOPE_1}"}); err == nil ||
+		err.Error() != "headers use unset environment variables: FLIT_NOPE_1, FLIT_NOPE_2" {
+		t.Fatalf("missing: %v", err)
 	}
 }

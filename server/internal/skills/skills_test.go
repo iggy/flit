@@ -92,3 +92,34 @@ func TestSessionDirs(t *testing.T) {
 		t.Errorf("non-repo dirs = %+v", dirs)
 	}
 }
+
+func TestBuiltin(t *testing.T) {
+	list := Builtin()
+	var init Skill
+	for _, s := range list {
+		if s.Source != BuiltinSource || s.Dir != "" || s.Files(10) != nil {
+			t.Fatalf("built-in %+v", s)
+		}
+		if s.Name == "init" {
+			init = s
+		}
+	}
+	if init.Name == "" || !strings.Contains(init.Body, "AGENTS.md") || !strings.Contains(init.Body, "ask the user") {
+		t.Fatalf("init = %+v", init)
+	}
+}
+
+// A repo or global skill with a built-in's name replaces it.
+func TestWithBuiltin(t *testing.T) {
+	got := WithBuiltin([]Skill{{Name: "zeta"}, {Name: "init", Source: "repo .agents/skills"}})
+	var names []string
+	for _, s := range got {
+		names = append(names, s.Name+"@"+s.Source)
+	}
+	if strings.Join(names, ",") != "init@repo .agents/skills,zeta@" {
+		t.Fatalf("got %v", names)
+	}
+	if got := WithBuiltin(nil); len(got) == 0 || got[0].Source != BuiltinSource {
+		t.Fatalf("WithBuiltin(nil) = %+v", got)
+	}
+}
