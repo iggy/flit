@@ -7,8 +7,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
+	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/iggy/flit/server/internal/llm"
 )
@@ -25,6 +28,25 @@ type Response struct {
 	Hang bool
 	// Started, if set, is closed once Chunks have been sent.
 	Started chan struct{}
+	// HeaderDelay waits this long before sending the response headers.
+	HeaderDelay time.Duration
+}
+
+// sleepPrefix marks a Pause pseudo-chunk.
+const sleepPrefix = "\x00sleep:"
+
+// Pause is a pseudo-chunk: the server sends nothing for d at that point in
+// the stream (or until the client goes away).
+func Pause(d time.Duration) string { return sleepPrefix + strconv.FormatInt(int64(d), 10) }
+
+// wait sleeps d unless the request ends first; it reports whether to go on.
+func wait(r *http.Request, d time.Duration) bool {
+	select {
+	case <-time.After(d):
+		return true
+	case <-r.Context().Done():
+		return false
+	}
 }
 
 // Server is a fake endpoint. Push responses; each request takes the next.
@@ -96,9 +118,20 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, resp.Body)
 		return
 	}
+	if resp.HeaderDelay > 0 && !wait(r, resp.HeaderDelay) {
+		return
+	}
 	w.Header().Set("Content-Type", "text/event-stream")
 	flusher := w.(http.Flusher)
+	flusher.Flush()
 	for _, c := range resp.Chunks {
+		if d, ok := strings.CutPrefix(c, sleepPrefix); ok {
+			n, _ := strconv.ParseInt(d, 10, 64)
+			if !wait(r, time.Duration(n)) {
+				return
+			}
+			continue
+		}
 		fmt.Fprintf(w, "data: %s\n\n", c)
 		flusher.Flush()
 	}
@@ -186,5 +219,13 @@ func Timings(promptPerSec, genPerSec float64) string {
 			"prompt_n": 40, "prompt_ms": 400.0, "prompt_per_second": promptPerSec,
 			"predicted_n": 8, "predicted_ms": 200.0, "predicted_per_second": genPerSec,
 		},
+	})
+}
+
+// Progress returns a llama.cpp prompt_progress chunk (return_progress).
+func Progress(processed, total, cache int64, ms float64) string {
+	return mustJSON(map[string]any{
+		"choices":         []any{map[string]any{"index": 0, "delta": map[string]any{"role": "assistant", "content": nil}, "finish_reason": nil}},
+		"prompt_progress": map[string]any{"total": total, "cache": cache, "processed": processed, "time_ms": ms},
 	})
 }

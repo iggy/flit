@@ -142,6 +142,15 @@ final class FlitRepositoryImpl implements FlitRepository {
   }
 
   @override
+  Future<void> retryModelCall(String sessionId) {
+    return flitCall(() async {
+      await _sessions.retryModelCall(
+        pb.RetryModelCallRequest(sessionId: sessionId),
+      );
+    });
+  }
+
+  @override
   Future<void> answerPrompt(
     String sessionId,
     String promptId, {

@@ -125,6 +125,27 @@ extension type SessionServiceClient (connect.Transport _transport) {
     );
   }
 
+  /// RetryModelCall gives up on the model call in progress and sends it
+  /// again, for when the model hasn't answered. Only while none of the reply
+  /// has arrived: once it is streaming, the call fails with
+  /// FAILED_PRECONDITION (interrupt instead).
+  Future<flitv1session.RetryModelCallResponse> retryModelCall(
+    flitv1session.RetryModelCallRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.SessionService.retryModelCall,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
+
   /// AnswerPrompt answers a prompt the agent is waiting on. The first answer
   /// wins; later answers fail with FAILED_PRECONDITION.
   Future<flitv1session.AnswerPromptResponse> answerPrompt(

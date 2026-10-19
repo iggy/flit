@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/iggy/flit/server/internal/llm"
 	"github.com/iggy/flit/server/internal/llm/llmtest"
@@ -134,5 +135,96 @@ func TestMetrics(t *testing.T) {
 	}
 	if res.Usage == nil || res.Usage.PromptTokens != 40 {
 		t.Fatalf("usage = %+v", res.Usage)
+	}
+}
+
+func stream(t *testing.T, srv *llmtest.Server, first, stall time.Duration, h llm.Handler) (*llm.Result, *llm.Trace, error) {
+	t.Helper()
+	c := &llm.Client{BaseURL: srv.BaseURL(), FirstTokenTimeout: first, StallTimeout: stall}
+	return c.StreamTrace(context.Background(), llm.Request{Model: "m"}, h)
+}
+
+func wantStall(t *testing.T, err error, phase string) {
+	t.Helper()
+	var stall *llm.StallError
+	if !errors.As(err, &stall) || stall.Phase != phase {
+		t.Fatalf("err = %v, want a stall in %s", err, phase)
+	}
+	if !llm.Retryable(err) {
+		t.Fatal("stalls should be retryable")
+	}
+}
+
+func TestWatchdogPhases(t *testing.T) {
+	const short = 80 * time.Millisecond
+	for _, tc := range []struct {
+		name  string
+		resp  llmtest.Response
+		phase string
+	}{
+		{"no headers", llmtest.Response{HeaderDelay: time.Second, Chunks: llmtest.Text("x")}, llm.PhaseConnecting},
+		{"no body", llmtest.Response{Chunks: append([]string{llmtest.Pause(time.Second)}, llmtest.Text("x")...)}, llm.PhaseFirstByte},
+		{"stuck in the prompt", llmtest.Response{Chunks: []string{llmtest.Progress(0, 100, 0, 0), llmtest.Pause(time.Second)}}, llm.PhasePrompt},
+		{"no first token", llmtest.Response{Chunks: []string{llmtest.Finish(""), llmtest.Pause(time.Second)}}, llm.PhaseFirstToken},
+		{"mid-reply", llmtest.Response{Chunks: []string{llmtest.Text("a")[0], llmtest.Pause(time.Second)}}, llm.PhaseStreaming},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			srv := llmtest.New(t)
+			srv.Push(tc.resp)
+			start := time.Now()
+			_, tr, err := stream(t, srv, short, short, llm.Handler{})
+			wantStall(t, err, tc.phase)
+			if time.Since(start) > 900*time.Millisecond {
+				t.Fatalf("took %s", time.Since(start))
+			}
+			if tr == nil || tr.Phase != tc.phase || tr.Sent.IsZero() {
+				t.Fatalf("trace = %+v", tr)
+			}
+		})
+	}
+}
+
+// Before the first token the long limit applies; after it, the short one.
+// Prompt progress counts as the model working.
+func TestWatchdogLimits(t *testing.T) {
+	srv := llmtest.New(t)
+	slowStart := append([]string{llmtest.Pause(150 * time.Millisecond)}, llmtest.Text("ok")...)
+	srv.Push(llmtest.Response{Chunks: slowStart})
+	if _, _, err := stream(t, srv, 400*time.Millisecond, 50*time.Millisecond, llm.Handler{}); err != nil {
+		t.Fatalf("slow first token within the first-token limit: %v", err)
+	}
+
+	var progress []llm.PromptProgress
+	chunks := []string{}
+	for i := int64(1); i <= 4; i++ {
+		chunks = append(chunks, llmtest.Pause(40*time.Millisecond), llmtest.Progress(i*25, 100, 10, float64(i*40)))
+	}
+	srv.Push(llmtest.Response{Chunks: append(chunks, llmtest.Text("done")...)})
+	res, tr, err := stream(t, srv, 100*time.Millisecond, 70*time.Millisecond, llm.Handler{Progress: func(p llm.PromptProgress) { progress = append(progress, p) }})
+	if err != nil || res.Text != "done" {
+		t.Fatalf("progress kept it alive? %v %+v", err, res)
+	}
+	if len(progress) != 4 || progress[3].Processed != 100 || progress[3].Total != 100 || progress[3].Cached != 10 || progress[3].Elapsed != 160*time.Millisecond {
+		t.Fatalf("progress = %+v", progress)
+	}
+	if tr.Phase != llm.PhaseDone || tr.Headers.IsZero() || tr.FirstByte.IsZero() || tr.FirstToken.Before(tr.FirstByte) || tr.LastByte.Before(tr.FirstByte) || tr.Bytes == 0 {
+		t.Fatalf("trace = %+v", tr)
+	}
+}
+
+func TestWatchdogOff(t *testing.T) {
+	srv := llmtest.New(t)
+	srv.Push(llmtest.Response{Chunks: append([]string{llmtest.Pause(100 * time.Millisecond)}, llmtest.Text("ok")...)})
+	if _, _, err := stream(t, srv, 0, 0, llm.Handler{}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestStreamTraceKeepsTimings(t *testing.T) {
+	srv := llmtest.New(t)
+	srv.Push(llmtest.Response{Chunks: append(llmtest.Text("hi"), llmtest.Timings(100, 20))})
+	_, tr, err := stream(t, srv, time.Second, time.Second, llm.Handler{})
+	if err != nil || tr.Timings == nil || tr.Timings.PromptN != 40 || tr.Timings.PredictedMS != 200 {
+		t.Fatalf("trace = %+v, %v", tr, err)
 	}
 }

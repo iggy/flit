@@ -38,6 +38,12 @@ service SessionService {
   // as denied.
   rpc Interrupt(InterruptRequest) returns (InterruptResponse);
 
+  // RetryModelCall gives up on the model call in progress and sends it
+  // again, for when the model hasn't answered. Only while none of the reply
+  // has arrived: once it is streaming, the call fails with
+  // FAILED_PRECONDITION (interrupt instead).
+  rpc RetryModelCall(RetryModelCallRequest) returns (RetryModelCallResponse);
+
   // AnswerPrompt answers a prompt the agent is waiting on. The first answer
   // wins; later answers fail with FAILED_PRECONDITION.
   rpc AnswerPrompt(AnswerPromptRequest) returns (AnswerPromptResponse);
@@ -198,6 +204,12 @@ message InterruptResponse {
   bool interrupted = 1;
 }
 
+message RetryModelCallRequest {
+  string session_id = 1;
+}
+
+message RetryModelCallResponse {}
+
 message AnswerPromptRequest {
   string session_id = 1;
   string prompt_id = 2;
@@ -345,6 +357,9 @@ message Event {
     SessionMoved session_moved = 26;
     YoloChanged yolo_changed = 27;
     PermissionCheck permission_check = 28;
+    ModelCallStarted model_call_started = 29;
+    PromptProgress prompt_progress = 30;
+    ModelCallEnded model_call_ended = 31;
   }
 }
 
@@ -572,4 +587,76 @@ message PermissionCheck {
   // The recorded model call (see flit export) and the turn it ran in.
   string model_call_id = 7;
   string turn_id = 8;
+}
+
+// ModelCallStarted is a request to the model for message message_id being
+// sent. With the ModelCallEnded that follows (and the PromptProgress
+// between) it shows where a slow or frozen call is: a call with no end is
+// still waiting.
+message ModelCallStarted {
+  string message_id = 1;
+  // 1 for the first try, 2 for an automatic retry, ...
+  int32 attempt = 2;
+  // The watchdog limits in effect (agent.model_first_byte_timeout and
+  // agent.model_stall_timeout); 0 means none.
+  int64 first_byte_timeout_ms = 3;
+  int64 stall_timeout_ms = 4;
+}
+
+// PromptProgress is how far the model server has got reading the prompt,
+// for servers that report it (llama.cpp). Sent at most about once a second.
+message PromptProgress {
+  string message_id = 1;
+  int32 attempt = 2;
+  // Prompt tokens processed so far, of total; cached tokens were reused
+  // from the server's cache and needed no processing.
+  int64 processed = 3;
+  int64 total = 4;
+  int64 cached = 5;
+  // Time the server has spent on the prompt so far.
+  int64 elapsed_ms = 6;
+}
+
+enum ModelCallOutcome {
+  MODEL_CALL_OUTCOME_UNSPECIFIED = 0;
+  MODEL_CALL_OUTCOME_OK = 1;
+  // The watchdog gave up: nothing arrived for too long (see phase).
+  MODEL_CALL_OUTCOME_STALLED = 2;
+  // The endpoint returned an error or the connection broke.
+  MODEL_CALL_OUTCOME_ERROR = 3;
+  // The turn was interrupted.
+  MODEL_CALL_OUTCOME_CANCELLED = 4;
+  // Someone asked for it to be sent again (RetryModelCall).
+  MODEL_CALL_OUTCOME_RETRIED = 5;
+}
+
+// ModelCallEnded is how one model call (attempt) went, with its timeline.
+// Times are milliseconds from sending the request; 0 means it never got
+// that far.
+message ModelCallEnded {
+  string message_id = 1;
+  int32 attempt = 2;
+  ModelCallOutcome outcome = 3;
+  // For anything but OK, where it stopped: "connecting",
+  // "waiting_for_first_byte", "processing_prompt",
+  // "waiting_for_first_token" or "streaming".
+  string phase = 4;
+  string error = 5;
+  int64 response_headers_ms = 6;
+  int64 first_byte_ms = 7;
+  int64 first_token_ms = 8;
+  int64 last_byte_ms = 9;
+  int64 total_ms = 10;
+  // Response body bytes received.
+  int64 bytes = 11;
+  int64 input_tokens = 12;
+  int64 output_tokens = 13;
+  // llama.cpp's own timings, when it sent them.
+  int64 prompt_tokens = 14;
+  int64 prompt_ms = 15;
+  int64 predicted_tokens = 16;
+  int64 predicted_ms = 17;
+  // Whether flit tries the call again (agent.model_retries, or
+  // RetryModelCall).
+  bool will_retry = 18;
 }

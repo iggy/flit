@@ -207,6 +207,15 @@ type Agent struct {
 	// the model sees it.
 	ToolOutputMaxBytes int `yaml:"tool_output_max_bytes"`
 	ToolOutputMaxLines int `yaml:"tool_output_max_lines"`
+	// The model call watchdog. ModelFirstTokenTimeout is the longest a
+	// call may go quiet before the model starts answering (connecting,
+	// reading the prompt); ModelStallTimeout is the longest once it has
+	// (tokens or llama.cpp prompt progress are arriving). 0 turns one off.
+	ModelFirstTokenTimeout time.Duration `yaml:"model_first_token_timeout"`
+	ModelStallTimeout      time.Duration `yaml:"model_stall_timeout"`
+	// ModelRetries is how many times a call that failed or stalled before
+	// any output is tried again automatically. 0 means never.
+	ModelRetries int `yaml:"model_retries"`
 }
 
 // Shell configures the shell tool.
@@ -286,6 +295,12 @@ func Default() Config {
 			MaxSteps:           50,
 			ToolOutputMaxBytes: 32 * 1024,
 			ToolOutputMaxLines: 500,
+			// A big prompt on local hardware can take minutes to read;
+			// llama.cpp's progress reports keep the shorter stall limit
+			// in force while it does.
+			ModelFirstTokenTimeout: 10 * time.Minute,
+			ModelStallTimeout:      2 * time.Minute,
+			ModelRetries:           1,
 		},
 		Shell: Shell{
 			Timeout:    2 * time.Minute,
@@ -443,8 +458,12 @@ func (c Config) Validate() error {
 			return fmt.Errorf("agent.tasks.%s.provider %q is not in providers", task, t.Provider)
 		}
 	}
-	if c.Agent.MaxSteps < 0 || c.Agent.ToolOutputMaxBytes < 0 || c.Agent.ToolOutputMaxLines < 0 {
+	if c.Agent.MaxSteps < 0 || c.Agent.ToolOutputMaxBytes < 0 || c.Agent.ToolOutputMaxLines < 0 ||
+		c.Agent.ModelFirstTokenTimeout < 0 || c.Agent.ModelStallTimeout < 0 {
 		return errors.New("agent: limits must not be negative")
+	}
+	if c.Agent.ModelRetries < 0 || c.Agent.ModelRetries > 5 {
+		return errors.New("agent.model_retries must be between 0 and 5")
 	}
 	if c.Shell.Timeout < 0 || c.Shell.MaxTimeout < c.Shell.Timeout {
 		return errors.New("shell: need 0 <= timeout <= max_timeout")
@@ -566,6 +585,15 @@ agent:
   # Longer tool output is cut to its head and tail before the model sees it.
   tool_output_max_bytes: 32768
   tool_output_max_lines: 500
+  # The model call watchdog stops a call that goes quiet: for
+  # model_first_token_timeout before the model starts answering (sending
+  # the request, reading the prompt), model_stall_timeout once it has. With
+  # llama.cpp, flit asks for prompt progress, so the shorter limit applies
+  # while a long prompt is read too. 0 turns a limit off.
+  model_first_token_timeout: 10m
+  model_stall_timeout: 2m
+  # Automatic retries for a call that failed or stalled before any output.
+  model_retries: 1
 
 shell:
   timeout: 2m

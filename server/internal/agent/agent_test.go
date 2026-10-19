@@ -49,6 +49,8 @@ func newHarness(t *testing.T) *harness {
 	// Tests use echo (read-only, and portable to cmd.exe) as a command that
 	// needs approval.
 	h.cfg.Shell.ReadOnly = new(bool)
+	// Scripted failures happen once; tests of retries turn them back on.
+	h.cfg.Agent.ModelRetries = 0
 
 	st, err := store.Open(context.Background(), filepath.Join(t.TempDir(), store.FileName))
 	if err != nil {
@@ -217,8 +219,8 @@ func TestTurnWithToolCall(t *testing.T) {
 
 	want := []string{
 		"message_started", "text_delta", "message_done", "task_state_changed", // user message, WORKING
-		"message_started", "message_done", "usage", "tool_call_started", "tool_call_done", // tool call
-		"message_started", "reasoning_delta", "text_delta", "text_delta", "message_done", "usage",
+		"message_started", "model_call_started", "model_call_ended", "message_done", "usage", "tool_call_started", "tool_call_done", // tool call
+		"message_started", "model_call_started", "reasoning_delta", "text_delta", "text_delta", "model_call_ended", "message_done", "usage",
 		"task_state_changed", // DONE
 	}
 	if got := kinds(evs); strings.Join(got, ",") != strings.Join(want, ",") {

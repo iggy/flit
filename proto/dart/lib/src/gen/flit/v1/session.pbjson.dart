@@ -135,6 +135,26 @@ final $typed_data.Uint8List permissionVerdictDescriptor = $convert.base64Decode(
     'AhIcChhQRVJNSVNTSU9OX1ZFUkRJQ1RfQkxPQ0sQAxIcChhQRVJNSVNTSU9OX1ZFUkRJQ1RfRV'
     'JST1IQBA==');
 
+@$core.Deprecated('Use modelCallOutcomeDescriptor instead')
+const ModelCallOutcome$json = {
+  '1': 'ModelCallOutcome',
+  '2': [
+    {'1': 'MODEL_CALL_OUTCOME_UNSPECIFIED', '2': 0},
+    {'1': 'MODEL_CALL_OUTCOME_OK', '2': 1},
+    {'1': 'MODEL_CALL_OUTCOME_STALLED', '2': 2},
+    {'1': 'MODEL_CALL_OUTCOME_ERROR', '2': 3},
+    {'1': 'MODEL_CALL_OUTCOME_CANCELLED', '2': 4},
+    {'1': 'MODEL_CALL_OUTCOME_RETRIED', '2': 5},
+  ],
+};
+
+/// Descriptor for `ModelCallOutcome`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List modelCallOutcomeDescriptor = $convert.base64Decode(
+    'ChBNb2RlbENhbGxPdXRjb21lEiIKHk1PREVMX0NBTExfT1VUQ09NRV9VTlNQRUNJRklFRBAAEh'
+    'kKFU1PREVMX0NBTExfT1VUQ09NRV9PSxABEh4KGk1PREVMX0NBTExfT1VUQ09NRV9TVEFMTEVE'
+    'EAISHAoYTU9ERUxfQ0FMTF9PVVRDT01FX0VSUk9SEAMSIAocTU9ERUxfQ0FMTF9PVVRDT01FX0'
+    'NBTkNFTExFRBAEEh4KGk1PREVMX0NBTExfT1VUQ09NRV9SRVRSSUVEEAU=');
+
 @$core.Deprecated('Use sessionDescriptor instead')
 const Session$json = {
   '1': 'Session',
@@ -390,6 +410,27 @@ const InterruptResponse$json = {
 /// Descriptor for `InterruptResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List interruptResponseDescriptor = $convert.base64Decode(
     'ChFJbnRlcnJ1cHRSZXNwb25zZRIgCgtpbnRlcnJ1cHRlZBgBIAEoCFILaW50ZXJydXB0ZWQ=');
+
+@$core.Deprecated('Use retryModelCallRequestDescriptor instead')
+const RetryModelCallRequest$json = {
+  '1': 'RetryModelCallRequest',
+  '2': [
+    {'1': 'session_id', '3': 1, '4': 1, '5': 9, '10': 'sessionId'},
+  ],
+};
+
+/// Descriptor for `RetryModelCallRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List retryModelCallRequestDescriptor = $convert.base64Decode(
+    'ChVSZXRyeU1vZGVsQ2FsbFJlcXVlc3QSHQoKc2Vzc2lvbl9pZBgBIAEoCVIJc2Vzc2lvbklk');
+
+@$core.Deprecated('Use retryModelCallResponseDescriptor instead')
+const RetryModelCallResponse$json = {
+  '1': 'RetryModelCallResponse',
+};
+
+/// Descriptor for `RetryModelCallResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List retryModelCallResponseDescriptor =
+    $convert.base64Decode('ChZSZXRyeU1vZGVsQ2FsbFJlc3BvbnNl');
 
 @$core.Deprecated('Use answerPromptRequestDescriptor instead')
 const AnswerPromptRequest$json = {
@@ -921,6 +962,33 @@ const Event$json = {
       '9': 0,
       '10': 'permissionCheck'
     },
+    {
+      '1': 'model_call_started',
+      '3': 29,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.ModelCallStarted',
+      '9': 0,
+      '10': 'modelCallStarted'
+    },
+    {
+      '1': 'prompt_progress',
+      '3': 30,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.PromptProgress',
+      '9': 0,
+      '10': 'promptProgress'
+    },
+    {
+      '1': 'model_call_ended',
+      '3': 31,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.ModelCallEnded',
+      '9': 0,
+      '10': 'modelCallEnded'
+    },
   ],
   '8': [
     {'1': 'payload'},
@@ -952,7 +1020,11 @@ final $typed_data.Uint8List eventDescriptor = $convert.base64Decode(
     'KAsyFS5mbGl0LnYxLlNlc3Npb25Nb3ZlZEgAUgxzZXNzaW9uTW92ZWQSOQoMeW9sb19jaGFuZ2'
     'VkGBsgASgLMhQuZmxpdC52MS5Zb2xvQ2hhbmdlZEgAUgt5b2xvQ2hhbmdlZBJFChBwZXJtaXNz'
     'aW9uX2NoZWNrGBwgASgLMhguZmxpdC52MS5QZXJtaXNzaW9uQ2hlY2tIAFIPcGVybWlzc2lvbk'
-    'NoZWNrQgkKB3BheWxvYWQ=');
+    'NoZWNrEkkKEm1vZGVsX2NhbGxfc3RhcnRlZBgdIAEoCzIZLmZsaXQudjEuTW9kZWxDYWxsU3Rh'
+    'cnRlZEgAUhBtb2RlbENhbGxTdGFydGVkEkIKD3Byb21wdF9wcm9ncmVzcxgeIAEoCzIXLmZsaX'
+    'QudjEuUHJvbXB0UHJvZ3Jlc3NIAFIOcHJvbXB0UHJvZ3Jlc3MSQwoQbW9kZWxfY2FsbF9lbmRl'
+    'ZBgfIAEoCzIXLmZsaXQudjEuTW9kZWxDYWxsRW5kZWRIAFIObW9kZWxDYWxsRW5kZWRCCQoHcG'
+    'F5bG9hZA==');
 
 @$core.Deprecated('Use messageStartedDescriptor instead')
 const MessageStarted$json = {
@@ -1354,6 +1426,103 @@ final $typed_data.Uint8List permissionCheckDescriptor = $convert.base64Decode(
     'IYBSABKAlSCHByb3ZpZGVyEhQKBW1vZGVsGAYgASgJUgVtb2RlbBIiCg1tb2RlbF9jYWxsX2lk'
     'GAcgASgJUgttb2RlbENhbGxJZBIXCgd0dXJuX2lkGAggASgJUgZ0dXJuSWQ=');
 
+@$core.Deprecated('Use modelCallStartedDescriptor instead')
+const ModelCallStarted$json = {
+  '1': 'ModelCallStarted',
+  '2': [
+    {'1': 'message_id', '3': 1, '4': 1, '5': 9, '10': 'messageId'},
+    {'1': 'attempt', '3': 2, '4': 1, '5': 5, '10': 'attempt'},
+    {
+      '1': 'first_byte_timeout_ms',
+      '3': 3,
+      '4': 1,
+      '5': 3,
+      '10': 'firstByteTimeoutMs'
+    },
+    {'1': 'stall_timeout_ms', '3': 4, '4': 1, '5': 3, '10': 'stallTimeoutMs'},
+  ],
+};
+
+/// Descriptor for `ModelCallStarted`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List modelCallStartedDescriptor = $convert.base64Decode(
+    'ChBNb2RlbENhbGxTdGFydGVkEh0KCm1lc3NhZ2VfaWQYASABKAlSCW1lc3NhZ2VJZBIYCgdhdH'
+    'RlbXB0GAIgASgFUgdhdHRlbXB0EjEKFWZpcnN0X2J5dGVfdGltZW91dF9tcxgDIAEoA1ISZmly'
+    'c3RCeXRlVGltZW91dE1zEigKEHN0YWxsX3RpbWVvdXRfbXMYBCABKANSDnN0YWxsVGltZW91dE'
+    '1z');
+
+@$core.Deprecated('Use promptProgressDescriptor instead')
+const PromptProgress$json = {
+  '1': 'PromptProgress',
+  '2': [
+    {'1': 'message_id', '3': 1, '4': 1, '5': 9, '10': 'messageId'},
+    {'1': 'attempt', '3': 2, '4': 1, '5': 5, '10': 'attempt'},
+    {'1': 'processed', '3': 3, '4': 1, '5': 3, '10': 'processed'},
+    {'1': 'total', '3': 4, '4': 1, '5': 3, '10': 'total'},
+    {'1': 'cached', '3': 5, '4': 1, '5': 3, '10': 'cached'},
+    {'1': 'elapsed_ms', '3': 6, '4': 1, '5': 3, '10': 'elapsedMs'},
+  ],
+};
+
+/// Descriptor for `PromptProgress`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List promptProgressDescriptor = $convert.base64Decode(
+    'Cg5Qcm9tcHRQcm9ncmVzcxIdCgptZXNzYWdlX2lkGAEgASgJUgltZXNzYWdlSWQSGAoHYXR0ZW'
+    '1wdBgCIAEoBVIHYXR0ZW1wdBIcCglwcm9jZXNzZWQYAyABKANSCXByb2Nlc3NlZBIUCgV0b3Rh'
+    'bBgEIAEoA1IFdG90YWwSFgoGY2FjaGVkGAUgASgDUgZjYWNoZWQSHQoKZWxhcHNlZF9tcxgGIA'
+    'EoA1IJZWxhcHNlZE1z');
+
+@$core.Deprecated('Use modelCallEndedDescriptor instead')
+const ModelCallEnded$json = {
+  '1': 'ModelCallEnded',
+  '2': [
+    {'1': 'message_id', '3': 1, '4': 1, '5': 9, '10': 'messageId'},
+    {'1': 'attempt', '3': 2, '4': 1, '5': 5, '10': 'attempt'},
+    {
+      '1': 'outcome',
+      '3': 3,
+      '4': 1,
+      '5': 14,
+      '6': '.flit.v1.ModelCallOutcome',
+      '10': 'outcome'
+    },
+    {'1': 'phase', '3': 4, '4': 1, '5': 9, '10': 'phase'},
+    {'1': 'error', '3': 5, '4': 1, '5': 9, '10': 'error'},
+    {
+      '1': 'response_headers_ms',
+      '3': 6,
+      '4': 1,
+      '5': 3,
+      '10': 'responseHeadersMs'
+    },
+    {'1': 'first_byte_ms', '3': 7, '4': 1, '5': 3, '10': 'firstByteMs'},
+    {'1': 'first_token_ms', '3': 8, '4': 1, '5': 3, '10': 'firstTokenMs'},
+    {'1': 'last_byte_ms', '3': 9, '4': 1, '5': 3, '10': 'lastByteMs'},
+    {'1': 'total_ms', '3': 10, '4': 1, '5': 3, '10': 'totalMs'},
+    {'1': 'bytes', '3': 11, '4': 1, '5': 3, '10': 'bytes'},
+    {'1': 'input_tokens', '3': 12, '4': 1, '5': 3, '10': 'inputTokens'},
+    {'1': 'output_tokens', '3': 13, '4': 1, '5': 3, '10': 'outputTokens'},
+    {'1': 'prompt_tokens', '3': 14, '4': 1, '5': 3, '10': 'promptTokens'},
+    {'1': 'prompt_ms', '3': 15, '4': 1, '5': 3, '10': 'promptMs'},
+    {'1': 'predicted_tokens', '3': 16, '4': 1, '5': 3, '10': 'predictedTokens'},
+    {'1': 'predicted_ms', '3': 17, '4': 1, '5': 3, '10': 'predictedMs'},
+    {'1': 'will_retry', '3': 18, '4': 1, '5': 8, '10': 'willRetry'},
+  ],
+};
+
+/// Descriptor for `ModelCallEnded`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List modelCallEndedDescriptor = $convert.base64Decode(
+    'Cg5Nb2RlbENhbGxFbmRlZBIdCgptZXNzYWdlX2lkGAEgASgJUgltZXNzYWdlSWQSGAoHYXR0ZW'
+    '1wdBgCIAEoBVIHYXR0ZW1wdBIzCgdvdXRjb21lGAMgASgOMhkuZmxpdC52MS5Nb2RlbENhbGxP'
+    'dXRjb21lUgdvdXRjb21lEhQKBXBoYXNlGAQgASgJUgVwaGFzZRIUCgVlcnJvchgFIAEoCVIFZX'
+    'Jyb3ISLgoTcmVzcG9uc2VfaGVhZGVyc19tcxgGIAEoA1IRcmVzcG9uc2VIZWFkZXJzTXMSIgoN'
+    'Zmlyc3RfYnl0ZV9tcxgHIAEoA1ILZmlyc3RCeXRlTXMSJAoOZmlyc3RfdG9rZW5fbXMYCCABKA'
+    'NSDGZpcnN0VG9rZW5NcxIgCgxsYXN0X2J5dGVfbXMYCSABKANSCmxhc3RCeXRlTXMSGQoIdG90'
+    'YWxfbXMYCiABKANSB3RvdGFsTXMSFAoFYnl0ZXMYCyABKANSBWJ5dGVzEiEKDGlucHV0X3Rva2'
+    'VucxgMIAEoA1ILaW5wdXRUb2tlbnMSIwoNb3V0cHV0X3Rva2VucxgNIAEoA1IMb3V0cHV0VG9r'
+    'ZW5zEiMKDXByb21wdF90b2tlbnMYDiABKANSDHByb21wdFRva2VucxIbCglwcm9tcHRfbXMYDy'
+    'ABKANSCHByb21wdE1zEikKEHByZWRpY3RlZF90b2tlbnMYECABKANSD3ByZWRpY3RlZFRva2Vu'
+    'cxIhCgxwcmVkaWN0ZWRfbXMYESABKANSC3ByZWRpY3RlZE1zEh0KCndpbGxfcmV0cnkYEiABKA'
+    'hSCXdpbGxSZXRyeQ==');
+
 const $core.Map<$core.String, $core.dynamic> SessionServiceBase$json = {
   '1': 'SessionService',
   '2': [
@@ -1385,6 +1554,11 @@ const $core.Map<$core.String, $core.dynamic> SessionServiceBase$json = {
       '1': 'Interrupt',
       '2': '.flit.v1.InterruptRequest',
       '3': '.flit.v1.InterruptResponse'
+    },
+    {
+      '1': 'RetryModelCall',
+      '2': '.flit.v1.RetryModelCallRequest',
+      '3': '.flit.v1.RetryModelCallResponse'
     },
     {
       '1': 'AnswerPrompt',
@@ -1466,10 +1640,15 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.flit.v1.SessionMoved': SessionMoved$json,
   '.flit.v1.YoloChanged': YoloChanged$json,
   '.flit.v1.PermissionCheck': PermissionCheck$json,
+  '.flit.v1.ModelCallStarted': ModelCallStarted$json,
+  '.flit.v1.PromptProgress': PromptProgress$json,
+  '.flit.v1.ModelCallEnded': ModelCallEnded$json,
   '.flit.v1.SendRequest': SendRequest$json,
   '.flit.v1.SendResponse': SendResponse$json,
   '.flit.v1.InterruptRequest': InterruptRequest$json,
   '.flit.v1.InterruptResponse': InterruptResponse$json,
+  '.flit.v1.RetryModelCallRequest': RetryModelCallRequest$json,
+  '.flit.v1.RetryModelCallResponse': RetryModelCallResponse$json,
   '.flit.v1.AnswerPromptRequest': AnswerPromptRequest$json,
   '.flit.v1.AnswerPromptResponse': AnswerPromptResponse$json,
   '.flit.v1.SetModelRequest': SetModelRequest$json,
@@ -1501,16 +1680,17 @@ final $typed_data.Uint8List sessionServiceDescriptor = $convert.base64Decode(
     'LmZsaXQudjEuR2V0U2Vzc2lvblJlc3BvbnNlIgOQAgESOwoGQXR0YWNoEhYuZmxpdC52MS5BdH'
     'RhY2hSZXF1ZXN0GhcuZmxpdC52MS5BdHRhY2hSZXNwb25zZTABEjMKBFNlbmQSFC5mbGl0LnYx'
     'LlNlbmRSZXF1ZXN0GhUuZmxpdC52MS5TZW5kUmVzcG9uc2USQgoJSW50ZXJydXB0EhkuZmxpdC'
-    '52MS5JbnRlcnJ1cHRSZXF1ZXN0GhouZmxpdC52MS5JbnRlcnJ1cHRSZXNwb25zZRJLCgxBbnN3'
-    'ZXJQcm9tcHQSHC5mbGl0LnYxLkFuc3dlclByb21wdFJlcXVlc3QaHS5mbGl0LnYxLkFuc3dlcl'
-    'Byb21wdFJlc3BvbnNlEj8KCFNldE1vZGVsEhguZmxpdC52MS5TZXRNb2RlbFJlcXVlc3QaGS5m'
-    'bGl0LnYxLlNldE1vZGVsUmVzcG9uc2USQgoJU2V0RWZmb3J0EhkuZmxpdC52MS5TZXRFZmZvcn'
-    'RSZXF1ZXN0GhouZmxpdC52MS5TZXRFZmZvcnRSZXNwb25zZRI8CgdTZXRZb2xvEhcuZmxpdC52'
-    'MS5TZXRZb2xvUmVxdWVzdBoYLmZsaXQudjEuU2V0WW9sb1Jlc3BvbnNlEkgKC01vdmVTZXNzaW'
-    '9uEhsuZmxpdC52MS5Nb3ZlU2Vzc2lvblJlcXVlc3QaHC5mbGl0LnYxLk1vdmVTZXNzaW9uUmVz'
-    'cG9uc2USMwoEUmF0ZRIULmZsaXQudjEuUmF0ZVJlcXVlc3QaFS5mbGl0LnYxLlJhdGVSZXNwb2'
-    '5zZRJWCg5MaXN0TWNwU2VydmVycxIeLmZsaXQudjEuTGlzdE1jcFNlcnZlcnNSZXF1ZXN0Gh8u'
-    'ZmxpdC52MS5MaXN0TWNwU2VydmVyc1Jlc3BvbnNlIgOQAgESSwoMU2V0TWNwU2VydmVyEhwuZm'
-    'xpdC52MS5TZXRNY3BTZXJ2ZXJSZXF1ZXN0Gh0uZmxpdC52MS5TZXRNY3BTZXJ2ZXJSZXNwb25z'
-    'ZRJKCgpMaXN0U2tpbGxzEhouZmxpdC52MS5MaXN0U2tpbGxzUmVxdWVzdBobLmZsaXQudjEuTG'
-    'lzdFNraWxsc1Jlc3BvbnNlIgOQAgE=');
+    '52MS5JbnRlcnJ1cHRSZXF1ZXN0GhouZmxpdC52MS5JbnRlcnJ1cHRSZXNwb25zZRJRCg5SZXRy'
+    'eU1vZGVsQ2FsbBIeLmZsaXQudjEuUmV0cnlNb2RlbENhbGxSZXF1ZXN0Gh8uZmxpdC52MS5SZX'
+    'RyeU1vZGVsQ2FsbFJlc3BvbnNlEksKDEFuc3dlclByb21wdBIcLmZsaXQudjEuQW5zd2VyUHJv'
+    'bXB0UmVxdWVzdBodLmZsaXQudjEuQW5zd2VyUHJvbXB0UmVzcG9uc2USPwoIU2V0TW9kZWwSGC'
+    '5mbGl0LnYxLlNldE1vZGVsUmVxdWVzdBoZLmZsaXQudjEuU2V0TW9kZWxSZXNwb25zZRJCCglT'
+    'ZXRFZmZvcnQSGS5mbGl0LnYxLlNldEVmZm9ydFJlcXVlc3QaGi5mbGl0LnYxLlNldEVmZm9ydF'
+    'Jlc3BvbnNlEjwKB1NldFlvbG8SFy5mbGl0LnYxLlNldFlvbG9SZXF1ZXN0GhguZmxpdC52MS5T'
+    'ZXRZb2xvUmVzcG9uc2USSAoLTW92ZVNlc3Npb24SGy5mbGl0LnYxLk1vdmVTZXNzaW9uUmVxdW'
+    'VzdBocLmZsaXQudjEuTW92ZVNlc3Npb25SZXNwb25zZRIzCgRSYXRlEhQuZmxpdC52MS5SYXRl'
+    'UmVxdWVzdBoVLmZsaXQudjEuUmF0ZVJlc3BvbnNlElYKDkxpc3RNY3BTZXJ2ZXJzEh4uZmxpdC'
+    '52MS5MaXN0TWNwU2VydmVyc1JlcXVlc3QaHy5mbGl0LnYxLkxpc3RNY3BTZXJ2ZXJzUmVzcG9u'
+    'c2UiA5ACARJLCgxTZXRNY3BTZXJ2ZXISHC5mbGl0LnYxLlNldE1jcFNlcnZlclJlcXVlc3QaHS'
+    '5mbGl0LnYxLlNldE1jcFNlcnZlclJlc3BvbnNlEkoKCkxpc3RTa2lsbHMSGi5mbGl0LnYxLkxp'
+    'c3RTa2lsbHNSZXF1ZXN0GhsuZmxpdC52MS5MaXN0U2tpbGxzUmVzcG9uc2UiA5ACAQ==');

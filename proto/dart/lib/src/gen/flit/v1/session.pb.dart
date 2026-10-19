@@ -1135,6 +1135,108 @@ class InterruptResponse extends $pb.GeneratedMessage {
   void clearInterrupted() => $_clearField(1);
 }
 
+class RetryModelCallRequest extends $pb.GeneratedMessage {
+  factory RetryModelCallRequest({
+    $core.String? sessionId,
+  }) {
+    final result = RetryModelCallRequest._();
+    if (sessionId != null) result.sessionId = sessionId;
+    return result;
+  }
+
+  RetryModelCallRequest._();
+
+  factory RetryModelCallRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RetryModelCallRequest()..mergeFromBuffer(data, registry);
+  factory RetryModelCallRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RetryModelCallRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RetryModelCallRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: RetryModelCallRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'sessionId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RetryModelCallRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RetryModelCallRequest copyWith(
+          void Function(RetryModelCallRequest) updates) =>
+      super.copyWith((message) => updates(message as RetryModelCallRequest))
+          as RetryModelCallRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use RetryModelCallRequest() / RetryModelCallRequest.new instead')
+  static RetryModelCallRequest create() => RetryModelCallRequest._();
+  static $pb.GeneratedMessage $_createMessage() => RetryModelCallRequest._();
+  @$core.override
+  RetryModelCallRequest createEmptyInstance() => RetryModelCallRequest._();
+  @$core.pragma('dart2js:noInline')
+  static RetryModelCallRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RetryModelCallRequest>(
+          RetryModelCallRequest.$_createMessage);
+  static RetryModelCallRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get sessionId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set sessionId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSessionId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSessionId() => $_clearField(1);
+}
+
+class RetryModelCallResponse extends $pb.GeneratedMessage {
+  factory RetryModelCallResponse() => RetryModelCallResponse._();
+
+  RetryModelCallResponse._();
+
+  factory RetryModelCallResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RetryModelCallResponse()..mergeFromBuffer(data, registry);
+  factory RetryModelCallResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RetryModelCallResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RetryModelCallResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: RetryModelCallResponse.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RetryModelCallResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RetryModelCallResponse copyWith(
+          void Function(RetryModelCallResponse) updates) =>
+      super.copyWith((message) => updates(message as RetryModelCallResponse))
+          as RetryModelCallResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use RetryModelCallResponse() / RetryModelCallResponse.new instead')
+  static RetryModelCallResponse create() => RetryModelCallResponse._();
+  static $pb.GeneratedMessage $_createMessage() => RetryModelCallResponse._();
+  @$core.override
+  RetryModelCallResponse createEmptyInstance() => RetryModelCallResponse._();
+  @$core.pragma('dart2js:noInline')
+  static RetryModelCallResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RetryModelCallResponse>(
+          RetryModelCallResponse.$_createMessage);
+  static RetryModelCallResponse? _defaultInstance;
+}
+
 class AnswerPromptRequest extends $pb.GeneratedMessage {
   factory AnswerPromptRequest({
     $core.String? sessionId,
@@ -2525,6 +2627,9 @@ enum Event_Payload {
   sessionMoved,
   yoloChanged,
   permissionCheck,
+  modelCallStarted,
+  promptProgress,
+  modelCallEnded,
   notSet
 }
 
@@ -2553,6 +2658,9 @@ class Event extends $pb.GeneratedMessage {
     SessionMoved? sessionMoved,
     YoloChanged? yoloChanged,
     PermissionCheck? permissionCheck,
+    ModelCallStarted? modelCallStarted,
+    PromptProgress? promptProgress,
+    ModelCallEnded? modelCallEnded,
   }) {
     final result = Event._();
     if (sessionId != null) result.sessionId = sessionId;
@@ -2577,6 +2685,9 @@ class Event extends $pb.GeneratedMessage {
     if (sessionMoved != null) result.sessionMoved = sessionMoved;
     if (yoloChanged != null) result.yoloChanged = yoloChanged;
     if (permissionCheck != null) result.permissionCheck = permissionCheck;
+    if (modelCallStarted != null) result.modelCallStarted = modelCallStarted;
+    if (promptProgress != null) result.promptProgress = promptProgress;
+    if (modelCallEnded != null) result.modelCallEnded = modelCallEnded;
     return result;
   }
 
@@ -2609,6 +2720,9 @@ class Event extends $pb.GeneratedMessage {
     26: Event_Payload.sessionMoved,
     27: Event_Payload.yoloChanged,
     28: Event_Payload.permissionCheck,
+    29: Event_Payload.modelCallStarted,
+    30: Event_Payload.promptProgress,
+    31: Event_Payload.modelCallEnded,
     0: Event_Payload.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
@@ -2634,7 +2748,10 @@ class Event extends $pb.GeneratedMessage {
       25,
       26,
       27,
-      28
+      28,
+      29,
+      30,
+      31
     ])
     ..aOS(1, _omitFieldNames ? '' : 'sessionId')
     ..aInt64(2, _omitFieldNames ? '' : 'seq')
@@ -2678,6 +2795,12 @@ class Event extends $pb.GeneratedMessage {
         subBuilder: YoloChanged.$_createMessage)
     ..aOM<PermissionCheck>(28, _omitFieldNames ? '' : 'permissionCheck',
         subBuilder: PermissionCheck.$_createMessage)
+    ..aOM<ModelCallStarted>(29, _omitFieldNames ? '' : 'modelCallStarted',
+        subBuilder: ModelCallStarted.$_createMessage)
+    ..aOM<PromptProgress>(30, _omitFieldNames ? '' : 'promptProgress',
+        subBuilder: PromptProgress.$_createMessage)
+    ..aOM<ModelCallEnded>(31, _omitFieldNames ? '' : 'modelCallEnded',
+        subBuilder: ModelCallEnded.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -2719,6 +2842,9 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(26)
   @$pb.TagNumber(27)
   @$pb.TagNumber(28)
+  @$pb.TagNumber(29)
+  @$pb.TagNumber(30)
+  @$pb.TagNumber(31)
   Event_Payload whichPayload() => _Event_PayloadByTag[$_whichOneof(0)]!;
   @$pb.TagNumber(10)
   @$pb.TagNumber(11)
@@ -2739,6 +2865,9 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(26)
   @$pb.TagNumber(27)
   @$pb.TagNumber(28)
+  @$pb.TagNumber(29)
+  @$pb.TagNumber(30)
+  @$pb.TagNumber(31)
   void clearPayload() => $_clearField($_whichOneof(0));
 
   @$pb.TagNumber(1)
@@ -2979,6 +3108,39 @@ class Event extends $pb.GeneratedMessage {
   void clearPermissionCheck() => $_clearField(28);
   @$pb.TagNumber(28)
   PermissionCheck ensurePermissionCheck() => $_ensure(21);
+
+  @$pb.TagNumber(29)
+  ModelCallStarted get modelCallStarted => $_getN(22);
+  @$pb.TagNumber(29)
+  set modelCallStarted(ModelCallStarted value) => $_setField(29, value);
+  @$pb.TagNumber(29)
+  $core.bool hasModelCallStarted() => $_has(22);
+  @$pb.TagNumber(29)
+  void clearModelCallStarted() => $_clearField(29);
+  @$pb.TagNumber(29)
+  ModelCallStarted ensureModelCallStarted() => $_ensure(22);
+
+  @$pb.TagNumber(30)
+  PromptProgress get promptProgress => $_getN(23);
+  @$pb.TagNumber(30)
+  set promptProgress(PromptProgress value) => $_setField(30, value);
+  @$pb.TagNumber(30)
+  $core.bool hasPromptProgress() => $_has(23);
+  @$pb.TagNumber(30)
+  void clearPromptProgress() => $_clearField(30);
+  @$pb.TagNumber(30)
+  PromptProgress ensurePromptProgress() => $_ensure(23);
+
+  @$pb.TagNumber(31)
+  ModelCallEnded get modelCallEnded => $_getN(24);
+  @$pb.TagNumber(31)
+  set modelCallEnded(ModelCallEnded value) => $_setField(31, value);
+  @$pb.TagNumber(31)
+  $core.bool hasModelCallEnded() => $_has(24);
+  @$pb.TagNumber(31)
+  void clearModelCallEnded() => $_clearField(31);
+  @$pb.TagNumber(31)
+  ModelCallEnded ensureModelCallEnded() => $_ensure(24);
 }
 
 /// MessageStarted opens a message. Its text arrives as TextDelta events and
@@ -4799,6 +4961,501 @@ class PermissionCheck extends $pb.GeneratedMessage {
   void clearTurnId() => $_clearField(8);
 }
 
+/// ModelCallStarted is a request to the model for message message_id being
+/// sent. With the ModelCallEnded that follows (and the PromptProgress
+/// between) it shows where a slow or frozen call is: a call with no end is
+/// still waiting.
+class ModelCallStarted extends $pb.GeneratedMessage {
+  factory ModelCallStarted({
+    $core.String? messageId,
+    $core.int? attempt,
+    $fixnum.Int64? firstByteTimeoutMs,
+    $fixnum.Int64? stallTimeoutMs,
+  }) {
+    final result = ModelCallStarted._();
+    if (messageId != null) result.messageId = messageId;
+    if (attempt != null) result.attempt = attempt;
+    if (firstByteTimeoutMs != null)
+      result.firstByteTimeoutMs = firstByteTimeoutMs;
+    if (stallTimeoutMs != null) result.stallTimeoutMs = stallTimeoutMs;
+    return result;
+  }
+
+  ModelCallStarted._();
+
+  factory ModelCallStarted.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ModelCallStarted()..mergeFromBuffer(data, registry);
+  factory ModelCallStarted.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ModelCallStarted()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ModelCallStarted',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: ModelCallStarted.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'messageId')
+    ..aI(2, _omitFieldNames ? '' : 'attempt')
+    ..aInt64(3, _omitFieldNames ? '' : 'firstByteTimeoutMs')
+    ..aInt64(4, _omitFieldNames ? '' : 'stallTimeoutMs')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ModelCallStarted clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ModelCallStarted copyWith(void Function(ModelCallStarted) updates) =>
+      super.copyWith((message) => updates(message as ModelCallStarted))
+          as ModelCallStarted;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ModelCallStarted() / ModelCallStarted.new instead')
+  static ModelCallStarted create() => ModelCallStarted._();
+  static $pb.GeneratedMessage $_createMessage() => ModelCallStarted._();
+  @$core.override
+  ModelCallStarted createEmptyInstance() => ModelCallStarted._();
+  @$core.pragma('dart2js:noInline')
+  static ModelCallStarted getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ModelCallStarted>(
+          ModelCallStarted.$_createMessage);
+  static ModelCallStarted? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get messageId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set messageId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasMessageId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearMessageId() => $_clearField(1);
+
+  /// 1 for the first try, 2 for an automatic retry, ...
+  @$pb.TagNumber(2)
+  $core.int get attempt => $_getIZ(1);
+  @$pb.TagNumber(2)
+  set attempt($core.int value) => $_setSignedInt32(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasAttempt() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearAttempt() => $_clearField(2);
+
+  /// The watchdog limits in effect (agent.model_first_byte_timeout and
+  /// agent.model_stall_timeout); 0 means none.
+  @$pb.TagNumber(3)
+  $fixnum.Int64 get firstByteTimeoutMs => $_getI64(2);
+  @$pb.TagNumber(3)
+  set firstByteTimeoutMs($fixnum.Int64 value) => $_setInt64(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasFirstByteTimeoutMs() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearFirstByteTimeoutMs() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $fixnum.Int64 get stallTimeoutMs => $_getI64(3);
+  @$pb.TagNumber(4)
+  set stallTimeoutMs($fixnum.Int64 value) => $_setInt64(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasStallTimeoutMs() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearStallTimeoutMs() => $_clearField(4);
+}
+
+/// PromptProgress is how far the model server has got reading the prompt,
+/// for servers that report it (llama.cpp). Sent at most about once a second.
+class PromptProgress extends $pb.GeneratedMessage {
+  factory PromptProgress({
+    $core.String? messageId,
+    $core.int? attempt,
+    $fixnum.Int64? processed,
+    $fixnum.Int64? total,
+    $fixnum.Int64? cached,
+    $fixnum.Int64? elapsedMs,
+  }) {
+    final result = PromptProgress._();
+    if (messageId != null) result.messageId = messageId;
+    if (attempt != null) result.attempt = attempt;
+    if (processed != null) result.processed = processed;
+    if (total != null) result.total = total;
+    if (cached != null) result.cached = cached;
+    if (elapsedMs != null) result.elapsedMs = elapsedMs;
+    return result;
+  }
+
+  PromptProgress._();
+
+  factory PromptProgress.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      PromptProgress()..mergeFromBuffer(data, registry);
+  factory PromptProgress.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      PromptProgress()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'PromptProgress',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: PromptProgress.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'messageId')
+    ..aI(2, _omitFieldNames ? '' : 'attempt')
+    ..aInt64(3, _omitFieldNames ? '' : 'processed')
+    ..aInt64(4, _omitFieldNames ? '' : 'total')
+    ..aInt64(5, _omitFieldNames ? '' : 'cached')
+    ..aInt64(6, _omitFieldNames ? '' : 'elapsedMs')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  PromptProgress clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  PromptProgress copyWith(void Function(PromptProgress) updates) =>
+      super.copyWith((message) => updates(message as PromptProgress))
+          as PromptProgress;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use PromptProgress() / PromptProgress.new instead')
+  static PromptProgress create() => PromptProgress._();
+  static $pb.GeneratedMessage $_createMessage() => PromptProgress._();
+  @$core.override
+  PromptProgress createEmptyInstance() => PromptProgress._();
+  @$core.pragma('dart2js:noInline')
+  static PromptProgress getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<PromptProgress>(
+          PromptProgress.$_createMessage);
+  static PromptProgress? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get messageId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set messageId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasMessageId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearMessageId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.int get attempt => $_getIZ(1);
+  @$pb.TagNumber(2)
+  set attempt($core.int value) => $_setSignedInt32(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasAttempt() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearAttempt() => $_clearField(2);
+
+  /// Prompt tokens processed so far, of total; cached tokens were reused
+  /// from the server's cache and needed no processing.
+  @$pb.TagNumber(3)
+  $fixnum.Int64 get processed => $_getI64(2);
+  @$pb.TagNumber(3)
+  set processed($fixnum.Int64 value) => $_setInt64(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasProcessed() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearProcessed() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $fixnum.Int64 get total => $_getI64(3);
+  @$pb.TagNumber(4)
+  set total($fixnum.Int64 value) => $_setInt64(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasTotal() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearTotal() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $fixnum.Int64 get cached => $_getI64(4);
+  @$pb.TagNumber(5)
+  set cached($fixnum.Int64 value) => $_setInt64(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasCached() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearCached() => $_clearField(5);
+
+  /// Time the server has spent on the prompt so far.
+  @$pb.TagNumber(6)
+  $fixnum.Int64 get elapsedMs => $_getI64(5);
+  @$pb.TagNumber(6)
+  set elapsedMs($fixnum.Int64 value) => $_setInt64(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasElapsedMs() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearElapsedMs() => $_clearField(6);
+}
+
+/// ModelCallEnded is how one model call (attempt) went, with its timeline.
+/// Times are milliseconds from sending the request; 0 means it never got
+/// that far.
+class ModelCallEnded extends $pb.GeneratedMessage {
+  factory ModelCallEnded({
+    $core.String? messageId,
+    $core.int? attempt,
+    ModelCallOutcome? outcome,
+    $core.String? phase,
+    $core.String? error,
+    $fixnum.Int64? responseHeadersMs,
+    $fixnum.Int64? firstByteMs,
+    $fixnum.Int64? firstTokenMs,
+    $fixnum.Int64? lastByteMs,
+    $fixnum.Int64? totalMs,
+    $fixnum.Int64? bytes,
+    $fixnum.Int64? inputTokens,
+    $fixnum.Int64? outputTokens,
+    $fixnum.Int64? promptTokens,
+    $fixnum.Int64? promptMs,
+    $fixnum.Int64? predictedTokens,
+    $fixnum.Int64? predictedMs,
+    $core.bool? willRetry,
+  }) {
+    final result = ModelCallEnded._();
+    if (messageId != null) result.messageId = messageId;
+    if (attempt != null) result.attempt = attempt;
+    if (outcome != null) result.outcome = outcome;
+    if (phase != null) result.phase = phase;
+    if (error != null) result.error = error;
+    if (responseHeadersMs != null) result.responseHeadersMs = responseHeadersMs;
+    if (firstByteMs != null) result.firstByteMs = firstByteMs;
+    if (firstTokenMs != null) result.firstTokenMs = firstTokenMs;
+    if (lastByteMs != null) result.lastByteMs = lastByteMs;
+    if (totalMs != null) result.totalMs = totalMs;
+    if (bytes != null) result.bytes = bytes;
+    if (inputTokens != null) result.inputTokens = inputTokens;
+    if (outputTokens != null) result.outputTokens = outputTokens;
+    if (promptTokens != null) result.promptTokens = promptTokens;
+    if (promptMs != null) result.promptMs = promptMs;
+    if (predictedTokens != null) result.predictedTokens = predictedTokens;
+    if (predictedMs != null) result.predictedMs = predictedMs;
+    if (willRetry != null) result.willRetry = willRetry;
+    return result;
+  }
+
+  ModelCallEnded._();
+
+  factory ModelCallEnded.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ModelCallEnded()..mergeFromBuffer(data, registry);
+  factory ModelCallEnded.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ModelCallEnded()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ModelCallEnded',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: ModelCallEnded.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'messageId')
+    ..aI(2, _omitFieldNames ? '' : 'attempt')
+    ..aE<ModelCallOutcome>(3, _omitFieldNames ? '' : 'outcome',
+        enumValues: ModelCallOutcome.values)
+    ..aOS(4, _omitFieldNames ? '' : 'phase')
+    ..aOS(5, _omitFieldNames ? '' : 'error')
+    ..aInt64(6, _omitFieldNames ? '' : 'responseHeadersMs')
+    ..aInt64(7, _omitFieldNames ? '' : 'firstByteMs')
+    ..aInt64(8, _omitFieldNames ? '' : 'firstTokenMs')
+    ..aInt64(9, _omitFieldNames ? '' : 'lastByteMs')
+    ..aInt64(10, _omitFieldNames ? '' : 'totalMs')
+    ..aInt64(11, _omitFieldNames ? '' : 'bytes')
+    ..aInt64(12, _omitFieldNames ? '' : 'inputTokens')
+    ..aInt64(13, _omitFieldNames ? '' : 'outputTokens')
+    ..aInt64(14, _omitFieldNames ? '' : 'promptTokens')
+    ..aInt64(15, _omitFieldNames ? '' : 'promptMs')
+    ..aInt64(16, _omitFieldNames ? '' : 'predictedTokens')
+    ..aInt64(17, _omitFieldNames ? '' : 'predictedMs')
+    ..aOB(18, _omitFieldNames ? '' : 'willRetry')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ModelCallEnded clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ModelCallEnded copyWith(void Function(ModelCallEnded) updates) =>
+      super.copyWith((message) => updates(message as ModelCallEnded))
+          as ModelCallEnded;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ModelCallEnded() / ModelCallEnded.new instead')
+  static ModelCallEnded create() => ModelCallEnded._();
+  static $pb.GeneratedMessage $_createMessage() => ModelCallEnded._();
+  @$core.override
+  ModelCallEnded createEmptyInstance() => ModelCallEnded._();
+  @$core.pragma('dart2js:noInline')
+  static ModelCallEnded getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ModelCallEnded>(
+          ModelCallEnded.$_createMessage);
+  static ModelCallEnded? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get messageId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set messageId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasMessageId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearMessageId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.int get attempt => $_getIZ(1);
+  @$pb.TagNumber(2)
+  set attempt($core.int value) => $_setSignedInt32(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasAttempt() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearAttempt() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  ModelCallOutcome get outcome => $_getN(2);
+  @$pb.TagNumber(3)
+  set outcome(ModelCallOutcome value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasOutcome() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearOutcome() => $_clearField(3);
+
+  /// For anything but OK, where it stopped: "connecting",
+  /// "waiting_for_first_byte", "processing_prompt",
+  /// "waiting_for_first_token" or "streaming".
+  @$pb.TagNumber(4)
+  $core.String get phase => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set phase($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasPhase() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearPhase() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get error => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set error($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasError() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearError() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $fixnum.Int64 get responseHeadersMs => $_getI64(5);
+  @$pb.TagNumber(6)
+  set responseHeadersMs($fixnum.Int64 value) => $_setInt64(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasResponseHeadersMs() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearResponseHeadersMs() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $fixnum.Int64 get firstByteMs => $_getI64(6);
+  @$pb.TagNumber(7)
+  set firstByteMs($fixnum.Int64 value) => $_setInt64(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasFirstByteMs() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearFirstByteMs() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $fixnum.Int64 get firstTokenMs => $_getI64(7);
+  @$pb.TagNumber(8)
+  set firstTokenMs($fixnum.Int64 value) => $_setInt64(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasFirstTokenMs() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearFirstTokenMs() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $fixnum.Int64 get lastByteMs => $_getI64(8);
+  @$pb.TagNumber(9)
+  set lastByteMs($fixnum.Int64 value) => $_setInt64(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasLastByteMs() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearLastByteMs() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $fixnum.Int64 get totalMs => $_getI64(9);
+  @$pb.TagNumber(10)
+  set totalMs($fixnum.Int64 value) => $_setInt64(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasTotalMs() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearTotalMs() => $_clearField(10);
+
+  /// Response body bytes received.
+  @$pb.TagNumber(11)
+  $fixnum.Int64 get bytes => $_getI64(10);
+  @$pb.TagNumber(11)
+  set bytes($fixnum.Int64 value) => $_setInt64(10, value);
+  @$pb.TagNumber(11)
+  $core.bool hasBytes() => $_has(10);
+  @$pb.TagNumber(11)
+  void clearBytes() => $_clearField(11);
+
+  @$pb.TagNumber(12)
+  $fixnum.Int64 get inputTokens => $_getI64(11);
+  @$pb.TagNumber(12)
+  set inputTokens($fixnum.Int64 value) => $_setInt64(11, value);
+  @$pb.TagNumber(12)
+  $core.bool hasInputTokens() => $_has(11);
+  @$pb.TagNumber(12)
+  void clearInputTokens() => $_clearField(12);
+
+  @$pb.TagNumber(13)
+  $fixnum.Int64 get outputTokens => $_getI64(12);
+  @$pb.TagNumber(13)
+  set outputTokens($fixnum.Int64 value) => $_setInt64(12, value);
+  @$pb.TagNumber(13)
+  $core.bool hasOutputTokens() => $_has(12);
+  @$pb.TagNumber(13)
+  void clearOutputTokens() => $_clearField(13);
+
+  /// llama.cpp's own timings, when it sent them.
+  @$pb.TagNumber(14)
+  $fixnum.Int64 get promptTokens => $_getI64(13);
+  @$pb.TagNumber(14)
+  set promptTokens($fixnum.Int64 value) => $_setInt64(13, value);
+  @$pb.TagNumber(14)
+  $core.bool hasPromptTokens() => $_has(13);
+  @$pb.TagNumber(14)
+  void clearPromptTokens() => $_clearField(14);
+
+  @$pb.TagNumber(15)
+  $fixnum.Int64 get promptMs => $_getI64(14);
+  @$pb.TagNumber(15)
+  set promptMs($fixnum.Int64 value) => $_setInt64(14, value);
+  @$pb.TagNumber(15)
+  $core.bool hasPromptMs() => $_has(14);
+  @$pb.TagNumber(15)
+  void clearPromptMs() => $_clearField(15);
+
+  @$pb.TagNumber(16)
+  $fixnum.Int64 get predictedTokens => $_getI64(15);
+  @$pb.TagNumber(16)
+  set predictedTokens($fixnum.Int64 value) => $_setInt64(15, value);
+  @$pb.TagNumber(16)
+  $core.bool hasPredictedTokens() => $_has(15);
+  @$pb.TagNumber(16)
+  void clearPredictedTokens() => $_clearField(16);
+
+  @$pb.TagNumber(17)
+  $fixnum.Int64 get predictedMs => $_getI64(16);
+  @$pb.TagNumber(17)
+  set predictedMs($fixnum.Int64 value) => $_setInt64(16, value);
+  @$pb.TagNumber(17)
+  $core.bool hasPredictedMs() => $_has(16);
+  @$pb.TagNumber(17)
+  void clearPredictedMs() => $_clearField(17);
+
+  /// Whether flit tries the call again (agent.model_retries, or
+  /// RetryModelCall).
+  @$pb.TagNumber(18)
+  $core.bool get willRetry => $_getBF(17);
+  @$pb.TagNumber(18)
+  set willRetry($core.bool value) => $_setBool(17, value);
+  @$pb.TagNumber(18)
+  $core.bool hasWillRetry() => $_has(17);
+  @$pb.TagNumber(18)
+  void clearWillRetry() => $_clearField(18);
+}
+
 /// SessionService runs agent sessions. A session is a conversation with the
 /// agent in a working directory. Everything that happens in it is recorded as
 /// an append-only, numbered event log, so a client can attach at any point,
@@ -4848,6 +5505,15 @@ class SessionServiceApi {
           $pb.ClientContext? ctx, InterruptRequest request) =>
       _client.invoke<InterruptResponse>(
           ctx, 'SessionService', 'Interrupt', request, InterruptResponse());
+
+  /// RetryModelCall gives up on the model call in progress and sends it
+  /// again, for when the model hasn't answered. Only while none of the reply
+  /// has arrived: once it is streaming, the call fails with
+  /// FAILED_PRECONDITION (interrupt instead).
+  $async.Future<RetryModelCallResponse> retryModelCall(
+          $pb.ClientContext? ctx, RetryModelCallRequest request) =>
+      _client.invoke<RetryModelCallResponse>(ctx, 'SessionService',
+          'RetryModelCall', request, RetryModelCallResponse());
 
   /// AnswerPrompt answers a prompt the agent is waiting on. The first answer
   /// wins; later answers fail with FAILED_PRECONDITION.

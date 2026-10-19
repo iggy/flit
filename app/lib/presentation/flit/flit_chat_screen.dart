@@ -10,6 +10,7 @@ import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/domain/models/chat_message.dart';
 import 'package:flit/domain/models/flit_session.dart';
 import 'package:flit/presentation/chat/message_bubble.dart';
+import 'package:flit/presentation/flit/flit_call_status.dart';
 import 'package:flit/presentation/flit/flit_mcp_sheet.dart';
 import 'package:flit/presentation/flit/flit_model_picker.dart';
 import 'package:flit/presentation/flit/flit_nav.dart';
@@ -109,6 +110,15 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
         .interrupt();
     if (error != null && mounted) {
       _snack('Could not stop: $error');
+    }
+  }
+
+  Future<void> _retryCall() async {
+    final error = await ref
+        .read(flitChatProvider(widget.sessionId).notifier)
+        .retryModelCall();
+    if (error != null && mounted) {
+      _snack('Could not retry: $error');
     }
   }
 
@@ -401,6 +411,12 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
                       ],
                     ),
             ),
+            if (fold.busy && fold.call != null)
+              FlitCallStatus(
+                call: fold.call!,
+                onRetry: _retryCall,
+                onStop: _interrupt,
+              ),
             FlitTodoPanel(todos: fold.todos),
             FlitSlashMenu(
               controller: _input,

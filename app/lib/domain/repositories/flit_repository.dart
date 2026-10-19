@@ -34,6 +34,10 @@ abstract interface class FlitRepository {
   /// Stop the running turn. Returns whether one was running.
   Future<bool> interrupt(String sessionId);
 
+  /// Give up on the model call in progress and send it again. Only works
+  /// while none of the reply has arrived.
+  Future<void> retryModelCall(String sessionId);
+
   /// Answer a pending prompt. [client] names this device in the session log.
   /// [forSession] also allows the prompt's session patterns from now on.
   Future<void> answerPrompt(

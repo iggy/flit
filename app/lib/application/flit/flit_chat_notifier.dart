@@ -161,6 +161,11 @@ class FlitChatNotifier extends Notifier<FlitChatState> {
     return _run((r) => r.interrupt(sessionId));
   }
 
+  /// Sends the waiting model call again (the model hasn't answered).
+  Future<String?> retryModelCall() {
+    return _run((r) => r.retryModelCall(sessionId));
+  }
+
   /// Answers a prompt as this device. The prompt disappears from every
   /// client once the server records the answer.
   Future<String?> answer(

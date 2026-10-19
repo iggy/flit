@@ -381,3 +381,60 @@ final class FlitPermissionCheck extends FlitEvent {
   final String provider;
   final String model;
 }
+
+/// A request to the model for message [messageId] went out (attempt 1, or
+/// a retry).
+final class FlitModelCallStarted extends FlitEvent {
+  const FlitModelCallStarted({
+    required super.seq,
+    required this.messageId,
+    required this.attempt,
+    super.time,
+  });
+
+  final String messageId;
+  final int attempt;
+}
+
+/// How far the model server has got reading the prompt (llama.cpp).
+final class FlitPromptProgress extends FlitEvent {
+  const FlitPromptProgress({
+    required super.seq,
+    required this.messageId,
+    required this.processed,
+    required this.total,
+    this.cached = 0,
+    super.time,
+  });
+
+  final String messageId;
+  final int processed;
+  final int total;
+  final int cached;
+}
+
+/// How a model call attempt ended (flit.v1 `ModelCallOutcome`).
+enum FlitCallOutcome { ok, stalled, error, cancelled, retried, unknown }
+
+/// A model call attempt ended.
+final class FlitModelCallEnded extends FlitEvent {
+  const FlitModelCallEnded({
+    required super.seq,
+    required this.messageId,
+    required this.attempt,
+    required this.outcome,
+    this.phase = '',
+    this.willRetry = false,
+    super.time,
+  });
+
+  final String messageId;
+  final int attempt;
+  final FlitCallOutcome outcome;
+
+  /// Where it stopped, when it didn't end ok, e.g. "processing_prompt".
+  final String phase;
+
+  /// Whether the server sends it again.
+  final bool willRetry;
+}

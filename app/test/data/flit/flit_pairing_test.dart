@@ -107,6 +107,45 @@ void main() {
       expect(s.createdAt, isNull);
     });
 
+    test('model call events', () {
+      FlitEvent map(pb.Event e) => eventFromProto(e..seq = Int64(3));
+      final started = map(
+        pb.Event(
+          modelCallStarted: pb.ModelCallStarted(messageId: 'm', attempt: 2),
+        ),
+      );
+      expect(started, isA<FlitModelCallStarted>());
+      expect((started as FlitModelCallStarted).attempt, 2);
+      final progress = map(
+        pb.Event(
+          promptProgress: pb.PromptProgress(
+            messageId: 'm',
+            processed: Int64(10),
+            total: Int64(40),
+            cached: Int64(5),
+          ),
+        ),
+      );
+      expect(progress, isA<FlitPromptProgress>());
+      expect((progress as FlitPromptProgress).total, 40);
+      expect(progress.cached, 5);
+      final ended = map(
+        pb.Event(
+          modelCallEnded: pb.ModelCallEnded(
+            messageId: 'm',
+            attempt: 1,
+            outcome: pb.ModelCallOutcome.MODEL_CALL_OUTCOME_STALLED,
+            phase: 'streaming',
+            willRetry: true,
+          ),
+        ),
+      );
+      expect(ended, isA<FlitModelCallEnded>());
+      expect((ended as FlitModelCallEnded).outcome, FlitCallOutcome.stalled);
+      expect(ended.phase, 'streaming');
+      expect(ended.willRetry, isTrue);
+    });
+
     test('events', () {
       FlitEvent map(pb.Event e) => eventFromProto(e..seq = Int64(7));
       final resolved = map(

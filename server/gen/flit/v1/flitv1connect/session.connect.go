@@ -49,6 +49,9 @@ const (
 	// SessionServiceInterruptProcedure is the fully-qualified name of the SessionService's Interrupt
 	// RPC.
 	SessionServiceInterruptProcedure = "/flit.v1.SessionService/Interrupt"
+	// SessionServiceRetryModelCallProcedure is the fully-qualified name of the SessionService's
+	// RetryModelCall RPC.
+	SessionServiceRetryModelCallProcedure = "/flit.v1.SessionService/RetryModelCall"
 	// SessionServiceAnswerPromptProcedure is the fully-qualified name of the SessionService's
 	// AnswerPrompt RPC.
 	SessionServiceAnswerPromptProcedure = "/flit.v1.SessionService/AnswerPrompt"
@@ -94,6 +97,11 @@ type SessionServiceClient interface {
 	// Interrupt stops the running turn, if any. Pending prompts are resolved
 	// as denied.
 	Interrupt(context.Context, *connect.Request[v1.InterruptRequest]) (*connect.Response[v1.InterruptResponse], error)
+	// RetryModelCall gives up on the model call in progress and sends it
+	// again, for when the model hasn't answered. Only while none of the reply
+	// has arrived: once it is streaming, the call fails with
+	// FAILED_PRECONDITION (interrupt instead).
+	RetryModelCall(context.Context, *connect.Request[v1.RetryModelCallRequest]) (*connect.Response[v1.RetryModelCallResponse], error)
 	// AnswerPrompt answers a prompt the agent is waiting on. The first answer
 	// wins; later answers fail with FAILED_PRECONDITION.
 	AnswerPrompt(context.Context, *connect.Request[v1.AnswerPromptRequest]) (*connect.Response[v1.AnswerPromptResponse], error)
@@ -170,6 +178,12 @@ func NewSessionServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(sessionServiceMethods.ByName("Interrupt")),
 			connect.WithClientOptions(opts...),
 		),
+		retryModelCall: connect.NewClient[v1.RetryModelCallRequest, v1.RetryModelCallResponse](
+			httpClient,
+			baseURL+SessionServiceRetryModelCallProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("RetryModelCall")),
+			connect.WithClientOptions(opts...),
+		),
 		answerPrompt: connect.NewClient[v1.AnswerPromptRequest, v1.AnswerPromptResponse](
 			httpClient,
 			baseURL+SessionServiceAnswerPromptProcedure,
@@ -237,6 +251,7 @@ type sessionServiceClient struct {
 	attach         *connect.Client[v1.AttachRequest, v1.AttachResponse]
 	send           *connect.Client[v1.SendRequest, v1.SendResponse]
 	interrupt      *connect.Client[v1.InterruptRequest, v1.InterruptResponse]
+	retryModelCall *connect.Client[v1.RetryModelCallRequest, v1.RetryModelCallResponse]
 	answerPrompt   *connect.Client[v1.AnswerPromptRequest, v1.AnswerPromptResponse]
 	setModel       *connect.Client[v1.SetModelRequest, v1.SetModelResponse]
 	setEffort      *connect.Client[v1.SetEffortRequest, v1.SetEffortResponse]
@@ -276,6 +291,11 @@ func (c *sessionServiceClient) Send(ctx context.Context, req *connect.Request[v1
 // Interrupt calls flit.v1.SessionService.Interrupt.
 func (c *sessionServiceClient) Interrupt(ctx context.Context, req *connect.Request[v1.InterruptRequest]) (*connect.Response[v1.InterruptResponse], error) {
 	return c.interrupt.CallUnary(ctx, req)
+}
+
+// RetryModelCall calls flit.v1.SessionService.RetryModelCall.
+func (c *sessionServiceClient) RetryModelCall(ctx context.Context, req *connect.Request[v1.RetryModelCallRequest]) (*connect.Response[v1.RetryModelCallResponse], error) {
+	return c.retryModelCall.CallUnary(ctx, req)
 }
 
 // AnswerPrompt calls flit.v1.SessionService.AnswerPrompt.
@@ -342,6 +362,11 @@ type SessionServiceHandler interface {
 	// Interrupt stops the running turn, if any. Pending prompts are resolved
 	// as denied.
 	Interrupt(context.Context, *connect.Request[v1.InterruptRequest]) (*connect.Response[v1.InterruptResponse], error)
+	// RetryModelCall gives up on the model call in progress and sends it
+	// again, for when the model hasn't answered. Only while none of the reply
+	// has arrived: once it is streaming, the call fails with
+	// FAILED_PRECONDITION (interrupt instead).
+	RetryModelCall(context.Context, *connect.Request[v1.RetryModelCallRequest]) (*connect.Response[v1.RetryModelCallResponse], error)
 	// AnswerPrompt answers a prompt the agent is waiting on. The first answer
 	// wins; later answers fail with FAILED_PRECONDITION.
 	AnswerPrompt(context.Context, *connect.Request[v1.AnswerPromptRequest]) (*connect.Response[v1.AnswerPromptResponse], error)
@@ -414,6 +439,12 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 		connect.WithSchema(sessionServiceMethods.ByName("Interrupt")),
 		connect.WithHandlerOptions(opts...),
 	)
+	sessionServiceRetryModelCallHandler := connect.NewUnaryHandler(
+		SessionServiceRetryModelCallProcedure,
+		svc.RetryModelCall,
+		connect.WithSchema(sessionServiceMethods.ByName("RetryModelCall")),
+		connect.WithHandlerOptions(opts...),
+	)
 	sessionServiceAnswerPromptHandler := connect.NewUnaryHandler(
 		SessionServiceAnswerPromptProcedure,
 		svc.AnswerPrompt,
@@ -484,6 +515,8 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 			sessionServiceSendHandler.ServeHTTP(w, r)
 		case SessionServiceInterruptProcedure:
 			sessionServiceInterruptHandler.ServeHTTP(w, r)
+		case SessionServiceRetryModelCallProcedure:
+			sessionServiceRetryModelCallHandler.ServeHTTP(w, r)
 		case SessionServiceAnswerPromptProcedure:
 			sessionServiceAnswerPromptHandler.ServeHTTP(w, r)
 		case SessionServiceSetModelProcedure:
@@ -533,6 +566,10 @@ func (UnimplementedSessionServiceHandler) Send(context.Context, *connect.Request
 
 func (UnimplementedSessionServiceHandler) Interrupt(context.Context, *connect.Request[v1.InterruptRequest]) (*connect.Response[v1.InterruptResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.Interrupt is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) RetryModelCall(context.Context, *connect.Request[v1.RetryModelCallRequest]) (*connect.Response[v1.RetryModelCallResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.RetryModelCall is not implemented"))
 }
 
 func (UnimplementedSessionServiceHandler) AnswerPrompt(context.Context, *connect.Request[v1.AnswerPromptRequest]) (*connect.Response[v1.AnswerPromptResponse], error) {

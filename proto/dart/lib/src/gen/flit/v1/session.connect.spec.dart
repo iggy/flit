@@ -69,6 +69,17 @@ abstract final class SessionService {
     flitv1session.InterruptResponse.new,
   );
 
+  /// RetryModelCall gives up on the model call in progress and sends it
+  /// again, for when the model hasn't answered. Only while none of the reply
+  /// has arrived: once it is streaming, the call fails with
+  /// FAILED_PRECONDITION (interrupt instead).
+  static const retryModelCall = connect.Spec(
+    '/$name/RetryModelCall',
+    connect.StreamType.unary,
+    flitv1session.RetryModelCallRequest.new,
+    flitv1session.RetryModelCallResponse.new,
+  );
+
   /// AnswerPrompt answers a prompt the agent is waiting on. The first answer
   /// wins; later answers fail with FAILED_PRECONDITION.
   static const answerPrompt = connect.Spec(

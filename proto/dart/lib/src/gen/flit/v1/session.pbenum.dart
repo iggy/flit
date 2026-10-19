@@ -216,5 +216,46 @@ class PermissionVerdict extends $pb.ProtobufEnum {
   const PermissionVerdict._(super.value, super.name);
 }
 
+class ModelCallOutcome extends $pb.ProtobufEnum {
+  static const ModelCallOutcome MODEL_CALL_OUTCOME_UNSPECIFIED =
+      ModelCallOutcome._(
+          0, _omitEnumNames ? '' : 'MODEL_CALL_OUTCOME_UNSPECIFIED');
+  static const ModelCallOutcome MODEL_CALL_OUTCOME_OK =
+      ModelCallOutcome._(1, _omitEnumNames ? '' : 'MODEL_CALL_OUTCOME_OK');
+
+  /// The watchdog gave up: nothing arrived for too long (see phase).
+  static const ModelCallOutcome MODEL_CALL_OUTCOME_STALLED =
+      ModelCallOutcome._(2, _omitEnumNames ? '' : 'MODEL_CALL_OUTCOME_STALLED');
+
+  /// The endpoint returned an error or the connection broke.
+  static const ModelCallOutcome MODEL_CALL_OUTCOME_ERROR =
+      ModelCallOutcome._(3, _omitEnumNames ? '' : 'MODEL_CALL_OUTCOME_ERROR');
+
+  /// The turn was interrupted.
+  static const ModelCallOutcome MODEL_CALL_OUTCOME_CANCELLED =
+      ModelCallOutcome._(
+          4, _omitEnumNames ? '' : 'MODEL_CALL_OUTCOME_CANCELLED');
+
+  /// Someone asked for it to be sent again (RetryModelCall).
+  static const ModelCallOutcome MODEL_CALL_OUTCOME_RETRIED =
+      ModelCallOutcome._(5, _omitEnumNames ? '' : 'MODEL_CALL_OUTCOME_RETRIED');
+
+  static const $core.List<ModelCallOutcome> values = <ModelCallOutcome>[
+    MODEL_CALL_OUTCOME_UNSPECIFIED,
+    MODEL_CALL_OUTCOME_OK,
+    MODEL_CALL_OUTCOME_STALLED,
+    MODEL_CALL_OUTCOME_ERROR,
+    MODEL_CALL_OUTCOME_CANCELLED,
+    MODEL_CALL_OUTCOME_RETRIED,
+  ];
+
+  static final $core.List<ModelCallOutcome?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 5);
+  static ModelCallOutcome? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const ModelCallOutcome._(super.value, super.name);
+}
+
 const $core.bool _omitEnumNames =
     $core.bool.fromEnvironment('protobuf.omit_enum_names');

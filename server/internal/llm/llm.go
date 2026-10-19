@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -62,6 +63,10 @@ type Request struct {
 	// ChatTemplateKwargs are passed to the model's chat template by
 	// llama.cpp, e.g. {"enable_thinking": false} to turn thinking off.
 	ChatTemplateKwargs map[string]any `json:"chat_template_kwargs,omitempty"`
+	// ReturnProgress asks llama.cpp to stream prompt processing progress
+	// (Handler.Progress), which also keeps the watchdog fed while a long
+	// prompt is read. Only send it to llama.cpp.
+	ReturnProgress bool `json:"return_progress,omitempty"`
 }
 
 // Usage is token usage reported by the endpoint.
@@ -97,9 +102,9 @@ type Metrics struct {
 	Source string
 }
 
-// llamaTimings is the timings block llama.cpp's server adds to the last
+// Timings is the timings block llama.cpp's server adds to the last
 // streamed chunk.
-type llamaTimings struct {
+type Timings struct {
 	PromptN            int64   `json:"prompt_n"`
 	PromptMS           float64 `json:"prompt_ms"`
 	PromptPerSecond    float64 `json:"prompt_per_second"`
@@ -108,11 +113,71 @@ type llamaTimings struct {
 	PredictedPerSecond float64 `json:"predicted_per_second"`
 }
 
-// Handler receives deltas as they stream in. Either func may be nil.
+// Handler receives deltas as they stream in. Any func may be nil.
 type Handler struct {
 	Text      func(string)
 	Reasoning func(string)
+	// Progress reports prompt processing (llama.cpp with ReturnProgress).
+	Progress func(PromptProgress)
 }
+
+// PromptProgress is how far the server has got reading the prompt.
+type PromptProgress struct {
+	Processed, Total, Cached int64
+	Elapsed                  time.Duration
+}
+
+// Phases of a call, as Trace.Phase and StallError.Phase report them.
+const (
+	PhaseConnecting = "connecting"
+	PhaseFirstByte  = "waiting_for_first_byte"
+	PhasePrompt     = "processing_prompt"
+	PhaseFirstToken = "waiting_for_first_token"
+	PhaseStreaming  = "streaming"
+	PhaseDone       = "done"
+)
+
+// Trace is the timeline of one call. StreamTrace fills it in even when the
+// call fails, so it shows where a slow or stuck call got to.
+type Trace struct {
+	Sent, Headers, FirstByte, FirstToken, LastByte time.Time
+	// Bytes is how much of the response body arrived.
+	Bytes int64
+	// Phase is where the call was when it ended.
+	Phase string
+	// Timings are llama.cpp's own, when it sent them.
+	Timings *Timings
+}
+
+// StallError is the watchdog giving up: nothing arrived for Waited while
+// the call was in Phase.
+type StallError struct {
+	Phase  string
+	Waited time.Duration
+}
+
+func (e *StallError) Error() string {
+	what := map[string]string{
+		PhaseConnecting: "the model server didn't respond",
+		PhaseFirstByte:  "the model server sent no data",
+		PhasePrompt:     "the model server stopped reporting progress on the prompt",
+		PhaseFirstToken: "the model didn't start answering",
+		PhaseStreaming:  "the model stopped mid-reply",
+	}[e.Phase]
+	if what == "" {
+		what = "no response from the model"
+	}
+	waited := e.Waited.Round(time.Second)
+	if e.Waited < time.Second {
+		waited = e.Waited.Round(time.Millisecond)
+	}
+	return fmt.Sprintf("%s for %s", what, waited)
+}
+
+// Started reports whether the model had started answering (or reporting
+// prompt progress), which is when StallTimeout rather than
+// FirstTokenTimeout applies.
+func (e *StallError) Started() bool { return e.Phase == PhaseStreaming || e.Phase == PhasePrompt }
 
 // APIError is an error response from the endpoint.
 type APIError struct {
@@ -130,6 +195,10 @@ func Retryable(err error) bool {
 	if errors.Is(err, context.Canceled) {
 		return false
 	}
+	var stall *StallError
+	if errors.As(err, &stall) {
+		return true
+	}
 	var apiErr *APIError
 	if errors.As(err, &apiErr) {
 		return apiErr.StatusCode == http.StatusTooManyRequests || apiErr.StatusCode >= 500 || apiErr.StatusCode == 0
@@ -142,11 +211,31 @@ type Client struct {
 	BaseURL string // e.g. http://localhost:8080/v1
 	APIKey  string // optional
 	HTTP    *http.Client
+	// The watchdog. FirstTokenTimeout is the longest the response may go
+	// quiet before the model starts answering (connecting, reading the
+	// prompt); StallTimeout is the longest once it has (tokens, or prompt
+	// progress, are flowing). 0 turns a limit off.
+	FirstTokenTimeout time.Duration
+	StallTimeout      time.Duration
 }
 
 // Stream sends req with streaming enabled, calls h for each delta and
 // returns the assembled result. Cancel ctx to stop early.
 func (c *Client) Stream(ctx context.Context, req Request, h Handler) (*Result, error) {
+	res, _, err := c.StreamTrace(ctx, req, h)
+	return res, err
+}
+
+// StreamTrace is Stream that also returns the call's timeline, which is
+// non-nil even when err isn't. A call the watchdog stops fails with a
+// *StallError.
+func (c *Client) StreamTrace(ctx context.Context, req Request, h Handler) (*Result, *Trace, error) {
+	w := &watch{first: c.FirstTokenTimeout, stall: c.StallTimeout, trace: &Trace{Phase: PhaseConnecting}}
+	res, err := c.stream(ctx, req, h, w)
+	return res, w.finish(err), err
+}
+
+func (c *Client) stream(ctx context.Context, req Request, h Handler, w *watch) (*Result, error) {
 	body, err := json.Marshal(struct {
 		Request
 		Stream        bool `json:"stream"`
@@ -168,17 +257,181 @@ func (c *Client) Stream(ctx context.Context, req Request, h Handler) (*Result, e
 	if hc == nil {
 		hc = http.DefaultClient
 	}
-	start := time.Now()
+	ctx, cancel := context.WithCancelCause(ctx)
+	defer cancel(nil)
+	httpReq = httpReq.WithContext(ctx)
+	start := w.start(cancel)
 	resp, err := hc.Do(httpReq)
 	if err != nil {
-		return nil, err
+		return nil, stallCause(ctx, err)
 	}
 	defer resp.Body.Close()
+	w.headers()
 	if resp.StatusCode != http.StatusOK {
 		b, _ := io.ReadAll(io.LimitReader(resp.Body, 64<<10))
 		return nil, &APIError{StatusCode: resp.StatusCode, Message: errorMessage(b)}
 	}
-	return readStream(resp.Body, h, start)
+	res, err := readStream(&watchedReader{r: resp.Body, w: w}, h, start, w)
+	if err != nil {
+		return nil, stallCause(ctx, err)
+	}
+	return res, nil
+}
+
+// stallCause returns the watchdog's error if it is why ctx ended.
+func stallCause(ctx context.Context, err error) error {
+	var stall *StallError
+	if errors.As(context.Cause(ctx), &stall) {
+		return stall
+	}
+	return err
+}
+
+// watch is the watchdog and the trace it keeps. Its timer is reset by every
+// byte of the response; how long it waits depends on the phase.
+type watch struct {
+	first, stall time.Duration
+
+	mu       sync.Mutex
+	cancel   context.CancelCauseFunc
+	trace    *Trace
+	progress bool // prompt progress seen
+	timer    *time.Timer
+	last     time.Time // last sign of life
+}
+
+func (w *watch) start(cancel context.CancelCauseFunc) time.Time {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	now := time.Now()
+	w.trace.Sent, w.last, w.cancel = now, now, cancel
+	w.armLocked()
+	return now
+}
+
+// armLocked (re)starts the timer for the current limit.
+func (w *watch) armLocked() {
+	limit := w.limitLocked()
+	switch {
+	case limit <= 0 || w.cancel == nil:
+	case w.timer == nil:
+		w.timer = time.AfterFunc(limit, w.fire)
+	default:
+		w.timer.Reset(limit)
+	}
+}
+
+// limitLocked is how long the response may now stay quiet.
+func (w *watch) limitLocked() time.Duration {
+	if !w.trace.FirstToken.IsZero() || w.progress {
+		if w.stall > 0 {
+			return w.stall
+		}
+	}
+	return w.first
+}
+
+// fire runs when the timer runs out. Activity may have reset the deadline
+// meanwhile, so it re-arms instead of cancelling in that case.
+func (w *watch) fire() {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	limit := w.limitLocked()
+	if limit <= 0 {
+		return
+	}
+	if idle := time.Since(w.last); idle < limit {
+		w.timer.Reset(limit - idle)
+		return
+	}
+	w.cancel(&StallError{Phase: w.phaseLocked(), Waited: limit})
+}
+
+func (w *watch) phaseLocked() string {
+	t := w.trace
+	switch {
+	case t.Headers.IsZero():
+		return PhaseConnecting
+	case t.FirstByte.IsZero():
+		return PhaseFirstByte
+	case !t.FirstToken.IsZero():
+		return PhaseStreaming
+	case w.progress:
+		return PhasePrompt
+	}
+	return PhaseFirstToken
+}
+
+func (w *watch) alive(f func(now time.Time)) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	now := time.Now()
+	w.last = now
+	f(now)
+	w.armLocked()
+}
+
+func (w *watch) headers() { w.alive(func(now time.Time) { w.trace.Headers = now }) }
+
+func (w *watch) read(n int) {
+	w.alive(func(now time.Time) {
+		if w.trace.FirstByte.IsZero() {
+			w.trace.FirstByte = now
+		}
+		w.trace.LastByte = now
+		w.trace.Bytes += int64(n)
+	})
+}
+
+func (w *watch) token() {
+	w.alive(func(now time.Time) {
+		if w.trace.FirstToken.IsZero() {
+			w.trace.FirstToken = now
+		}
+	})
+}
+
+func (w *watch) promptProgress() { w.alive(func(time.Time) { w.progress = true }) }
+
+func (w *watch) timings(t *Timings) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.trace.Timings = t
+}
+
+// finish stops the timer and returns the trace with its final phase.
+func (w *watch) finish(err error) *Trace {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if w.timer != nil {
+		w.timer.Stop()
+	}
+	w.cancel = nil // no re-arming after the call
+	var stall *StallError
+	switch {
+	case err == nil:
+		w.trace.Phase = PhaseDone
+	case errors.As(err, &stall):
+		w.trace.Phase = stall.Phase
+	default:
+		w.trace.Phase = w.phaseLocked()
+	}
+	t := *w.trace
+	return &t
+}
+
+// watchedReader tells the watchdog about every byte read.
+type watchedReader struct {
+	r io.Reader
+	w *watch
+}
+
+func (r *watchedReader) Read(p []byte) (int, error) {
+	n, err := r.r.Read(p)
+	if n > 0 {
+		r.w.read(n)
+	}
+	return n, err
 }
 
 type chunk struct {
@@ -199,22 +452,29 @@ type chunk struct {
 		} `json:"delta"`
 		FinishReason *string `json:"finish_reason"`
 	} `json:"choices"`
-	Usage   *Usage          `json:"usage"`
-	Timings *llamaTimings   `json:"timings"`
-	Error   json.RawMessage `json:"error"`
+	Usage          *Usage   `json:"usage"`
+	Timings        *Timings `json:"timings"`
+	PromptProgress *struct {
+		Total     int64   `json:"total"`
+		Cache     int64   `json:"cache"`
+		Processed int64   `json:"processed"`
+		TimeMS    float64 `json:"time_ms"`
+	} `json:"prompt_progress"`
+	Error json.RawMessage `json:"error"`
 }
 
-func readStream(r io.Reader, h Handler, start time.Time) (*Result, error) {
+func readStream(r io.Reader, h Handler, start time.Time, w *watch) (*Result, error) {
 	var res Result
 	var text, reasoning strings.Builder
 	calls := map[int]*ToolCall{}
 	var firstToken, lastToken time.Time
-	var timings *llamaTimings
+	var timings *Timings
 	token := func() {
 		lastToken = time.Now()
 		if firstToken.IsZero() {
 			firstToken = lastToken
 		}
+		w.token()
 	}
 
 	sc := bufio.NewScanner(r)
@@ -243,6 +503,16 @@ func readStream(r io.Reader, h Handler, start time.Time) (*Result, error) {
 		}
 		if c.Timings != nil {
 			timings = c.Timings
+			w.timings(c.Timings)
+		}
+		if p := c.PromptProgress; p != nil {
+			w.promptProgress()
+			if h.Progress != nil {
+				h.Progress(PromptProgress{
+					Processed: p.Processed, Total: p.Total, Cached: p.Cache,
+					Elapsed: time.Duration(p.TimeMS * float64(time.Millisecond)),
+				})
+			}
 		}
 		for _, ch := range c.Choices {
 			d := ch.Delta
@@ -336,7 +606,7 @@ func errorMessage(b []byte) string {
 // and otherwise times the stream: prompt speed is prompt tokens over the
 // time to the first token, generation speed is the remaining tokens over
 // the time from the first to the last token.
-func metrics(start, first, last time.Time, u *Usage, t *llamaTimings) Metrics {
+func metrics(start, first, last time.Time, u *Usage, t *Timings) Metrics {
 	var m Metrics
 	if !first.IsZero() {
 		m.TimeToFirstToken = first.Sub(start)

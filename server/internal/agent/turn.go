@@ -6,17 +6,22 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
 	"github.com/iggy/flit/server/internal/buildinfo"
 	"github.com/iggy/flit/server/internal/config"
 	"github.com/iggy/flit/server/internal/llm"
 	"github.com/iggy/flit/server/internal/mcpclient"
+	"github.com/iggy/flit/server/internal/models"
 	"github.com/iggy/flit/server/internal/roles"
 	"github.com/iggy/flit/server/internal/skills"
 	"github.com/iggy/flit/server/internal/store"
 	"github.com/iggy/flit/server/internal/tools"
 )
+
+// progressInterval spaces out PromptProgress events.
+const progressInterval = time.Second
 
 // maxLiveToolOutput caps ToolOutput events per tool call. The model's result
 // is truncated separately (config agent.tool_output_*).
@@ -100,23 +105,82 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 
 		var text, reasoning strings.Builder
 		var appendErr error
-		client := &llm.Client{BaseURL: provider.BaseURL, APIKey: provider.Key(), HTTP: s.m.http}
-		res, err := client.Stream(ctx, req, llm.Handler{
-			Text: func(d string) {
-				text.WriteString(d)
-				if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_TextDelta{TextDelta: &flitv1.TextDelta{MessageId: msgID, Text: d}}}); err != nil {
-					appendErr = err
-				}
-			},
-			Reasoning: func(d string) {
-				reasoning.WriteString(d)
-				if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_ReasoningDelta{ReasoningDelta: &flitv1.ReasoningDelta{MessageId: msgID, Text: d}}}); err != nil {
-					appendErr = err
-				}
-			},
-		})
-		if appendErr != nil {
-			return end{}, appendErr
+		client := &llm.Client{
+			BaseURL: provider.BaseURL, APIKey: provider.Key(), HTTP: s.m.http,
+			FirstTokenTimeout: cfg.Agent.ModelFirstTokenTimeout, StallTimeout: cfg.Agent.ModelStallTimeout,
+		}
+		if s.m.Catalog != nil && s.m.Catalog.Kind(info.Provider) == models.KindLlamaCpp {
+			req.ReturnProgress = true
+		}
+		var res *llm.Result
+		autoRetries := 0
+		for attempt := int32(1); ; attempt++ {
+			if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_ModelCallStarted{ModelCallStarted: &flitv1.ModelCallStarted{
+				MessageId: msgID, Attempt: attempt,
+				FirstByteTimeoutMs: cfg.Agent.ModelFirstTokenTimeout.Milliseconds(),
+				StallTimeoutMs:     cfg.Agent.ModelStallTimeout.Milliseconds(),
+			}}}); err != nil {
+				return end{}, err
+			}
+			var lastProgress time.Time
+			var trace *llm.Trace
+			callCtx, cancelCall := context.WithCancelCause(ctx)
+			s.setCall(cancelCall)
+			res, trace, err = client.StreamTrace(callCtx, req, llm.Handler{
+				Text: func(d string) {
+					s.callProduced()
+					text.WriteString(d)
+					if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_TextDelta{TextDelta: &flitv1.TextDelta{MessageId: msgID, Text: d}}}); err != nil {
+						appendErr = err
+					}
+				},
+				Reasoning: func(d string) {
+					s.callProduced()
+					reasoning.WriteString(d)
+					if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_ReasoningDelta{ReasoningDelta: &flitv1.ReasoningDelta{MessageId: msgID, Text: d}}}); err != nil {
+						appendErr = err
+					}
+				},
+				Progress: func(p llm.PromptProgress) {
+					// llama.cpp reports every batch; about once a second is
+					// plenty, plus the last one.
+					if time.Since(lastProgress) < progressInterval && p.Processed < p.Total {
+						return
+					}
+					lastProgress = time.Now()
+					if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_PromptProgress{PromptProgress: &flitv1.PromptProgress{
+						MessageId: msgID, Attempt: attempt, Processed: p.Processed, Total: p.Total, Cached: p.Cached,
+						ElapsedMs: p.Elapsed.Milliseconds(),
+					}}}); err != nil {
+						appendErr = err
+					}
+				},
+			})
+			userRetry := err != nil && ctx.Err() == nil && errors.Is(context.Cause(callCtx), errUserRetry)
+			s.setCall(nil)
+			cancelCall(nil)
+			if appendErr != nil {
+				return end{}, appendErr
+			}
+			// Only a call that produced nothing can be retried without the
+			// log showing half a reply twice.
+			autoRetry := err != nil && !userRetry && ctx.Err() == nil && llm.Retryable(err) &&
+				text.Len() == 0 && reasoning.Len() == 0 && autoRetries < cfg.Agent.ModelRetries
+			ended := callEnded(msgID, attempt, trace, res, err, ctx.Err() != nil, userRetry || autoRetry)
+			if userRetry {
+				e := ended.GetModelCallEnded()
+				e.Outcome, e.Error = flitv1.ModelCallOutcome_MODEL_CALL_OUTCOME_RETRIED, "retried by request"
+			}
+			if _, err := s.append(ended); err != nil {
+				return end{}, err
+			}
+			if !userRetry && !autoRetry {
+				break
+			}
+			if autoRetry {
+				autoRetries++
+			}
+			s.m.log.Warn("model call failed before any output; retrying", "session", info.ID, "attempt", attempt, "by_request", userRetry, "err", err)
 		}
 		s.recordCall(info, turnID, msgID, role, skillNames, req, res, text.String(), reasoning.String(), err)
 		if err != nil {
@@ -130,7 +194,16 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 			if ctx.Err() != nil {
 				return endInterrupted, nil
 			}
-			return s.stop(err.Error(), llm.Retryable(err))
+			msg := err.Error()
+			var stall *llm.StallError
+			if errors.As(err, &stall) {
+				setting := "agent.model_first_token_timeout"
+				if stall.Started() {
+					setting = "agent.model_stall_timeout"
+				}
+				msg += "; if the model is just slow, raise " + setting + " in the config"
+			}
+			return s.stop(msg, llm.Retryable(err))
 		}
 
 		if err := s.messageDone(msgID, res.Text, res.Reasoning, res.FinishReason); err != nil {
@@ -183,6 +256,41 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 			return endInterrupted, nil
 		}
 	}
+}
+
+// callEnded is the ModelCallEnded event for one attempt.
+func callEnded(msgID string, attempt int32, tr *llm.Trace, res *llm.Result, err error, cancelled, retry bool) *flitv1.Event {
+	ms := func(t time.Time) int64 {
+		if t.IsZero() || tr.Sent.IsZero() {
+			return 0
+		}
+		return t.Sub(tr.Sent).Milliseconds()
+	}
+	e := &flitv1.ModelCallEnded{
+		MessageId: msgID, Attempt: attempt, Outcome: flitv1.ModelCallOutcome_MODEL_CALL_OUTCOME_OK, WillRetry: retry,
+		ResponseHeadersMs: ms(tr.Headers), FirstByteMs: ms(tr.FirstByte), FirstTokenMs: ms(tr.FirstToken),
+		LastByteMs: ms(tr.LastByte), TotalMs: ms(time.Now()), Bytes: tr.Bytes,
+	}
+	var stall *llm.StallError
+	switch {
+	case err == nil:
+	case cancelled:
+		e.Outcome = flitv1.ModelCallOutcome_MODEL_CALL_OUTCOME_CANCELLED
+	case errors.As(err, &stall):
+		e.Outcome = flitv1.ModelCallOutcome_MODEL_CALL_OUTCOME_STALLED
+	default:
+		e.Outcome = flitv1.ModelCallOutcome_MODEL_CALL_OUTCOME_ERROR
+	}
+	if err != nil {
+		e.Phase, e.Error = tr.Phase, err.Error()
+	}
+	if res != nil && res.Usage != nil {
+		e.InputTokens, e.OutputTokens = res.Usage.PromptTokens, res.Usage.CompletionTokens
+	}
+	if t := tr.Timings; t != nil {
+		e.PromptTokens, e.PromptMs, e.PredictedTokens, e.PredictedMs = t.PromptN, int64(t.PromptMS), t.PredictedN, int64(t.PredictedMS)
+	}
+	return &flitv1.Event{Payload: &flitv1.Event_ModelCallEnded{ModelCallEnded: e}}
 }
 
 func (s *session) runTool(ctx context.Context, turnID string, set []tools.Tool, tc llm.ToolCall) (tools.Result, error) {

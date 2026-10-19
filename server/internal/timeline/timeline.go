@@ -1,0 +1,357 @@
+// Package timeline turns a session's event log into a readable timeline
+// for diagnosing slow or frozen turns (flit debug session): model calls
+// with their phases, tool runs, prompts and state changes, with durations,
+// and at the end whatever is still open, which is where a frozen turn is
+// stuck.
+package timeline
+
+import (
+	"fmt"
+	"io"
+	"sort"
+	"strings"
+	"time"
+
+	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
+	"github.com/iggy/flit/server/internal/store"
+)
+
+// Write prints the timeline of sess from its events (all of them, in seq
+// order). now is used for how long open things have been waiting.
+func Write(w io.Writer, sess store.Session, events []*flitv1.Event, now time.Time) error {
+	p := &printer{w: w, now: now,
+		msgs: map[string]*message{}, calls: map[string]callStart{}, tools: map[string]toolStart{}, prompts: map[string]promptStart{}}
+	p.header(sess, events)
+	for _, ev := range events {
+		p.event(ev)
+	}
+	p.open(sess)
+	return p.err
+}
+
+type message struct {
+	role                         flitv1.Role
+	text, reasoning              int
+	firstDelta, lastDelta, start time.Time
+}
+
+type callStart struct {
+	msg     string
+	attempt int32
+	at      time.Time
+}
+
+type toolStart struct {
+	name, args string
+	at         time.Time
+}
+
+type promptStart struct {
+	title, detail string
+	at            time.Time
+}
+
+type printer struct {
+	w   io.Writer
+	err error
+	now time.Time
+
+	msgs    map[string]*message
+	calls   map[string]callStart // by message id and attempt
+	tools   map[string]toolStart
+	prompts map[string]promptStart
+	// lastProgress is the latest prompt progress of each open call.
+	lastProgress map[string]*flitv1.PromptProgress
+	last         time.Time
+}
+
+func (p *printer) printf(format string, args ...any) {
+	if p.err == nil {
+		_, p.err = fmt.Fprintf(p.w, format, args...)
+	}
+}
+
+// line prints one timeline entry, indented by depth.
+func (p *printer) line(at time.Time, depth int, format string, args ...any) {
+	p.printf("%s  %s%s\n", at.Local().Format("15:04:05.000"), strings.Repeat("  ", depth), fmt.Sprintf(format, args...))
+}
+
+func (p *printer) header(sess store.Session, events []*flitv1.Event) {
+	title := sess.Title
+	if title == "" {
+		title = "(untitled)"
+	}
+	p.printf("Session %s  %q\n", sess.ID, title)
+	p.printf("  model %s/%s, state %s, working dir %s\n", sess.Provider, sess.Model, state(sess.State), sess.WorkingDir)
+	if len(events) == 0 {
+		p.printf("  no events\n\n")
+		return
+	}
+	first, last := events[0], events[len(events)-1]
+	p.printf("  %d events (seq %d-%d), %s to %s\n\n", len(events), first.Seq, last.Seq,
+		first.Time.AsTime().Local().Format("2006-01-02 15:04:05"), last.Time.AsTime().Local().Format("2006-01-02 15:04:05"))
+}
+
+func callKey(msg string, attempt int32) string { return fmt.Sprintf("%s#%d", msg, attempt) }
+
+func (p *printer) event(ev *flitv1.Event) {
+	at := ev.Time.AsTime()
+	p.last = at
+	switch {
+	case ev.GetMessageStarted() != nil:
+		m := ev.GetMessageStarted()
+		p.msgs[m.MessageId] = &message{role: m.Role, start: at}
+		if m.Role == flitv1.Role_ROLE_ASSISTANT {
+			p.line(at, 0, "assistant message %s (%s/%s)", m.MessageId, m.Provider, m.Model)
+		}
+	case ev.GetTextDelta() != nil:
+		p.delta(ev.GetTextDelta().MessageId, at, len(ev.GetTextDelta().Text), false)
+	case ev.GetReasoningDelta() != nil:
+		p.delta(ev.GetReasoningDelta().MessageId, at, len(ev.GetReasoningDelta().Text), true)
+	case ev.GetMessageDone() != nil:
+		d := ev.GetMessageDone()
+		m := p.msgs[d.MessageId]
+		delete(p.msgs, d.MessageId)
+		if m != nil && m.role == flitv1.Role_ROLE_USER {
+			p.line(at, 0, "user message: %s", snippet(d.Text, 80))
+			return
+		}
+		out := fmt.Sprintf("message done (%s): %d chars of text, %d of reasoning", orDash(d.FinishReason), len(d.Text), len(d.Reasoning))
+		if m != nil && !m.firstDelta.IsZero() {
+			out += fmt.Sprintf(", streamed over %s", dur(m.lastDelta.Sub(m.firstDelta)))
+		}
+		p.line(at, 1, "%s", out)
+	case ev.GetModelCallStarted() != nil:
+		c := ev.GetModelCallStarted()
+		p.calls[callKey(c.MessageId, c.Attempt)] = callStart{msg: c.MessageId, attempt: c.Attempt, at: at}
+		p.line(at, 1, "model call attempt %d sent (watchdog: first token %s, stall %s)", c.Attempt,
+			limit(c.FirstByteTimeoutMs), limit(c.StallTimeoutMs))
+	case ev.GetPromptProgress() != nil:
+		pp := ev.GetPromptProgress()
+		if p.lastProgress == nil {
+			p.lastProgress = map[string]*flitv1.PromptProgress{}
+		}
+		p.lastProgress[callKey(pp.MessageId, pp.Attempt)] = pp
+		p.line(at, 2, "prompt %d/%d tokens (%d cached) after %s", pp.Processed, pp.Total, pp.Cached, dur(ms(pp.ElapsedMs)))
+	case ev.GetModelCallEnded() != nil:
+		p.callEnded(at, ev.GetModelCallEnded())
+	case ev.GetUsage() != nil:
+		u := ev.GetUsage()
+		p.line(at, 1, "usage: %d in, %d out of %s context; %.1f tok/s prompt, %.1f tok/s generation (%s)",
+			u.InputTokens, u.OutputTokens, orDash(count(u.ContextLength)), u.PromptTokensPerSecond, u.GenerationTokensPerSecond, orDash(u.TimingSource))
+	case ev.GetToolCallStarted() != nil:
+		t := ev.GetToolCallStarted()
+		p.tools[t.ToolCallId] = toolStart{name: t.Name, args: t.Arguments, at: at}
+		p.line(at, 1, "tool %s (%s) started: %s", t.Name, t.ToolCallId, snippet(t.Arguments, 100))
+	case ev.GetToolCallDone() != nil:
+		t := ev.GetToolCallDone()
+		start, ok := p.tools[t.ToolCallId]
+		delete(p.tools, t.ToolCallId)
+		took := "?"
+		if ok {
+			took = dur(at.Sub(start.at))
+		}
+		status := "ok"
+		if t.IsError {
+			status = "error"
+		}
+		extra := ""
+		if t.Truncated {
+			extra = fmt.Sprintf(", truncated (%d bytes cut)", t.OmittedBytes)
+		}
+		p.line(at, 1, "tool %s (%s) done after %s: %s, %d bytes%s", start.name, t.ToolCallId, took, status, len(t.Result), extra)
+	case ev.GetPromptRequested() != nil:
+		pr := ev.GetPromptRequested()
+		p.prompts[pr.PromptId] = promptStart{title: pr.Title, detail: pr.Detail, at: at}
+		p.line(at, 1, "asked the user: %s: %s", pr.Title, snippet(pr.Detail, 80))
+	case ev.GetPromptResolved() != nil:
+		pr := ev.GetPromptResolved()
+		start, ok := p.prompts[pr.PromptId]
+		delete(p.prompts, pr.PromptId)
+		took := "?"
+		if ok {
+			took = dur(at.Sub(start.at))
+		}
+		p.line(at, 1, "answered after %s: %s%s", took, decision(pr.Decision), paren(pr.Reason))
+	case ev.GetTaskStateChanged() != nil:
+		t := ev.GetTaskStateChanged()
+		p.line(at, 0, "state: %s%s", state(t.State), paren(t.Reason))
+	case ev.GetError() != nil:
+		e := ev.GetError()
+		p.line(at, 1, "ERROR: %s (can continue: %v)", e.Message, e.TurnCanContinue)
+	case ev.GetModelChanged() != nil:
+		m := ev.GetModelChanged()
+		p.line(at, 0, "model set to %s/%s%s", m.Provider, m.Model, paren(m.Effort))
+	case ev.GetToolOutput() != nil, ev.GetTodoUpdated() != nil, ev.GetFeedback() != nil, ev.GetPermissionCheck() != nil:
+		// Not timeline material.
+	}
+}
+
+func (p *printer) delta(msg string, at time.Time, n int, reasoning bool) {
+	m := p.msgs[msg]
+	if m == nil {
+		return
+	}
+	if m.firstDelta.IsZero() {
+		m.firstDelta = at
+	}
+	m.lastDelta = at
+	if reasoning {
+		m.reasoning += n
+	} else {
+		m.text += n
+	}
+}
+
+func (p *printer) callEnded(at time.Time, e *flitv1.ModelCallEnded) {
+	key := callKey(e.MessageId, e.Attempt)
+	delete(p.calls, key)
+	delete(p.lastProgress, key)
+	var b strings.Builder
+	switch e.Outcome {
+	case flitv1.ModelCallOutcome_MODEL_CALL_OUTCOME_OK:
+		b.WriteString("ok")
+	case flitv1.ModelCallOutcome_MODEL_CALL_OUTCOME_STALLED:
+		fmt.Fprintf(&b, "STALLED while %s", phase(e.Phase))
+	case flitv1.ModelCallOutcome_MODEL_CALL_OUTCOME_RETRIED:
+		fmt.Fprintf(&b, "given up and resent by request while %s", phase(e.Phase))
+	case flitv1.ModelCallOutcome_MODEL_CALL_OUTCOME_CANCELLED:
+		fmt.Fprintf(&b, "cancelled while %s", phase(e.Phase))
+	default:
+		fmt.Fprintf(&b, "ERROR while %s", phase(e.Phase))
+	}
+	var marks []string
+	for _, m := range []struct {
+		name string
+		ms   int64
+	}{{"headers", e.ResponseHeadersMs}, {"first byte", e.FirstByteMs}, {"first token", e.FirstTokenMs}, {"last byte", e.LastByteMs}} {
+		if m.ms > 0 {
+			marks = append(marks, fmt.Sprintf("%s %s", m.name, dur(ms(m.ms))))
+		}
+	}
+	fmt.Fprintf(&b, " after %s", dur(ms(e.TotalMs)))
+	if len(marks) > 0 {
+		fmt.Fprintf(&b, " (%s)", strings.Join(marks, ", "))
+	}
+	fmt.Fprintf(&b, ", %d bytes", e.Bytes)
+	if e.InputTokens > 0 || e.OutputTokens > 0 {
+		fmt.Fprintf(&b, ", %d in / %d out", e.InputTokens, e.OutputTokens)
+	}
+	if e.PromptMs > 0 || e.PredictedMs > 0 {
+		fmt.Fprintf(&b, "; llama.cpp: prompt %d tok in %s, generated %d tok in %s",
+			e.PromptTokens, dur(ms(e.PromptMs)), e.PredictedTokens, dur(ms(e.PredictedMs)))
+	}
+	if e.WillRetry {
+		b.WriteString("; retrying")
+	}
+	p.line(at, 1, "model call attempt %d %s", e.Attempt, b.String())
+	if e.Error != "" && e.Outcome != flitv1.ModelCallOutcome_MODEL_CALL_OUTCOME_RETRIED {
+		p.line(at, 2, "%s", e.Error)
+	}
+}
+
+// open reports what never finished: where a frozen turn is.
+func (p *printer) open(sess store.Session) {
+	type item struct {
+		at   time.Time
+		text string
+	}
+	var items []item
+	for key, c := range p.calls {
+		text := fmt.Sprintf("model call for %s (attempt %d) sent %s ago and never ended", c.msg, c.attempt, dur(p.now.Sub(c.at)))
+		if m := p.msgs[c.msg]; m != nil && !m.lastDelta.IsZero() {
+			text += fmt.Sprintf("; last output %s ago (%d chars of text, %d of reasoning so far)", dur(p.now.Sub(m.lastDelta)), m.text, m.reasoning)
+		} else if pp := p.lastProgress[key]; pp != nil {
+			text += fmt.Sprintf("; no output yet, last prompt progress %d/%d", pp.Processed, pp.Total)
+		} else {
+			text += "; no output or progress yet"
+		}
+		items = append(items, item{c.at, text})
+	}
+	for id, t := range p.tools {
+		items = append(items, item{t.at, fmt.Sprintf("tool %s (%s) started %s ago and never finished: %s", t.name, id, dur(p.now.Sub(t.at)), snippet(t.args, 100))})
+	}
+	for id, pr := range p.prompts {
+		items = append(items, item{pr.at, fmt.Sprintf("prompt %s waiting for the user for %s: %s", id, dur(p.now.Sub(pr.at)), pr.title)})
+	}
+	sort.Slice(items, func(i, j int) bool { return items[i].at.Before(items[j].at) })
+	p.printf("\n")
+	if len(items) == 0 {
+		p.printf("Nothing open.")
+		if sess.State == flitv1.TaskState_TASK_STATE_WORKING && !p.last.IsZero() {
+			p.printf(" The session says it's working but the last event was %s ago: the harness itself may be stuck.", dur(p.now.Sub(p.last)))
+		}
+		p.printf("\n")
+		return
+	}
+	p.printf("Still open:\n")
+	for _, it := range items {
+		p.printf("  %s  %s\n", it.at.Local().Format("15:04:05.000"), it.text)
+	}
+}
+
+func ms(n int64) time.Duration { return time.Duration(n) * time.Millisecond }
+
+// dur prints a duration compactly: 850ms, 12.3s, 4m05s, 2h10m.
+func dur(d time.Duration) string {
+	switch {
+	case d < time.Second:
+		return fmt.Sprintf("%dms", d.Milliseconds())
+	case d < time.Minute:
+		return fmt.Sprintf("%.1fs", d.Seconds())
+	case d < time.Hour:
+		return fmt.Sprintf("%dm%02ds", int(d.Minutes()), int(d.Seconds())%60)
+	}
+	return fmt.Sprintf("%dh%02dm", int(d.Hours()), int(d.Minutes())%60)
+}
+
+func limit(msv int64) string {
+	if msv <= 0 {
+		return "off"
+	}
+	return dur(ms(msv))
+}
+
+func count(n int64) string {
+	if n <= 0 {
+		return ""
+	}
+	return fmt.Sprint(n)
+}
+
+func phase(p string) string {
+	if p == "" {
+		return "unknown phase"
+	}
+	return strings.ReplaceAll(p, "_", " ")
+}
+
+func state(s flitv1.TaskState) string {
+	return strings.ToLower(strings.TrimPrefix(s.String(), "TASK_STATE_"))
+}
+
+func decision(d flitv1.PromptDecision) string {
+	return strings.ToLower(strings.TrimPrefix(d.String(), "PROMPT_DECISION_"))
+}
+
+func paren(s string) string {
+	if s == "" {
+		return ""
+	}
+	return " (" + s + ")"
+}
+
+func orDash(s string) string {
+	if s == "" {
+		return "-"
+	}
+	return s
+}
+
+func snippet(s string, n int) string {
+	s = strings.Join(strings.Fields(s), " ")
+	if len(s) > n {
+		return s[:n] + "…"
+	}
+	return s
+}
