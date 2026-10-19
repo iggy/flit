@@ -45,6 +45,9 @@ abstract interface class FlitRepository {
   /// while none of the reply has arrived.
   Future<void> retryModelCall(String sessionId);
 
+  /// Asks the model to stop thinking and answer now (llama.cpp).
+  Future<void> endReasoning(String sessionId, {String client = ''});
+
   /// Answer a pending prompt. [client] names this device in the session log.
   /// [forSession] also allows the prompt's session patterns from now on.
   Future<void> answerPrompt(

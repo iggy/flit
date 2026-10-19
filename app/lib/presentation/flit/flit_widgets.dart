@@ -54,6 +54,9 @@ class FlitTaskStateChip extends StatelessWidget {
   }
 }
 
+/// The status strip's cache hits.
+const Key flitCachedKey = Key('flit_cached');
+
 /// "provider / model", or a placeholder.
 String flitModelLabel(String provider, String model) {
   if (model.isEmpty) {
@@ -87,8 +90,14 @@ class FlitStatusStrip extends StatelessWidget {
     required this.onModelTap,
     this.generationTokensPerSecond,
     this.timeToFirstTokenMs,
+    this.inputTokens = 0,
+    this.cachedTokens = 0,
     super.key,
   });
+
+  /// The last call's prompt and how much llama.cpp had cached.
+  final int inputTokens;
+  final int cachedTokens;
 
   final String provider;
   final String model;
@@ -166,6 +175,19 @@ class FlitStatusStrip extends StatelessWidget {
                       : '${formatTokens(contextTokens)} tokens',
                   style: small,
                 ),
+                if (cachedTokens > 0) ...<Widget>[
+                  const SizedBox(width: 8),
+                  Tooltip(
+                    message:
+                        'Prompt tokens llama.cpp reused from its cache on the '
+                        'last call, of the prompt\'s ${formatTokens(inputTokens)}',
+                    child: Text(
+                      '${formatTokens(cachedTokens)}/${formatTokens(inputTokens)} cached',
+                      key: flitCachedKey,
+                      style: small,
+                    ),
+                  ),
+                ],
                 if (generationTokensPerSecond != null &&
                     generationTokensPerSecond! > 0) ...<Widget>[
                   const SizedBox(width: 8),

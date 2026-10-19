@@ -7,6 +7,7 @@ library;
 import 'dart:async';
 
 import 'package:flit/application/flit/flit_fold.dart';
+import 'package:flit/domain/models/flit_event.dart';
 import 'package:flutter/material.dart';
 
 /// After this long with nothing from the model, offer Retry and Stop.
@@ -92,8 +93,19 @@ class _FlitCallStatusState extends State<FlitCallStatus> {
       return const SizedBox.shrink(); // the reply is streaming
     }
     final attempt = call.attempt > 1 ? ' (attempt ${call.attempt})' : '';
+    final waiting = switch (call.waitReason) {
+      FlitWaitReason.slotsBusy =>
+        call.totalSlots > 0
+            ? 'Waiting for a free llama.cpp slot (all ${call.totalSlots} busy)'
+            : 'Waiting for a free llama.cpp slot',
+      FlitWaitReason.sleeping => 'Waking the model up',
+      FlitWaitReason.loading => 'Loading the model',
+      FlitWaitReason.unknown || null => null,
+    };
     final String text;
-    if (quiet) {
+    if (waiting != null && !call.hasOutput) {
+      text = '$waiting · ${flitClock(elapsed)}$attempt';
+    } else if (quiet) {
       text = call.hasOutput
           ? 'No new output from the model for ${flitClock(idle)}$attempt'
           : "The model hasn't responded for ${flitClock(idle)}$attempt";

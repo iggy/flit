@@ -75,7 +75,13 @@ final class FlitSpeed {
     required this.promptTokensPerSecond,
     required this.generationTokensPerSecond,
     required this.source,
+    this.inputTokens = 0,
+    this.cachedTokens = 0,
   });
+
+  /// The call's prompt size and how much of it came from llama.cpp's cache.
+  final int inputTokens;
+  final int cachedTokens;
 
   final int timeToFirstTokenMs;
   final double promptTokensPerSecond;
@@ -90,6 +96,8 @@ final class FlitSpeed {
       other.timeToFirstTokenMs == timeToFirstTokenMs &&
       other.promptTokensPerSecond == promptTokensPerSecond &&
       other.generationTokensPerSecond == generationTokensPerSecond &&
+      other.inputTokens == inputTokens &&
+      other.cachedTokens == cachedTokens &&
       other.source == source;
 
   @override
@@ -144,10 +152,27 @@ final class FlitPendingCall {
     this.processed = 0,
     this.total = 0,
     this.hasOutput = false,
+    this.hasText = false,
+    this.waitReason,
+    this.totalSlots = 0,
+    this.endRequested = false,
   });
 
   final String messageId;
   final int attempt;
+
+  /// Whether the answer (not just thinking) has started.
+  final bool hasText;
+
+  /// Why the model server hasn't started on it, while it says so.
+  final FlitWaitReason? waitReason;
+  final int totalSlots;
+
+  /// "Answer now" was asked for.
+  final bool endRequested;
+
+  /// The model is thinking and hasn't started its answer.
+  bool get thinking => hasOutput && !hasText;
 
   /// When the request went out, and when anything last arrived for it
   /// (prompt progress or reply text), by the server's clock.
@@ -166,6 +191,11 @@ final class FlitPendingCall {
     int? processed,
     int? total,
     bool? hasOutput,
+    bool? hasText,
+    FlitWaitReason? waitReason,
+    bool clearWait = false,
+    int? totalSlots,
+    bool? endRequested,
   }) => FlitPendingCall(
     messageId: messageId,
     attempt: attempt,
@@ -174,6 +204,10 @@ final class FlitPendingCall {
     processed: processed ?? this.processed,
     total: total ?? this.total,
     hasOutput: hasOutput ?? this.hasOutput,
+    hasText: hasText ?? this.hasText,
+    waitReason: clearWait ? null : (waitReason ?? this.waitReason),
+    totalSlots: totalSlots ?? this.totalSlots,
+    endRequested: endRequested ?? this.endRequested,
   );
 
   @override
@@ -185,7 +219,11 @@ final class FlitPendingCall {
       other.lastActivity == lastActivity &&
       other.processed == processed &&
       other.total == total &&
-      other.hasOutput == hasOutput;
+      other.hasOutput == hasOutput &&
+      other.hasText == hasText &&
+      other.waitReason == waitReason &&
+      other.totalSlots == totalSlots &&
+      other.endRequested == endRequested;
 
   @override
   int get hashCode => Object.hash(
@@ -196,6 +234,10 @@ final class FlitPendingCall {
     processed,
     total,
     hasOutput,
+    hasText,
+    waitReason,
+    totalSlots,
+    endRequested,
   );
 
   @override
@@ -228,7 +270,11 @@ final class FlitFoldState {
     this.safety = const <String, String>{},
     this.call,
     this.queued = const <FlitQueuedMessage>[],
+    this.reasoningEndIgnored = const <String>{},
   });
+
+  /// Messages whose model ignored "answer now" (from the log).
+  final Set<String> reasoningEndIgnored;
 
   /// The model call in progress, if any.
   final FlitPendingCall? call;
@@ -325,6 +371,7 @@ final class FlitFoldState {
     FlitPendingCall? call,
     bool clearCall = false,
     List<FlitQueuedMessage>? queued,
+    Set<String>? reasoningEndIgnored,
   }) {
     return FlitFoldState(
       messages: messages ?? this.messages,
@@ -349,6 +396,7 @@ final class FlitFoldState {
       safety: safety ?? this.safety,
       call: clearCall ? null : (call ?? this.call),
       queued: queued ?? this.queued,
+      reasoningEndIgnored: reasoningEndIgnored ?? this.reasoningEndIgnored,
     );
   }
 
@@ -378,7 +426,9 @@ final class FlitFoldState {
         other.yolo == yolo &&
         shallowMapEquals(other.safety, safety) &&
         other.call == call &&
-        deepListEquals(other.queued, queued);
+        deepListEquals(other.queued, queued) &&
+        other.reasoningEndIgnored.length == reasoningEndIgnored.length &&
+        other.reasoningEndIgnored.containsAll(reasoningEndIgnored);
   }
 
   @override
@@ -424,12 +474,12 @@ FlitFoldState foldFlitEvent(FlitFoldState state, FlitEvent event) {
   return switch (event) {
     FlitMessageStarted() => _started(s, event),
     FlitTextDelta() => _updateMessage(
-      _callOutput(s, event.messageId, event.time),
+      _callOutput(s, event.messageId, event.time, text: true),
       event.messageId,
       (m) => m.copyWith(text: m.text + event.text),
     ),
     FlitReasoningDelta() => _updateMessage(
-      _callOutput(s, event.messageId, event.time),
+      _callOutput(s, event.messageId, event.time, text: false),
       event.messageId,
       (m) => m.copyWith(
         reasoning: (m.reasoning ?? '') + event.text,
@@ -479,9 +529,26 @@ FlitFoldState foldFlitEvent(FlitFoldState state, FlitEvent event) {
                 lastActivity: event.time,
                 processed: event.processed,
                 total: event.total,
+                clearWait: true,
               ),
             )
           : s,
+    FlitModelCallWaiting() =>
+      s.call?.messageId == event.messageId
+          ? s.copyWith(
+              call: s.call!.copyWith(
+                waitReason: event.reason,
+                totalSlots: event.totalSlots,
+              ),
+            )
+          : s,
+    FlitReasoningEndRequested() =>
+      s.call?.messageId == event.messageId
+          ? s.copyWith(call: s.call!.copyWith(endRequested: true))
+          : s,
+    FlitReasoningEndIgnored() => s.copyWith(
+      reasoningEndIgnored: <String>{...s.reasoningEndIgnored, event.messageId},
+    ),
     FlitModelCallEnded() =>
       s.call?.messageId == event.messageId ? s.copyWith(clearCall: true) : s,
     FlitMessageDone() => _done(s, event),
@@ -576,12 +643,24 @@ FlitFoldState foldFlitEvent(FlitFoldState state, FlitEvent event) {
 }
 
 /// Reply text for the call in progress: it has output now.
-FlitFoldState _callOutput(FlitFoldState s, String messageId, DateTime? at) {
+FlitFoldState _callOutput(
+  FlitFoldState s,
+  String messageId,
+  DateTime? at, {
+  required bool text,
+}) {
   final call = s.call;
   if (call == null || call.messageId != messageId) {
     return s;
   }
-  return s.copyWith(call: call.copyWith(hasOutput: true, lastActivity: at));
+  return s.copyWith(
+    call: call.copyWith(
+      hasOutput: true,
+      hasText: text ? true : null,
+      lastActivity: at,
+      clearWait: true,
+    ),
+  );
 }
 
 FlitFoldState _permissionCheck(FlitFoldState s, FlitPermissionCheck e) {
@@ -621,6 +700,8 @@ FlitFoldState _usage(FlitFoldState s, FlitUsage e) {
             promptTokensPerSecond: e.promptTokensPerSecond,
             generationTokensPerSecond: e.generationTokensPerSecond,
             source: e.timingSource,
+            inputTokens: e.inputTokens,
+            cachedTokens: e.cachedTokens,
           ),
   );
 }
