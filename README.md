@@ -208,6 +208,18 @@ Everything a session does is stored as numbered events in `flit.db` in the
 data dir. A client can attach from any event number, replay, and then follow
 live, so reconnecting never loses anything.
 
+Model calls have a watchdog: a call that goes quiet for
+`agent.model_first_token_timeout` (10m) before the model starts answering,
+or `agent.model_stall_timeout` (2m) once it has, is stopped, and one that
+produced nothing yet is retried `agent.model_retries` times (1). With
+llama.cpp, flit asks for prompt progress, so a long prompt keeps the short
+limit fed and the app can show how far it has got. While a call waits, the
+app shows the elapsed time, and after a minute of silence offers Retry and
+Stop. Each call's timeline (sent, first byte, first token, last byte, how
+it ended) is in the log; `flit debug session ID` prints a session's
+timeline and what never finished, to see whether a stuck turn was waiting
+on the model, cut off mid-reply, or stuck in a tool.
+
 The API schema lives in [`proto/`](proto/); `buf generate` there produces the
 Go server code and the Dart client. See [`AGENTS.md`](AGENTS.md) for the
 full workflow.

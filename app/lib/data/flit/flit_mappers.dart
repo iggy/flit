@@ -268,6 +268,44 @@ FlitEvent eventFromProto(pb.Event e) {
         yolo: e.yoloChanged.yolo,
         client: e.yoloChanged.client,
       );
+    case pb.Event_Payload.modelCallStarted:
+      return FlitModelCallStarted(
+        seq: seq,
+        time: time,
+        messageId: e.modelCallStarted.messageId,
+        attempt: e.modelCallStarted.attempt,
+      );
+    case pb.Event_Payload.promptProgress:
+      final p = e.promptProgress;
+      return FlitPromptProgress(
+        seq: seq,
+        time: time,
+        messageId: p.messageId,
+        processed: p.processed.toInt(),
+        total: p.total.toInt(),
+        cached: p.cached.toInt(),
+      );
+    case pb.Event_Payload.modelCallEnded:
+      final c = e.modelCallEnded;
+      return FlitModelCallEnded(
+        seq: seq,
+        time: time,
+        messageId: c.messageId,
+        attempt: c.attempt,
+        outcome: switch (c.outcome) {
+          pb.ModelCallOutcome.MODEL_CALL_OUTCOME_OK => FlitCallOutcome.ok,
+          pb.ModelCallOutcome.MODEL_CALL_OUTCOME_STALLED =>
+            FlitCallOutcome.stalled,
+          pb.ModelCallOutcome.MODEL_CALL_OUTCOME_ERROR => FlitCallOutcome.error,
+          pb.ModelCallOutcome.MODEL_CALL_OUTCOME_CANCELLED =>
+            FlitCallOutcome.cancelled,
+          pb.ModelCallOutcome.MODEL_CALL_OUTCOME_RETRIED =>
+            FlitCallOutcome.retried,
+          _ => FlitCallOutcome.unknown,
+        },
+        phase: c.phase,
+        willRetry: c.willRetry,
+      );
     case pb.Event_Payload.permissionCheck:
       final c = e.permissionCheck;
       return FlitPermissionCheck(

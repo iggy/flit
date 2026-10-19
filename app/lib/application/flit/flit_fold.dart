@@ -102,6 +102,77 @@ final class FlitSpeed {
 }
 
 /// The folded view of one flit session.
+/// The model call in progress, as the log shows it: what the chat shows
+/// while it waits for the model.
+final class FlitPendingCall {
+  const FlitPendingCall({
+    required this.messageId,
+    required this.attempt,
+    this.startedAt,
+    this.lastActivity,
+    this.processed = 0,
+    this.total = 0,
+    this.hasOutput = false,
+  });
+
+  final String messageId;
+  final int attempt;
+
+  /// When the request went out, and when anything last arrived for it
+  /// (prompt progress or reply text), by the server's clock.
+  final DateTime? startedAt;
+  final DateTime? lastActivity;
+
+  /// Prompt tokens read so far, of [total] (0 when the server doesn't say).
+  final int processed;
+  final int total;
+
+  /// Whether any of the reply has arrived (then it can't be retried).
+  final bool hasOutput;
+
+  FlitPendingCall copyWith({
+    DateTime? lastActivity,
+    int? processed,
+    int? total,
+    bool? hasOutput,
+  }) => FlitPendingCall(
+    messageId: messageId,
+    attempt: attempt,
+    startedAt: startedAt,
+    lastActivity: lastActivity ?? this.lastActivity,
+    processed: processed ?? this.processed,
+    total: total ?? this.total,
+    hasOutput: hasOutput ?? this.hasOutput,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      other is FlitPendingCall &&
+      other.messageId == messageId &&
+      other.attempt == attempt &&
+      other.startedAt == startedAt &&
+      other.lastActivity == lastActivity &&
+      other.processed == processed &&
+      other.total == total &&
+      other.hasOutput == hasOutput;
+
+  @override
+  int get hashCode => Object.hash(
+    messageId,
+    attempt,
+    startedAt,
+    lastActivity,
+    processed,
+    total,
+    hasOutput,
+  );
+
+  @override
+  String toString() =>
+      'FlitPendingCall($messageId #$attempt, $processed/$total, '
+      'output: $hasOutput)';
+}
+
 final class FlitFoldState {
   const FlitFoldState({
     this.messages = const <ChatMessage>[],
@@ -124,7 +195,11 @@ final class FlitFoldState {
     this.projectId,
     this.yolo,
     this.safety = const <String, String>{},
+    this.call,
   });
+
+  /// The model call in progress, if any.
+  final FlitPendingCall? call;
 
   /// Yolo mode, once a change is logged (null until then: fall back to the
   /// session's).
@@ -212,6 +287,8 @@ final class FlitFoldState {
     String? projectId,
     bool? yolo,
     Map<String, String>? safety,
+    FlitPendingCall? call,
+    bool clearCall = false,
   }) {
     return FlitFoldState(
       messages: messages ?? this.messages,
@@ -234,6 +311,7 @@ final class FlitFoldState {
       projectId: projectId ?? this.projectId,
       yolo: yolo ?? this.yolo,
       safety: safety ?? this.safety,
+      call: clearCall ? null : (call ?? this.call),
     );
   }
 
@@ -261,7 +339,8 @@ final class FlitFoldState {
         (other.mcpServers == null) == (mcpServers == null) &&
         other.projectId == projectId &&
         other.yolo == yolo &&
-        shallowMapEquals(other.safety, safety);
+        shallowMapEquals(other.safety, safety) &&
+        other.call == call;
   }
 
   @override
@@ -278,6 +357,7 @@ final class FlitFoldState {
     contextLength,
     Object.hashAll(todos),
     speed,
+    call,
   );
 
   @override
@@ -305,18 +385,38 @@ FlitFoldState foldFlitEvent(FlitFoldState state, FlitEvent event) {
   return switch (event) {
     FlitMessageStarted() => _started(s, event),
     FlitTextDelta() => _updateMessage(
-      s,
+      _callOutput(s, event.messageId, event.time),
       event.messageId,
       (m) => m.copyWith(text: m.text + event.text),
     ),
     FlitReasoningDelta() => _updateMessage(
-      s,
+      _callOutput(s, event.messageId, event.time),
       event.messageId,
       (m) => m.copyWith(
         reasoning: (m.reasoning ?? '') + event.text,
         reasoningStreaming: true,
       ),
     ),
+    FlitModelCallStarted() => s.copyWith(
+      call: FlitPendingCall(
+        messageId: event.messageId,
+        attempt: event.attempt,
+        startedAt: event.time,
+        lastActivity: event.time,
+      ),
+    ),
+    FlitPromptProgress() =>
+      s.call?.messageId == event.messageId
+          ? s.copyWith(
+              call: s.call!.copyWith(
+                lastActivity: event.time,
+                processed: event.processed,
+                total: event.total,
+              ),
+            )
+          : s,
+    FlitModelCallEnded() =>
+      s.call?.messageId == event.messageId ? s.copyWith(clearCall: true) : s,
     FlitMessageDone() => _done(s, event),
     FlitToolCallStarted() => _toolStarted(s, event),
     FlitToolOutput() => _updateTool(s, event.toolCallId, (t) {
@@ -359,6 +459,9 @@ FlitFoldState foldFlitEvent(FlitFoldState state, FlitEvent event) {
     FlitTaskStateChanged() => s.copyWith(
       taskState: event.state,
       taskReason: event.reason,
+      clearCall:
+          event.state != FlitTaskState.working &&
+          event.state != FlitTaskState.waiting,
       // A finished turn has nothing left to ask.
       prompts:
           event.state == FlitTaskState.working ||
@@ -403,6 +506,15 @@ FlitFoldState foldFlitEvent(FlitFoldState state, FlitEvent event) {
     ),
     FlitUnknownEvent() => s,
   };
+}
+
+/// Reply text for the call in progress: it has output now.
+FlitFoldState _callOutput(FlitFoldState s, String messageId, DateTime? at) {
+  final call = s.call;
+  if (call == null || call.messageId != messageId) {
+    return s;
+  }
+  return s.copyWith(call: call.copyWith(hasOutput: true, lastActivity: at));
 }
 
 FlitFoldState _permissionCheck(FlitFoldState s, FlitPermissionCheck e) {
