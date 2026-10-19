@@ -15,6 +15,7 @@ import 'package:flit/presentation/flit/flit_mcp_sheet.dart';
 import 'package:flit/presentation/flit/flit_model_picker.dart';
 import 'package:flit/presentation/flit/flit_nav.dart';
 import 'package:flit/presentation/flit/flit_prompt_card.dart';
+import 'package:flit/presentation/flit/flit_queued_message.dart';
 import 'package:flit/presentation/flit/flit_rating.dart';
 import 'package:flit/presentation/flit/flit_slash_menu.dart';
 import 'package:flit/presentation/flit/flit_widgets.dart';
@@ -24,6 +25,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// The app bar's yolo mode toggle, and the confirm button of its dialog.
 const Key flitYoloButtonKey = Key('flit_yolo');
 const Key flitYoloConfirmKey = Key('flit_yolo_confirm');
+
+/// The composer's send and stop buttons.
+const Key flitSendKey = Key('flit_send');
+const Key flitStopKey = Key('flit_stop');
 
 /// The button that scrolls back to new output after the user scrolled up.
 const Key flitJumpToLatestKey = Key('flit_jump_to_latest');
@@ -85,7 +90,9 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
 
   Future<void> _send() async {
     final text = _input.text.trim();
-    if (text.isEmpty || _sending) {
+    final fold = ref.read(flitChatProvider(widget.sessionId)).fold;
+    // Empty text sends what's queued (after a Stop), if anything is.
+    if (_sending || (text.isEmpty && (fold.busy || fold.queued.isEmpty))) {
       return;
     }
     setState(() => _sending = true);
@@ -278,6 +285,7 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
       final grew =
           (prev?.fold.messages.length ?? 0) != next.fold.messages.length ||
           (prev?.fold.prompts.length ?? 0) != next.fold.prompts.length ||
+          (prev?.fold.queued.length ?? 0) != next.fold.queued.length ||
           (next.fold.messages.isNotEmpty && next.fold.messages.last.streaming);
       if (grew) {
         _onGrew();
@@ -383,7 +391,10 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
                 ),
               ),
             Expanded(
-              child: fold.messages.isEmpty && fold.prompts.isEmpty
+              child:
+                  fold.messages.isEmpty &&
+                      fold.prompts.isEmpty &&
+                      fold.queued.isEmpty
                   ? Center(
                       child: Text(
                         chat.link == FlitLink.offline
@@ -430,6 +441,7 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
               sending: _sending,
               onSend: _send,
               onStop: _interrupt,
+              queued: fold.queued.length,
             ),
           ],
         ),
@@ -461,6 +473,24 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
               ),
             ),
         ],
+        for (final q in fold.queued)
+          FlitQueuedBubble(
+            key: ValueKey<String>(q.queueId),
+            message: q,
+            turnRunning: fold.busy,
+            onEdit: (text) async {
+              final error = await notifier.editQueued(q.queueId, text);
+              if (error != null && mounted) {
+                _snack('Could not edit: $error');
+              }
+            },
+            onCancel: () async {
+              final error = await notifier.cancelQueued(q.queueId);
+              if (error != null && mounted) {
+                _snack('Could not cancel: $error');
+              }
+            },
+          ),
         for (final p in fold.prompts)
           FlitPromptCard(
             key: ValueKey<String>(p.promptId),
@@ -483,6 +513,7 @@ class _Composer extends StatelessWidget {
     required this.sending,
     required this.onSend,
     required this.onStop,
+    this.queued = 0,
   });
 
   final TextEditingController controller;
@@ -490,6 +521,9 @@ class _Composer extends StatelessWidget {
   final bool sending;
   final VoidCallback onSend;
   final VoidCallback onStop;
+
+  /// Messages waiting in the queue.
+  final int queued;
 
   @override
   Widget build(BuildContext context) {
@@ -504,27 +538,38 @@ class _Composer extends StatelessWidget {
               minLines: 1,
               maxLines: 6,
               textInputAction: TextInputAction.send,
-              onSubmitted: busy ? null : (_) => onSend(),
+              onSubmitted: (_) => onSend(),
               decoration: InputDecoration(
-                hintText: busy ? 'The agent is working…' : 'Message flit',
+                hintText: busy
+                    ? 'The agent is working; messages wait for its next step'
+                    : queued > 0
+                    ? 'Message flit (queued messages go first)'
+                    : 'Message flit',
                 border: const OutlineInputBorder(),
                 isDense: true,
               ),
             ),
           ),
           const SizedBox(width: 8),
-          if (busy)
+          if (busy) ...<Widget>[
             IconButton.filledTonal(
+              key: flitStopKey,
               tooltip: 'Stop',
               onPressed: onStop,
               icon: const Icon(Icons.stop),
-            )
-          else
-            IconButton.filled(
-              tooltip: 'Send',
-              onPressed: sending ? null : onSend,
-              icon: const Icon(Icons.send),
             ),
+            const SizedBox(width: 4),
+          ],
+          IconButton.filled(
+            key: flitSendKey,
+            tooltip: busy
+                ? 'Queue for the agent\'s next step'
+                : queued > 0
+                ? 'Send (with the queued messages)'
+                : 'Send',
+            onPressed: sending ? null : onSend,
+            icon: Icon(busy ? Icons.schedule_send : Icons.send),
+          ),
         ],
       ),
     );

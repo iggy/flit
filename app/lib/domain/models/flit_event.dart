@@ -382,6 +382,50 @@ final class FlitPermissionCheck extends FlitEvent {
   final String model;
 }
 
+/// A user message sent while a turn was running; it waits for the turn's
+/// next step.
+final class FlitMessageQueued extends FlitEvent {
+  const FlitMessageQueued({
+    required super.seq,
+    required this.queueId,
+    required this.text,
+    this.client = '',
+    super.time,
+  });
+
+  final String queueId;
+  final String text;
+  final String client;
+}
+
+/// A queued message was edited, or withdrawn ([cancelled]).
+final class FlitQueuedMessageUpdated extends FlitEvent {
+  const FlitQueuedMessageUpdated({
+    required super.seq,
+    required this.queueId,
+    this.text = '',
+    this.cancelled = false,
+    super.time,
+  });
+
+  final String queueId;
+  final String text;
+  final bool cancelled;
+}
+
+/// A queued message was delivered as user message [messageId].
+final class FlitQueuedMessageDelivered extends FlitEvent {
+  const FlitQueuedMessageDelivered({
+    required super.seq,
+    required this.queueId,
+    required this.messageId,
+    super.time,
+  });
+
+  final String queueId;
+  final String messageId;
+}
+
 /// A request to the model for message [messageId] went out (attempt 1, or
 /// a retry).
 final class FlitModelCallStarted extends FlitEvent {

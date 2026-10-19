@@ -102,6 +102,37 @@ final class FlitSpeed {
 }
 
 /// The folded view of one flit session.
+/// A message waiting in the session's queue for the turn's next step.
+final class FlitQueuedMessage {
+  const FlitQueuedMessage({
+    required this.queueId,
+    required this.text,
+    this.client = '',
+    this.time,
+  });
+
+  final String queueId;
+  final String text;
+
+  /// The device that sent it.
+  final String client;
+  final DateTime? time;
+
+  @override
+  bool operator ==(Object other) =>
+      other is FlitQueuedMessage &&
+      other.queueId == queueId &&
+      other.text == text &&
+      other.client == client &&
+      other.time == time;
+
+  @override
+  int get hashCode => Object.hash(queueId, text, client, time);
+
+  @override
+  String toString() => 'FlitQueuedMessage($queueId, $text)';
+}
+
 /// The model call in progress, as the log shows it: what the chat shows
 /// while it waits for the model.
 final class FlitPendingCall {
@@ -196,10 +227,14 @@ final class FlitFoldState {
     this.yolo,
     this.safety = const <String, String>{},
     this.call,
+    this.queued = const <FlitQueuedMessage>[],
   });
 
   /// The model call in progress, if any.
   final FlitPendingCall? call;
+
+  /// Messages waiting for the turn's next step, oldest first.
+  final List<FlitQueuedMessage> queued;
 
   /// Yolo mode, once a change is logged (null until then: fall back to the
   /// session's).
@@ -289,6 +324,7 @@ final class FlitFoldState {
     Map<String, String>? safety,
     FlitPendingCall? call,
     bool clearCall = false,
+    List<FlitQueuedMessage>? queued,
   }) {
     return FlitFoldState(
       messages: messages ?? this.messages,
@@ -312,6 +348,7 @@ final class FlitFoldState {
       yolo: yolo ?? this.yolo,
       safety: safety ?? this.safety,
       call: clearCall ? null : (call ?? this.call),
+      queued: queued ?? this.queued,
     );
   }
 
@@ -340,7 +377,8 @@ final class FlitFoldState {
         other.projectId == projectId &&
         other.yolo == yolo &&
         shallowMapEquals(other.safety, safety) &&
-        other.call == call;
+        other.call == call &&
+        deepListEquals(other.queued, queued);
   }
 
   @override
@@ -358,6 +396,7 @@ final class FlitFoldState {
     Object.hashAll(todos),
     speed,
     call,
+    Object.hashAll(queued),
   );
 
   @override
@@ -396,6 +435,34 @@ FlitFoldState foldFlitEvent(FlitFoldState state, FlitEvent event) {
         reasoning: (m.reasoning ?? '') + event.text,
         reasoningStreaming: true,
       ),
+    ),
+    FlitMessageQueued() => s.copyWith(
+      queued: <FlitQueuedMessage>[
+        ...s.queued,
+        FlitQueuedMessage(
+          queueId: event.queueId,
+          text: event.text,
+          client: event.client,
+          time: event.time,
+        ),
+      ],
+    ),
+    FlitQueuedMessageUpdated() => s.copyWith(
+      queued: <FlitQueuedMessage>[
+        for (final q in s.queued)
+          if (q.queueId != event.queueId)
+            q
+          else if (!event.cancelled)
+            FlitQueuedMessage(
+              queueId: q.queueId,
+              text: event.text,
+              client: q.client,
+              time: q.time,
+            ),
+      ],
+    ),
+    FlitQueuedMessageDelivered() => s.copyWith(
+      queued: s.queued.where((q) => q.queueId != event.queueId).toList(),
     ),
     FlitModelCallStarted() => s.copyWith(
       call: FlitPendingCall(

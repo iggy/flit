@@ -125,9 +125,37 @@ final class FlitRepositoryImpl implements FlitRepository {
   }
 
   @override
-  Future<void> send(String sessionId, String text) {
+  Future<void> send(String sessionId, String text, {String client = ''}) {
     return flitCall(
-      () => _sessions.send(pb.SendRequest(sessionId: sessionId, text: text)),
+      () => _sessions.send(
+        pb.SendRequest(sessionId: sessionId, text: text, client: client),
+      ),
+    );
+  }
+
+  @override
+  Future<void> editQueuedMessage(
+    String sessionId,
+    String queueId,
+    String text,
+  ) {
+    return flitCall(
+      () => _sessions.editQueuedMessage(
+        pb.EditQueuedMessageRequest(
+          sessionId: sessionId,
+          queueId: queueId,
+          text: text,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Future<void> cancelQueuedMessage(String sessionId, String queueId) {
+    return flitCall(
+      () => _sessions.cancelQueuedMessage(
+        pb.CancelQueuedMessageRequest(sessionId: sessionId, queueId: queueId),
+      ),
     );
   }
 

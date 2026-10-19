@@ -29,7 +29,14 @@ abstract interface class FlitRepository {
   Stream<FlitEvent> attach(String sessionId, {required int fromSeq});
 
   /// Send a user message, starting a turn.
-  Future<void> send(String sessionId, String text);
+  /// Sends a user message as [client]. While a turn runs it is queued and
+  /// delivered at the turn's next step; with empty [text] it just delivers
+  /// what's queued.
+  Future<void> send(String sessionId, String text, {String client = ''});
+
+  /// Changes or withdraws a message still in the queue.
+  Future<void> editQueuedMessage(String sessionId, String queueId, String text);
+  Future<void> cancelQueuedMessage(String sessionId, String queueId);
 
   /// Stop the running turn. Returns whether one was running.
   Future<bool> interrupt(String sessionId);
