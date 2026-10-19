@@ -6,6 +6,7 @@
 //	flit token [--config FILE] [--data-dir DIR]
 //	flit pair [--url URL] [--config FILE] [--data-dir DIR]
 //	flit devices [--all] | flit devices revoke ID
+//	flit debug session [ID]
 //	flit version
 package main
 
@@ -45,6 +46,7 @@ Usage:
   flit devices [--all]        list paired devices
   flit devices revoke ID      revoke a paired device
   flit export [flags]         write recorded sessions as JSONL (see docs/export.md)
+  flit debug session [ID]     print a session's timeline, to see where a turn got stuck
   flit version                print version information
 
 Flags for serve, token, pair and devices:
@@ -109,6 +111,8 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		return nil
 	case "export":
 		return exportCmd(ctx, stdout, stderr, args, defaultConfig)
+	case "debug":
+		return debugCmd(ctx, stdout, stderr, args, defaultConfig)
 	case "help", "-h", "--help":
 		fmt.Fprintf(stdout, usage, defaultConfig)
 		return nil
