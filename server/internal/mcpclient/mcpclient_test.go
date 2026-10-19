@@ -165,16 +165,3 @@ func TestManagerHTTP(t *testing.T) {
 		t.Fatalf("status = %+v", st[3])
 	}
 }
-
-func TestExpandHeaders(t *testing.T) {
-	t.Setenv("FLIT_A", "x")
-	t.Setenv("FLIT_EMPTY", "")
-	got, err := expandHeaders(map[string]string{"A": "${FLIT_A}-${FLIT_A}", "B": "$FLIT_A ${", "C": "${FLIT_EMPTY}"})
-	if err != nil || got["A"] != "x-x" || got["B"] != "$FLIT_A ${" || got["C"] != "" {
-		t.Fatalf("got %v, %v", got, err)
-	}
-	if _, err := expandHeaders(map[string]string{"A": "${FLIT_NOPE_2}", "B": "${FLIT_NOPE_1}"}); err == nil ||
-		err.Error() != "headers use unset environment variables: FLIT_NOPE_1, FLIT_NOPE_2" {
-		t.Fatalf("missing: %v", err)
-	}
-}

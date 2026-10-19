@@ -99,6 +99,11 @@ agent:
   model: qwen3-coder
 ```
 
+flit identifies itself as `flit/<version>`. A provider's `headers:` are sent
+with every request to it and replace flit's own, e.g. a different
+`User-Agent` for an endpoint that filters on it; `${VAR}` in a value is read
+from the environment.
+
 ### Model discovery, effort and roles
 
 flit asks each provider's `/models` endpoint what it offers (with adapters for

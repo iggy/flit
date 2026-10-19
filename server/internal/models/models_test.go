@@ -218,6 +218,33 @@ func (f *fakeRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func TestCatalogHeaders(t *testing.T) {
+	t.Setenv("FLIT_TEST_CATALOG_KEY", "secret")
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("User-Agent") != config.UserAgent() || r.Header.Get("Authorization") != "Bearer secret" {
+			http.Error(w, "blocked", http.StatusForbidden)
+			return
+		}
+		io.WriteString(w, plainOpenAI)
+	}))
+	defer srv.Close()
+	cfg := config.Default()
+	cfg.Providers = []config.Provider{
+		{Name: "p", BaseURL: srv.URL + "/v1", APIKey: "wrong", Headers: map[string]string{"Authorization": "Bearer ${FLIT_TEST_CATALOG_KEY}"}},
+		{Name: "unset", BaseURL: srv.URL + "/v1", Headers: map[string]string{"X": "${FLIT_TEST_CATALOG_UNSET}"}},
+	}
+	c := NewCatalog(func() config.Config { return cfg }, func() string { return "" }, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	_ = c.Refresh(context.Background(), "")
+	if len(c.Models("p")) == 0 {
+		t.Fatalf("p: no models; status = %+v", c.Providers())
+	}
+	for _, st := range c.Providers() {
+		if st.Name == "unset" && !strings.Contains(st.Err, "FLIT_TEST_CATALOG_UNSET") {
+			t.Fatalf("unset status = %+v", st)
+		}
+	}
+}
+
 func TestSetLoaded(t *testing.T) {
 	router := &fakeRouter{state: map[string]string{"big": "loaded", "tiny": "unloaded"}}
 	srv := httptest.NewServer(router)

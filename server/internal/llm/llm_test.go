@@ -3,6 +3,8 @@ package llm_test
 import (
 	"context"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -33,6 +35,23 @@ func TestStreamText(t *testing.T) {
 	}
 	if req := srv.Requests()[0]; req.Model != "m" || req.Messages[0].Content != "hi" {
 		t.Fatalf("request = %+v", req)
+	}
+}
+
+func TestStreamSendsHeader(t *testing.T) {
+	got := make(chan http.Header, 1)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got <- r.Header.Clone()
+		http.Error(w, "no", http.StatusTeapot)
+	}))
+	defer srv.Close()
+	c := &llm.Client{BaseURL: srv.URL, APIKey: "k", Header: http.Header{"User-Agent": {"flit/test"}, "X-Extra": {"1"}}}
+	if _, err := c.Stream(context.Background(), llm.Request{Model: "m"}, llm.Handler{}); err == nil {
+		t.Fatal("want an error")
+	}
+	h := <-got
+	if h.Get("User-Agent") != "flit/test" || h.Get("X-Extra") != "1" || h.Get("Authorization") != "Bearer k" || h.Get("Accept") != "text/event-stream" {
+		t.Fatalf("headers = %v", h)
 	}
 }
 

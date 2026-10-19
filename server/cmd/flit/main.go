@@ -20,7 +20,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"slices"
+	"reflect"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -263,7 +263,7 @@ func serve(ctx context.Context, stderr io.Writer, configPath, dataDirFlag string
 			prev := *live.Load()
 			live.Store(&next)
 			level.Set(next.Log.SlogLevel())
-			if !slices.Equal(prev.Providers, next.Providers) || prev.ModelOverridesFile != next.ModelOverridesFile {
+			if !reflect.DeepEqual(prev.Providers, next.Providers) || prev.ModelOverridesFile != next.ModelOverridesFile {
 				go func() { _ = catalog.Refresh(ctx, "") }()
 			}
 			if next.DataDir != cfg.DataDir && dataDirFlag == "" {

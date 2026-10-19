@@ -26,6 +26,9 @@ type Client struct {
 	// Router: a router serving several models, which every request must
 	// name.
 	Router bool
+	// Header is sent with every request, replacing the client's own
+	// (Authorization included).
+	Header http.Header
 	HTTP   *http.Client
 }
 
@@ -64,6 +67,9 @@ func (c *Client) do(ctx context.Context, method, path string, query url.Values, 
 	}
 	if c.APIKey != "" {
 		req.Header.Set("Authorization", "Bearer "+c.APIKey)
+	}
+	for k, v := range c.Header {
+		req.Header[k] = v
 	}
 	hc := c.HTTP
 	if hc == nil {

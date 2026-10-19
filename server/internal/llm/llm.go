@@ -221,7 +221,10 @@ func Retryable(err error) bool {
 type Client struct {
 	BaseURL string // e.g. http://localhost:8080/v1
 	APIKey  string // optional
-	HTTP    *http.Client
+	// Header is sent with every request, replacing the client's own
+	// (Authorization included).
+	Header http.Header
+	HTTP   *http.Client
 	// The watchdog. FirstTokenTimeout is the longest the response may go
 	// quiet before the model starts answering (connecting, reading the
 	// prompt); StallTimeout is the longest once it has (tokens, or prompt
@@ -263,6 +266,9 @@ func (c *Client) stream(ctx context.Context, req Request, h Handler, w *watch) (
 	httpReq.Header.Set("Accept", "text/event-stream")
 	if c.APIKey != "" {
 		httpReq.Header.Set("Authorization", "Bearer "+c.APIKey)
+	}
+	for k, v := range c.Header {
+		httpReq.Header[k] = v
 	}
 	hc := c.HTTP
 	if hc == nil {
