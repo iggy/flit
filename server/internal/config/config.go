@@ -98,6 +98,11 @@ type Provider struct {
 	// PromptAppend is added to the system prompt for every model on this
 	// provider.
 	PromptAppend string `yaml:"prompt_append"`
+	// Headers are sent with every request to the provider (chat, model
+	// discovery, llama.cpp's own endpoints), replacing flit's own, e.g. a
+	// User-Agent. ${VAR} in a value is replaced with that environment
+	// variable; an unset one fails the request.
+	Headers map[string]string `yaml:"headers"`
 }
 
 // MCPServer is an MCP server: either a subprocess flit starts and talks to
@@ -438,6 +443,11 @@ func (c Config) Validate() error {
 		if p.Kind != "" && !slices.Contains(ProviderKinds, p.Kind) {
 			return fmt.Errorf("providers %q: kind %q: want one of %s", p.Name, p.Kind, strings.Join(ProviderKinds, ", "))
 		}
+		for k := range p.Headers {
+			if !headerName.MatchString(k) {
+				return fmt.Errorf("providers %q: headers: %q is not a valid header name", p.Name, k)
+			}
+		}
 	}
 	if c.Agent.Provider != "" && !seen[c.Agent.Provider] {
 		return fmt.Errorf("agent.provider %q is not in providers", c.Agent.Provider)
@@ -546,6 +556,8 @@ providers: []
 #  - name: openrouter
 #    base_url: https://openrouter.ai/api/v1
 #    api_key_env: OPENROUTER_API_KEY      # or api_key: sk-...
+#    headers:                            # sent with every request; ${VAR} is
+#      User-Agent: my-agent/1.0          # read from the environment
 
 # Corrections and additions to discovered models (context length, tools,
 # reasoning, effort levels), relative to this file.

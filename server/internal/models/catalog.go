@@ -175,8 +175,8 @@ func (c *Catalog) discover(ctx context.Context, p config.Provider, kind Kind) (K
 	if err != nil {
 		return kind, nil, err
 	}
-	if key := p.Key(); key != "" {
-		req.Header.Set("Authorization", "Bearer "+key)
+	if err := setHeaders(req, p); err != nil {
+		return kind, nil, err
 	}
 	resp, err := c.http.Do(req)
 	if err != nil {
@@ -195,6 +195,21 @@ func (c *Catalog) discover(ctx context.Context, p config.Provider, kind Kind) (K
 		return kind, nil, fmt.Errorf("GET %s: HTTP %d: %s", url, resp.StatusCode, msg)
 	}
 	return parseModels(p.Name, p.BaseURL, kind, body)
+}
+
+// setHeaders adds the provider's API key and headers to req.
+func setHeaders(req *http.Request, p config.Provider) error {
+	h, err := p.Header()
+	if err != nil {
+		return err
+	}
+	if key := p.Key(); key != "" {
+		req.Header.Set("Authorization", "Bearer "+key)
+	}
+	for k, v := range h {
+		req.Header[k] = v
+	}
+	return nil
 }
 
 func loadOverrides(path string) (map[string]map[string]Override, error) {
@@ -364,8 +379,8 @@ func (c *Catalog) SetLoaded(ctx context.Context, provider, model string, load bo
 		return Model{}, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	if key := p.Key(); key != "" {
-		req.Header.Set("Authorization", "Bearer "+key)
+	if err := setHeaders(req, p); err != nil {
+		return Model{}, err
 	}
 	resp, err := c.http.Do(req)
 	if err != nil {

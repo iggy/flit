@@ -48,7 +48,10 @@ func (m *Manager) isLlamaCpp(provider string) (llama, router bool) {
 }
 
 func (m *Manager) llamaClient(p config.Provider, router bool) *llamacpp.Client {
-	return &llamacpp.Client{BaseURL: p.BaseURL, APIKey: p.Key(), Router: router, HTTP: m.http}
+	// A header error (an unset variable) already stopped the turn's chat
+	// request; these calls are extras, so they go without the headers.
+	header, _ := p.Header()
+	return &llamacpp.Client{BaseURL: p.BaseURL, APIKey: p.Key(), Header: header, Router: router, HTTP: m.http}
 }
 
 // slotRef is the llama.cpp slot a session's call was pinned to.

@@ -14,7 +14,6 @@ import (
 	"os"
 	"os/exec"
 	"reflect"
-	"regexp"
 	"slices"
 	"strings"
 	"sync"
@@ -184,7 +183,7 @@ func (m *Manager) connect(ctx context.Context, cfg config.MCPServer) (*mcp.Clien
 	stop := context.AfterFunc(ctx, timeOut) // ctx ending also aborts the handshake
 	defer stop()
 	ctx = connCtx
-	headers, err := expandHeaders(cfg.Headers)
+	headers, err := config.ExpandHeaders(cfg.Headers)
 	if err != nil {
 		return nil, err
 	}
@@ -201,32 +200,6 @@ func (m *Manager) connect(ctx context.Context, cfg config.MCPServer) (*mcp.Clien
 	}
 	m.log.Info("MCP server speaks legacy SSE", "server", cfg.Name)
 	return session, nil
-}
-
-// envRef is a ${VAR} reference in a header value.
-var envRef = regexp.MustCompile(`\$\{([A-Za-z_][A-Za-z0-9_]*)\}`)
-
-// expandHeaders replaces ${VAR} in header values with the environment
-// variable, so secrets needn't sit in the config. A variable that isn't
-// set is an error. Nothing else (a bare $ included) is touched.
-func expandHeaders(in map[string]string) (map[string]string, error) {
-	out := make(map[string]string, len(in))
-	var missing []string
-	for k, v := range in {
-		out[k] = envRef.ReplaceAllStringFunc(v, func(ref string) string {
-			name := envRef.FindStringSubmatch(ref)[1]
-			val, ok := os.LookupEnv(name)
-			if !ok {
-				missing = append(missing, name)
-			}
-			return val
-		})
-	}
-	if len(missing) > 0 {
-		slices.Sort(missing)
-		return nil, fmt.Errorf("headers use unset environment variables: %s", strings.Join(slices.Compact(missing), ", "))
-	}
-	return out, nil
 }
 
 // headerTransport adds the configured headers to every request.

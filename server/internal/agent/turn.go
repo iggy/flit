@@ -86,6 +86,7 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 
 		info := s.snapshot()
 		provider, ok := cfg.Provider(info.Provider)
+		header, headerErr := provider.Header()
 		switch {
 		case info.Provider == "":
 			return s.stop("no provider configured for this session; add one under providers in the config and call SetModel", false)
@@ -93,6 +94,8 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 			return s.stop(fmt.Sprintf("provider %q is not in the config", info.Provider), false)
 		case info.Model == "":
 			return s.stop("no model chosen for this session; call SetModel or set agent.model in the config", false)
+		case headerErr != nil:
+			return s.stop(headerErr.Error(), false)
 		}
 
 		if step == 0 {
@@ -131,7 +134,7 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 		var text, reasoning strings.Builder
 		var appendErr error
 		client := &llm.Client{
-			BaseURL: provider.BaseURL, APIKey: provider.Key(), HTTP: s.m.http,
+			BaseURL: provider.BaseURL, APIKey: provider.Key(), Header: header, HTTP: s.m.http,
 			FirstTokenTimeout: cfg.Agent.ModelFirstTokenTimeout, StallTimeout: cfg.Agent.ModelStallTimeout,
 		}
 		llama, router := s.m.isLlamaCpp(info.Provider)

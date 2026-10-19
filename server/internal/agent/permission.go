@@ -51,8 +51,12 @@ func (s *session) assessor(cfg config.Config, turnID, toolCallID string) func(co
 			Messages: []llm.Message{{Role: "system", Content: permissionPrompt}, {Role: "user", Content: user}},
 		}
 		s.m.applyReasoning(&req, task.Provider, task.Model, task.Effort)
-		client := &llm.Client{BaseURL: provider.BaseURL, APIKey: provider.Key(), HTTP: s.m.http}
-		res, err := client.Stream(ctx, req, llm.Handler{})
+		header, err := provider.Header()
+		var res *llm.Result
+		if err == nil {
+			client := &llm.Client{BaseURL: provider.BaseURL, APIKey: provider.Key(), Header: header, HTTP: s.m.http}
+			res, err = client.Stream(ctx, req, llm.Handler{})
+		}
 
 		a := tools.Assessment{Verdict: tools.VerdictError}
 		switch {
