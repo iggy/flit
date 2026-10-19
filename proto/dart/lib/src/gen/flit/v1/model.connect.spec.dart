@@ -39,4 +39,31 @@ abstract final class ModelService {
     flitv1model.RefreshRequest.new,
     flitv1model.RefreshResponse.new,
   );
+
+  /// SetFavorite stars or unstars a model. Favorites (and recently used
+  /// models) are kept on the server, so every device sees the same ones.
+  static const setFavorite = connect.Spec(
+    '/$name/SetFavorite',
+    connect.StreamType.unary,
+    flitv1model.SetFavoriteRequest.new,
+    flitv1model.SetFavoriteResponse.new,
+    idempotency: connect.Idempotency.idempotent,
+  );
+
+  /// LoadModel and UnloadModel ask a llama.cpp router (Provider
+  /// can_load_models) to load or unload a model, then refresh that
+  /// provider. Other providers return FAILED_PRECONDITION.
+  static const loadModel = connect.Spec(
+    '/$name/LoadModel',
+    connect.StreamType.unary,
+    flitv1model.LoadModelRequest.new,
+    flitv1model.LoadModelResponse.new,
+  );
+
+  static const unloadModel = connect.Spec(
+    '/$name/UnloadModel',
+    connect.StreamType.unary,
+    flitv1model.UnloadModelRequest.new,
+    flitv1model.UnloadModelResponse.new,
+  );
 }

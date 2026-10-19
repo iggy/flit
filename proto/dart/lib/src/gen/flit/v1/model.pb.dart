@@ -32,6 +32,7 @@ class Provider extends $pb.GeneratedMessage {
     $core.int? modelCount,
     $0.Timestamp? refreshTime,
     $core.String? error,
+    $core.bool? canLoadModels,
   }) {
     final result = Provider._();
     if (name != null) result.name = name;
@@ -40,6 +41,7 @@ class Provider extends $pb.GeneratedMessage {
     if (modelCount != null) result.modelCount = modelCount;
     if (refreshTime != null) result.refreshTime = refreshTime;
     if (error != null) result.error = error;
+    if (canLoadModels != null) result.canLoadModels = canLoadModels;
     return result;
   }
 
@@ -64,6 +66,7 @@ class Provider extends $pb.GeneratedMessage {
     ..aOM<$0.Timestamp>(5, _omitFieldNames ? '' : 'refreshTime',
         subBuilder: $0.Timestamp.$_createMessage)
     ..aOS(6, _omitFieldNames ? '' : 'error')
+    ..aOB(7, _omitFieldNames ? '' : 'canLoadModels')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -143,6 +146,17 @@ class Provider extends $pb.GeneratedMessage {
   $core.bool hasError() => $_has(5);
   @$pb.TagNumber(6)
   void clearError() => $_clearField(6);
+
+  /// Whether flit can load and unload this provider's models (a llama.cpp
+  /// router).
+  @$pb.TagNumber(7)
+  $core.bool get canLoadModels => $_getBF(6);
+  @$pb.TagNumber(7)
+  set canLoadModels($core.bool value) => $_setBool(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasCanLoadModels() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearCanLoadModels() => $_clearField(7);
 }
 
 class Model extends $pb.GeneratedMessage {
@@ -158,6 +172,9 @@ class Model extends $pb.GeneratedMessage {
     $core.bool? loaded,
     $core.bool? discovered,
     $core.bool? overridden,
+    $core.bool? favorite,
+    $0.Timestamp? lastUsed,
+    ModelState? state,
   }) {
     final result = Model._();
     if (provider != null) result.provider = provider;
@@ -171,6 +188,9 @@ class Model extends $pb.GeneratedMessage {
     if (loaded != null) result.loaded = loaded;
     if (discovered != null) result.discovered = discovered;
     if (overridden != null) result.overridden = overridden;
+    if (favorite != null) result.favorite = favorite;
+    if (lastUsed != null) result.lastUsed = lastUsed;
+    if (state != null) result.state = state;
     return result;
   }
 
@@ -198,6 +218,11 @@ class Model extends $pb.GeneratedMessage {
     ..aOB(9, _omitFieldNames ? '' : 'loaded')
     ..aOB(10, _omitFieldNames ? '' : 'discovered')
     ..aOB(11, _omitFieldNames ? '' : 'overridden')
+    ..aOB(12, _omitFieldNames ? '' : 'favorite')
+    ..aOM<$0.Timestamp>(13, _omitFieldNames ? '' : 'lastUsed',
+        subBuilder: $0.Timestamp.$_createMessage)
+    ..aE<ModelState>(14, _omitFieldNames ? '' : 'state',
+        enumValues: ModelState.values)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -316,6 +341,38 @@ class Model extends $pb.GeneratedMessage {
   $core.bool hasOverridden() => $_has(10);
   @$pb.TagNumber(11)
   void clearOverridden() => $_clearField(11);
+
+  /// Starred (SetFavorite).
+  @$pb.TagNumber(12)
+  $core.bool get favorite => $_getBF(11);
+  @$pb.TagNumber(12)
+  set favorite($core.bool value) => $_setBool(11, value);
+  @$pb.TagNumber(12)
+  $core.bool hasFavorite() => $_has(11);
+  @$pb.TagNumber(12)
+  void clearFavorite() => $_clearField(12);
+
+  /// When a session last used it (set its model, or ran a turn on it);
+  /// unset if never.
+  @$pb.TagNumber(13)
+  $0.Timestamp get lastUsed => $_getN(12);
+  @$pb.TagNumber(13)
+  set lastUsed($0.Timestamp value) => $_setField(13, value);
+  @$pb.TagNumber(13)
+  $core.bool hasLastUsed() => $_has(12);
+  @$pb.TagNumber(13)
+  void clearLastUsed() => $_clearField(13);
+  @$pb.TagNumber(13)
+  $0.Timestamp ensureLastUsed() => $_ensure(12);
+
+  @$pb.TagNumber(14)
+  ModelState get state => $_getN(13);
+  @$pb.TagNumber(14)
+  set state(ModelState value) => $_setField(14, value);
+  @$pb.TagNumber(14)
+  $core.bool hasState() => $_has(13);
+  @$pb.TagNumber(14)
+  void clearState() => $_clearField(14);
 }
 
 class ListProvidersRequest extends $pb.GeneratedMessage {
@@ -634,6 +691,389 @@ class RefreshResponse extends $pb.GeneratedMessage {
   $pb.PbList<Provider> get providers => $_getList(0);
 }
 
+class SetFavoriteRequest extends $pb.GeneratedMessage {
+  factory SetFavoriteRequest({
+    $core.String? provider,
+    $core.String? model,
+    $core.bool? favorite,
+  }) {
+    final result = SetFavoriteRequest._();
+    if (provider != null) result.provider = provider;
+    if (model != null) result.model = model;
+    if (favorite != null) result.favorite = favorite;
+    return result;
+  }
+
+  SetFavoriteRequest._();
+
+  factory SetFavoriteRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetFavoriteRequest()..mergeFromBuffer(data, registry);
+  factory SetFavoriteRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetFavoriteRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SetFavoriteRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: SetFavoriteRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'provider')
+    ..aOS(2, _omitFieldNames ? '' : 'model')
+    ..aOB(3, _omitFieldNames ? '' : 'favorite')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetFavoriteRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetFavoriteRequest copyWith(void Function(SetFavoriteRequest) updates) =>
+      super.copyWith((message) => updates(message as SetFavoriteRequest))
+          as SetFavoriteRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use SetFavoriteRequest() / SetFavoriteRequest.new instead')
+  static SetFavoriteRequest create() => SetFavoriteRequest._();
+  static $pb.GeneratedMessage $_createMessage() => SetFavoriteRequest._();
+  @$core.override
+  SetFavoriteRequest createEmptyInstance() => SetFavoriteRequest._();
+  @$core.pragma('dart2js:noInline')
+  static SetFavoriteRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SetFavoriteRequest>(
+          SetFavoriteRequest.$_createMessage);
+  static SetFavoriteRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get provider => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set provider($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasProvider() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearProvider() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get model => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set model($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasModel() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearModel() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.bool get favorite => $_getBF(2);
+  @$pb.TagNumber(3)
+  set favorite($core.bool value) => $_setBool(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasFavorite() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearFavorite() => $_clearField(3);
+}
+
+class SetFavoriteResponse extends $pb.GeneratedMessage {
+  factory SetFavoriteResponse() => SetFavoriteResponse._();
+
+  SetFavoriteResponse._();
+
+  factory SetFavoriteResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetFavoriteResponse()..mergeFromBuffer(data, registry);
+  factory SetFavoriteResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetFavoriteResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SetFavoriteResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: SetFavoriteResponse.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetFavoriteResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetFavoriteResponse copyWith(void Function(SetFavoriteResponse) updates) =>
+      super.copyWith((message) => updates(message as SetFavoriteResponse))
+          as SetFavoriteResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core
+      .Deprecated('Use SetFavoriteResponse() / SetFavoriteResponse.new instead')
+  static SetFavoriteResponse create() => SetFavoriteResponse._();
+  static $pb.GeneratedMessage $_createMessage() => SetFavoriteResponse._();
+  @$core.override
+  SetFavoriteResponse createEmptyInstance() => SetFavoriteResponse._();
+  @$core.pragma('dart2js:noInline')
+  static SetFavoriteResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SetFavoriteResponse>(
+          SetFavoriteResponse.$_createMessage);
+  static SetFavoriteResponse? _defaultInstance;
+}
+
+class LoadModelRequest extends $pb.GeneratedMessage {
+  factory LoadModelRequest({
+    $core.String? provider,
+    $core.String? model,
+  }) {
+    final result = LoadModelRequest._();
+    if (provider != null) result.provider = provider;
+    if (model != null) result.model = model;
+    return result;
+  }
+
+  LoadModelRequest._();
+
+  factory LoadModelRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      LoadModelRequest()..mergeFromBuffer(data, registry);
+  factory LoadModelRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      LoadModelRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'LoadModelRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: LoadModelRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'provider')
+    ..aOS(2, _omitFieldNames ? '' : 'model')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  LoadModelRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  LoadModelRequest copyWith(void Function(LoadModelRequest) updates) =>
+      super.copyWith((message) => updates(message as LoadModelRequest))
+          as LoadModelRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use LoadModelRequest() / LoadModelRequest.new instead')
+  static LoadModelRequest create() => LoadModelRequest._();
+  static $pb.GeneratedMessage $_createMessage() => LoadModelRequest._();
+  @$core.override
+  LoadModelRequest createEmptyInstance() => LoadModelRequest._();
+  @$core.pragma('dart2js:noInline')
+  static LoadModelRequest getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<LoadModelRequest>(
+          LoadModelRequest.$_createMessage);
+  static LoadModelRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get provider => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set provider($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasProvider() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearProvider() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get model => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set model($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasModel() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearModel() => $_clearField(2);
+}
+
+class LoadModelResponse extends $pb.GeneratedMessage {
+  factory LoadModelResponse({
+    Model? model,
+  }) {
+    final result = LoadModelResponse._();
+    if (model != null) result.model = model;
+    return result;
+  }
+
+  LoadModelResponse._();
+
+  factory LoadModelResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      LoadModelResponse()..mergeFromBuffer(data, registry);
+  factory LoadModelResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      LoadModelResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'LoadModelResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: LoadModelResponse.$_createMessage)
+    ..aOM<Model>(1, _omitFieldNames ? '' : 'model',
+        subBuilder: Model.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  LoadModelResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  LoadModelResponse copyWith(void Function(LoadModelResponse) updates) =>
+      super.copyWith((message) => updates(message as LoadModelResponse))
+          as LoadModelResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use LoadModelResponse() / LoadModelResponse.new instead')
+  static LoadModelResponse create() => LoadModelResponse._();
+  static $pb.GeneratedMessage $_createMessage() => LoadModelResponse._();
+  @$core.override
+  LoadModelResponse createEmptyInstance() => LoadModelResponse._();
+  @$core.pragma('dart2js:noInline')
+  static LoadModelResponse getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<LoadModelResponse>(
+          LoadModelResponse.$_createMessage);
+  static LoadModelResponse? _defaultInstance;
+
+  /// The model as it is after the provider was refreshed.
+  @$pb.TagNumber(1)
+  Model get model => $_getN(0);
+  @$pb.TagNumber(1)
+  set model(Model value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasModel() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearModel() => $_clearField(1);
+  @$pb.TagNumber(1)
+  Model ensureModel() => $_ensure(0);
+}
+
+class UnloadModelRequest extends $pb.GeneratedMessage {
+  factory UnloadModelRequest({
+    $core.String? provider,
+    $core.String? model,
+  }) {
+    final result = UnloadModelRequest._();
+    if (provider != null) result.provider = provider;
+    if (model != null) result.model = model;
+    return result;
+  }
+
+  UnloadModelRequest._();
+
+  factory UnloadModelRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UnloadModelRequest()..mergeFromBuffer(data, registry);
+  factory UnloadModelRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UnloadModelRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UnloadModelRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: UnloadModelRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'provider')
+    ..aOS(2, _omitFieldNames ? '' : 'model')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UnloadModelRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UnloadModelRequest copyWith(void Function(UnloadModelRequest) updates) =>
+      super.copyWith((message) => updates(message as UnloadModelRequest))
+          as UnloadModelRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use UnloadModelRequest() / UnloadModelRequest.new instead')
+  static UnloadModelRequest create() => UnloadModelRequest._();
+  static $pb.GeneratedMessage $_createMessage() => UnloadModelRequest._();
+  @$core.override
+  UnloadModelRequest createEmptyInstance() => UnloadModelRequest._();
+  @$core.pragma('dart2js:noInline')
+  static UnloadModelRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<UnloadModelRequest>(
+          UnloadModelRequest.$_createMessage);
+  static UnloadModelRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get provider => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set provider($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasProvider() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearProvider() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get model => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set model($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasModel() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearModel() => $_clearField(2);
+}
+
+class UnloadModelResponse extends $pb.GeneratedMessage {
+  factory UnloadModelResponse({
+    Model? model,
+  }) {
+    final result = UnloadModelResponse._();
+    if (model != null) result.model = model;
+    return result;
+  }
+
+  UnloadModelResponse._();
+
+  factory UnloadModelResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UnloadModelResponse()..mergeFromBuffer(data, registry);
+  factory UnloadModelResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      UnloadModelResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UnloadModelResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: UnloadModelResponse.$_createMessage)
+    ..aOM<Model>(1, _omitFieldNames ? '' : 'model',
+        subBuilder: Model.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UnloadModelResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  UnloadModelResponse copyWith(void Function(UnloadModelResponse) updates) =>
+      super.copyWith((message) => updates(message as UnloadModelResponse))
+          as UnloadModelResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core
+      .Deprecated('Use UnloadModelResponse() / UnloadModelResponse.new instead')
+  static UnloadModelResponse create() => UnloadModelResponse._();
+  static $pb.GeneratedMessage $_createMessage() => UnloadModelResponse._();
+  @$core.override
+  UnloadModelResponse createEmptyInstance() => UnloadModelResponse._();
+  @$core.pragma('dart2js:noInline')
+  static UnloadModelResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<UnloadModelResponse>(
+          UnloadModelResponse.$_createMessage);
+  static UnloadModelResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  Model get model => $_getN(0);
+  @$pb.TagNumber(1)
+  set model(Model value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasModel() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearModel() => $_clearField(1);
+  @$pb.TagNumber(1)
+  Model ensureModel() => $_ensure(0);
+}
+
 /// ModelService lists the models flit can use. Models are discovered from
 /// each configured provider's /models endpoint (there is no built-in model
 /// database) and can be corrected or filled in by a YAML override file.
@@ -660,6 +1100,25 @@ class ModelServiceApi {
           $pb.ClientContext? ctx, RefreshRequest request) =>
       _client.invoke<RefreshResponse>(
           ctx, 'ModelService', 'Refresh', request, RefreshResponse());
+
+  /// SetFavorite stars or unstars a model. Favorites (and recently used
+  /// models) are kept on the server, so every device sees the same ones.
+  $async.Future<SetFavoriteResponse> setFavorite(
+          $pb.ClientContext? ctx, SetFavoriteRequest request) =>
+      _client.invoke<SetFavoriteResponse>(
+          ctx, 'ModelService', 'SetFavorite', request, SetFavoriteResponse());
+
+  /// LoadModel and UnloadModel ask a llama.cpp router (Provider
+  /// can_load_models) to load or unload a model, then refresh that
+  /// provider. Other providers return FAILED_PRECONDITION.
+  $async.Future<LoadModelResponse> loadModel(
+          $pb.ClientContext? ctx, LoadModelRequest request) =>
+      _client.invoke<LoadModelResponse>(
+          ctx, 'ModelService', 'LoadModel', request, LoadModelResponse());
+  $async.Future<UnloadModelResponse> unloadModel(
+          $pb.ClientContext? ctx, UnloadModelRequest request) =>
+      _client.invoke<UnloadModelResponse>(
+          ctx, 'ModelService', 'UnloadModel', request, UnloadModelResponse());
 }
 
 const $core.bool _omitFieldNames =

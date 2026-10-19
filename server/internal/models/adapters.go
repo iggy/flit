@@ -45,8 +45,9 @@ type rawModel struct {
 		NCtx      int64 `json:"n_ctx"`
 	} `json:"meta"`
 	Status *struct {
-		Value string   `json:"value"`
-		Args  []string `json:"args"`
+		Value  string   `json:"value"`
+		Args   []string `json:"args"`
+		Failed bool     `json:"failed"`
 	} `json:"status"`
 
 	// gomodel.
@@ -147,6 +148,10 @@ func llamaCpp(m *Model, e rawModel) {
 		return
 	}
 	m.Loaded = e.Status.Value == "loaded"
+	m.State = State(e.Status.Value)
+	if e.Status.Failed {
+		m.State = StateFailed
+	}
 	args := e.Status.Args
 	ctx := argInt(args, "--ctx-size", "-c")
 	if parallel := argInt(args, "--parallel", "-np"); parallel > 1 && !slices.Contains(args, "--kv-unified") {

@@ -27,6 +27,12 @@ abstract class ModelServiceBase extends $pb.GeneratedService {
       $pb.ServerContext ctx, $1.ListModelsRequest request);
   $async.Future<$1.RefreshResponse> refresh(
       $pb.ServerContext ctx, $1.RefreshRequest request);
+  $async.Future<$1.SetFavoriteResponse> setFavorite(
+      $pb.ServerContext ctx, $1.SetFavoriteRequest request);
+  $async.Future<$1.LoadModelResponse> loadModel(
+      $pb.ServerContext ctx, $1.LoadModelRequest request);
+  $async.Future<$1.UnloadModelResponse> unloadModel(
+      $pb.ServerContext ctx, $1.UnloadModelRequest request);
 
   $pb.GeneratedMessage createRequest($core.String methodName) {
     switch (methodName) {
@@ -36,6 +42,12 @@ abstract class ModelServiceBase extends $pb.GeneratedService {
         return $1.ListModelsRequest();
       case 'Refresh':
         return $1.RefreshRequest();
+      case 'SetFavorite':
+        return $1.SetFavoriteRequest();
+      case 'LoadModel':
+        return $1.LoadModelRequest();
+      case 'UnloadModel':
+        return $1.UnloadModelRequest();
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }
@@ -50,6 +62,12 @@ abstract class ModelServiceBase extends $pb.GeneratedService {
         return listModels(ctx, request as $1.ListModelsRequest);
       case 'Refresh':
         return refresh(ctx, request as $1.RefreshRequest);
+      case 'SetFavorite':
+        return setFavorite(ctx, request as $1.SetFavoriteRequest);
+      case 'LoadModel':
+        return loadModel(ctx, request as $1.LoadModelRequest);
+      case 'UnloadModel':
+        return unloadModel(ctx, request as $1.UnloadModelRequest);
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }

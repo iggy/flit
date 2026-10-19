@@ -252,7 +252,7 @@ func serve(ctx context.Context, stderr io.Writer, configPath, dataDirFlag string
 		log.Warn("no providers configured; add one under providers in the config to run sessions", "config", configPath)
 	}
 
-	srv := server.New(server.NewHandler(token, server.Deps{Sessions: sessions, Devices: devices.New(st), Config: current, Catalog: catalog, RolesDir: rolesDir}), log)
+	srv := server.New(server.NewHandler(token, server.Deps{Sessions: sessions, Devices: devices.New(st), Config: current, Catalog: catalog, RolesDir: rolesDir, Store: st}), log)
 	if err := srv.Apply(cfg); err != nil {
 		return err
 	}

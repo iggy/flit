@@ -151,3 +151,36 @@ func TestProjects(t *testing.T) {
 		t.Fatalf("scratch sessions = %v", in)
 	}
 }
+
+func TestModelPrefs(t *testing.T) {
+	st, _ := open(t)
+	must := func(t *testing.T, err error) {
+		t.Helper()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	ctx := context.Background()
+	a, b := ModelKey{"local", "qwen"}, ModelKey{"or", "glm"}
+	t1 := time.Unix(1000, 0)
+	must(t, st.SetFavorite(ctx, DefaultTeamID, a, true))
+	must(t, st.TouchModel(ctx, DefaultTeamID, a, t1))
+	must(t, st.TouchModel(ctx, DefaultTeamID, b, t1.Add(time.Hour)))
+	must(t, st.TouchModel(ctx, DefaultTeamID, b, t1)) // older use doesn't move it back
+	must(t, st.SetFavorite(ctx, "team_other", b, true))
+	prefs, err := st.ModelPrefs(ctx, DefaultTeamID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p := prefs[a]; !p.Favorite || !p.LastUsed.Equal(t1) {
+		t.Fatalf("a = %+v", p)
+	}
+	if p := prefs[b]; p.Favorite || !p.LastUsed.Equal(t1.Add(time.Hour)) {
+		t.Fatalf("b = %+v (another team's star leaked?)", p)
+	}
+	must(t, st.SetFavorite(ctx, DefaultTeamID, a, false))
+	prefs, _ = st.ModelPrefs(ctx, DefaultTeamID)
+	if p := prefs[a]; p.Favorite || !p.LastUsed.Equal(t1) {
+		t.Fatalf("unstarred a = %+v", p)
+	}
+}

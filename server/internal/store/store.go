@@ -174,6 +174,16 @@ CREATE INDEX ratings_by_session ON ratings (session_id, created_at);
 ALTER TABLE sessions ADD COLUMN yolo INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE model_calls ADD COLUMN task TEXT NOT NULL DEFAULT 'chat';
 `,
+	`
+CREATE TABLE model_prefs (
+	team_id   TEXT NOT NULL,
+	provider  TEXT NOT NULL,
+	model     TEXT NOT NULL,
+	favorite  INTEGER NOT NULL DEFAULT 0,
+	last_used INTEGER,
+	PRIMARY KEY (team_id, provider, model)
+) WITHOUT ROWID;
+`,
 }
 
 func (s *Store) migrate(ctx context.Context) error {

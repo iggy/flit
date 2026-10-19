@@ -335,6 +335,18 @@ func (m *Manager) Interrupt(ctx context.Context, id string) (bool, error) {
 	return s.interrupt(), nil
 }
 
+// touchModel marks the session's model as just used, for the model
+// picker's recents. Failures are logged; they never fail what used it.
+func (m *Manager) touchModel(info store.Session) {
+	if info.Provider == "" || info.Model == "" {
+		return
+	}
+	k := store.ModelKey{Provider: info.Provider, Model: info.Model}
+	if err := m.store.TouchModel(context.Background(), info.TeamID, k, time.Now()); err != nil {
+		m.log.Warn("record model use", "session", info.ID, "err", err)
+	}
+}
+
 // RetryModelCall gives up on the session's model call and sends it again.
 // It only works while the model hasn't sent any of the reply.
 func (m *Manager) RetryModelCall(ctx context.Context, id string) error {

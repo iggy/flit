@@ -23,6 +23,18 @@ service ModelService {
 
   // Refresh re-runs discovery (and re-reads the override file).
   rpc Refresh(RefreshRequest) returns (RefreshResponse);
+
+  // SetFavorite stars or unstars a model. Favorites (and recently used
+  // models) are kept on the server, so every device sees the same ones.
+  rpc SetFavorite(SetFavoriteRequest) returns (SetFavoriteResponse) {
+    option idempotency_level = IDEMPOTENT;
+  }
+
+  // LoadModel and UnloadModel ask a llama.cpp router (Provider
+  // can_load_models) to load or unload a model, then refresh that
+  // provider. Other providers return FAILED_PRECONDITION.
+  rpc LoadModel(LoadModelRequest) returns (LoadModelResponse);
+  rpc UnloadModel(UnloadModelRequest) returns (UnloadModelResponse);
 }
 
 // ProviderKind is how flit reads a provider's /models response. AUTO
@@ -44,6 +56,22 @@ message Provider {
   // When discovery last finished, and its error if it failed.
   google.protobuf.Timestamp refresh_time = 5;
   string error = 6;
+  // Whether flit can load and unload this provider's models (a llama.cpp
+  // router).
+  bool can_load_models = 7;
+}
+
+// ModelState is a llama.cpp router model's state.
+enum ModelState {
+  // Not reported (not a router).
+  MODEL_STATE_UNSPECIFIED = 0;
+  MODEL_STATE_UNLOADED = 1;
+  MODEL_STATE_LOADING = 2;
+  MODEL_STATE_LOADED = 3;
+  // Loaded but idle and swapped out; wakes on the next request.
+  MODEL_STATE_SLEEPING = 4;
+  // The last load failed.
+  MODEL_STATE_FAILED = 5;
 }
 
 message Model {
@@ -62,6 +90,12 @@ message Model {
   // Whether discovery found it and whether the override file touched it.
   bool discovered = 10;
   bool overridden = 11;
+  // Starred (SetFavorite).
+  bool favorite = 12;
+  // When a session last used it (set its model, or ran a turn on it);
+  // unset if never.
+  google.protobuf.Timestamp last_used = 13;
+  ModelState state = 14;
 }
 
 message ListProvidersRequest {}
@@ -86,4 +120,31 @@ message RefreshRequest {
 
 message RefreshResponse {
   repeated Provider providers = 1;
+}
+
+message SetFavoriteRequest {
+  string provider = 1;
+  string model = 2;
+  bool favorite = 3;
+}
+
+message SetFavoriteResponse {}
+
+message LoadModelRequest {
+  string provider = 1;
+  string model = 2;
+}
+
+message LoadModelResponse {
+  // The model as it is after the provider was refreshed.
+  Model model = 1;
+}
+
+message UnloadModelRequest {
+  string provider = 1;
+  string model = 2;
+}
+
+message UnloadModelResponse {
+  Model model = 1;
 }

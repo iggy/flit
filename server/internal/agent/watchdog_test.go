@@ -13,6 +13,7 @@ import (
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
 	"github.com/iggy/flit/server/internal/llm/llmtest"
 	"github.com/iggy/flit/server/internal/models"
+	"github.com/iggy/flit/server/internal/store"
 )
 
 func callsEnded(evs []*flitv1.Event) []*flitv1.ModelCallEnded {
@@ -173,5 +174,28 @@ func TestRetryModelCall(t *testing.T) {
 	if len(ended) != 2 || ended[0].Outcome != flitv1.ModelCallOutcome_MODEL_CALL_OUTCOME_RETRIED || !ended[0].WillRetry ||
 		ended[1].Attempt != 2 || ended[1].Outcome != flitv1.ModelCallOutcome_MODEL_CALL_OUTCOME_CANCELLED {
 		t.Fatalf("calls %v", ended)
+	}
+}
+
+// Picking a model and running a turn on one both count as using it.
+func TestModelUseIsRecorded(t *testing.T) {
+	h := newHarness(t)
+	ctx := context.Background()
+	sess := h.create()
+	if _, err := h.m.SetModel(ctx, sess.ID, "other", "bigger-model"); err != nil {
+		t.Fatal(err)
+	}
+	h.llm.Push(llmtest.Response{Chunks: llmtest.Text("hi")})
+	w := h.watch(sess.ID, 0)
+	if _, err := h.m.Send(ctx, sess.ID, "hello"); err != nil {
+		t.Fatal(err)
+	}
+	w.waitTurnEnd()
+	prefs, err := h.st.ModelPrefs(ctx, sess.TeamID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p := prefs[store.ModelKey{Provider: "other", Model: "bigger-model"}]; p.LastUsed.IsZero() {
+		t.Fatalf("prefs %+v", prefs)
 	}
 }

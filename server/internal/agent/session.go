@@ -378,6 +378,7 @@ func (s *session) setModel(ctx context.Context, provider, model string) (store.S
 	if _, err := s.appendLocked(s.modelChangedLocked()); err != nil {
 		return store.Session{}, err
 	}
+	s.m.touchModel(s.info)
 	return s.info, nil
 }
 

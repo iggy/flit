@@ -40,6 +40,14 @@ const (
 	ModelServiceListModelsProcedure = "/flit.v1.ModelService/ListModels"
 	// ModelServiceRefreshProcedure is the fully-qualified name of the ModelService's Refresh RPC.
 	ModelServiceRefreshProcedure = "/flit.v1.ModelService/Refresh"
+	// ModelServiceSetFavoriteProcedure is the fully-qualified name of the ModelService's SetFavorite
+	// RPC.
+	ModelServiceSetFavoriteProcedure = "/flit.v1.ModelService/SetFavorite"
+	// ModelServiceLoadModelProcedure is the fully-qualified name of the ModelService's LoadModel RPC.
+	ModelServiceLoadModelProcedure = "/flit.v1.ModelService/LoadModel"
+	// ModelServiceUnloadModelProcedure is the fully-qualified name of the ModelService's UnloadModel
+	// RPC.
+	ModelServiceUnloadModelProcedure = "/flit.v1.ModelService/UnloadModel"
 )
 
 // ModelServiceClient is a client for the flit.v1.ModelService service.
@@ -50,6 +58,14 @@ type ModelServiceClient interface {
 	ListModels(context.Context, *connect.Request[v1.ListModelsRequest]) (*connect.Response[v1.ListModelsResponse], error)
 	// Refresh re-runs discovery (and re-reads the override file).
 	Refresh(context.Context, *connect.Request[v1.RefreshRequest]) (*connect.Response[v1.RefreshResponse], error)
+	// SetFavorite stars or unstars a model. Favorites (and recently used
+	// models) are kept on the server, so every device sees the same ones.
+	SetFavorite(context.Context, *connect.Request[v1.SetFavoriteRequest]) (*connect.Response[v1.SetFavoriteResponse], error)
+	// LoadModel and UnloadModel ask a llama.cpp router (Provider
+	// can_load_models) to load or unload a model, then refresh that
+	// provider. Other providers return FAILED_PRECONDITION.
+	LoadModel(context.Context, *connect.Request[v1.LoadModelRequest]) (*connect.Response[v1.LoadModelResponse], error)
+	UnloadModel(context.Context, *connect.Request[v1.UnloadModelRequest]) (*connect.Response[v1.UnloadModelResponse], error)
 }
 
 // NewModelServiceClient constructs a client for the flit.v1.ModelService service. By default, it
@@ -83,6 +99,25 @@ func NewModelServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(modelServiceMethods.ByName("Refresh")),
 			connect.WithClientOptions(opts...),
 		),
+		setFavorite: connect.NewClient[v1.SetFavoriteRequest, v1.SetFavoriteResponse](
+			httpClient,
+			baseURL+ModelServiceSetFavoriteProcedure,
+			connect.WithSchema(modelServiceMethods.ByName("SetFavorite")),
+			connect.WithIdempotency(connect.IdempotencyIdempotent),
+			connect.WithClientOptions(opts...),
+		),
+		loadModel: connect.NewClient[v1.LoadModelRequest, v1.LoadModelResponse](
+			httpClient,
+			baseURL+ModelServiceLoadModelProcedure,
+			connect.WithSchema(modelServiceMethods.ByName("LoadModel")),
+			connect.WithClientOptions(opts...),
+		),
+		unloadModel: connect.NewClient[v1.UnloadModelRequest, v1.UnloadModelResponse](
+			httpClient,
+			baseURL+ModelServiceUnloadModelProcedure,
+			connect.WithSchema(modelServiceMethods.ByName("UnloadModel")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -91,6 +126,9 @@ type modelServiceClient struct {
 	listProviders *connect.Client[v1.ListProvidersRequest, v1.ListProvidersResponse]
 	listModels    *connect.Client[v1.ListModelsRequest, v1.ListModelsResponse]
 	refresh       *connect.Client[v1.RefreshRequest, v1.RefreshResponse]
+	setFavorite   *connect.Client[v1.SetFavoriteRequest, v1.SetFavoriteResponse]
+	loadModel     *connect.Client[v1.LoadModelRequest, v1.LoadModelResponse]
+	unloadModel   *connect.Client[v1.UnloadModelRequest, v1.UnloadModelResponse]
 }
 
 // ListProviders calls flit.v1.ModelService.ListProviders.
@@ -108,6 +146,21 @@ func (c *modelServiceClient) Refresh(ctx context.Context, req *connect.Request[v
 	return c.refresh.CallUnary(ctx, req)
 }
 
+// SetFavorite calls flit.v1.ModelService.SetFavorite.
+func (c *modelServiceClient) SetFavorite(ctx context.Context, req *connect.Request[v1.SetFavoriteRequest]) (*connect.Response[v1.SetFavoriteResponse], error) {
+	return c.setFavorite.CallUnary(ctx, req)
+}
+
+// LoadModel calls flit.v1.ModelService.LoadModel.
+func (c *modelServiceClient) LoadModel(ctx context.Context, req *connect.Request[v1.LoadModelRequest]) (*connect.Response[v1.LoadModelResponse], error) {
+	return c.loadModel.CallUnary(ctx, req)
+}
+
+// UnloadModel calls flit.v1.ModelService.UnloadModel.
+func (c *modelServiceClient) UnloadModel(ctx context.Context, req *connect.Request[v1.UnloadModelRequest]) (*connect.Response[v1.UnloadModelResponse], error) {
+	return c.unloadModel.CallUnary(ctx, req)
+}
+
 // ModelServiceHandler is an implementation of the flit.v1.ModelService service.
 type ModelServiceHandler interface {
 	// ListProviders lists the configured providers and how discovery went.
@@ -116,6 +169,14 @@ type ModelServiceHandler interface {
 	ListModels(context.Context, *connect.Request[v1.ListModelsRequest]) (*connect.Response[v1.ListModelsResponse], error)
 	// Refresh re-runs discovery (and re-reads the override file).
 	Refresh(context.Context, *connect.Request[v1.RefreshRequest]) (*connect.Response[v1.RefreshResponse], error)
+	// SetFavorite stars or unstars a model. Favorites (and recently used
+	// models) are kept on the server, so every device sees the same ones.
+	SetFavorite(context.Context, *connect.Request[v1.SetFavoriteRequest]) (*connect.Response[v1.SetFavoriteResponse], error)
+	// LoadModel and UnloadModel ask a llama.cpp router (Provider
+	// can_load_models) to load or unload a model, then refresh that
+	// provider. Other providers return FAILED_PRECONDITION.
+	LoadModel(context.Context, *connect.Request[v1.LoadModelRequest]) (*connect.Response[v1.LoadModelResponse], error)
+	UnloadModel(context.Context, *connect.Request[v1.UnloadModelRequest]) (*connect.Response[v1.UnloadModelResponse], error)
 }
 
 // NewModelServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -145,6 +206,25 @@ func NewModelServiceHandler(svc ModelServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(modelServiceMethods.ByName("Refresh")),
 		connect.WithHandlerOptions(opts...),
 	)
+	modelServiceSetFavoriteHandler := connect.NewUnaryHandler(
+		ModelServiceSetFavoriteProcedure,
+		svc.SetFavorite,
+		connect.WithSchema(modelServiceMethods.ByName("SetFavorite")),
+		connect.WithIdempotency(connect.IdempotencyIdempotent),
+		connect.WithHandlerOptions(opts...),
+	)
+	modelServiceLoadModelHandler := connect.NewUnaryHandler(
+		ModelServiceLoadModelProcedure,
+		svc.LoadModel,
+		connect.WithSchema(modelServiceMethods.ByName("LoadModel")),
+		connect.WithHandlerOptions(opts...),
+	)
+	modelServiceUnloadModelHandler := connect.NewUnaryHandler(
+		ModelServiceUnloadModelProcedure,
+		svc.UnloadModel,
+		connect.WithSchema(modelServiceMethods.ByName("UnloadModel")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/flit.v1.ModelService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ModelServiceListProvidersProcedure:
@@ -153,6 +233,12 @@ func NewModelServiceHandler(svc ModelServiceHandler, opts ...connect.HandlerOpti
 			modelServiceListModelsHandler.ServeHTTP(w, r)
 		case ModelServiceRefreshProcedure:
 			modelServiceRefreshHandler.ServeHTTP(w, r)
+		case ModelServiceSetFavoriteProcedure:
+			modelServiceSetFavoriteHandler.ServeHTTP(w, r)
+		case ModelServiceLoadModelProcedure:
+			modelServiceLoadModelHandler.ServeHTTP(w, r)
+		case ModelServiceUnloadModelProcedure:
+			modelServiceUnloadModelHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -172,4 +258,16 @@ func (UnimplementedModelServiceHandler) ListModels(context.Context, *connect.Req
 
 func (UnimplementedModelServiceHandler) Refresh(context.Context, *connect.Request[v1.RefreshRequest]) (*connect.Response[v1.RefreshResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.ModelService.Refresh is not implemented"))
+}
+
+func (UnimplementedModelServiceHandler) SetFavorite(context.Context, *connect.Request[v1.SetFavoriteRequest]) (*connect.Response[v1.SetFavoriteResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.ModelService.SetFavorite is not implemented"))
+}
+
+func (UnimplementedModelServiceHandler) LoadModel(context.Context, *connect.Request[v1.LoadModelRequest]) (*connect.Response[v1.LoadModelResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.ModelService.LoadModel is not implemented"))
+}
+
+func (UnimplementedModelServiceHandler) UnloadModel(context.Context, *connect.Request[v1.UnloadModelRequest]) (*connect.Response[v1.UnloadModelResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.ModelService.UnloadModel is not implemented"))
 }
