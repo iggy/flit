@@ -12,6 +12,7 @@ import 'package:flit/domain/models/flit_session.dart';
 import 'package:flit/presentation/chat/message_bubble.dart';
 import 'package:flit/presentation/flit/flit_mcp_sheet.dart';
 import 'package:flit/presentation/flit/flit_model_picker.dart';
+import 'package:flit/presentation/flit/flit_nav.dart';
 import 'package:flit/presentation/flit/flit_prompt_card.dart';
 import 'package:flit/presentation/flit/flit_rating.dart';
 import 'package:flit/presentation/flit/flit_widgets.dart';
@@ -276,7 +277,8 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
       if (flitSessionNeedsRefresh(prev?.fold, next.fold)) {
         ref
           ..invalidate(flitSessionProvider(widget.sessionId))
-          ..invalidate(flitSessionsProvider);
+          ..invalidate(flitSessionsProvider)
+          ..invalidate(flitAllSessionsProvider);
       }
     });
 
@@ -298,11 +300,13 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          session?.displayTitle ?? 'Session',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
+        title: flitIsWide(context)
+            ? Text(
+                session?.displayTitle ?? 'Session',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              )
+            : FlitBreadcrumb(session: session),
         actions: <Widget>[
           IconButton(
             key: flitYoloButtonKey,

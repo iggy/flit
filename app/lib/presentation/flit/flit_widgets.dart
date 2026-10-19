@@ -4,9 +4,16 @@ import 'package:flutter/material.dart';
 
 /// A small chip showing what a session's agent is doing.
 class FlitTaskStateChip extends StatelessWidget {
-  const FlitTaskStateChip({required this.state, super.key});
+  const FlitTaskStateChip({
+    required this.state,
+    this.compact = false,
+    super.key,
+  });
 
   final FlitTaskState state;
+
+  /// Just the icon, with the label as a tooltip.
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +34,12 @@ class FlitTaskStateChip extends StatelessWidget {
       ),
       FlitTaskState.unknown => ('?', Icons.help_outline, scheme.outline),
     };
+    if (compact) {
+      return Tooltip(
+        message: label,
+        child: Icon(icon, size: 14, color: color),
+      );
+    }
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[

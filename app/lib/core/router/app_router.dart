@@ -10,6 +10,7 @@ import 'package:flit/presentation/chat/chat_screen.dart';
 import 'package:flit/presentation/common/not_found_screen.dart';
 import 'package:flit/presentation/connect/connect_screen.dart';
 import 'package:flit/presentation/flit/flit_chat_screen.dart';
+import 'package:flit/presentation/flit/flit_nav.dart';
 import 'package:flit/presentation/flit/flit_sessions_screen.dart';
 import 'package:flit/presentation/plugins/kanban/kanban_board_screen.dart';
 import 'package:flit/presentation/plugins/kanban/kanban_deep_link_screen.dart';
@@ -41,6 +42,7 @@ import 'package:flit/presentation/settings/skills_screen.dart';
 import 'package:flit/presentation/settings/tools_screen.dart';
 import 'package:flit/presentation/subagents/delegation_screen.dart';
 import 'package:flit/presentation/subagents/spawn_tree_snapshots_screen.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -60,16 +62,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'chat',
         builder: (context, state) => const ChatScreen(),
       ),
-      GoRoute(
-        path: '/flit',
-        name: 'flit',
-        builder: (context, state) => const FlitSessionsScreen(),
-      ),
-      GoRoute(
-        path: '/flit/session/:id',
-        name: 'flit-session',
-        builder: (context, state) =>
-            FlitChatScreen(sessionId: state.pathParameters['id'] ?? ''),
+      // The flit screens share a shell so the side pane (wide windows)
+      // stays put while moving between sessions.
+      ShellRoute(
+        builder: (context, state, child) =>
+            FlitShell(sessionId: state.pathParameters['id'], child: child),
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/flit',
+            name: 'flit',
+            builder: (context, state) => const FlitSessionsScreen(),
+            routes: <RouteBase>[
+              GoRoute(
+                path: 'session/:id',
+                name: 'flit-session',
+                builder: (context, state) => FlitChatScreen(
+                  key: ValueKey<String?>(state.pathParameters['id']),
+                  sessionId: state.pathParameters['id'] ?? '',
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       GoRoute(
         path: '/session/:id',

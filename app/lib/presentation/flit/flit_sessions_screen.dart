@@ -47,10 +47,13 @@ class FlitSessionsScreen extends ConsumerWidget {
       );
       ref
         ..invalidate(flitSessionsProvider)
+        ..invalidate(flitAllSessionsProvider)
         ..invalidate(flitProjectsProvider);
       if (context.mounted) {
         await context.push('/flit/session/${session.id}');
-        ref.invalidate(flitSessionsProvider);
+        ref
+          ..invalidate(flitSessionsProvider)
+          ..invalidate(flitAllSessionsProvider);
       }
     } on GatewayException catch (error) {
       if (context.mounted) {
@@ -104,6 +107,7 @@ class FlitSessionsScreen extends ConsumerWidget {
             tooltip: 'Refresh',
             onPressed: () => ref
               ..invalidate(flitSessionsProvider)
+              ..invalidate(flitAllSessionsProvider)
               ..invalidate(flitProjectsProvider),
             icon: const Icon(Icons.refresh),
           ),
@@ -184,7 +188,9 @@ class FlitSessionsScreen extends ConsumerWidget {
                       ),
                       onTap: () async {
                         await context.push('/flit/session/${s.id}');
-                        ref.invalidate(flitSessionsProvider);
+                        ref
+                          ..invalidate(flitSessionsProvider)
+                          ..invalidate(flitAllSessionsProvider);
                       },
                     );
                   },

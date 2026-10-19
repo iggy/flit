@@ -5,6 +5,7 @@ import 'package:flit/domain/models/flit_event.dart';
 import 'package:flit/domain/models/flit_session.dart';
 import 'package:flit/domain/repositories/flit_repository.dart';
 import 'package:flit/presentation/flit/flit_chat_screen.dart';
+import 'package:flit/presentation/flit/flit_nav.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -119,5 +120,18 @@ void main() {
     await message(tester, repo, 'next', 'one more\n\nmessage\n\nhere');
     expect(p.pixels, p.maxScrollExtent);
     expect(find.byKey(flitJumpToLatestKey), findsNothing);
+  });
+
+  testWidgets('narrow windows show Project › Session; project goes back', (
+    tester,
+  ) async {
+    final (_, container) = await pump(tester);
+    await tester.pump();
+    expect(find.byKey(flitBreadcrumbProjectKey), findsOneWidget);
+    expect(find.text('Web'), findsOneWidget);
+    expect(find.text('Fix the build'), findsOneWidget);
+    await tester.tap(find.byKey(flitBreadcrumbProjectKey));
+    await tester.pump();
+    expect(container.read(flitSelectedProjectProvider), 'p1');
   });
 }
