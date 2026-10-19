@@ -126,13 +126,15 @@ func TestManagerHTTP(t *testing.T) {
 	defer streamable.Close()
 	sse := httptest.NewServer(requireToken(mcp.NewSSEHandler(getServer, nil)))
 	defer sse.Close()
-	auth := map[string]string{"Authorization": "Bearer sekrit"}
+	t.Setenv("FLIT_TEST_MCP_TOKEN", "sekrit")
+	auth := map[string]string{"Authorization": "Bearer ${FLIT_TEST_MCP_TOKEN}"}
 
 	cfg := config.Default()
 	cfg.MCPServers = []config.MCPServer{
 		{Name: "streamable", URL: streamable.URL, Headers: auth},
 		{Name: "sse", URL: sse.URL, Headers: auth},
 		{Name: "noauth", URL: streamable.URL},
+		{Name: "unset", URL: streamable.URL, Headers: map[string]string{"Authorization": "Bearer ${FLIT_TEST_MCP_UNSET}"}},
 	}
 	m := New(func() config.Config { return cfg }, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	defer m.Close()
@@ -155,5 +157,24 @@ func TestManagerHTTP(t *testing.T) {
 	}
 	if _, err := m.Tools(ctx, []string{"noauth"}); err == nil {
 		t.Fatal("server without the header should fail")
+	}
+	if _, err := m.Tools(ctx, []string{"unset"}); err == nil || !strings.Contains(err.Error(), "FLIT_TEST_MCP_UNSET") {
+		t.Fatalf("unset variable: %v", err)
+	}
+	if st := m.Status(); st[3].Running || !strings.Contains(st[3].Err, "FLIT_TEST_MCP_UNSET") {
+		t.Fatalf("status = %+v", st[3])
+	}
+}
+
+func TestExpandHeaders(t *testing.T) {
+	t.Setenv("FLIT_A", "x")
+	t.Setenv("FLIT_EMPTY", "")
+	got, err := expandHeaders(map[string]string{"A": "${FLIT_A}-${FLIT_A}", "B": "$FLIT_A ${", "C": "${FLIT_EMPTY}"})
+	if err != nil || got["A"] != "x-x" || got["B"] != "$FLIT_A ${" || got["C"] != "" {
+		t.Fatalf("got %v, %v", got, err)
+	}
+	if _, err := expandHeaders(map[string]string{"A": "${FLIT_NOPE_2}", "B": "${FLIT_NOPE_1}"}); err == nil ||
+		err.Error() != "headers use unset environment variables: FLIT_NOPE_1, FLIT_NOPE_2" {
+		t.Fatalf("missing: %v", err)
 	}
 }

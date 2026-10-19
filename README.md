@@ -148,7 +148,8 @@ state, and the agent's todo list.
 - **MCP servers** are configured in the YAML config, never an `mcp.json`.
   Each has either a `command` (a subprocess, over stdio) or a `url` (a
   remote server, over streamable HTTP, falling back to legacy SSE), with
-  optional `headers` for things like auth:
+  optional `headers` for things like auth (`${VAR}` in a header value is
+  read from the environment, so tokens needn't sit in the config):
 
   ```yaml
   mcp_servers:
@@ -159,7 +160,7 @@ state, and the agent's todo list.
     - name: docs
       url: https://example.com/mcp
       headers:
-        Authorization: Bearer your-token
+        Authorization: Bearer ${DOCS_MCP_TOKEN}
   ```
 
   Each session turns servers on or off at runtime; only enabled servers'

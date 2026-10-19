@@ -113,6 +113,8 @@ type MCPServer struct {
 	// HTTP transport, or legacy SSE if the server only speaks that.
 	URL string `yaml:"url"`
 	// Headers are sent with every HTTP request (e.g. Authorization).
+	// ${VAR} in a value is replaced with that environment variable when
+	// connecting; an unset one fails the server.
 	Headers map[string]string `yaml:"headers"`
 	// Enabled is whether new sessions start with it on. Default true.
 	Enabled *bool `yaml:"enabled"`
@@ -523,8 +525,8 @@ mcp_servers: []
 #    enabled: true
 #  - name: docs
 #    url: https://example.com/mcp
-#    headers:
-#      Authorization: Bearer your-token
+#    headers:                            # ${VAR} is read from the environment
+#      Authorization: Bearer ${DOCS_MCP_TOKEN}
 #    enabled: true
 
 web:
