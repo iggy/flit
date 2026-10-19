@@ -897,10 +897,12 @@ class SendRequest extends $pb.GeneratedMessage {
   factory SendRequest({
     $core.String? sessionId,
     $core.String? text,
+    $core.String? client,
   }) {
     final result = SendRequest._();
     if (sessionId != null) result.sessionId = sessionId;
     if (text != null) result.text = text;
+    if (client != null) result.client = client;
     return result;
   }
 
@@ -919,6 +921,7 @@ class SendRequest extends $pb.GeneratedMessage {
       createEmptyInstance: SendRequest.$_createMessage)
     ..aOS(1, _omitFieldNames ? '' : 'sessionId')
     ..aOS(2, _omitFieldNames ? '' : 'text')
+    ..aOS(3, _omitFieldNames ? '' : 'client')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -960,14 +963,26 @@ class SendRequest extends $pb.GeneratedMessage {
   $core.bool hasText() => $_has(1);
   @$pb.TagNumber(2)
   void clearText() => $_clearField(2);
+
+  /// Who sent it, for the log (like AnswerPromptRequest.client).
+  @$pb.TagNumber(3)
+  $core.String get client => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set client($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasClient() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearClient() => $_clearField(3);
 }
 
 class SendResponse extends $pb.GeneratedMessage {
   factory SendResponse({
     $fixnum.Int64? seq,
+    $core.String? queueId,
   }) {
     final result = SendResponse._();
     if (seq != null) result.seq = seq;
+    if (queueId != null) result.queueId = queueId;
     return result;
   }
 
@@ -985,6 +1000,7 @@ class SendResponse extends $pb.GeneratedMessage {
       package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
       createEmptyInstance: SendResponse.$_createMessage)
     ..aInt64(1, _omitFieldNames ? '' : 'seq')
+    ..aOS(2, _omitFieldNames ? '' : 'queueId')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -1009,7 +1025,8 @@ class SendResponse extends $pb.GeneratedMessage {
           SendResponse.$_createMessage);
   static SendResponse? _defaultInstance;
 
-  /// Sequence number of the user message's first event.
+  /// Sequence number of the user message's first event (or of its
+  /// MessageQueued event).
   @$pb.TagNumber(1)
   $fixnum.Int64 get seq => $_getI64(0);
   @$pb.TagNumber(1)
@@ -1018,6 +1035,266 @@ class SendResponse extends $pb.GeneratedMessage {
   $core.bool hasSeq() => $_has(0);
   @$pb.TagNumber(1)
   void clearSeq() => $_clearField(1);
+
+  /// Set when the message was queued because a turn is running.
+  @$pb.TagNumber(2)
+  $core.String get queueId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set queueId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasQueueId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearQueueId() => $_clearField(2);
+}
+
+class EditQueuedMessageRequest extends $pb.GeneratedMessage {
+  factory EditQueuedMessageRequest({
+    $core.String? sessionId,
+    $core.String? queueId,
+    $core.String? text,
+  }) {
+    final result = EditQueuedMessageRequest._();
+    if (sessionId != null) result.sessionId = sessionId;
+    if (queueId != null) result.queueId = queueId;
+    if (text != null) result.text = text;
+    return result;
+  }
+
+  EditQueuedMessageRequest._();
+
+  factory EditQueuedMessageRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      EditQueuedMessageRequest()..mergeFromBuffer(data, registry);
+  factory EditQueuedMessageRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      EditQueuedMessageRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'EditQueuedMessageRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: EditQueuedMessageRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'sessionId')
+    ..aOS(2, _omitFieldNames ? '' : 'queueId')
+    ..aOS(3, _omitFieldNames ? '' : 'text')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  EditQueuedMessageRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  EditQueuedMessageRequest copyWith(
+          void Function(EditQueuedMessageRequest) updates) =>
+      super.copyWith((message) => updates(message as EditQueuedMessageRequest))
+          as EditQueuedMessageRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use EditQueuedMessageRequest() / EditQueuedMessageRequest.new instead')
+  static EditQueuedMessageRequest create() => EditQueuedMessageRequest._();
+  static $pb.GeneratedMessage $_createMessage() => EditQueuedMessageRequest._();
+  @$core.override
+  EditQueuedMessageRequest createEmptyInstance() =>
+      EditQueuedMessageRequest._();
+  @$core.pragma('dart2js:noInline')
+  static EditQueuedMessageRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<EditQueuedMessageRequest>(
+          EditQueuedMessageRequest.$_createMessage);
+  static EditQueuedMessageRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get sessionId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set sessionId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSessionId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSessionId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get queueId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set queueId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasQueueId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearQueueId() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get text => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set text($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasText() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearText() => $_clearField(3);
+}
+
+class EditQueuedMessageResponse extends $pb.GeneratedMessage {
+  factory EditQueuedMessageResponse() => EditQueuedMessageResponse._();
+
+  EditQueuedMessageResponse._();
+
+  factory EditQueuedMessageResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      EditQueuedMessageResponse()..mergeFromBuffer(data, registry);
+  factory EditQueuedMessageResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      EditQueuedMessageResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'EditQueuedMessageResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: EditQueuedMessageResponse.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  EditQueuedMessageResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  EditQueuedMessageResponse copyWith(
+          void Function(EditQueuedMessageResponse) updates) =>
+      super.copyWith((message) => updates(message as EditQueuedMessageResponse))
+          as EditQueuedMessageResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use EditQueuedMessageResponse() / EditQueuedMessageResponse.new instead')
+  static EditQueuedMessageResponse create() => EditQueuedMessageResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      EditQueuedMessageResponse._();
+  @$core.override
+  EditQueuedMessageResponse createEmptyInstance() =>
+      EditQueuedMessageResponse._();
+  @$core.pragma('dart2js:noInline')
+  static EditQueuedMessageResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<EditQueuedMessageResponse>(
+          EditQueuedMessageResponse.$_createMessage);
+  static EditQueuedMessageResponse? _defaultInstance;
+}
+
+class CancelQueuedMessageRequest extends $pb.GeneratedMessage {
+  factory CancelQueuedMessageRequest({
+    $core.String? sessionId,
+    $core.String? queueId,
+  }) {
+    final result = CancelQueuedMessageRequest._();
+    if (sessionId != null) result.sessionId = sessionId;
+    if (queueId != null) result.queueId = queueId;
+    return result;
+  }
+
+  CancelQueuedMessageRequest._();
+
+  factory CancelQueuedMessageRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CancelQueuedMessageRequest()..mergeFromBuffer(data, registry);
+  factory CancelQueuedMessageRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CancelQueuedMessageRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CancelQueuedMessageRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: CancelQueuedMessageRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'sessionId')
+    ..aOS(2, _omitFieldNames ? '' : 'queueId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CancelQueuedMessageRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CancelQueuedMessageRequest copyWith(
+          void Function(CancelQueuedMessageRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as CancelQueuedMessageRequest))
+          as CancelQueuedMessageRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use CancelQueuedMessageRequest() / CancelQueuedMessageRequest.new instead')
+  static CancelQueuedMessageRequest create() => CancelQueuedMessageRequest._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      CancelQueuedMessageRequest._();
+  @$core.override
+  CancelQueuedMessageRequest createEmptyInstance() =>
+      CancelQueuedMessageRequest._();
+  @$core.pragma('dart2js:noInline')
+  static CancelQueuedMessageRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CancelQueuedMessageRequest>(
+          CancelQueuedMessageRequest.$_createMessage);
+  static CancelQueuedMessageRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get sessionId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set sessionId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSessionId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSessionId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get queueId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set queueId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasQueueId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearQueueId() => $_clearField(2);
+}
+
+class CancelQueuedMessageResponse extends $pb.GeneratedMessage {
+  factory CancelQueuedMessageResponse() => CancelQueuedMessageResponse._();
+
+  CancelQueuedMessageResponse._();
+
+  factory CancelQueuedMessageResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CancelQueuedMessageResponse()..mergeFromBuffer(data, registry);
+  factory CancelQueuedMessageResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CancelQueuedMessageResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CancelQueuedMessageResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: CancelQueuedMessageResponse.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CancelQueuedMessageResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CancelQueuedMessageResponse copyWith(
+          void Function(CancelQueuedMessageResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as CancelQueuedMessageResponse))
+          as CancelQueuedMessageResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use CancelQueuedMessageResponse() / CancelQueuedMessageResponse.new instead')
+  static CancelQueuedMessageResponse create() =>
+      CancelQueuedMessageResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      CancelQueuedMessageResponse._();
+  @$core.override
+  CancelQueuedMessageResponse createEmptyInstance() =>
+      CancelQueuedMessageResponse._();
+  @$core.pragma('dart2js:noInline')
+  static CancelQueuedMessageResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<CancelQueuedMessageResponse>(
+          CancelQueuedMessageResponse.$_createMessage);
+  static CancelQueuedMessageResponse? _defaultInstance;
 }
 
 class InterruptRequest extends $pb.GeneratedMessage {
@@ -2630,6 +2907,9 @@ enum Event_Payload {
   modelCallStarted,
   promptProgress,
   modelCallEnded,
+  messageQueued,
+  queuedMessageUpdated,
+  queuedMessageDelivered,
   notSet
 }
 
@@ -2661,6 +2941,9 @@ class Event extends $pb.GeneratedMessage {
     ModelCallStarted? modelCallStarted,
     PromptProgress? promptProgress,
     ModelCallEnded? modelCallEnded,
+    MessageQueued? messageQueued,
+    QueuedMessageUpdated? queuedMessageUpdated,
+    QueuedMessageDelivered? queuedMessageDelivered,
   }) {
     final result = Event._();
     if (sessionId != null) result.sessionId = sessionId;
@@ -2688,6 +2971,11 @@ class Event extends $pb.GeneratedMessage {
     if (modelCallStarted != null) result.modelCallStarted = modelCallStarted;
     if (promptProgress != null) result.promptProgress = promptProgress;
     if (modelCallEnded != null) result.modelCallEnded = modelCallEnded;
+    if (messageQueued != null) result.messageQueued = messageQueued;
+    if (queuedMessageUpdated != null)
+      result.queuedMessageUpdated = queuedMessageUpdated;
+    if (queuedMessageDelivered != null)
+      result.queuedMessageDelivered = queuedMessageDelivered;
     return result;
   }
 
@@ -2723,6 +3011,9 @@ class Event extends $pb.GeneratedMessage {
     29: Event_Payload.modelCallStarted,
     30: Event_Payload.promptProgress,
     31: Event_Payload.modelCallEnded,
+    32: Event_Payload.messageQueued,
+    33: Event_Payload.queuedMessageUpdated,
+    34: Event_Payload.queuedMessageDelivered,
     0: Event_Payload.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
@@ -2751,7 +3042,10 @@ class Event extends $pb.GeneratedMessage {
       28,
       29,
       30,
-      31
+      31,
+      32,
+      33,
+      34
     ])
     ..aOS(1, _omitFieldNames ? '' : 'sessionId')
     ..aInt64(2, _omitFieldNames ? '' : 'seq')
@@ -2801,6 +3095,14 @@ class Event extends $pb.GeneratedMessage {
         subBuilder: PromptProgress.$_createMessage)
     ..aOM<ModelCallEnded>(31, _omitFieldNames ? '' : 'modelCallEnded',
         subBuilder: ModelCallEnded.$_createMessage)
+    ..aOM<MessageQueued>(32, _omitFieldNames ? '' : 'messageQueued',
+        subBuilder: MessageQueued.$_createMessage)
+    ..aOM<QueuedMessageUpdated>(
+        33, _omitFieldNames ? '' : 'queuedMessageUpdated',
+        subBuilder: QueuedMessageUpdated.$_createMessage)
+    ..aOM<QueuedMessageDelivered>(
+        34, _omitFieldNames ? '' : 'queuedMessageDelivered',
+        subBuilder: QueuedMessageDelivered.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -2845,6 +3147,9 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(29)
   @$pb.TagNumber(30)
   @$pb.TagNumber(31)
+  @$pb.TagNumber(32)
+  @$pb.TagNumber(33)
+  @$pb.TagNumber(34)
   Event_Payload whichPayload() => _Event_PayloadByTag[$_whichOneof(0)]!;
   @$pb.TagNumber(10)
   @$pb.TagNumber(11)
@@ -2868,6 +3173,9 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(29)
   @$pb.TagNumber(30)
   @$pb.TagNumber(31)
+  @$pb.TagNumber(32)
+  @$pb.TagNumber(33)
+  @$pb.TagNumber(34)
   void clearPayload() => $_clearField($_whichOneof(0));
 
   @$pb.TagNumber(1)
@@ -3141,6 +3449,40 @@ class Event extends $pb.GeneratedMessage {
   void clearModelCallEnded() => $_clearField(31);
   @$pb.TagNumber(31)
   ModelCallEnded ensureModelCallEnded() => $_ensure(24);
+
+  @$pb.TagNumber(32)
+  MessageQueued get messageQueued => $_getN(25);
+  @$pb.TagNumber(32)
+  set messageQueued(MessageQueued value) => $_setField(32, value);
+  @$pb.TagNumber(32)
+  $core.bool hasMessageQueued() => $_has(25);
+  @$pb.TagNumber(32)
+  void clearMessageQueued() => $_clearField(32);
+  @$pb.TagNumber(32)
+  MessageQueued ensureMessageQueued() => $_ensure(25);
+
+  @$pb.TagNumber(33)
+  QueuedMessageUpdated get queuedMessageUpdated => $_getN(26);
+  @$pb.TagNumber(33)
+  set queuedMessageUpdated(QueuedMessageUpdated value) => $_setField(33, value);
+  @$pb.TagNumber(33)
+  $core.bool hasQueuedMessageUpdated() => $_has(26);
+  @$pb.TagNumber(33)
+  void clearQueuedMessageUpdated() => $_clearField(33);
+  @$pb.TagNumber(33)
+  QueuedMessageUpdated ensureQueuedMessageUpdated() => $_ensure(26);
+
+  @$pb.TagNumber(34)
+  QueuedMessageDelivered get queuedMessageDelivered => $_getN(27);
+  @$pb.TagNumber(34)
+  set queuedMessageDelivered(QueuedMessageDelivered value) =>
+      $_setField(34, value);
+  @$pb.TagNumber(34)
+  $core.bool hasQueuedMessageDelivered() => $_has(27);
+  @$pb.TagNumber(34)
+  void clearQueuedMessageDelivered() => $_clearField(34);
+  @$pb.TagNumber(34)
+  QueuedMessageDelivered ensureQueuedMessageDelivered() => $_ensure(27);
 }
 
 /// MessageStarted opens a message. Its text arrives as TextDelta events and
@@ -5456,6 +5798,248 @@ class ModelCallEnded extends $pb.GeneratedMessage {
   void clearWillRetry() => $_clearField(18);
 }
 
+/// MessageQueued is a user message sent while a turn was running. It waits
+/// for the turn's next step (see Send); QueuedMessageUpdated edits or
+/// cancels it and QueuedMessageDelivered turns it into a user message.
+class MessageQueued extends $pb.GeneratedMessage {
+  factory MessageQueued({
+    $core.String? queueId,
+    $core.String? text,
+    $core.String? client,
+  }) {
+    final result = MessageQueued._();
+    if (queueId != null) result.queueId = queueId;
+    if (text != null) result.text = text;
+    if (client != null) result.client = client;
+    return result;
+  }
+
+  MessageQueued._();
+
+  factory MessageQueued.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      MessageQueued()..mergeFromBuffer(data, registry);
+  factory MessageQueued.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      MessageQueued()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'MessageQueued',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: MessageQueued.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'queueId')
+    ..aOS(2, _omitFieldNames ? '' : 'text')
+    ..aOS(3, _omitFieldNames ? '' : 'client')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  MessageQueued clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  MessageQueued copyWith(void Function(MessageQueued) updates) =>
+      super.copyWith((message) => updates(message as MessageQueued))
+          as MessageQueued;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use MessageQueued() / MessageQueued.new instead')
+  static MessageQueued create() => MessageQueued._();
+  static $pb.GeneratedMessage $_createMessage() => MessageQueued._();
+  @$core.override
+  MessageQueued createEmptyInstance() => MessageQueued._();
+  @$core.pragma('dart2js:noInline')
+  static MessageQueued getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<MessageQueued>(
+          MessageQueued.$_createMessage);
+  static MessageQueued? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get queueId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set queueId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasQueueId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearQueueId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get text => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set text($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasText() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearText() => $_clearField(2);
+
+  /// Who sent it (SendRequest.client).
+  @$pb.TagNumber(3)
+  $core.String get client => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set client($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasClient() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearClient() => $_clearField(3);
+}
+
+/// QueuedMessageUpdated is a queued message edited (text) or withdrawn
+/// (cancelled).
+class QueuedMessageUpdated extends $pb.GeneratedMessage {
+  factory QueuedMessageUpdated({
+    $core.String? queueId,
+    $core.String? text,
+    $core.bool? cancelled,
+  }) {
+    final result = QueuedMessageUpdated._();
+    if (queueId != null) result.queueId = queueId;
+    if (text != null) result.text = text;
+    if (cancelled != null) result.cancelled = cancelled;
+    return result;
+  }
+
+  QueuedMessageUpdated._();
+
+  factory QueuedMessageUpdated.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      QueuedMessageUpdated()..mergeFromBuffer(data, registry);
+  factory QueuedMessageUpdated.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      QueuedMessageUpdated()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'QueuedMessageUpdated',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: QueuedMessageUpdated.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'queueId')
+    ..aOS(2, _omitFieldNames ? '' : 'text')
+    ..aOB(3, _omitFieldNames ? '' : 'cancelled')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  QueuedMessageUpdated clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  QueuedMessageUpdated copyWith(void Function(QueuedMessageUpdated) updates) =>
+      super.copyWith((message) => updates(message as QueuedMessageUpdated))
+          as QueuedMessageUpdated;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use QueuedMessageUpdated() / QueuedMessageUpdated.new instead')
+  static QueuedMessageUpdated create() => QueuedMessageUpdated._();
+  static $pb.GeneratedMessage $_createMessage() => QueuedMessageUpdated._();
+  @$core.override
+  QueuedMessageUpdated createEmptyInstance() => QueuedMessageUpdated._();
+  @$core.pragma('dart2js:noInline')
+  static QueuedMessageUpdated getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<QueuedMessageUpdated>(
+          QueuedMessageUpdated.$_createMessage);
+  static QueuedMessageUpdated? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get queueId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set queueId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasQueueId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearQueueId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get text => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set text($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasText() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearText() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.bool get cancelled => $_getBF(2);
+  @$pb.TagNumber(3)
+  set cancelled($core.bool value) => $_setBool(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasCancelled() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearCancelled() => $_clearField(3);
+}
+
+/// QueuedMessageDelivered is a queued message delivered as user message
+/// message_id, whose MessageStarted follows.
+class QueuedMessageDelivered extends $pb.GeneratedMessage {
+  factory QueuedMessageDelivered({
+    $core.String? queueId,
+    $core.String? messageId,
+  }) {
+    final result = QueuedMessageDelivered._();
+    if (queueId != null) result.queueId = queueId;
+    if (messageId != null) result.messageId = messageId;
+    return result;
+  }
+
+  QueuedMessageDelivered._();
+
+  factory QueuedMessageDelivered.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      QueuedMessageDelivered()..mergeFromBuffer(data, registry);
+  factory QueuedMessageDelivered.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      QueuedMessageDelivered()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'QueuedMessageDelivered',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: QueuedMessageDelivered.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'queueId')
+    ..aOS(2, _omitFieldNames ? '' : 'messageId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  QueuedMessageDelivered clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  QueuedMessageDelivered copyWith(
+          void Function(QueuedMessageDelivered) updates) =>
+      super.copyWith((message) => updates(message as QueuedMessageDelivered))
+          as QueuedMessageDelivered;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use QueuedMessageDelivered() / QueuedMessageDelivered.new instead')
+  static QueuedMessageDelivered create() => QueuedMessageDelivered._();
+  static $pb.GeneratedMessage $_createMessage() => QueuedMessageDelivered._();
+  @$core.override
+  QueuedMessageDelivered createEmptyInstance() => QueuedMessageDelivered._();
+  @$core.pragma('dart2js:noInline')
+  static QueuedMessageDelivered getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<QueuedMessageDelivered>(
+          QueuedMessageDelivered.$_createMessage);
+  static QueuedMessageDelivered? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get queueId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set queueId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasQueueId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearQueueId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get messageId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set messageId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasMessageId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearMessageId() => $_clearField(2);
+}
+
 /// SessionService runs agent sessions. A session is a conversation with the
 /// agent in a working directory. Everything that happens in it is recorded as
 /// an append-only, numbered event log, so a client can attach at any point,
@@ -5492,12 +6076,29 @@ class SessionServiceApi {
       _client.invoke<AttachResponse>(
           ctx, 'SessionService', 'Attach', request, AttachResponse());
 
-  /// Send adds a user message and starts a turn. Fails with
-  /// FAILED_PRECONDITION while a turn is already running.
+  /// Send adds a user message and starts a turn. While a turn is running
+  /// the message is queued instead (MessageQueued) and delivered at the
+  /// turn's next step: after the current model call or tool, before the
+  /// next model call; if the turn ends without another call, it starts the
+  /// next turn. Messages still queued when a turn is interrupted wait for
+  /// the next Send, which delivers them first; with an empty text, Send
+  /// just delivers the queue.
   $async.Future<SendResponse> send(
           $pb.ClientContext? ctx, SendRequest request) =>
       _client.invoke<SendResponse>(
           ctx, 'SessionService', 'Send', request, SendResponse());
+
+  /// EditQueuedMessage changes, and CancelQueuedMessage withdraws, a queued
+  /// message that hasn't been delivered yet. Once it has, they fail with
+  /// FAILED_PRECONDITION.
+  $async.Future<EditQueuedMessageResponse> editQueuedMessage(
+          $pb.ClientContext? ctx, EditQueuedMessageRequest request) =>
+      _client.invoke<EditQueuedMessageResponse>(ctx, 'SessionService',
+          'EditQueuedMessage', request, EditQueuedMessageResponse());
+  $async.Future<CancelQueuedMessageResponse> cancelQueuedMessage(
+          $pb.ClientContext? ctx, CancelQueuedMessageRequest request) =>
+      _client.invoke<CancelQueuedMessageResponse>(ctx, 'SessionService',
+          'CancelQueuedMessage', request, CancelQueuedMessageResponse());
 
   /// Interrupt stops the running turn, if any. Pending prompts are resolved
   /// as denied.

@@ -73,7 +73,11 @@ final class FakeFlitRepository extends Fake implements FlitRepository {
   Future<bool> interrupt(String sessionId) async => true;
 
   @override
-  Future<void> send(String sessionId, String text) async {}
+  Future<void> send(
+    String sessionId,
+    String text, {
+    String client = '',
+  }) async {}
 }
 
 FlitEvent delta(int seq, String text) =>

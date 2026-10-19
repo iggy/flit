@@ -93,3 +93,23 @@ func TestTimelineNothingOpenButWorking(t *testing.T) {
 		t.Fatal(b.String())
 	}
 }
+
+func TestTimelineQueue(t *testing.T) {
+	l := &log{t0: time.Date(2026, 10, 18, 17, 0, 0, 0, time.Local)}
+	l.add(0, &flitv1.Event{Payload: &flitv1.Event_MessageQueued{MessageQueued: &flitv1.MessageQueued{QueueId: "q1", Text: "also this", Client: "phone"}}})
+	l.add(time.Second, &flitv1.Event{Payload: &flitv1.Event_MessageQueued{MessageQueued: &flitv1.MessageQueued{QueueId: "q2", Text: "and that"}}})
+	l.add(2*time.Second, &flitv1.Event{Payload: &flitv1.Event_QueuedMessageUpdated{QueuedMessageUpdated: &flitv1.QueuedMessageUpdated{QueueId: "q2", Text: "and that, fixed"}}})
+	l.add(5*time.Second, &flitv1.Event{Payload: &flitv1.Event_QueuedMessageDelivered{QueuedMessageDelivered: &flitv1.QueuedMessageDelivered{QueueId: "q1", MessageId: "m9"}}})
+	var b strings.Builder
+	_ = Write(&b, store.Session{ID: "s1"}, l.evs, l.t0.Add(time.Minute))
+	for _, want := range []string{
+		"message queued (phone): also this",
+		"queued message edited: and that, fixed",
+		"queued message delivered after 5.0s",
+		"message queued 59.0s ago, not delivered yet: and that, fixed",
+	} {
+		if !strings.Contains(b.String(), want) {
+			t.Errorf("missing %q in:\n%s", want, b.String())
+		}
+	}
+}

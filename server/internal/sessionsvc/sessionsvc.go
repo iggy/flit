@@ -62,7 +62,7 @@ func connectErr(err error) error {
 		code = connect.CodeNotFound
 	case errors.Is(err, agent.ErrInvalid):
 		code = connect.CodeInvalidArgument
-	case errors.Is(err, agent.ErrBusy), errors.Is(err, agent.ErrPromptGone), errors.Is(err, agent.ErrNoCallToRetry):
+	case errors.Is(err, agent.ErrBusy), errors.Is(err, agent.ErrPromptGone), errors.Is(err, agent.ErrNoCallToRetry), errors.Is(err, agent.ErrQueueGone):
 		code = connect.CodeFailedPrecondition
 	case errors.Is(err, agent.ErrSlowClient):
 		code = connect.CodeResourceExhausted
@@ -162,11 +162,35 @@ func (s *Service) Send(ctx context.Context, req *connect.Request[flitv1.SendRequ
 	if err := required("session_id", req.Msg.SessionId); err != nil {
 		return nil, err
 	}
-	seq, err := s.M.Send(ctx, req.Msg.SessionId, req.Msg.Text)
+	res, err := s.M.SendMessage(ctx, req.Msg.SessionId, req.Msg.Text, req.Msg.Client)
 	if err != nil {
 		return nil, connectErr(err)
 	}
-	return connect.NewResponse(&flitv1.SendResponse{Seq: seq}), nil
+	return connect.NewResponse(&flitv1.SendResponse{Seq: res.Seq, QueueId: res.QueueID}), nil
+}
+
+// EditQueuedMessage implements flitv1connect.SessionServiceHandler.
+func (s *Service) EditQueuedMessage(ctx context.Context, req *connect.Request[flitv1.EditQueuedMessageRequest]) (*connect.Response[flitv1.EditQueuedMessageResponse], error) {
+	m := req.Msg
+	if err := errors.Join(required("session_id", m.SessionId), required("queue_id", m.QueueId)); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	if err := s.M.EditQueuedMessage(ctx, m.SessionId, m.QueueId, m.Text); err != nil {
+		return nil, connectErr(err)
+	}
+	return connect.NewResponse(&flitv1.EditQueuedMessageResponse{}), nil
+}
+
+// CancelQueuedMessage implements flitv1connect.SessionServiceHandler.
+func (s *Service) CancelQueuedMessage(ctx context.Context, req *connect.Request[flitv1.CancelQueuedMessageRequest]) (*connect.Response[flitv1.CancelQueuedMessageResponse], error) {
+	m := req.Msg
+	if err := errors.Join(required("session_id", m.SessionId), required("queue_id", m.QueueId)); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	if err := s.M.CancelQueuedMessage(ctx, m.SessionId, m.QueueId); err != nil {
+		return nil, connectErr(err)
+	}
+	return connect.NewResponse(&flitv1.CancelQueuedMessageResponse{}), nil
 }
 
 // Interrupt implements flitv1connect.SessionServiceHandler.

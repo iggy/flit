@@ -20,7 +20,8 @@ import (
 // order). now is used for how long open things have been waiting.
 func Write(w io.Writer, sess store.Session, events []*flitv1.Event, now time.Time) error {
 	p := &printer{w: w, now: now,
-		msgs: map[string]*message{}, calls: map[string]callStart{}, tools: map[string]toolStart{}, prompts: map[string]promptStart{}}
+		msgs: map[string]*message{}, calls: map[string]callStart{}, tools: map[string]toolStart{}, prompts: map[string]promptStart{},
+		queued: map[string]promptStart{}}
 	p.header(sess, events)
 	for _, ev := range events {
 		p.event(ev)
@@ -60,6 +61,7 @@ type printer struct {
 	calls   map[string]callStart // by message id and attempt
 	tools   map[string]toolStart
 	prompts map[string]promptStart
+	queued  map[string]promptStart // queued messages, by queue id
 	// lastProgress is the latest prompt progress of each open call.
 	lastProgress map[string]*flitv1.PromptProgress
 	last         time.Time
@@ -182,6 +184,27 @@ func (p *printer) event(ev *flitv1.Event) {
 	case ev.GetModelChanged() != nil:
 		m := ev.GetModelChanged()
 		p.line(at, 0, "model set to %s/%s%s", m.Provider, m.Model, paren(m.Effort))
+	case ev.GetMessageQueued() != nil:
+		q := ev.GetMessageQueued()
+		p.queued[q.QueueId] = promptStart{title: q.Text, at: at}
+		p.line(at, 1, "message queued%s: %s", paren(q.Client), snippet(q.Text, 80))
+	case ev.GetQueuedMessageUpdated() != nil:
+		u := ev.GetQueuedMessageUpdated()
+		if u.Cancelled {
+			delete(p.queued, u.QueueId)
+			p.line(at, 1, "queued message cancelled")
+		} else {
+			q := p.queued[u.QueueId]
+			q.title = u.Text
+			p.queued[u.QueueId] = q
+			p.line(at, 1, "queued message edited: %s", snippet(u.Text, 80))
+		}
+	case ev.GetQueuedMessageDelivered() != nil:
+		d := ev.GetQueuedMessageDelivered()
+		if q, ok := p.queued[d.QueueId]; ok {
+			p.line(at, 1, "queued message delivered after %s", dur(at.Sub(q.at)))
+		}
+		delete(p.queued, d.QueueId)
 	case ev.GetToolOutput() != nil, ev.GetTodoUpdated() != nil, ev.GetFeedback() != nil, ev.GetPermissionCheck() != nil:
 		// Not timeline material.
 	}
@@ -273,6 +296,9 @@ func (p *printer) open(sess store.Session) {
 	}
 	for id, pr := range p.prompts {
 		items = append(items, item{pr.at, fmt.Sprintf("prompt %s waiting for the user for %s: %s", id, dur(p.now.Sub(pr.at)), pr.title)})
+	}
+	for _, q := range p.queued {
+		items = append(items, item{q.at, fmt.Sprintf("message queued %s ago, not delivered yet: %s", dur(p.now.Sub(q.at)), snippet(q.title, 80))})
 	}
 	sort.Slice(items, func(i, j int) bool { return items[i].at.Before(items[j].at) })
 	p.printf("\n")

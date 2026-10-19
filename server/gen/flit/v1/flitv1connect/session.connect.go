@@ -46,6 +46,12 @@ const (
 	SessionServiceAttachProcedure = "/flit.v1.SessionService/Attach"
 	// SessionServiceSendProcedure is the fully-qualified name of the SessionService's Send RPC.
 	SessionServiceSendProcedure = "/flit.v1.SessionService/Send"
+	// SessionServiceEditQueuedMessageProcedure is the fully-qualified name of the SessionService's
+	// EditQueuedMessage RPC.
+	SessionServiceEditQueuedMessageProcedure = "/flit.v1.SessionService/EditQueuedMessage"
+	// SessionServiceCancelQueuedMessageProcedure is the fully-qualified name of the SessionService's
+	// CancelQueuedMessage RPC.
+	SessionServiceCancelQueuedMessageProcedure = "/flit.v1.SessionService/CancelQueuedMessage"
 	// SessionServiceInterruptProcedure is the fully-qualified name of the SessionService's Interrupt
 	// RPC.
 	SessionServiceInterruptProcedure = "/flit.v1.SessionService/Interrupt"
@@ -91,9 +97,19 @@ type SessionServiceClient interface {
 	// events live until the client disconnects. Replayed events are identical
 	// to what a live client saw, deltas included.
 	Attach(context.Context, *connect.Request[v1.AttachRequest]) (*connect.ServerStreamForClient[v1.AttachResponse], error)
-	// Send adds a user message and starts a turn. Fails with
-	// FAILED_PRECONDITION while a turn is already running.
+	// Send adds a user message and starts a turn. While a turn is running
+	// the message is queued instead (MessageQueued) and delivered at the
+	// turn's next step: after the current model call or tool, before the
+	// next model call; if the turn ends without another call, it starts the
+	// next turn. Messages still queued when a turn is interrupted wait for
+	// the next Send, which delivers them first; with an empty text, Send
+	// just delivers the queue.
 	Send(context.Context, *connect.Request[v1.SendRequest]) (*connect.Response[v1.SendResponse], error)
+	// EditQueuedMessage changes, and CancelQueuedMessage withdraws, a queued
+	// message that hasn't been delivered yet. Once it has, they fail with
+	// FAILED_PRECONDITION.
+	EditQueuedMessage(context.Context, *connect.Request[v1.EditQueuedMessageRequest]) (*connect.Response[v1.EditQueuedMessageResponse], error)
+	CancelQueuedMessage(context.Context, *connect.Request[v1.CancelQueuedMessageRequest]) (*connect.Response[v1.CancelQueuedMessageResponse], error)
 	// Interrupt stops the running turn, if any. Pending prompts are resolved
 	// as denied.
 	Interrupt(context.Context, *connect.Request[v1.InterruptRequest]) (*connect.Response[v1.InterruptResponse], error)
@@ -172,6 +188,18 @@ func NewSessionServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(sessionServiceMethods.ByName("Send")),
 			connect.WithClientOptions(opts...),
 		),
+		editQueuedMessage: connect.NewClient[v1.EditQueuedMessageRequest, v1.EditQueuedMessageResponse](
+			httpClient,
+			baseURL+SessionServiceEditQueuedMessageProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("EditQueuedMessage")),
+			connect.WithClientOptions(opts...),
+		),
+		cancelQueuedMessage: connect.NewClient[v1.CancelQueuedMessageRequest, v1.CancelQueuedMessageResponse](
+			httpClient,
+			baseURL+SessionServiceCancelQueuedMessageProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("CancelQueuedMessage")),
+			connect.WithClientOptions(opts...),
+		),
 		interrupt: connect.NewClient[v1.InterruptRequest, v1.InterruptResponse](
 			httpClient,
 			baseURL+SessionServiceInterruptProcedure,
@@ -245,22 +273,24 @@ func NewSessionServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 
 // sessionServiceClient implements SessionServiceClient.
 type sessionServiceClient struct {
-	createSession  *connect.Client[v1.CreateSessionRequest, v1.CreateSessionResponse]
-	listSessions   *connect.Client[v1.ListSessionsRequest, v1.ListSessionsResponse]
-	getSession     *connect.Client[v1.GetSessionRequest, v1.GetSessionResponse]
-	attach         *connect.Client[v1.AttachRequest, v1.AttachResponse]
-	send           *connect.Client[v1.SendRequest, v1.SendResponse]
-	interrupt      *connect.Client[v1.InterruptRequest, v1.InterruptResponse]
-	retryModelCall *connect.Client[v1.RetryModelCallRequest, v1.RetryModelCallResponse]
-	answerPrompt   *connect.Client[v1.AnswerPromptRequest, v1.AnswerPromptResponse]
-	setModel       *connect.Client[v1.SetModelRequest, v1.SetModelResponse]
-	setEffort      *connect.Client[v1.SetEffortRequest, v1.SetEffortResponse]
-	setYolo        *connect.Client[v1.SetYoloRequest, v1.SetYoloResponse]
-	moveSession    *connect.Client[v1.MoveSessionRequest, v1.MoveSessionResponse]
-	rate           *connect.Client[v1.RateRequest, v1.RateResponse]
-	listMcpServers *connect.Client[v1.ListMcpServersRequest, v1.ListMcpServersResponse]
-	setMcpServer   *connect.Client[v1.SetMcpServerRequest, v1.SetMcpServerResponse]
-	listSkills     *connect.Client[v1.ListSkillsRequest, v1.ListSkillsResponse]
+	createSession       *connect.Client[v1.CreateSessionRequest, v1.CreateSessionResponse]
+	listSessions        *connect.Client[v1.ListSessionsRequest, v1.ListSessionsResponse]
+	getSession          *connect.Client[v1.GetSessionRequest, v1.GetSessionResponse]
+	attach              *connect.Client[v1.AttachRequest, v1.AttachResponse]
+	send                *connect.Client[v1.SendRequest, v1.SendResponse]
+	editQueuedMessage   *connect.Client[v1.EditQueuedMessageRequest, v1.EditQueuedMessageResponse]
+	cancelQueuedMessage *connect.Client[v1.CancelQueuedMessageRequest, v1.CancelQueuedMessageResponse]
+	interrupt           *connect.Client[v1.InterruptRequest, v1.InterruptResponse]
+	retryModelCall      *connect.Client[v1.RetryModelCallRequest, v1.RetryModelCallResponse]
+	answerPrompt        *connect.Client[v1.AnswerPromptRequest, v1.AnswerPromptResponse]
+	setModel            *connect.Client[v1.SetModelRequest, v1.SetModelResponse]
+	setEffort           *connect.Client[v1.SetEffortRequest, v1.SetEffortResponse]
+	setYolo             *connect.Client[v1.SetYoloRequest, v1.SetYoloResponse]
+	moveSession         *connect.Client[v1.MoveSessionRequest, v1.MoveSessionResponse]
+	rate                *connect.Client[v1.RateRequest, v1.RateResponse]
+	listMcpServers      *connect.Client[v1.ListMcpServersRequest, v1.ListMcpServersResponse]
+	setMcpServer        *connect.Client[v1.SetMcpServerRequest, v1.SetMcpServerResponse]
+	listSkills          *connect.Client[v1.ListSkillsRequest, v1.ListSkillsResponse]
 }
 
 // CreateSession calls flit.v1.SessionService.CreateSession.
@@ -286,6 +316,16 @@ func (c *sessionServiceClient) Attach(ctx context.Context, req *connect.Request[
 // Send calls flit.v1.SessionService.Send.
 func (c *sessionServiceClient) Send(ctx context.Context, req *connect.Request[v1.SendRequest]) (*connect.Response[v1.SendResponse], error) {
 	return c.send.CallUnary(ctx, req)
+}
+
+// EditQueuedMessage calls flit.v1.SessionService.EditQueuedMessage.
+func (c *sessionServiceClient) EditQueuedMessage(ctx context.Context, req *connect.Request[v1.EditQueuedMessageRequest]) (*connect.Response[v1.EditQueuedMessageResponse], error) {
+	return c.editQueuedMessage.CallUnary(ctx, req)
+}
+
+// CancelQueuedMessage calls flit.v1.SessionService.CancelQueuedMessage.
+func (c *sessionServiceClient) CancelQueuedMessage(ctx context.Context, req *connect.Request[v1.CancelQueuedMessageRequest]) (*connect.Response[v1.CancelQueuedMessageResponse], error) {
+	return c.cancelQueuedMessage.CallUnary(ctx, req)
 }
 
 // Interrupt calls flit.v1.SessionService.Interrupt.
@@ -356,9 +396,19 @@ type SessionServiceHandler interface {
 	// events live until the client disconnects. Replayed events are identical
 	// to what a live client saw, deltas included.
 	Attach(context.Context, *connect.Request[v1.AttachRequest], *connect.ServerStream[v1.AttachResponse]) error
-	// Send adds a user message and starts a turn. Fails with
-	// FAILED_PRECONDITION while a turn is already running.
+	// Send adds a user message and starts a turn. While a turn is running
+	// the message is queued instead (MessageQueued) and delivered at the
+	// turn's next step: after the current model call or tool, before the
+	// next model call; if the turn ends without another call, it starts the
+	// next turn. Messages still queued when a turn is interrupted wait for
+	// the next Send, which delivers them first; with an empty text, Send
+	// just delivers the queue.
 	Send(context.Context, *connect.Request[v1.SendRequest]) (*connect.Response[v1.SendResponse], error)
+	// EditQueuedMessage changes, and CancelQueuedMessage withdraws, a queued
+	// message that hasn't been delivered yet. Once it has, they fail with
+	// FAILED_PRECONDITION.
+	EditQueuedMessage(context.Context, *connect.Request[v1.EditQueuedMessageRequest]) (*connect.Response[v1.EditQueuedMessageResponse], error)
+	CancelQueuedMessage(context.Context, *connect.Request[v1.CancelQueuedMessageRequest]) (*connect.Response[v1.CancelQueuedMessageResponse], error)
 	// Interrupt stops the running turn, if any. Pending prompts are resolved
 	// as denied.
 	Interrupt(context.Context, *connect.Request[v1.InterruptRequest]) (*connect.Response[v1.InterruptResponse], error)
@@ -431,6 +481,18 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 		SessionServiceSendProcedure,
 		svc.Send,
 		connect.WithSchema(sessionServiceMethods.ByName("Send")),
+		connect.WithHandlerOptions(opts...),
+	)
+	sessionServiceEditQueuedMessageHandler := connect.NewUnaryHandler(
+		SessionServiceEditQueuedMessageProcedure,
+		svc.EditQueuedMessage,
+		connect.WithSchema(sessionServiceMethods.ByName("EditQueuedMessage")),
+		connect.WithHandlerOptions(opts...),
+	)
+	sessionServiceCancelQueuedMessageHandler := connect.NewUnaryHandler(
+		SessionServiceCancelQueuedMessageProcedure,
+		svc.CancelQueuedMessage,
+		connect.WithSchema(sessionServiceMethods.ByName("CancelQueuedMessage")),
 		connect.WithHandlerOptions(opts...),
 	)
 	sessionServiceInterruptHandler := connect.NewUnaryHandler(
@@ -513,6 +575,10 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 			sessionServiceAttachHandler.ServeHTTP(w, r)
 		case SessionServiceSendProcedure:
 			sessionServiceSendHandler.ServeHTTP(w, r)
+		case SessionServiceEditQueuedMessageProcedure:
+			sessionServiceEditQueuedMessageHandler.ServeHTTP(w, r)
+		case SessionServiceCancelQueuedMessageProcedure:
+			sessionServiceCancelQueuedMessageHandler.ServeHTTP(w, r)
 		case SessionServiceInterruptProcedure:
 			sessionServiceInterruptHandler.ServeHTTP(w, r)
 		case SessionServiceRetryModelCallProcedure:
@@ -562,6 +628,14 @@ func (UnimplementedSessionServiceHandler) Attach(context.Context, *connect.Reque
 
 func (UnimplementedSessionServiceHandler) Send(context.Context, *connect.Request[v1.SendRequest]) (*connect.Response[v1.SendResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.Send is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) EditQueuedMessage(context.Context, *connect.Request[v1.EditQueuedMessageRequest]) (*connect.Response[v1.EditQueuedMessageResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.EditQueuedMessage is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) CancelQueuedMessage(context.Context, *connect.Request[v1.CancelQueuedMessageRequest]) (*connect.Response[v1.CancelQueuedMessageResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.CancelQueuedMessage is not implemented"))
 }
 
 func (UnimplementedSessionServiceHandler) Interrupt(context.Context, *connect.Request[v1.InterruptRequest]) (*connect.Response[v1.InterruptResponse], error) {

@@ -153,7 +153,18 @@ class FlitChatNotifier extends Notifier<FlitChatState> {
   /// Sends a user message. Returns an error message, or null on success.
   /// The message appears when the server records it, like on every client.
   Future<String?> send(String text) {
-    return _run((r) => r.send(sessionId, text));
+    final client = ref.read(flitDeviceNameProvider);
+    return _run((r) => r.send(sessionId, text, client: client));
+  }
+
+  /// Changes a queued message's text, for every client.
+  Future<String?> editQueued(String queueId, String text) {
+    return _run((r) => r.editQueuedMessage(sessionId, queueId, text));
+  }
+
+  /// Withdraws a queued message, for every client.
+  Future<String?> cancelQueued(String queueId) {
+    return _run((r) => r.cancelQueuedMessage(sessionId, queueId));
   }
 
   /// Stops the running turn.

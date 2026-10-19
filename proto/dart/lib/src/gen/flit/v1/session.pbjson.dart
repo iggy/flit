@@ -367,25 +367,77 @@ const SendRequest$json = {
   '2': [
     {'1': 'session_id', '3': 1, '4': 1, '5': 9, '10': 'sessionId'},
     {'1': 'text', '3': 2, '4': 1, '5': 9, '10': 'text'},
+    {'1': 'client', '3': 3, '4': 1, '5': 9, '10': 'client'},
   ],
 };
 
 /// Descriptor for `SendRequest`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List sendRequestDescriptor = $convert.base64Decode(
     'CgtTZW5kUmVxdWVzdBIdCgpzZXNzaW9uX2lkGAEgASgJUglzZXNzaW9uSWQSEgoEdGV4dBgCIA'
-    'EoCVIEdGV4dA==');
+    'EoCVIEdGV4dBIWCgZjbGllbnQYAyABKAlSBmNsaWVudA==');
 
 @$core.Deprecated('Use sendResponseDescriptor instead')
 const SendResponse$json = {
   '1': 'SendResponse',
   '2': [
     {'1': 'seq', '3': 1, '4': 1, '5': 3, '10': 'seq'},
+    {'1': 'queue_id', '3': 2, '4': 1, '5': 9, '10': 'queueId'},
   ],
 };
 
 /// Descriptor for `SendResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List sendResponseDescriptor =
-    $convert.base64Decode('CgxTZW5kUmVzcG9uc2USEAoDc2VxGAEgASgDUgNzZXE=');
+final $typed_data.Uint8List sendResponseDescriptor = $convert.base64Decode(
+    'CgxTZW5kUmVzcG9uc2USEAoDc2VxGAEgASgDUgNzZXESGQoIcXVldWVfaWQYAiABKAlSB3F1ZX'
+    'VlSWQ=');
+
+@$core.Deprecated('Use editQueuedMessageRequestDescriptor instead')
+const EditQueuedMessageRequest$json = {
+  '1': 'EditQueuedMessageRequest',
+  '2': [
+    {'1': 'session_id', '3': 1, '4': 1, '5': 9, '10': 'sessionId'},
+    {'1': 'queue_id', '3': 2, '4': 1, '5': 9, '10': 'queueId'},
+    {'1': 'text', '3': 3, '4': 1, '5': 9, '10': 'text'},
+  ],
+};
+
+/// Descriptor for `EditQueuedMessageRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List editQueuedMessageRequestDescriptor =
+    $convert.base64Decode(
+        'ChhFZGl0UXVldWVkTWVzc2FnZVJlcXVlc3QSHQoKc2Vzc2lvbl9pZBgBIAEoCVIJc2Vzc2lvbk'
+        'lkEhkKCHF1ZXVlX2lkGAIgASgJUgdxdWV1ZUlkEhIKBHRleHQYAyABKAlSBHRleHQ=');
+
+@$core.Deprecated('Use editQueuedMessageResponseDescriptor instead')
+const EditQueuedMessageResponse$json = {
+  '1': 'EditQueuedMessageResponse',
+};
+
+/// Descriptor for `EditQueuedMessageResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List editQueuedMessageResponseDescriptor =
+    $convert.base64Decode('ChlFZGl0UXVldWVkTWVzc2FnZVJlc3BvbnNl');
+
+@$core.Deprecated('Use cancelQueuedMessageRequestDescriptor instead')
+const CancelQueuedMessageRequest$json = {
+  '1': 'CancelQueuedMessageRequest',
+  '2': [
+    {'1': 'session_id', '3': 1, '4': 1, '5': 9, '10': 'sessionId'},
+    {'1': 'queue_id', '3': 2, '4': 1, '5': 9, '10': 'queueId'},
+  ],
+};
+
+/// Descriptor for `CancelQueuedMessageRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List cancelQueuedMessageRequestDescriptor =
+    $convert.base64Decode(
+        'ChpDYW5jZWxRdWV1ZWRNZXNzYWdlUmVxdWVzdBIdCgpzZXNzaW9uX2lkGAEgASgJUglzZXNzaW'
+        '9uSWQSGQoIcXVldWVfaWQYAiABKAlSB3F1ZXVlSWQ=');
+
+@$core.Deprecated('Use cancelQueuedMessageResponseDescriptor instead')
+const CancelQueuedMessageResponse$json = {
+  '1': 'CancelQueuedMessageResponse',
+};
+
+/// Descriptor for `CancelQueuedMessageResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List cancelQueuedMessageResponseDescriptor =
+    $convert.base64Decode('ChtDYW5jZWxRdWV1ZWRNZXNzYWdlUmVzcG9uc2U=');
 
 @$core.Deprecated('Use interruptRequestDescriptor instead')
 const InterruptRequest$json = {
@@ -989,6 +1041,33 @@ const Event$json = {
       '9': 0,
       '10': 'modelCallEnded'
     },
+    {
+      '1': 'message_queued',
+      '3': 32,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.MessageQueued',
+      '9': 0,
+      '10': 'messageQueued'
+    },
+    {
+      '1': 'queued_message_updated',
+      '3': 33,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.QueuedMessageUpdated',
+      '9': 0,
+      '10': 'queuedMessageUpdated'
+    },
+    {
+      '1': 'queued_message_delivered',
+      '3': 34,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.QueuedMessageDelivered',
+      '9': 0,
+      '10': 'queuedMessageDelivered'
+    },
   ],
   '8': [
     {'1': 'payload'},
@@ -1023,8 +1102,12 @@ final $typed_data.Uint8List eventDescriptor = $convert.base64Decode(
     'NoZWNrEkkKEm1vZGVsX2NhbGxfc3RhcnRlZBgdIAEoCzIZLmZsaXQudjEuTW9kZWxDYWxsU3Rh'
     'cnRlZEgAUhBtb2RlbENhbGxTdGFydGVkEkIKD3Byb21wdF9wcm9ncmVzcxgeIAEoCzIXLmZsaX'
     'QudjEuUHJvbXB0UHJvZ3Jlc3NIAFIOcHJvbXB0UHJvZ3Jlc3MSQwoQbW9kZWxfY2FsbF9lbmRl'
-    'ZBgfIAEoCzIXLmZsaXQudjEuTW9kZWxDYWxsRW5kZWRIAFIObW9kZWxDYWxsRW5kZWRCCQoHcG'
-    'F5bG9hZA==');
+    'ZBgfIAEoCzIXLmZsaXQudjEuTW9kZWxDYWxsRW5kZWRIAFIObW9kZWxDYWxsRW5kZWQSPwoObW'
+    'Vzc2FnZV9xdWV1ZWQYICABKAsyFi5mbGl0LnYxLk1lc3NhZ2VRdWV1ZWRIAFINbWVzc2FnZVF1'
+    'ZXVlZBJVChZxdWV1ZWRfbWVzc2FnZV91cGRhdGVkGCEgASgLMh0uZmxpdC52MS5RdWV1ZWRNZX'
+    'NzYWdlVXBkYXRlZEgAUhRxdWV1ZWRNZXNzYWdlVXBkYXRlZBJbChhxdWV1ZWRfbWVzc2FnZV9k'
+    'ZWxpdmVyZWQYIiABKAsyHy5mbGl0LnYxLlF1ZXVlZE1lc3NhZ2VEZWxpdmVyZWRIAFIWcXVldW'
+    'VkTWVzc2FnZURlbGl2ZXJlZEIJCgdwYXlsb2Fk');
 
 @$core.Deprecated('Use messageStartedDescriptor instead')
 const MessageStarted$json = {
@@ -1523,6 +1606,51 @@ final $typed_data.Uint8List modelCallEndedDescriptor = $convert.base64Decode(
     'cxIhCgxwcmVkaWN0ZWRfbXMYESABKANSC3ByZWRpY3RlZE1zEh0KCndpbGxfcmV0cnkYEiABKA'
     'hSCXdpbGxSZXRyeQ==');
 
+@$core.Deprecated('Use messageQueuedDescriptor instead')
+const MessageQueued$json = {
+  '1': 'MessageQueued',
+  '2': [
+    {'1': 'queue_id', '3': 1, '4': 1, '5': 9, '10': 'queueId'},
+    {'1': 'text', '3': 2, '4': 1, '5': 9, '10': 'text'},
+    {'1': 'client', '3': 3, '4': 1, '5': 9, '10': 'client'},
+  ],
+};
+
+/// Descriptor for `MessageQueued`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List messageQueuedDescriptor = $convert.base64Decode(
+    'Cg1NZXNzYWdlUXVldWVkEhkKCHF1ZXVlX2lkGAEgASgJUgdxdWV1ZUlkEhIKBHRleHQYAiABKA'
+    'lSBHRleHQSFgoGY2xpZW50GAMgASgJUgZjbGllbnQ=');
+
+@$core.Deprecated('Use queuedMessageUpdatedDescriptor instead')
+const QueuedMessageUpdated$json = {
+  '1': 'QueuedMessageUpdated',
+  '2': [
+    {'1': 'queue_id', '3': 1, '4': 1, '5': 9, '10': 'queueId'},
+    {'1': 'text', '3': 2, '4': 1, '5': 9, '10': 'text'},
+    {'1': 'cancelled', '3': 3, '4': 1, '5': 8, '10': 'cancelled'},
+  ],
+};
+
+/// Descriptor for `QueuedMessageUpdated`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List queuedMessageUpdatedDescriptor = $convert.base64Decode(
+    'ChRRdWV1ZWRNZXNzYWdlVXBkYXRlZBIZCghxdWV1ZV9pZBgBIAEoCVIHcXVldWVJZBISCgR0ZX'
+    'h0GAIgASgJUgR0ZXh0EhwKCWNhbmNlbGxlZBgDIAEoCFIJY2FuY2VsbGVk');
+
+@$core.Deprecated('Use queuedMessageDeliveredDescriptor instead')
+const QueuedMessageDelivered$json = {
+  '1': 'QueuedMessageDelivered',
+  '2': [
+    {'1': 'queue_id', '3': 1, '4': 1, '5': 9, '10': 'queueId'},
+    {'1': 'message_id', '3': 2, '4': 1, '5': 9, '10': 'messageId'},
+  ],
+};
+
+/// Descriptor for `QueuedMessageDelivered`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List queuedMessageDeliveredDescriptor =
+    $convert.base64Decode(
+        'ChZRdWV1ZWRNZXNzYWdlRGVsaXZlcmVkEhkKCHF1ZXVlX2lkGAEgASgJUgdxdWV1ZUlkEh0KCm'
+        '1lc3NhZ2VfaWQYAiABKAlSCW1lc3NhZ2VJZA==');
+
 const $core.Map<$core.String, $core.dynamic> SessionServiceBase$json = {
   '1': 'SessionService',
   '2': [
@@ -1550,6 +1678,16 @@ const $core.Map<$core.String, $core.dynamic> SessionServiceBase$json = {
       '6': true
     },
     {'1': 'Send', '2': '.flit.v1.SendRequest', '3': '.flit.v1.SendResponse'},
+    {
+      '1': 'EditQueuedMessage',
+      '2': '.flit.v1.EditQueuedMessageRequest',
+      '3': '.flit.v1.EditQueuedMessageResponse'
+    },
+    {
+      '1': 'CancelQueuedMessage',
+      '2': '.flit.v1.CancelQueuedMessageRequest',
+      '3': '.flit.v1.CancelQueuedMessageResponse'
+    },
     {
       '1': 'Interrupt',
       '2': '.flit.v1.InterruptRequest',
@@ -1643,8 +1781,15 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.flit.v1.ModelCallStarted': ModelCallStarted$json,
   '.flit.v1.PromptProgress': PromptProgress$json,
   '.flit.v1.ModelCallEnded': ModelCallEnded$json,
+  '.flit.v1.MessageQueued': MessageQueued$json,
+  '.flit.v1.QueuedMessageUpdated': QueuedMessageUpdated$json,
+  '.flit.v1.QueuedMessageDelivered': QueuedMessageDelivered$json,
   '.flit.v1.SendRequest': SendRequest$json,
   '.flit.v1.SendResponse': SendResponse$json,
+  '.flit.v1.EditQueuedMessageRequest': EditQueuedMessageRequest$json,
+  '.flit.v1.EditQueuedMessageResponse': EditQueuedMessageResponse$json,
+  '.flit.v1.CancelQueuedMessageRequest': CancelQueuedMessageRequest$json,
+  '.flit.v1.CancelQueuedMessageResponse': CancelQueuedMessageResponse$json,
   '.flit.v1.InterruptRequest': InterruptRequest$json,
   '.flit.v1.InterruptResponse': InterruptResponse$json,
   '.flit.v1.RetryModelCallRequest': RetryModelCallRequest$json,
@@ -1679,18 +1824,22 @@ final $typed_data.Uint8List sessionServiceDescriptor = $convert.base64Decode(
     'VzcG9uc2UiA5ACARJKCgpHZXRTZXNzaW9uEhouZmxpdC52MS5HZXRTZXNzaW9uUmVxdWVzdBob'
     'LmZsaXQudjEuR2V0U2Vzc2lvblJlc3BvbnNlIgOQAgESOwoGQXR0YWNoEhYuZmxpdC52MS5BdH'
     'RhY2hSZXF1ZXN0GhcuZmxpdC52MS5BdHRhY2hSZXNwb25zZTABEjMKBFNlbmQSFC5mbGl0LnYx'
-    'LlNlbmRSZXF1ZXN0GhUuZmxpdC52MS5TZW5kUmVzcG9uc2USQgoJSW50ZXJydXB0EhkuZmxpdC'
-    '52MS5JbnRlcnJ1cHRSZXF1ZXN0GhouZmxpdC52MS5JbnRlcnJ1cHRSZXNwb25zZRJRCg5SZXRy'
-    'eU1vZGVsQ2FsbBIeLmZsaXQudjEuUmV0cnlNb2RlbENhbGxSZXF1ZXN0Gh8uZmxpdC52MS5SZX'
-    'RyeU1vZGVsQ2FsbFJlc3BvbnNlEksKDEFuc3dlclByb21wdBIcLmZsaXQudjEuQW5zd2VyUHJv'
-    'bXB0UmVxdWVzdBodLmZsaXQudjEuQW5zd2VyUHJvbXB0UmVzcG9uc2USPwoIU2V0TW9kZWwSGC'
-    '5mbGl0LnYxLlNldE1vZGVsUmVxdWVzdBoZLmZsaXQudjEuU2V0TW9kZWxSZXNwb25zZRJCCglT'
-    'ZXRFZmZvcnQSGS5mbGl0LnYxLlNldEVmZm9ydFJlcXVlc3QaGi5mbGl0LnYxLlNldEVmZm9ydF'
-    'Jlc3BvbnNlEjwKB1NldFlvbG8SFy5mbGl0LnYxLlNldFlvbG9SZXF1ZXN0GhguZmxpdC52MS5T'
-    'ZXRZb2xvUmVzcG9uc2USSAoLTW92ZVNlc3Npb24SGy5mbGl0LnYxLk1vdmVTZXNzaW9uUmVxdW'
-    'VzdBocLmZsaXQudjEuTW92ZVNlc3Npb25SZXNwb25zZRIzCgRSYXRlEhQuZmxpdC52MS5SYXRl'
-    'UmVxdWVzdBoVLmZsaXQudjEuUmF0ZVJlc3BvbnNlElYKDkxpc3RNY3BTZXJ2ZXJzEh4uZmxpdC'
-    '52MS5MaXN0TWNwU2VydmVyc1JlcXVlc3QaHy5mbGl0LnYxLkxpc3RNY3BTZXJ2ZXJzUmVzcG9u'
-    'c2UiA5ACARJLCgxTZXRNY3BTZXJ2ZXISHC5mbGl0LnYxLlNldE1jcFNlcnZlclJlcXVlc3QaHS'
-    '5mbGl0LnYxLlNldE1jcFNlcnZlclJlc3BvbnNlEkoKCkxpc3RTa2lsbHMSGi5mbGl0LnYxLkxp'
-    'c3RTa2lsbHNSZXF1ZXN0GhsuZmxpdC52MS5MaXN0U2tpbGxzUmVzcG9uc2UiA5ACAQ==');
+    'LlNlbmRSZXF1ZXN0GhUuZmxpdC52MS5TZW5kUmVzcG9uc2USWgoRRWRpdFF1ZXVlZE1lc3NhZ2'
+    'USIS5mbGl0LnYxLkVkaXRRdWV1ZWRNZXNzYWdlUmVxdWVzdBoiLmZsaXQudjEuRWRpdFF1ZXVl'
+    'ZE1lc3NhZ2VSZXNwb25zZRJgChNDYW5jZWxRdWV1ZWRNZXNzYWdlEiMuZmxpdC52MS5DYW5jZW'
+    'xRdWV1ZWRNZXNzYWdlUmVxdWVzdBokLmZsaXQudjEuQ2FuY2VsUXVldWVkTWVzc2FnZVJlc3Bv'
+    'bnNlEkIKCUludGVycnVwdBIZLmZsaXQudjEuSW50ZXJydXB0UmVxdWVzdBoaLmZsaXQudjEuSW'
+    '50ZXJydXB0UmVzcG9uc2USUQoOUmV0cnlNb2RlbENhbGwSHi5mbGl0LnYxLlJldHJ5TW9kZWxD'
+    'YWxsUmVxdWVzdBofLmZsaXQudjEuUmV0cnlNb2RlbENhbGxSZXNwb25zZRJLCgxBbnN3ZXJQcm'
+    '9tcHQSHC5mbGl0LnYxLkFuc3dlclByb21wdFJlcXVlc3QaHS5mbGl0LnYxLkFuc3dlclByb21w'
+    'dFJlc3BvbnNlEj8KCFNldE1vZGVsEhguZmxpdC52MS5TZXRNb2RlbFJlcXVlc3QaGS5mbGl0Ln'
+    'YxLlNldE1vZGVsUmVzcG9uc2USQgoJU2V0RWZmb3J0EhkuZmxpdC52MS5TZXRFZmZvcnRSZXF1'
+    'ZXN0GhouZmxpdC52MS5TZXRFZmZvcnRSZXNwb25zZRI8CgdTZXRZb2xvEhcuZmxpdC52MS5TZX'
+    'RZb2xvUmVxdWVzdBoYLmZsaXQudjEuU2V0WW9sb1Jlc3BvbnNlEkgKC01vdmVTZXNzaW9uEhsu'
+    'ZmxpdC52MS5Nb3ZlU2Vzc2lvblJlcXVlc3QaHC5mbGl0LnYxLk1vdmVTZXNzaW9uUmVzcG9uc2'
+    'USMwoEUmF0ZRIULmZsaXQudjEuUmF0ZVJlcXVlc3QaFS5mbGl0LnYxLlJhdGVSZXNwb25zZRJW'
+    'Cg5MaXN0TWNwU2VydmVycxIeLmZsaXQudjEuTGlzdE1jcFNlcnZlcnNSZXF1ZXN0Gh8uZmxpdC'
+    '52MS5MaXN0TWNwU2VydmVyc1Jlc3BvbnNlIgOQAgESSwoMU2V0TWNwU2VydmVyEhwuZmxpdC52'
+    'MS5TZXRNY3BTZXJ2ZXJSZXF1ZXN0Gh0uZmxpdC52MS5TZXRNY3BTZXJ2ZXJSZXNwb25zZRJKCg'
+    'pMaXN0U2tpbGxzEhouZmxpdC52MS5MaXN0U2tpbGxzUmVxdWVzdBobLmZsaXQudjEuTGlzdFNr'
+    'aWxsc1Jlc3BvbnNlIgOQAgE=');

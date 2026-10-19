@@ -38,7 +38,10 @@ type session struct {
 	// callOutput says whether any of its reply has arrived.
 	cancelCall context.CancelCauseFunc
 	callOutput bool
-	prompts    map[string]pendingPrompt
+	// queue holds messages sent while a turn ran, in order, until the
+	// turn's next step delivers them (see queue.go).
+	queue   []queuedMessage
+	prompts map[string]pendingPrompt
 	// allowed are shell patterns allowed for the rest of the session
 	// ("allow for this session"), rebuilt from the log on load.
 	allowed []string
@@ -194,37 +197,96 @@ func (s *session) attach(ctx context.Context, fromSeq int64, send func(*flitv1.E
 	}
 }
 
-func (s *session) send(text string) (int64, error) {
+// SendResult says what Send did with a message.
+type SendResult struct {
+	// Seq is the first event recorded for it.
+	Seq int64
+	// QueueID is set when it was queued because a turn is running.
+	QueueID string
+}
+
+// send starts a turn with text (after any queued messages), or queues text
+// if a turn is running. Empty text with a non-empty queue just delivers the
+// queue.
+func (s *session) send(text, client string) (SendResult, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	empty := strings.TrimSpace(text) == ""
 	if s.cancelTurn != nil {
-		return 0, ErrBusy
+		if empty {
+			return SendResult{}, invalid("text is empty")
+		}
+		q := queuedMessage{id: newID("queue"), text: text, client: client}
+		ev, err := s.appendLocked(&flitv1.Event{Payload: &flitv1.Event_MessageQueued{MessageQueued: &flitv1.MessageQueued{
+			QueueId: q.id, Text: text, Client: client,
+		}}})
+		if err != nil {
+			return SendResult{}, err
+		}
+		s.queue = append(s.queue, q)
+		return SendResult{Seq: ev.Seq, QueueID: q.id}, nil
+	}
+	if empty && len(s.queue) == 0 {
+		return SendResult{}, invalid("text is empty")
 	}
 	if s.info.Title == "" {
-		s.info.Title = titleFrom(text)
+		first := text
+		if len(s.queue) > 0 {
+			first = s.queue[0].text
+		}
+		s.info.Title = titleFrom(first)
 		if err := s.m.store.SetTitle(context.Background(), s.info.ID, s.info.Title); err != nil {
-			return 0, err
+			return SendResult{}, err
 		}
 	}
-
-	msgID := newID("msg")
-	turnID := msgID
-	first, err := s.appendLocked(&flitv1.Event{Payload: &flitv1.Event_MessageStarted{
-		MessageStarted: &flitv1.MessageStarted{MessageId: msgID, Role: flitv1.Role_ROLE_USER},
-	}})
+	seq, turnID, err := s.deliverQueuedLocked()
 	if err != nil {
-		return 0, err
+		return SendResult{}, err
 	}
+	if !empty {
+		ev, msgID, err := s.appendUserLocked(text)
+		if err != nil {
+			return SendResult{}, err
+		}
+		if seq == 0 {
+			seq, turnID = ev.Seq, msgID
+		}
+	}
+	if err := s.startTurnLocked(turnID); err != nil {
+		return SendResult{}, err
+	}
+	return SendResult{Seq: seq}, nil
+}
+
+// appendUserLocked records a user message with a new id.
+func (s *session) appendUserLocked(text string) (*flitv1.Event, string, error) {
+	msgID := newID("msg")
+	seq := s.info.LastSeq + 1
+	if err := s.appendUserMessageLocked(msgID, text); err != nil {
+		return nil, "", err
+	}
+	return &flitv1.Event{Seq: seq}, msgID, nil
+}
+
+// appendUserMessageLocked records user message msgID.
+func (s *session) appendUserMessageLocked(msgID, text string) error {
 	for _, ev := range []*flitv1.Event{
+		{Payload: &flitv1.Event_MessageStarted{MessageStarted: &flitv1.MessageStarted{MessageId: msgID, Role: flitv1.Role_ROLE_USER}}},
 		{Payload: &flitv1.Event_TextDelta{TextDelta: &flitv1.TextDelta{MessageId: msgID, Text: text}}},
 		{Payload: &flitv1.Event_MessageDone{MessageDone: &flitv1.MessageDone{MessageId: msgID, Text: text, FinishReason: "stop"}}},
-		stateChanged(flitv1.TaskState_TASK_STATE_WORKING, ""),
 	} {
 		if _, err := s.appendLocked(ev); err != nil {
-			return 0, err
+			return err
 		}
 	}
+	return nil
+}
 
+// startTurnLocked marks the session working and runs a turn.
+func (s *session) startTurnLocked(turnID string) error {
+	if _, err := s.appendLocked(stateChanged(flitv1.TaskState_TASK_STATE_WORKING, "")); err != nil {
+		return err
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	s.cancelTurn = cancel
 	s.m.turns.Add(1)
@@ -233,7 +295,7 @@ func (s *session) send(text string) (int64, error) {
 		defer cancel()
 		s.runTurn(ctx, turnID)
 	}()
-	return first.Seq, nil
+	return nil
 }
 
 func titleFrom(text string) string {

@@ -207,6 +207,13 @@ matches runs), and an optional small model can rate commands before you're
 asked. These rules reduce prompts; they are not a sandbox. See
 [docs/shell.md](docs/shell.md).
 
+You can keep typing while the agent works: a message sent mid-turn is
+queued and joins the conversation at the agent's next step (after the
+current model call or tool, before the next call), or starts the next turn
+if the agent was finishing. Queued messages show in every client and can be
+edited or cancelled until then. Stop keeps them queued; they go out first
+with your next message (or press Send with an empty box).
+
 Everything a session does is stored as numbered events in `flit.db` in the
 data dir. A client can attach from any event number, replay, and then follow
 live, so reconnecting never loses anything.

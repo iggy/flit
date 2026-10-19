@@ -278,6 +278,29 @@ FlitEvent eventFromProto(pb.Event e) {
         yolo: e.yoloChanged.yolo,
         client: e.yoloChanged.client,
       );
+    case pb.Event_Payload.messageQueued:
+      return FlitMessageQueued(
+        seq: seq,
+        time: time,
+        queueId: e.messageQueued.queueId,
+        text: e.messageQueued.text,
+        client: e.messageQueued.client,
+      );
+    case pb.Event_Payload.queuedMessageUpdated:
+      return FlitQueuedMessageUpdated(
+        seq: seq,
+        time: time,
+        queueId: e.queuedMessageUpdated.queueId,
+        text: e.queuedMessageUpdated.text,
+        cancelled: e.queuedMessageUpdated.cancelled,
+      );
+    case pb.Event_Payload.queuedMessageDelivered:
+      return FlitQueuedMessageDelivered(
+        seq: seq,
+        time: time,
+        queueId: e.queuedMessageDelivered.queueId,
+        messageId: e.queuedMessageDelivered.messageId,
+      );
     case pb.Event_Payload.modelCallStarted:
       return FlitModelCallStarted(
         seq: seq,

@@ -51,13 +51,35 @@ abstract final class SessionService {
     flitv1session.AttachResponse.new,
   );
 
-  /// Send adds a user message and starts a turn. Fails with
-  /// FAILED_PRECONDITION while a turn is already running.
+  /// Send adds a user message and starts a turn. While a turn is running
+  /// the message is queued instead (MessageQueued) and delivered at the
+  /// turn's next step: after the current model call or tool, before the
+  /// next model call; if the turn ends without another call, it starts the
+  /// next turn. Messages still queued when a turn is interrupted wait for
+  /// the next Send, which delivers them first; with an empty text, Send
+  /// just delivers the queue.
   static const send = connect.Spec(
     '/$name/Send',
     connect.StreamType.unary,
     flitv1session.SendRequest.new,
     flitv1session.SendResponse.new,
+  );
+
+  /// EditQueuedMessage changes, and CancelQueuedMessage withdraws, a queued
+  /// message that hasn't been delivered yet. Once it has, they fail with
+  /// FAILED_PRECONDITION.
+  static const editQueuedMessage = connect.Spec(
+    '/$name/EditQueuedMessage',
+    connect.StreamType.unary,
+    flitv1session.EditQueuedMessageRequest.new,
+    flitv1session.EditQueuedMessageResponse.new,
+  );
+
+  static const cancelQueuedMessage = connect.Spec(
+    '/$name/CancelQueuedMessage',
+    connect.StreamType.unary,
+    flitv1session.CancelQueuedMessageRequest.new,
+    flitv1session.CancelQueuedMessageResponse.new,
   );
 
   /// Interrupt stops the running turn, if any. Pending prompts are resolved
