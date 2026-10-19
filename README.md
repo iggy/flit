@@ -117,6 +117,9 @@ local:                 # provider name
 ```
 
 Each session has a model and a reasoning effort, both switchable mid-session.
+The model picker lists your favorites (star a model) and recently used models
+first; both are kept on the server, so every device sees the same ones. For a
+llama.cpp router, the picker can also load and unload models.
 `agent.tasks` in the config can set a model per kind of work (`chat` is used
 for new sessions; `planning`, `cron`, `compaction` and `search` are for
 features to come).
