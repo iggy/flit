@@ -330,6 +330,13 @@ func (s *session) approve(ctx context.Context, toolCallID string, a tools.Approv
 func (s *session) setModel(ctx context.Context, provider, model string) (store.Session, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	// Picking the current model again still logs a ModelChanged when the
+	// catalog's context window moved (an override edited and refreshed),
+	// so clients pick it up; otherwise it is a no-op.
+	if provider == s.info.Provider && model == s.info.Model &&
+		s.m.contextLength(provider, model) == s.info.ContextLength {
+		return s.info, nil
+	}
 	if err := s.m.store.SetModel(ctx, s.info.ID, provider, model); err != nil {
 		return store.Session{}, err
 	}

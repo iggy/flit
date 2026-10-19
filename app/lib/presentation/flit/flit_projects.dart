@@ -218,6 +218,7 @@ Future<void> showMoveSessionDialog(
     await repository.moveSession(session.id, target);
     ref
       ..invalidate(flitSessionsProvider)
+      ..invalidate(flitAllSessionsProvider)
       ..invalidate(flitProjectsProvider);
   } on GatewayException catch (error) {
     if (context.mounted) {

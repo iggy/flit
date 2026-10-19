@@ -12,6 +12,7 @@ import 'package:flit/domain/models/flit_session.dart';
 import 'package:flit/presentation/chat/message_bubble.dart';
 import 'package:flit/presentation/flit/flit_mcp_sheet.dart';
 import 'package:flit/presentation/flit/flit_model_picker.dart';
+import 'package:flit/presentation/flit/flit_nav.dart';
 import 'package:flit/presentation/flit/flit_prompt_card.dart';
 import 'package:flit/presentation/flit/flit_rating.dart';
 import 'package:flit/presentation/flit/flit_widgets.dart';
@@ -21,6 +22,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// The app bar's yolo mode toggle, and the confirm button of its dialog.
 const Key flitYoloButtonKey = Key('flit_yolo');
 const Key flitYoloConfirmKey = Key('flit_yolo_confirm');
+
+/// The button that scrolls back to new output after the user scrolled up.
+const Key flitJumpToLatestKey = Key('flit_jump_to_latest');
 
 class FlitChatScreen extends ConsumerStatefulWidget {
   const FlitChatScreen({required this.sessionId, super.key});
@@ -37,17 +41,31 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
   final ScrollController _scroll = ScrollController();
   bool _sending = false;
 
+  /// Whether the list follows new output. True while the user is at (or
+  /// near) the bottom; scrolling up stops it so they can read back while a
+  /// turn streams.
+  bool _following = true;
+
+  /// New output arrived while not following: offer a jump back down.
+  bool _unseen = false;
+
+  /// How close to the bottom still counts as "at the bottom".
+  static const double _followSlack = 48;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _scroll.addListener(_onScroll);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _input.dispose();
-    _scroll.dispose();
+    _scroll
+      ..removeListener(_onScroll)
+      ..dispose();
     super.dispose();
   }
 
@@ -78,6 +96,7 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
     setState(() => _sending = false);
     if (error == null) {
       _input.clear();
+      _jumpToLatest();
     } else {
       _snack('Not sent: $error');
     }
@@ -114,13 +133,14 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
       return;
     }
     try {
-      if (choice.provider != provider || choice.model != model) {
-        await repository.setModel(
-          widget.sessionId,
-          provider: choice.provider,
-          model: choice.model,
-        );
-      }
+      // Sent even for the current model: after a catalog refresh its
+      // context window may have changed, and the server only logs a new
+      // ModelChanged (which the header reads) when something did.
+      await repository.setModel(
+        widget.sessionId,
+        provider: choice.provider,
+        model: choice.model,
+      );
       if (choice.effort != effort) {
         await repository.setEffort(widget.sessionId, choice.effort);
       }
@@ -185,12 +205,55 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
         fold.messageIds[i] != null;
   }
 
-  void _scrollToEnd() {
+  /// Recomputes [_following] from where the user is. It only runs when the
+  /// position moves, not when content grows under it, so it reflects where
+  /// the user was before new output arrived.
+  void _onScroll() {
+    final position = _scroll.position;
+    final atEnd = position.maxScrollExtent - position.pixels <= _followSlack;
+    if (atEnd != _following || (atEnd && _unseen)) {
+      setState(() {
+        _following = atEnd;
+        if (atEnd) {
+          _unseen = false;
+        }
+      });
+    }
+  }
+
+  /// Follows new output if the user is at the bottom; otherwise flags it.
+  void _onGrew() {
+    if (_following) {
+      _scrollToEnd();
+    } else if (!_unseen) {
+      setState(() => _unseen = true);
+    }
+  }
+
+  /// Jumps to the bottom after this frame. The list is lazy, so the extent
+  /// can grow once the newly visible items are laid out: keep jumping for a
+  /// few frames until it holds.
+  void _scrollToEnd([int tries = 4]) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scroll.hasClients) {
-        _scroll.jumpTo(_scroll.position.maxScrollExtent);
+      if (!_scroll.hasClients) {
+        return;
+      }
+      final position = _scroll.position;
+      if (position.pixels < position.maxScrollExtent) {
+        _scroll.jumpTo(position.maxScrollExtent);
+        if (tries > 1) {
+          _scrollToEnd(tries - 1);
+        }
       }
     });
+  }
+
+  void _jumpToLatest() {
+    setState(() {
+      _following = true;
+      _unseen = false;
+    });
+    _scrollToEnd();
   }
 
   @override
@@ -206,7 +269,7 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
           (prev?.fold.prompts.length ?? 0) != next.fold.prompts.length ||
           (next.fold.messages.isNotEmpty && next.fold.messages.last.streaming);
       if (grew) {
-        _scrollToEnd();
+        _onGrew();
       }
       // The server names a session from its first message (and may rename
       // it later), so re-read the session when one arrives and after each
@@ -214,7 +277,8 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
       if (flitSessionNeedsRefresh(prev?.fold, next.fold)) {
         ref
           ..invalidate(flitSessionProvider(widget.sessionId))
-          ..invalidate(flitSessionsProvider);
+          ..invalidate(flitSessionsProvider)
+          ..invalidate(flitAllSessionsProvider);
       }
     });
 
@@ -236,11 +300,13 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          session?.displayTitle ?? 'Session',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
+        title: flitIsWide(context)
+            ? Text(
+                session?.displayTitle ?? 'Session',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              )
+            : FlitBreadcrumb(session: session),
         actions: <Widget>[
           IconButton(
             key: flitYoloButtonKey,
@@ -314,43 +380,22 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
                             : 'Send a message to start.',
                       ),
                     )
-                  : ListView(
-                      controller: _scroll,
-                      padding: const EdgeInsets.all(12),
+                  : Stack(
                       children: <Widget>[
-                        for (
-                          var i = 0;
-                          i < fold.messages.length;
-                          i++
-                        ) ...<Widget>[
-                          MessageBubble(message: fold.messages[i]),
-                          if (_rateable(fold, i))
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: FlitRatingButtons(
-                                rating: fold.ratings[fold.messageIds[i]],
-                                onRate: (good) async {
-                                  final error = await notifier.rateTurn(
-                                    fold.messageIds[i]!,
-                                    good: good,
-                                  );
-                                  if (error != null && mounted) {
-                                    _snack('Could not rate: $error');
-                                  }
-                                },
+                        _messageList(fold, notifier),
+                        if (_unseen)
+                          Positioned(
+                            bottom: 12,
+                            left: 0,
+                            right: 0,
+                            child: Center(
+                              child: FilledButton.tonalIcon(
+                                key: flitJumpToLatestKey,
+                                onPressed: _jumpToLatest,
+                                icon: const Icon(Icons.arrow_downward),
+                                label: const Text('Jump to latest'),
                               ),
                             ),
-                        ],
-                        for (final p in fold.prompts)
-                          FlitPromptCard(
-                            key: ValueKey<String>(p.promptId),
-                            prompt: p,
-                            onAnswer: ({required allow, forSession = false}) =>
-                                notifier.answer(
-                                  p.promptId,
-                                  allow: allow,
-                                  forSession: forSession,
-                                ),
                           ),
                       ],
                     ),
@@ -366,6 +411,44 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
           ],
         ),
       ),
+    );
+  }
+
+  Widget _messageList(FlitFoldState fold, FlitChatNotifier notifier) {
+    return ListView(
+      controller: _scroll,
+      padding: const EdgeInsets.all(12),
+      children: <Widget>[
+        for (var i = 0; i < fold.messages.length; i++) ...<Widget>[
+          MessageBubble(message: fold.messages[i]),
+          if (_rateable(fold, i))
+            Align(
+              alignment: Alignment.centerLeft,
+              child: FlitRatingButtons(
+                rating: fold.ratings[fold.messageIds[i]],
+                onRate: (good) async {
+                  final error = await notifier.rateTurn(
+                    fold.messageIds[i]!,
+                    good: good,
+                  );
+                  if (error != null && mounted) {
+                    _snack('Could not rate: $error');
+                  }
+                },
+              ),
+            ),
+        ],
+        for (final p in fold.prompts)
+          FlitPromptCard(
+            key: ValueKey<String>(p.promptId),
+            prompt: p,
+            onAnswer: ({required allow, forSession = false}) => notifier.answer(
+              p.promptId,
+              allow: allow,
+              forSession: forSession,
+            ),
+          ),
+      ],
     );
   }
 }

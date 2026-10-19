@@ -6,9 +6,9 @@ library;
 import 'dart:async';
 
 import 'package:flit/core/platform/primary_selection.dart';
+import 'package:flit/presentation/common/editable_text_at.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 
 /// Wraps the whole app (MaterialApp.builder) so dialogs and sheets are
 /// covered too.
@@ -46,7 +46,7 @@ class MiddleClickPaste extends StatelessWidget {
   }
 
   Future<void> _paste(BuildContext context, PointerDownEvent event) async {
-    final state = _editableAt(context, event);
+    final state = editableTextAt(context, event.position, event.viewId);
     if (state == null || state.widget.readOnly) {
       return;
     }
@@ -66,40 +66,5 @@ class MiddleClickPaste extends StatelessWidget {
       ),
       SelectionChangedCause.tap,
     );
-  }
-
-  /// The editable text field under the pointer, if any.
-  static EditableTextState? _editableAt(
-    BuildContext context,
-    PointerDownEvent event,
-  ) {
-    final result = HitTestResult();
-    WidgetsBinding.instance.hitTestInView(result, event.position, event.viewId);
-    RenderEditable? target;
-    for (final entry in result.path) {
-      if (entry.target is RenderEditable) {
-        target = entry.target as RenderEditable;
-        break;
-      }
-    }
-    if (target == null) {
-      return null;
-    }
-    EditableTextState? found;
-    void visit(Element element) {
-      if (found != null) {
-        return;
-      }
-      if (element is StatefulElement &&
-          element.state is EditableTextState &&
-          (element.state as EditableTextState).renderEditable == target) {
-        found = element.state as EditableTextState;
-        return;
-      }
-      element.visitChildren(visit);
-    }
-
-    context.visitChildElements(visit);
-    return found;
   }
 }

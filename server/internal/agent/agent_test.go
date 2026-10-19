@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -20,6 +22,7 @@ import (
 	"github.com/iggy/flit/server/internal/llm"
 	"github.com/iggy/flit/server/internal/llm/llmtest"
 	"github.com/iggy/flit/server/internal/mcpclient"
+	"github.com/iggy/flit/server/internal/models"
 	"github.com/iggy/flit/server/internal/store"
 )
 
@@ -511,6 +514,59 @@ func TestSetModel(t *testing.T) {
 	}
 	if m := h.llm.Requests()[0].Model; m != "bigger-model" {
 		t.Fatalf("request model %s", m)
+	}
+}
+
+// Re-selecting the current model after its context window changed in the
+// catalog logs a fresh ModelChanged; re-selecting it unchanged does not.
+func TestSetSameModelRefreshesContextLength(t *testing.T) {
+	h := newHarness(t)
+	overrides := filepath.Join(h.dir, "models.yaml")
+	writeOverride := func(n int) {
+		t.Helper()
+		data := fmt.Sprintf("other:\n  bigger-model:\n    context_length: %d\n", n)
+		if err := os.WriteFile(overrides, []byte(data), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if err := h.m.Catalog.Refresh(context.Background(), "other"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	h.m.Catalog = models.NewCatalog(h.config, func() string { return overrides },
+		slog.New(slog.NewTextHandler(io.Discard, nil)))
+	writeOverride(1000)
+	sess := h.create()
+	ctx := context.Background()
+	if _, err := h.m.SetModel(ctx, sess.ID, "other", "bigger-model"); err != nil {
+		t.Fatal(err)
+	}
+	modelChanges := func() []int64 {
+		t.Helper()
+		evs, err := h.st.Events(ctx, sess.ID, 0, 1<<62)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var out []int64
+		for _, ev := range evs {
+			if mc := ev.GetModelChanged(); mc != nil {
+				out = append(out, mc.ContextLength)
+			}
+		}
+		return out
+	}
+	if _, err := h.m.SetModel(ctx, sess.ID, "other", "bigger-model"); err != nil {
+		t.Fatal(err)
+	}
+	if got := modelChanges(); !slices.Equal(got, []int64{1000}) {
+		t.Fatalf("unchanged re-select: %v", got)
+	}
+	writeOverride(2000)
+	got, err := h.m.SetModel(ctx, sess.ID, "other", "bigger-model")
+	if err != nil || got.ContextLength != 2000 {
+		t.Fatalf("SetModel = %+v, %v", got, err)
+	}
+	if got := modelChanges(); !slices.Equal(got, []int64{1000, 2000}) {
+		t.Fatalf("after refresh: %v", got)
 	}
 }
 

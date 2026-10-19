@@ -66,6 +66,17 @@ final flitSessionsProvider = FutureProvider<List<FlitSession>>((ref) async {
   );
 });
 
+/// Every session on the server, most recently updated first, for the side
+/// pane that groups them by project. Invalidate it with
+/// [flitSessionsProvider].
+final flitAllSessionsProvider = FutureProvider<List<FlitSession>>((ref) async {
+  final repository = ref.watch(flitRepositoryProvider);
+  if (repository == null) {
+    return const <FlitSession>[];
+  }
+  return repository.listSessions();
+});
+
 /// A session's MCP servers and whether each is on.
 final flitMcpServersProvider =
     FutureProvider.family<List<FlitMcpServer>, String>((ref, sessionId) async {
