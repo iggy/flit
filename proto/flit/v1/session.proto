@@ -38,6 +38,12 @@ service SessionService {
   // as denied.
   rpc Interrupt(InterruptRequest) returns (InterruptResponse);
 
+  // RetryModelCall gives up on the model call in progress and sends it
+  // again, for when the model hasn't answered. Only while none of the reply
+  // has arrived: once it is streaming, the call fails with
+  // FAILED_PRECONDITION (interrupt instead).
+  rpc RetryModelCall(RetryModelCallRequest) returns (RetryModelCallResponse);
+
   // AnswerPrompt answers a prompt the agent is waiting on. The first answer
   // wins; later answers fail with FAILED_PRECONDITION.
   rpc AnswerPrompt(AnswerPromptRequest) returns (AnswerPromptResponse);
@@ -197,6 +203,12 @@ message InterruptResponse {
   // Whether a turn was running.
   bool interrupted = 1;
 }
+
+message RetryModelCallRequest {
+  string session_id = 1;
+}
+
+message RetryModelCallResponse {}
 
 message AnswerPromptRequest {
   string session_id = 1;
@@ -614,6 +626,8 @@ enum ModelCallOutcome {
   MODEL_CALL_OUTCOME_ERROR = 3;
   // The turn was interrupted.
   MODEL_CALL_OUTCOME_CANCELLED = 4;
+  // Someone asked for it to be sent again (RetryModelCall).
+  MODEL_CALL_OUTCOME_RETRIED = 5;
 }
 
 // ModelCallEnded is how one model call (attempt) went, with its timeline.
@@ -642,6 +656,7 @@ message ModelCallEnded {
   int64 prompt_ms = 15;
   int64 predicted_tokens = 16;
   int64 predicted_ms = 17;
-  // Whether flit tries the call again (agent.model_retries).
+  // Whether flit tries the call again (agent.model_retries, or
+  // RetryModelCall).
   bool will_retry = 18;
 }

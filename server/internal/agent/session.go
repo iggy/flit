@@ -34,6 +34,10 @@ type session struct {
 	info       store.Session
 	subs       map[*subscriber]struct{}
 	cancelTurn context.CancelFunc // non-nil while a turn runs
+	// cancelCall stops the model call in progress (nil when none);
+	// callOutput says whether any of its reply has arrived.
+	cancelCall context.CancelCauseFunc
+	callOutput bool
 	prompts    map[string]pendingPrompt
 	// allowed are shell patterns allowed for the rest of the session
 	// ("allow for this session"), rebuilt from the log on load.
@@ -248,6 +252,36 @@ func (s *session) interrupt() bool {
 	}
 	s.cancelTurn()
 	return true
+}
+
+// errUserRetry is the cause a model call is cancelled with by
+// RetryModelCall.
+var errUserRetry = errors.New("retried by request")
+
+func (s *session) retryCall() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.cancelCall == nil {
+		return fmt.Errorf("%w: none is running", ErrNoCallToRetry)
+	}
+	if s.callOutput {
+		return fmt.Errorf("%w: the model is already answering; interrupt the turn instead", ErrNoCallToRetry)
+	}
+	s.cancelCall(errUserRetry)
+	return nil
+}
+
+// setCall records the model call in progress (cancel nil: none).
+func (s *session) setCall(cancel context.CancelCauseFunc) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.cancelCall, s.callOutput = cancel, false
+}
+
+func (s *session) callProduced() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.callOutput = true
 }
 
 func (s *session) answer(promptID string, a Answer) error {

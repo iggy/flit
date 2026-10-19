@@ -62,7 +62,7 @@ func connectErr(err error) error {
 		code = connect.CodeNotFound
 	case errors.Is(err, agent.ErrInvalid):
 		code = connect.CodeInvalidArgument
-	case errors.Is(err, agent.ErrBusy), errors.Is(err, agent.ErrPromptGone):
+	case errors.Is(err, agent.ErrBusy), errors.Is(err, agent.ErrPromptGone), errors.Is(err, agent.ErrNoCallToRetry):
 		code = connect.CodeFailedPrecondition
 	case errors.Is(err, agent.ErrSlowClient):
 		code = connect.CodeResourceExhausted
@@ -179,6 +179,17 @@ func (s *Service) Interrupt(ctx context.Context, req *connect.Request[flitv1.Int
 		return nil, connectErr(err)
 	}
 	return connect.NewResponse(&flitv1.InterruptResponse{Interrupted: ok}), nil
+}
+
+// RetryModelCall implements flitv1connect.SessionServiceHandler.
+func (s *Service) RetryModelCall(ctx context.Context, req *connect.Request[flitv1.RetryModelCallRequest]) (*connect.Response[flitv1.RetryModelCallResponse], error) {
+	if err := required("session_id", req.Msg.SessionId); err != nil {
+		return nil, err
+	}
+	if err := s.M.RetryModelCall(ctx, req.Msg.SessionId); err != nil {
+		return nil, connectErr(err)
+	}
+	return connect.NewResponse(&flitv1.RetryModelCallResponse{}), nil
 }
 
 // AnswerPrompt implements flitv1connect.SessionServiceHandler.

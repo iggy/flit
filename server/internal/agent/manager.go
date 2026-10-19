@@ -38,6 +38,9 @@ var (
 	ErrPromptGone  = errors.New("prompt is not pending (already answered, or the turn ended)")
 	ErrInvalid     = errors.New("invalid argument")
 	ErrSlowClient  = errors.New("client fell too far behind")
+	// ErrNoCallToRetry: RetryModelCall with no model call waiting (none
+	// running, or the reply is already streaming).
+	ErrNoCallToRetry = errors.New("no model call is waiting for the model to answer")
 	errInterrupted = errors.New("interrupted")
 )
 
@@ -330,6 +333,16 @@ func (m *Manager) Interrupt(ctx context.Context, id string) (bool, error) {
 		return false, err
 	}
 	return s.interrupt(), nil
+}
+
+// RetryModelCall gives up on the session's model call and sends it again.
+// It only works while the model hasn't sent any of the reply.
+func (m *Manager) RetryModelCall(ctx context.Context, id string) error {
+	s, err := m.session(ctx, id)
+	if err != nil {
+		return err
+	}
+	return s.retryCall()
 }
 
 // Answer is a reply to a prompt.

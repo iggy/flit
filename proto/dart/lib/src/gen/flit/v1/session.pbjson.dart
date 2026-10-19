@@ -144,6 +144,7 @@ const ModelCallOutcome$json = {
     {'1': 'MODEL_CALL_OUTCOME_STALLED', '2': 2},
     {'1': 'MODEL_CALL_OUTCOME_ERROR', '2': 3},
     {'1': 'MODEL_CALL_OUTCOME_CANCELLED', '2': 4},
+    {'1': 'MODEL_CALL_OUTCOME_RETRIED', '2': 5},
   ],
 };
 
@@ -152,7 +153,7 @@ final $typed_data.Uint8List modelCallOutcomeDescriptor = $convert.base64Decode(
     'ChBNb2RlbENhbGxPdXRjb21lEiIKHk1PREVMX0NBTExfT1VUQ09NRV9VTlNQRUNJRklFRBAAEh'
     'kKFU1PREVMX0NBTExfT1VUQ09NRV9PSxABEh4KGk1PREVMX0NBTExfT1VUQ09NRV9TVEFMTEVE'
     'EAISHAoYTU9ERUxfQ0FMTF9PVVRDT01FX0VSUk9SEAMSIAocTU9ERUxfQ0FMTF9PVVRDT01FX0'
-    'NBTkNFTExFRBAE');
+    'NBTkNFTExFRBAEEh4KGk1PREVMX0NBTExfT1VUQ09NRV9SRVRSSUVEEAU=');
 
 @$core.Deprecated('Use sessionDescriptor instead')
 const Session$json = {
@@ -409,6 +410,27 @@ const InterruptResponse$json = {
 /// Descriptor for `InterruptResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List interruptResponseDescriptor = $convert.base64Decode(
     'ChFJbnRlcnJ1cHRSZXNwb25zZRIgCgtpbnRlcnJ1cHRlZBgBIAEoCFILaW50ZXJydXB0ZWQ=');
+
+@$core.Deprecated('Use retryModelCallRequestDescriptor instead')
+const RetryModelCallRequest$json = {
+  '1': 'RetryModelCallRequest',
+  '2': [
+    {'1': 'session_id', '3': 1, '4': 1, '5': 9, '10': 'sessionId'},
+  ],
+};
+
+/// Descriptor for `RetryModelCallRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List retryModelCallRequestDescriptor = $convert.base64Decode(
+    'ChVSZXRyeU1vZGVsQ2FsbFJlcXVlc3QSHQoKc2Vzc2lvbl9pZBgBIAEoCVIJc2Vzc2lvbklk');
+
+@$core.Deprecated('Use retryModelCallResponseDescriptor instead')
+const RetryModelCallResponse$json = {
+  '1': 'RetryModelCallResponse',
+};
+
+/// Descriptor for `RetryModelCallResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List retryModelCallResponseDescriptor =
+    $convert.base64Decode('ChZSZXRyeU1vZGVsQ2FsbFJlc3BvbnNl');
 
 @$core.Deprecated('Use answerPromptRequestDescriptor instead')
 const AnswerPromptRequest$json = {
@@ -1534,6 +1556,11 @@ const $core.Map<$core.String, $core.dynamic> SessionServiceBase$json = {
       '3': '.flit.v1.InterruptResponse'
     },
     {
+      '1': 'RetryModelCall',
+      '2': '.flit.v1.RetryModelCallRequest',
+      '3': '.flit.v1.RetryModelCallResponse'
+    },
+    {
       '1': 'AnswerPrompt',
       '2': '.flit.v1.AnswerPromptRequest',
       '3': '.flit.v1.AnswerPromptResponse'
@@ -1620,6 +1647,8 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.flit.v1.SendResponse': SendResponse$json,
   '.flit.v1.InterruptRequest': InterruptRequest$json,
   '.flit.v1.InterruptResponse': InterruptResponse$json,
+  '.flit.v1.RetryModelCallRequest': RetryModelCallRequest$json,
+  '.flit.v1.RetryModelCallResponse': RetryModelCallResponse$json,
   '.flit.v1.AnswerPromptRequest': AnswerPromptRequest$json,
   '.flit.v1.AnswerPromptResponse': AnswerPromptResponse$json,
   '.flit.v1.SetModelRequest': SetModelRequest$json,
@@ -1651,16 +1680,17 @@ final $typed_data.Uint8List sessionServiceDescriptor = $convert.base64Decode(
     'LmZsaXQudjEuR2V0U2Vzc2lvblJlc3BvbnNlIgOQAgESOwoGQXR0YWNoEhYuZmxpdC52MS5BdH'
     'RhY2hSZXF1ZXN0GhcuZmxpdC52MS5BdHRhY2hSZXNwb25zZTABEjMKBFNlbmQSFC5mbGl0LnYx'
     'LlNlbmRSZXF1ZXN0GhUuZmxpdC52MS5TZW5kUmVzcG9uc2USQgoJSW50ZXJydXB0EhkuZmxpdC'
-    '52MS5JbnRlcnJ1cHRSZXF1ZXN0GhouZmxpdC52MS5JbnRlcnJ1cHRSZXNwb25zZRJLCgxBbnN3'
-    'ZXJQcm9tcHQSHC5mbGl0LnYxLkFuc3dlclByb21wdFJlcXVlc3QaHS5mbGl0LnYxLkFuc3dlcl'
-    'Byb21wdFJlc3BvbnNlEj8KCFNldE1vZGVsEhguZmxpdC52MS5TZXRNb2RlbFJlcXVlc3QaGS5m'
-    'bGl0LnYxLlNldE1vZGVsUmVzcG9uc2USQgoJU2V0RWZmb3J0EhkuZmxpdC52MS5TZXRFZmZvcn'
-    'RSZXF1ZXN0GhouZmxpdC52MS5TZXRFZmZvcnRSZXNwb25zZRI8CgdTZXRZb2xvEhcuZmxpdC52'
-    'MS5TZXRZb2xvUmVxdWVzdBoYLmZsaXQudjEuU2V0WW9sb1Jlc3BvbnNlEkgKC01vdmVTZXNzaW'
-    '9uEhsuZmxpdC52MS5Nb3ZlU2Vzc2lvblJlcXVlc3QaHC5mbGl0LnYxLk1vdmVTZXNzaW9uUmVz'
-    'cG9uc2USMwoEUmF0ZRIULmZsaXQudjEuUmF0ZVJlcXVlc3QaFS5mbGl0LnYxLlJhdGVSZXNwb2'
-    '5zZRJWCg5MaXN0TWNwU2VydmVycxIeLmZsaXQudjEuTGlzdE1jcFNlcnZlcnNSZXF1ZXN0Gh8u'
-    'ZmxpdC52MS5MaXN0TWNwU2VydmVyc1Jlc3BvbnNlIgOQAgESSwoMU2V0TWNwU2VydmVyEhwuZm'
-    'xpdC52MS5TZXRNY3BTZXJ2ZXJSZXF1ZXN0Gh0uZmxpdC52MS5TZXRNY3BTZXJ2ZXJSZXNwb25z'
-    'ZRJKCgpMaXN0U2tpbGxzEhouZmxpdC52MS5MaXN0U2tpbGxzUmVxdWVzdBobLmZsaXQudjEuTG'
-    'lzdFNraWxsc1Jlc3BvbnNlIgOQAgE=');
+    '52MS5JbnRlcnJ1cHRSZXF1ZXN0GhouZmxpdC52MS5JbnRlcnJ1cHRSZXNwb25zZRJRCg5SZXRy'
+    'eU1vZGVsQ2FsbBIeLmZsaXQudjEuUmV0cnlNb2RlbENhbGxSZXF1ZXN0Gh8uZmxpdC52MS5SZX'
+    'RyeU1vZGVsQ2FsbFJlc3BvbnNlEksKDEFuc3dlclByb21wdBIcLmZsaXQudjEuQW5zd2VyUHJv'
+    'bXB0UmVxdWVzdBodLmZsaXQudjEuQW5zd2VyUHJvbXB0UmVzcG9uc2USPwoIU2V0TW9kZWwSGC'
+    '5mbGl0LnYxLlNldE1vZGVsUmVxdWVzdBoZLmZsaXQudjEuU2V0TW9kZWxSZXNwb25zZRJCCglT'
+    'ZXRFZmZvcnQSGS5mbGl0LnYxLlNldEVmZm9ydFJlcXVlc3QaGi5mbGl0LnYxLlNldEVmZm9ydF'
+    'Jlc3BvbnNlEjwKB1NldFlvbG8SFy5mbGl0LnYxLlNldFlvbG9SZXF1ZXN0GhguZmxpdC52MS5T'
+    'ZXRZb2xvUmVzcG9uc2USSAoLTW92ZVNlc3Npb24SGy5mbGl0LnYxLk1vdmVTZXNzaW9uUmVxdW'
+    'VzdBocLmZsaXQudjEuTW92ZVNlc3Npb25SZXNwb25zZRIzCgRSYXRlEhQuZmxpdC52MS5SYXRl'
+    'UmVxdWVzdBoVLmZsaXQudjEuUmF0ZVJlc3BvbnNlElYKDkxpc3RNY3BTZXJ2ZXJzEh4uZmxpdC'
+    '52MS5MaXN0TWNwU2VydmVyc1JlcXVlc3QaHy5mbGl0LnYxLkxpc3RNY3BTZXJ2ZXJzUmVzcG9u'
+    'c2UiA5ACARJLCgxTZXRNY3BTZXJ2ZXISHC5mbGl0LnYxLlNldE1jcFNlcnZlclJlcXVlc3QaHS'
+    '5mbGl0LnYxLlNldE1jcFNlcnZlclJlc3BvbnNlEkoKCkxpc3RTa2lsbHMSGi5mbGl0LnYxLkxp'
+    'c3RTa2lsbHNSZXF1ZXN0GhsuZmxpdC52MS5MaXN0U2tpbGxzUmVzcG9uc2UiA5ACAQ==');

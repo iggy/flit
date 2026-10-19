@@ -213,6 +213,8 @@ func (p *printer) callEnded(at time.Time, e *flitv1.ModelCallEnded) {
 		b.WriteString("ok")
 	case flitv1.ModelCallOutcome_MODEL_CALL_OUTCOME_STALLED:
 		fmt.Fprintf(&b, "STALLED while %s", phase(e.Phase))
+	case flitv1.ModelCallOutcome_MODEL_CALL_OUTCOME_RETRIED:
+		fmt.Fprintf(&b, "given up and resent by request while %s", phase(e.Phase))
 	case flitv1.ModelCallOutcome_MODEL_CALL_OUTCOME_CANCELLED:
 		fmt.Fprintf(&b, "cancelled while %s", phase(e.Phase))
 	default:
@@ -243,7 +245,7 @@ func (p *printer) callEnded(at time.Time, e *flitv1.ModelCallEnded) {
 		b.WriteString("; retrying")
 	}
 	p.line(at, 1, "model call attempt %d %s", e.Attempt, b.String())
-	if e.Error != "" {
+	if e.Error != "" && e.Outcome != flitv1.ModelCallOutcome_MODEL_CALL_OUTCOME_RETRIED {
 		p.line(at, 2, "%s", e.Error)
 	}
 }

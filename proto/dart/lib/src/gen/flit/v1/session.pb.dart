@@ -1135,6 +1135,108 @@ class InterruptResponse extends $pb.GeneratedMessage {
   void clearInterrupted() => $_clearField(1);
 }
 
+class RetryModelCallRequest extends $pb.GeneratedMessage {
+  factory RetryModelCallRequest({
+    $core.String? sessionId,
+  }) {
+    final result = RetryModelCallRequest._();
+    if (sessionId != null) result.sessionId = sessionId;
+    return result;
+  }
+
+  RetryModelCallRequest._();
+
+  factory RetryModelCallRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RetryModelCallRequest()..mergeFromBuffer(data, registry);
+  factory RetryModelCallRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RetryModelCallRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RetryModelCallRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: RetryModelCallRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'sessionId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RetryModelCallRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RetryModelCallRequest copyWith(
+          void Function(RetryModelCallRequest) updates) =>
+      super.copyWith((message) => updates(message as RetryModelCallRequest))
+          as RetryModelCallRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use RetryModelCallRequest() / RetryModelCallRequest.new instead')
+  static RetryModelCallRequest create() => RetryModelCallRequest._();
+  static $pb.GeneratedMessage $_createMessage() => RetryModelCallRequest._();
+  @$core.override
+  RetryModelCallRequest createEmptyInstance() => RetryModelCallRequest._();
+  @$core.pragma('dart2js:noInline')
+  static RetryModelCallRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RetryModelCallRequest>(
+          RetryModelCallRequest.$_createMessage);
+  static RetryModelCallRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get sessionId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set sessionId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSessionId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSessionId() => $_clearField(1);
+}
+
+class RetryModelCallResponse extends $pb.GeneratedMessage {
+  factory RetryModelCallResponse() => RetryModelCallResponse._();
+
+  RetryModelCallResponse._();
+
+  factory RetryModelCallResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RetryModelCallResponse()..mergeFromBuffer(data, registry);
+  factory RetryModelCallResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RetryModelCallResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RetryModelCallResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: RetryModelCallResponse.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RetryModelCallResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RetryModelCallResponse copyWith(
+          void Function(RetryModelCallResponse) updates) =>
+      super.copyWith((message) => updates(message as RetryModelCallResponse))
+          as RetryModelCallResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use RetryModelCallResponse() / RetryModelCallResponse.new instead')
+  static RetryModelCallResponse create() => RetryModelCallResponse._();
+  static $pb.GeneratedMessage $_createMessage() => RetryModelCallResponse._();
+  @$core.override
+  RetryModelCallResponse createEmptyInstance() => RetryModelCallResponse._();
+  @$core.pragma('dart2js:noInline')
+  static RetryModelCallResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RetryModelCallResponse>(
+          RetryModelCallResponse.$_createMessage);
+  static RetryModelCallResponse? _defaultInstance;
+}
+
 class AnswerPromptRequest extends $pb.GeneratedMessage {
   factory AnswerPromptRequest({
     $core.String? sessionId,
@@ -5342,7 +5444,8 @@ class ModelCallEnded extends $pb.GeneratedMessage {
   @$pb.TagNumber(17)
   void clearPredictedMs() => $_clearField(17);
 
-  /// Whether flit tries the call again (agent.model_retries).
+  /// Whether flit tries the call again (agent.model_retries, or
+  /// RetryModelCall).
   @$pb.TagNumber(18)
   $core.bool get willRetry => $_getBF(17);
   @$pb.TagNumber(18)
@@ -5402,6 +5505,15 @@ class SessionServiceApi {
           $pb.ClientContext? ctx, InterruptRequest request) =>
       _client.invoke<InterruptResponse>(
           ctx, 'SessionService', 'Interrupt', request, InterruptResponse());
+
+  /// RetryModelCall gives up on the model call in progress and sends it
+  /// again, for when the model hasn't answered. Only while none of the reply
+  /// has arrived: once it is streaming, the call fails with
+  /// FAILED_PRECONDITION (interrupt instead).
+  $async.Future<RetryModelCallResponse> retryModelCall(
+          $pb.ClientContext? ctx, RetryModelCallRequest request) =>
+      _client.invoke<RetryModelCallResponse>(ctx, 'SessionService',
+          'RetryModelCall', request, RetryModelCallResponse());
 
   /// AnswerPrompt answers a prompt the agent is waiting on. The first answer
   /// wins; later answers fail with FAILED_PRECONDITION.

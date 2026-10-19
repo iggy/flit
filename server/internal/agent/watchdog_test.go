@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log/slog"
 	"strconv"
@@ -137,3 +138,40 @@ func TestNoProgressRequestForOtherProviders(t *testing.T) {
 }
 
 func itoa(n int64) string { return strconv.FormatInt(n, 10) }
+
+// RetryModelCall resends a call the model hasn't answered, and refuses
+// once the reply is streaming.
+func TestRetryModelCall(t *testing.T) {
+	h := newHarness(t)
+	sess := h.create()
+	ctx := context.Background()
+	if err := h.m.RetryModelCall(ctx, sess.ID); !errors.Is(err, ErrNoCallToRetry) {
+		t.Fatalf("no turn: %v", err)
+	}
+	waiting := make(chan struct{})
+	streaming := make(chan struct{})
+	h.llm.Push(
+		llmtest.Response{Hang: true, Started: waiting},
+		llmtest.Response{Chunks: llmtest.Text("par")[:1], Hang: true, Started: streaming},
+	)
+	w := h.watch(sess.ID, 0)
+	if _, err := h.m.Send(ctx, sess.ID, "hi"); err != nil {
+		t.Fatal(err)
+	}
+	<-waiting
+	if err := h.m.RetryModelCall(ctx, sess.ID); err != nil {
+		t.Fatalf("retry while waiting: %v", err)
+	}
+	<-streaming
+	w.waitFor("reply text", func(ev *flitv1.Event) bool { return ev.GetTextDelta().GetText() == "par" })
+	if err := h.m.RetryModelCall(ctx, sess.ID); !errors.Is(err, ErrNoCallToRetry) {
+		t.Fatalf("retry while streaming: %v", err)
+	}
+	h.m.Interrupt(ctx, sess.ID)
+	w.waitTurnEnd()
+	ended := callsEnded(w.snapshot())
+	if len(ended) != 2 || ended[0].Outcome != flitv1.ModelCallOutcome_MODEL_CALL_OUTCOME_RETRIED || !ended[0].WillRetry ||
+		ended[1].Attempt != 2 || ended[1].Outcome != flitv1.ModelCallOutcome_MODEL_CALL_OUTCOME_CANCELLED {
+		t.Fatalf("calls %v", ended)
+	}
+}

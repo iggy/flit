@@ -113,6 +113,7 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 			req.ReturnProgress = true
 		}
 		var res *llm.Result
+		autoRetries := 0
 		for attempt := int32(1); ; attempt++ {
 			if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_ModelCallStarted{ModelCallStarted: &flitv1.ModelCallStarted{
 				MessageId: msgID, Attempt: attempt,
@@ -123,14 +124,18 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 			}
 			var lastProgress time.Time
 			var trace *llm.Trace
-			res, trace, err = client.StreamTrace(ctx, req, llm.Handler{
+			callCtx, cancelCall := context.WithCancelCause(ctx)
+			s.setCall(cancelCall)
+			res, trace, err = client.StreamTrace(callCtx, req, llm.Handler{
 				Text: func(d string) {
+					s.callProduced()
 					text.WriteString(d)
 					if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_TextDelta{TextDelta: &flitv1.TextDelta{MessageId: msgID, Text: d}}}); err != nil {
 						appendErr = err
 					}
 				},
 				Reasoning: func(d string) {
+					s.callProduced()
 					reasoning.WriteString(d)
 					if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_ReasoningDelta{ReasoningDelta: &flitv1.ReasoningDelta{MessageId: msgID, Text: d}}}); err != nil {
 						appendErr = err
@@ -151,20 +156,31 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 					}
 				},
 			})
+			userRetry := err != nil && ctx.Err() == nil && errors.Is(context.Cause(callCtx), errUserRetry)
+			s.setCall(nil)
+			cancelCall(nil)
 			if appendErr != nil {
 				return end{}, appendErr
 			}
 			// Only a call that produced nothing can be retried without the
 			// log showing half a reply twice.
-			retry := err != nil && ctx.Err() == nil && llm.Retryable(err) &&
-				text.Len() == 0 && reasoning.Len() == 0 && int(attempt) <= cfg.Agent.ModelRetries
-			if _, err := s.append(callEnded(msgID, attempt, trace, res, err, ctx.Err() != nil, retry)); err != nil {
+			autoRetry := err != nil && !userRetry && ctx.Err() == nil && llm.Retryable(err) &&
+				text.Len() == 0 && reasoning.Len() == 0 && autoRetries < cfg.Agent.ModelRetries
+			ended := callEnded(msgID, attempt, trace, res, err, ctx.Err() != nil, userRetry || autoRetry)
+			if userRetry {
+				e := ended.GetModelCallEnded()
+				e.Outcome, e.Error = flitv1.ModelCallOutcome_MODEL_CALL_OUTCOME_RETRIED, "retried by request"
+			}
+			if _, err := s.append(ended); err != nil {
 				return end{}, err
 			}
-			if !retry {
+			if !userRetry && !autoRetry {
 				break
 			}
-			s.m.log.Warn("model call failed before any output; retrying", "session", info.ID, "attempt", attempt, "err", err)
+			if autoRetry {
+				autoRetries++
+			}
+			s.m.log.Warn("model call failed before any output; retrying", "session", info.ID, "attempt", attempt, "by_request", userRetry, "err", err)
 		}
 		s.recordCall(info, turnID, msgID, role, skillNames, req, res, text.String(), reasoning.String(), err)
 		if err != nil {
