@@ -91,10 +91,23 @@ this response".
 
 `ratings` are ratings that point at this call (a turn rating given on this
 reply, or a model rating on it); `turn_ratings` are all turn ratings of the
-turn the call belongs to. `task` is `chat` for the agent's own calls and
-`permission` for the shell safety check (see [shell.md](shell.md)); its
-`params` include `chat_template_kwargs` when effort was `off` on
-llama.cpp.
+turn the call belongs to. `task` is `chat` for the agent's own calls,
+`permission` for the shell safety check (see [shell.md](shell.md)) and
+`compaction` for summarizing a long conversation (below); its `params`
+include `chat_template_kwargs` when effort was `off` on llama.cpp.
+
+#### Compaction
+
+Every call is exported exactly as it was sent, so after a conversation is
+compacted its `chat` calls carry the summary at the end of the system
+message (under "Earlier in this session") and only the turns kept after it,
+not the older messages. The summarization call itself is exported as its
+own `model_call` with `task: "compaction"`: its messages are the system
+prompt, tools and conversation up to the cut, as the chat calls saw them,
+followed by a user message asking for the summary, and its `response` is
+the summary. Its `turn_id` is the turn it happened in, or empty when it
+ran between turns (`/compact` on an idle session). It is never part of a
+`turn` record.
 
 ### `turn`
 
@@ -118,7 +131,8 @@ response, so it includes every tool call and tool result in between.
 }
 ```
 
-A turn's conversation comes from its `chat` calls only. `permission_checks`
+A turn's conversation comes from its `chat` calls only (so a turn that was
+compacted part way through shows the summary and the steps kept after it). `permission_checks`
 are the safety check's verdicts (`safe`, `ask`, `block` or `error`) on the
 turn's shell commands; each one's model call is a separate `model_call`
 record with `task: "permission"`.

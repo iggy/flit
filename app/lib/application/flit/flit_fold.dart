@@ -246,6 +246,112 @@ final class FlitPendingCall {
       'output: $hasOutput)';
 }
 
+/// A compaction in progress: the chat shows "compacting…".
+final class FlitCompacting {
+  const FlitCompacting({
+    required this.compactionId,
+    this.auto = false,
+    this.provider = '',
+    this.model = '',
+    this.tokens = 0,
+    this.contextLength = 0,
+    this.startedAt,
+  });
+
+  final String compactionId;
+  final bool auto;
+  final String provider;
+  final String model;
+  final int tokens;
+  final int contextLength;
+  final DateTime? startedAt;
+
+  @override
+  bool operator ==(Object other) =>
+      other is FlitCompacting &&
+      other.compactionId == compactionId &&
+      other.auto == auto &&
+      other.provider == provider &&
+      other.model == model &&
+      other.tokens == tokens &&
+      other.contextLength == contextLength &&
+      other.startedAt == startedAt;
+
+  @override
+  int get hashCode => Object.hash(
+    compactionId,
+    auto,
+    provider,
+    model,
+    tokens,
+    contextLength,
+    startedAt,
+  );
+}
+
+/// Where a compaction cut the conversation, shown as a marker in the chat:
+/// the messages before [beforeIndex] now reach the model only as [summary].
+final class FlitCompactionMarker {
+  const FlitCompactionMarker({
+    required this.compactionId,
+    required this.beforeIndex,
+    required this.summary,
+    this.auto = false,
+    this.tokensBefore = 0,
+    this.tokensAfter = 0,
+    this.tokensExact = false,
+    this.provider = '',
+    this.model = '',
+    this.time,
+  });
+
+  final String compactionId;
+
+  /// The marker goes before this entry of [FlitFoldState.messages] (at the
+  /// end when it equals their length).
+  final int beforeIndex;
+  final String summary;
+  final bool auto;
+  final int tokensBefore;
+  final int tokensAfter;
+  final bool tokensExact;
+  final String provider;
+  final String model;
+  final DateTime? time;
+
+  @override
+  bool operator ==(Object other) =>
+      other is FlitCompactionMarker &&
+      other.compactionId == compactionId &&
+      other.beforeIndex == beforeIndex &&
+      other.summary == summary &&
+      other.auto == auto &&
+      other.tokensBefore == tokensBefore &&
+      other.tokensAfter == tokensAfter &&
+      other.tokensExact == tokensExact &&
+      other.provider == provider &&
+      other.model == model &&
+      other.time == time;
+
+  @override
+  int get hashCode => Object.hash(
+    compactionId,
+    beforeIndex,
+    summary,
+    auto,
+    tokensBefore,
+    tokensAfter,
+    tokensExact,
+    provider,
+    model,
+    time,
+  );
+
+  @override
+  String toString() =>
+      'FlitCompactionMarker($compactionId before $beforeIndex: $summary)';
+}
+
 final class FlitFoldState {
   const FlitFoldState({
     this.messages = const <ChatMessage>[],
@@ -271,7 +377,31 @@ final class FlitFoldState {
     this.call,
     this.queued = const <FlitQueuedMessage>[],
     this.reasoningEndIgnored = const <String>{},
+    this.messageSeqs = const <int>[],
+    this.compacting,
+    this.compactions = const <FlitCompactionMarker>[],
+    this.keptIndex,
   });
+
+  /// The seq of the event that started each entry of [messages].
+  final List<int> messageSeqs;
+
+  /// A compaction in progress, if any.
+  final FlitCompacting? compacting;
+
+  /// Compactions that took effect, oldest first.
+  final List<FlitCompactionMarker> compactions;
+
+  /// A message before the latest compaction marker that the model still
+  /// sees: the request of a turn the compaction cut through.
+  final int? keptIndex;
+
+  /// Whether messages[i] reaches the model only through a compaction
+  /// summary (the chat greys it out).
+  bool summarized(int i) =>
+      compactions.isNotEmpty &&
+      i < compactions.last.beforeIndex &&
+      i != keptIndex;
 
   /// Messages whose model ignored "answer now" (from the log).
   final Set<String> reasoningEndIgnored;
@@ -372,8 +502,18 @@ final class FlitFoldState {
     bool clearCall = false,
     List<FlitQueuedMessage>? queued,
     Set<String>? reasoningEndIgnored,
+    List<int>? messageSeqs,
+    FlitCompacting? compacting,
+    bool clearCompacting = false,
+    List<FlitCompactionMarker>? compactions,
+    int? keptIndex,
+    bool clearKept = false,
   }) {
     return FlitFoldState(
+      messageSeqs: messageSeqs ?? this.messageSeqs,
+      compacting: clearCompacting ? null : (compacting ?? this.compacting),
+      compactions: compactions ?? this.compactions,
+      keptIndex: clearKept ? null : (keptIndex ?? this.keptIndex),
       messages: messages ?? this.messages,
       prompts: prompts ?? this.prompts,
       taskState: taskState ?? this.taskState,
@@ -428,7 +568,11 @@ final class FlitFoldState {
         other.call == call &&
         deepListEquals(other.queued, queued) &&
         other.reasoningEndIgnored.length == reasoningEndIgnored.length &&
-        other.reasoningEndIgnored.containsAll(reasoningEndIgnored);
+        other.reasoningEndIgnored.containsAll(reasoningEndIgnored) &&
+        deepListEquals(other.messageSeqs, messageSeqs) &&
+        other.compacting == compacting &&
+        deepListEquals(other.compactions, compactions) &&
+        other.keptIndex == keptIndex;
   }
 
   @override
@@ -447,6 +591,8 @@ final class FlitFoldState {
     speed,
     call,
     Object.hashAll(queued),
+    compacting,
+    Object.hashAll(compactions),
   );
 
   @override
@@ -551,6 +697,21 @@ FlitFoldState foldFlitEvent(FlitFoldState state, FlitEvent event) {
     ),
     FlitModelCallEnded() =>
       s.call?.messageId == event.messageId ? s.copyWith(clearCall: true) : s,
+    FlitCompactionStarted() => s.copyWith(
+      compacting: FlitCompacting(
+        compactionId: event.compactionId,
+        auto: event.auto,
+        provider: event.provider,
+        model: event.model,
+        tokens: event.tokens,
+        contextLength: event.contextLength,
+        startedAt: event.time,
+      ),
+    ),
+    FlitCompactionDone() => _compacted(
+      s.copyWith(clearCompacting: true),
+      event,
+    ),
     FlitMessageDone() => _done(s, event),
     FlitToolCallStarted() => _toolStarted(s, event),
     FlitToolOutput() => _updateTool(s, event.toolCallId, (t) {
@@ -596,6 +757,9 @@ FlitFoldState foldFlitEvent(FlitFoldState state, FlitEvent event) {
       clearCall:
           event.state != FlitTaskState.working &&
           event.state != FlitTaskState.waiting,
+      clearCompacting:
+          event.state != FlitTaskState.working &&
+          event.state != FlitTaskState.waiting,
       // A finished turn has nothing left to ask.
       prompts:
           event.state == FlitTaskState.working ||
@@ -626,6 +790,7 @@ FlitFoldState foldFlitEvent(FlitFoldState state, FlitEvent event) {
     FlitPermissionCheck() => _permissionCheck(s, event),
     FlitTurnError() => s.copyWith(
       messageIds: <String?>[...s.messageIds, null],
+      messageSeqs: <int>[...s.messageSeqs, event.seq],
       messages: <ChatMessage>[
         ...s.messages,
         ChatMessage(
@@ -726,6 +891,72 @@ FlitFoldState _started(FlitFoldState s, FlitMessageStarted e) {
       e.messageId: s.messages.length,
     },
     messageIds: <String?>[...s.messageIds, e.messageId],
+    messageSeqs: <int>[...s.messageSeqs, e.seq],
+  );
+}
+
+/// A compaction ended: a marker where it cut the conversation (everything
+/// above it is greyed out), or a note that it failed.
+FlitFoldState _compacted(FlitFoldState s, FlitCompactionDone e) {
+  if (e.error.isNotEmpty) {
+    return s.copyWith(
+      messageIds: <String?>[...s.messageIds, null],
+      messageSeqs: <int>[...s.messageSeqs, e.seq],
+      messages: <ChatMessage>[
+        ...s.messages,
+        ChatMessage(
+          role: MessageRole.system,
+          text:
+              "Couldn't compact the conversation: ${e.error}. "
+              'It goes on with its full history.',
+          terminalStatus: MessageTerminalStatus.error,
+          timestamp: e.time,
+        ),
+      ],
+    );
+  }
+  var before = s.messages.length;
+  for (var i = 0; i < s.messageSeqs.length; i++) {
+    if (s.messageSeqs[i] > e.coveredSeq) {
+      before = i;
+      break;
+    }
+  }
+  // Cut inside a turn: the model still sees the request that started it.
+  int? kept;
+  for (var i = before; i < s.messages.length; i++) {
+    if (i < s.messageIds.length && s.messageIds[i] == null) {
+      continue;
+    }
+    if (s.messages[i].role == MessageRole.assistant) {
+      for (var j = before - 1; j >= 0; j--) {
+        if (s.messages[j].role == MessageRole.user) {
+          kept = j;
+          break;
+        }
+      }
+    }
+    break;
+  }
+  return s.copyWith(
+    compactions: <FlitCompactionMarker>[
+      ...s.compactions,
+      FlitCompactionMarker(
+        compactionId: e.compactionId,
+        beforeIndex: before,
+        summary: e.summary,
+        auto: e.auto,
+        tokensBefore: e.tokensBefore,
+        tokensAfter: e.tokensAfter,
+        tokensExact: e.tokensExact,
+        provider: e.provider,
+        model: e.model,
+        time: e.time,
+      ),
+    ],
+    keptIndex: kept,
+    clearKept: kept == null,
+    contextTokens: e.tokensAfter,
   );
 }
 

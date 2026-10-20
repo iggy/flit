@@ -66,7 +66,7 @@ func (s *session) assessor(cfg config.Config, turnID, toolCallID string) func(co
 			a = parseVerdict(res.Text)
 		}
 		callID := newID("msg")
-		s.recordPermissionCall(info, turnID, callID, task, req, res, err)
+		s.recordTaskCall(info, turnID, callID, "permission", task, req, res, err)
 		check := &flitv1.PermissionCheck{
 			ToolCallId: toolCallID, Command: command, Verdict: verdictProto(a.Verdict), Reason: a.Reason,
 			Provider: task.Provider, Model: task.Model, ModelCallId: callID, TurnId: turnID,
@@ -120,16 +120,20 @@ func verdictProto(v tools.Verdict) flitv1.PermissionVerdict {
 	return flitv1.PermissionVerdict_PERMISSION_VERDICT_ERROR
 }
 
-// recordPermissionCall stores the safety check's model call for export,
-// as task "permission".
-func (s *session) recordPermissionCall(info store.Session, turnID, callID string, task config.TaskModel, req llm.Request, res *llm.Result, callErr error) {
+// recordTaskCall stores a model call made for a task other than chat
+// (the shell safety check, compaction) for export.
+func (s *session) recordTaskCall(info store.Session, turnID, callID, kind string, task config.TaskModel, req llm.Request, res *llm.Result, callErr error) {
 	var messages [][]byte
 	for _, m := range req.Messages {
 		b, _ := json.Marshal(m)
 		messages = append(messages, b)
 	}
+	var toolsJSON []byte
+	if len(req.Tools) > 0 {
+		toolsJSON, _ = json.Marshal(req.Tools)
+	}
 	c := &store.ModelCall{
-		ID: callID, SessionID: info.ID, TeamID: info.TeamID, ProjectID: info.ProjectID, TurnID: turnID, Task: "permission",
+		ID: callID, SessionID: info.ID, TeamID: info.TeamID, ProjectID: info.ProjectID, TurnID: turnID, Task: kind,
 		Provider: task.Provider, Model: task.Model, Effort: task.Effort, FlitVersion: buildinfo.Get().Version, Params: requestParams(req),
 	}
 	resp := map[string]any{"role": "assistant", "content": ""}
@@ -147,8 +151,8 @@ func (s *session) recordPermissionCall(info store.Session, turnID, callID string
 		c.Error, c.FinishReason = callErr.Error(), "error"
 	}
 	c.Response, _ = json.Marshal(resp)
-	if err := s.m.store.RecordModelCall(context.Background(), c, messages, nil); err != nil {
-		s.m.log.Warn("record permission call", "session", info.ID, "err", err)
+	if err := s.m.store.RecordModelCall(context.Background(), c, messages, toolsJSON); err != nil {
+		s.m.log.Warn("record model call", "task", kind, "session", info.ID, "err", err)
 	}
 }
 

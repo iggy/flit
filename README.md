@@ -126,8 +126,9 @@ The model picker lists your favorites (star a model) and recently used models
 first; both are kept on the server, so every device sees the same ones. For a
 llama.cpp router, the picker can also load and unload models.
 `agent.tasks` in the config can set a model per kind of work (`chat` is used
-for new sessions; `planning`, `cron`, `compaction` and `search` are for
-features to come).
+for new sessions, `permission` rates shell commands, `compaction` writes the
+summary when a conversation is compacted; `planning`, `cron` and `search` are
+for features to come).
 
 Roles are Markdown files in `roles/` next to the config. The body is added to
 the system prompt; YAML frontmatter can set a default model and effort and a
@@ -226,6 +227,26 @@ current model call or tool, before the next call), or starts the next turn
 if the agent was finishing. Queued messages show in every client and can be
 edited or cancelled until then. Stop keeps them queued; they go out first
 with your next message (or press Send with an empty box).
+
+Long conversations are compacted so they keep fitting the model's context.
+Before a model call that would fill `agent.compaction.threshold` of the
+context window (0.8), flit has a model (`agent.tasks.compaction`, or the
+session's own) summarize the older part, and from then on sends the summary,
+in the system prompt, plus the latest `agent.compaction.keep_turns` turns
+(2) word for word. A single turn too big for that is cut between its steps
+instead, keeping the request it's working on. Token counts are exact on
+llama.cpp (its `input_tokens` endpoint, and the slots' real `n_ctx`) and
+estimated elsewhere (about 4 characters a token); a model whose window the
+catalog doesn't know isn't compacted automatically (set `context_length` in
+`models.yaml`). `/compact` in the app (or the `Compact` RPC) does it on
+demand, with optional instructions (`/compact keep the API details`). The
+summary is capped at `agent.compaction.max_summary_tokens` (4096); if it
+fails, the session carries on with its full history. Nothing is deleted:
+the log records each compaction (summary, the last event it covers, tokens
+before and after, model, automatic or not), the app marks it in the chat
+with the older messages greyed out above, and a saved llama.cpp prompt cache
+from before it is dropped instead of restored. `agent.compaction.auto:
+false` leaves only `/compact`.
 
 Everything a session does is stored as numbered events in `flit.db` in the
 data dir. A client can attach from any event number, replay, and then follow

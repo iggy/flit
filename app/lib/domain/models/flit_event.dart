@@ -473,6 +473,74 @@ final class FlitReasoningEndIgnored extends FlitEvent {
   final String messageId;
 }
 
+/// flit started summarizing the older part of the conversation: on its own
+/// near the context limit ([auto]), or because someone asked ([client]).
+final class FlitCompactionStarted extends FlitEvent {
+  const FlitCompactionStarted({
+    required super.seq,
+    required this.compactionId,
+    this.auto = false,
+    this.client = '',
+    this.tokens = 0,
+    this.contextLength = 0,
+    this.provider = '',
+    this.model = '',
+    super.time,
+  });
+
+  final String compactionId;
+  final bool auto;
+  final String client;
+
+  /// Context use when it started, and the window (0 if unknown).
+  final int tokens;
+  final int contextLength;
+
+  /// The model writing the summary.
+  final String provider;
+  final String model;
+}
+
+/// A compaction ended. Unless [error] is set, the model now sees [summary]
+/// plus the events after [coveredSeq] instead of the whole log.
+final class FlitCompactionDone extends FlitEvent {
+  const FlitCompactionDone({
+    required super.seq,
+    required this.compactionId,
+    this.auto = false,
+    this.summary = '',
+    this.coveredSeq = 0,
+    this.tokensBefore = 0,
+    this.tokensAfter = 0,
+    this.tokensExact = false,
+    this.contextLength = 0,
+    this.provider = '',
+    this.model = '',
+    this.keptTurns = 0,
+    this.error = '',
+    super.time,
+  });
+
+  final String compactionId;
+  final bool auto;
+  final String summary;
+
+  /// The last event the summary covers.
+  final int coveredSeq;
+  final int tokensBefore;
+  final int tokensAfter;
+
+  /// Whether the token counts are exact (llama.cpp) or estimates.
+  final bool tokensExact;
+  final int contextLength;
+  final String provider;
+  final String model;
+  final int keptTurns;
+
+  /// Why it failed; empty when it worked.
+  final String error;
+}
+
 /// A request to the model for message [messageId] went out (attempt 1, or
 /// a retry).
 final class FlitModelCallStarted extends FlitEvent {

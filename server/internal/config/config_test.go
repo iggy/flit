@@ -63,6 +63,10 @@ func TestParseErrors(t *testing.T) {
 		"mcp bad url":            "mcp_servers:\n  - {name: a, url: h/mcp}\n",
 		"mcp url with args":      "mcp_servers:\n  - {name: a, url: http://h/mcp, args: [x]}\n",
 		"mcp command headers":    "mcp_servers:\n  - {name: a, command: x, headers: {A: b}}\n",
+		"compaction threshold":   "agent:\n  compaction:\n    threshold: 1.5\n",
+		"compaction keep":        "agent:\n  compaction:\n    keep_turns: 100\n",
+		"compaction max":         "agent:\n  compaction:\n    max_summary_tokens: -1\n",
+		"compaction unknown":     "agent:\n  compaction:\n    ratio: 0.5\n",
 	} {
 		t.Run(name, func(t *testing.T) {
 			if _, err := Parse([]byte(in)); err == nil {
@@ -234,5 +238,27 @@ shell:
 	}
 	if d, _ := Parse(nil); !d.Shell.ReadOnlyEnabled() || d.Shell.Yolo {
 		t.Fatal("defaults: read_only should be on, yolo off")
+	}
+}
+
+func TestCompactionSettings(t *testing.T) {
+	cfg, err := Parse(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := cfg.Agent.Compaction
+	if !c.AutoOn() || c.Threshold != 0.8 || c.KeepTurns != 2 || c.MaxSummaryTokens != 4096 {
+		t.Fatalf("defaults %+v", c)
+	}
+	cfg, err = Parse([]byte("agent:\n  compaction:\n    auto: false\n    threshold: 0.5\n    keep_turns: 4\n    max_summary_tokens: 0\n  tasks:\n    compaction: {provider: \"\", model: \"\"}\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	c = cfg.Agent.Compaction
+	if c.AutoOn() || c.Threshold != 0.5 || c.KeepTurns != 4 || c.MaxSummaryTokens != 0 {
+		t.Fatalf("parsed %+v", c)
+	}
+	if _, ok := cfg.Task("compaction"); ok {
+		t.Fatal("empty compaction task counts as set")
 	}
 }

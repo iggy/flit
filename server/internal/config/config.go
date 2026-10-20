@@ -219,8 +219,10 @@ type Agent struct {
 	Effort   string `yaml:"effort"`
 	// Tasks sets a model per kind of work (see Tasks). chat is the
 	// sessions' default model and permission rates shell commands before
-	// flit asks the user (see docs/shell.md); planning, cron, compaction
-	// and search are for those features as they arrive.
+	// flit asks the user (see docs/shell.md); compaction summarizes long
+	// conversations (see Compaction; without it the session's own model
+	// does); planning, cron and search are for those features as they
+	// arrive.
 	Tasks map[string]TaskModel `yaml:"tasks"`
 	// ModelPromptAppends adds text to the system prompt for specific
 	// models, keyed "provider/model".
@@ -240,7 +242,32 @@ type Agent struct {
 	// ModelRetries is how many times a call that failed or stalled before
 	// any output is tried again automatically. 0 means never.
 	ModelRetries int `yaml:"model_retries"`
+	// Compaction summarizes the older part of a long conversation so it
+	// fits the model's context (tasks.compaction picks the model).
+	Compaction Compaction `yaml:"compaction"`
 }
+
+// Compaction configures context compaction.
+type Compaction struct {
+	// Auto compacts before a model call once the request would fill
+	// Threshold of the model's context window. Default true. /compact
+	// works either way.
+	Auto *bool `yaml:"auto"`
+	// Threshold is the fraction of the context window (0.1-1) at which
+	// Auto kicks in. Default 0.8.
+	Threshold float64 `yaml:"threshold"`
+	// KeepTurns is how many of the latest turns stay verbatim after the
+	// summary (1-50). Default 2. When those alone are too big, a running
+	// turn is cut between its steps instead.
+	KeepTurns int `yaml:"keep_turns"`
+	// MaxSummaryTokens caps the summary's length (max_tokens, thinking
+	// included); a summary cut off there counts as failed. 0 means no cap.
+	// Default 4096.
+	MaxSummaryTokens int `yaml:"max_summary_tokens"`
+}
+
+// AutoOn reports whether automatic compaction is on.
+func (c Compaction) AutoOn() bool { return c.Auto == nil || *c.Auto }
 
 // Shell configures the shell tool.
 type Shell struct {
@@ -326,6 +353,12 @@ func Default() Config {
 			ModelFirstTokenTimeout: 10 * time.Minute,
 			ModelStallTimeout:      2 * time.Minute,
 			ModelRetries:           1,
+			Compaction: Compaction{
+				Auto:             ptr(true),
+				Threshold:        0.8,
+				KeepTurns:        2,
+				MaxSummaryTokens: 4096,
+			},
 		},
 		Shell: Shell{
 			Timeout:    2 * time.Minute,
@@ -374,6 +407,12 @@ func (c *Config) fillDefaults() {
 	}
 	if c.Shell.Timeout == 0 {
 		c.Shell.Timeout = d.Shell.Timeout
+	}
+	if c.Agent.Compaction.Threshold == 0 {
+		c.Agent.Compaction.Threshold = d.Agent.Compaction.Threshold
+	}
+	if c.Agent.Compaction.KeepTurns == 0 {
+		c.Agent.Compaction.KeepTurns = d.Agent.Compaction.KeepTurns
 	}
 	if c.LlamaCpp.KVCacheFiles == 0 {
 		c.LlamaCpp.KVCacheFiles = d.LlamaCpp.KVCacheFiles
@@ -502,6 +541,15 @@ func (c Config) Validate() error {
 	if c.Agent.ModelRetries < 0 || c.Agent.ModelRetries > 5 {
 		return errors.New("agent.model_retries must be between 0 and 5")
 	}
+	if cp := c.Agent.Compaction; cp.Threshold < 0.1 || cp.Threshold > 1 {
+		return fmt.Errorf("agent.compaction.threshold %v must be between 0.1 and 1", cp.Threshold)
+	}
+	if cp := c.Agent.Compaction; cp.KeepTurns < 1 || cp.KeepTurns > 50 {
+		return errors.New("agent.compaction.keep_turns must be between 1 and 50")
+	}
+	if c.Agent.Compaction.MaxSummaryTokens < 0 {
+		return errors.New("agent.compaction.max_summary_tokens must not be negative")
+	}
 	if c.Shell.Timeout < 0 || c.Shell.MaxTimeout < c.Shell.Timeout {
 		return errors.New("shell: need 0 <= timeout <= max_timeout")
 	}
@@ -624,10 +672,13 @@ agent:
   # A model per kind of work: chat, permission, planning, cron, compaction,
   # search. chat overrides the defaults above. permission rates shell
   # commands (safe, ask or block) before flit asks you; without it, flit
-  # just asks. planning, cron, compaction and search aren't used yet.
+  # just asks. compaction writes the summary when a long conversation is
+  # compacted; without it, the session's own model does. planning, cron
+  # and search aren't used yet.
   tasks: {}
   #   chat:       {provider: local, model: qwen3-coder, effort: medium}
   #   permission: {provider: local, model: qwen3-4b, effort: off}
+  #   compaction: {provider: local, model: qwen3-4b, effort: off}
   # Extra system prompt text for specific models ("provider/model"); a
   # provider's prompt_append applies to all its models.
   model_prompt_appends: {}
@@ -645,6 +696,21 @@ agent:
   model_stall_timeout: 2m
   # Automatic retries for a call that failed or stalled before any output.
   model_retries: 1
+  # Compaction: when a conversation gets long, flit summarizes its older
+  # part (with tasks.compaction, or the session's model) and from then on
+  # sends the model the summary plus the latest turns. Nothing is deleted;
+  # the app shows where it happened. /compact in the app does it on demand.
+  compaction:
+    # Compact on its own before a model call that would fill threshold of
+    # the context window (exact counts on llama.cpp, estimates elsewhere;
+    # models with an unknown window are never compacted automatically).
+    auto: true
+    threshold: 0.8
+    # Latest turns kept word for word after the summary.
+    keep_turns: 2
+    # Longest summary, thinking included; a cut-off summary counts as
+    # failed and the session goes on uncompacted. 0 means no cap.
+    max_summary_tokens: 4096
 
 shell:
   timeout: 2m

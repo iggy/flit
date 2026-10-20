@@ -1627,6 +1627,148 @@ class EndReasoningResponse extends $pb.GeneratedMessage {
   static EndReasoningResponse? _defaultInstance;
 }
 
+class CompactRequest extends $pb.GeneratedMessage {
+  factory CompactRequest({
+    $core.String? sessionId,
+    $core.String? client,
+    $core.String? instructions,
+  }) {
+    final result = CompactRequest._();
+    if (sessionId != null) result.sessionId = sessionId;
+    if (client != null) result.client = client;
+    if (instructions != null) result.instructions = instructions;
+    return result;
+  }
+
+  CompactRequest._();
+
+  factory CompactRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CompactRequest()..mergeFromBuffer(data, registry);
+  factory CompactRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CompactRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CompactRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: CompactRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'sessionId')
+    ..aOS(2, _omitFieldNames ? '' : 'client')
+    ..aOS(3, _omitFieldNames ? '' : 'instructions')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CompactRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CompactRequest copyWith(void Function(CompactRequest) updates) =>
+      super.copyWith((message) => updates(message as CompactRequest))
+          as CompactRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use CompactRequest() / CompactRequest.new instead')
+  static CompactRequest create() => CompactRequest._();
+  static $pb.GeneratedMessage $_createMessage() => CompactRequest._();
+  @$core.override
+  CompactRequest createEmptyInstance() => CompactRequest._();
+  @$core.pragma('dart2js:noInline')
+  static CompactRequest getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CompactRequest>(
+          CompactRequest.$_createMessage);
+  static CompactRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get sessionId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set sessionId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSessionId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSessionId() => $_clearField(1);
+
+  /// Who asked, for the log.
+  @$pb.TagNumber(2)
+  $core.String get client => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set client($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasClient() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearClient() => $_clearField(2);
+
+  /// Optional extra instructions for the summary, e.g. "keep the API
+  /// details".
+  @$pb.TagNumber(3)
+  $core.String get instructions => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set instructions($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasInstructions() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearInstructions() => $_clearField(3);
+}
+
+class CompactResponse extends $pb.GeneratedMessage {
+  factory CompactResponse({
+    $core.bool? queued,
+  }) {
+    final result = CompactResponse._();
+    if (queued != null) result.queued = queued;
+    return result;
+  }
+
+  CompactResponse._();
+
+  factory CompactResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CompactResponse()..mergeFromBuffer(data, registry);
+  factory CompactResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CompactResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CompactResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: CompactResponse.$_createMessage)
+    ..aOB(1, _omitFieldNames ? '' : 'queued')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CompactResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CompactResponse copyWith(void Function(CompactResponse) updates) =>
+      super.copyWith((message) => updates(message as CompactResponse))
+          as CompactResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use CompactResponse() / CompactResponse.new instead')
+  static CompactResponse create() => CompactResponse._();
+  static $pb.GeneratedMessage $_createMessage() => CompactResponse._();
+  @$core.override
+  CompactResponse createEmptyInstance() => CompactResponse._();
+  @$core.pragma('dart2js:noInline')
+  static CompactResponse getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CompactResponse>(
+          CompactResponse.$_createMessage);
+  static CompactResponse? _defaultInstance;
+
+  /// True when a turn is running and compaction waits for its next step.
+  @$pb.TagNumber(1)
+  $core.bool get queued => $_getBF(0);
+  @$pb.TagNumber(1)
+  set queued($core.bool value) => $_setBool(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasQueued() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearQueued() => $_clearField(1);
+}
+
 class AnswerPromptRequest extends $pb.GeneratedMessage {
   factory AnswerPromptRequest({
     $core.String? sessionId,
@@ -3027,6 +3169,8 @@ enum Event_Payload {
   promptCache,
   reasoningEndRequested,
   reasoningEndIgnored,
+  compactionStarted,
+  compactionDone,
   notSet
 }
 
@@ -3065,6 +3209,8 @@ class Event extends $pb.GeneratedMessage {
     PromptCache? promptCache,
     ReasoningEndRequested? reasoningEndRequested,
     ReasoningEndIgnored? reasoningEndIgnored,
+    CompactionStarted? compactionStarted,
+    CompactionDone? compactionDone,
   }) {
     final result = Event._();
     if (sessionId != null) result.sessionId = sessionId;
@@ -3103,6 +3249,8 @@ class Event extends $pb.GeneratedMessage {
       result.reasoningEndRequested = reasoningEndRequested;
     if (reasoningEndIgnored != null)
       result.reasoningEndIgnored = reasoningEndIgnored;
+    if (compactionStarted != null) result.compactionStarted = compactionStarted;
+    if (compactionDone != null) result.compactionDone = compactionDone;
     return result;
   }
 
@@ -3145,6 +3293,8 @@ class Event extends $pb.GeneratedMessage {
     36: Event_Payload.promptCache,
     37: Event_Payload.reasoningEndRequested,
     38: Event_Payload.reasoningEndIgnored,
+    39: Event_Payload.compactionStarted,
+    40: Event_Payload.compactionDone,
     0: Event_Payload.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
@@ -3180,7 +3330,9 @@ class Event extends $pb.GeneratedMessage {
       35,
       36,
       37,
-      38
+      38,
+      39,
+      40
     ])
     ..aOS(1, _omitFieldNames ? '' : 'sessionId')
     ..aInt64(2, _omitFieldNames ? '' : 'seq')
@@ -3247,6 +3399,10 @@ class Event extends $pb.GeneratedMessage {
         subBuilder: ReasoningEndRequested.$_createMessage)
     ..aOM<ReasoningEndIgnored>(38, _omitFieldNames ? '' : 'reasoningEndIgnored',
         subBuilder: ReasoningEndIgnored.$_createMessage)
+    ..aOM<CompactionStarted>(39, _omitFieldNames ? '' : 'compactionStarted',
+        subBuilder: CompactionStarted.$_createMessage)
+    ..aOM<CompactionDone>(40, _omitFieldNames ? '' : 'compactionDone',
+        subBuilder: CompactionDone.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -3298,6 +3454,8 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(36)
   @$pb.TagNumber(37)
   @$pb.TagNumber(38)
+  @$pb.TagNumber(39)
+  @$pb.TagNumber(40)
   Event_Payload whichPayload() => _Event_PayloadByTag[$_whichOneof(0)]!;
   @$pb.TagNumber(10)
   @$pb.TagNumber(11)
@@ -3328,6 +3486,8 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(36)
   @$pb.TagNumber(37)
   @$pb.TagNumber(38)
+  @$pb.TagNumber(39)
+  @$pb.TagNumber(40)
   void clearPayload() => $_clearField($_whichOneof(0));
 
   @$pb.TagNumber(1)
@@ -3680,6 +3840,28 @@ class Event extends $pb.GeneratedMessage {
   void clearReasoningEndIgnored() => $_clearField(38);
   @$pb.TagNumber(38)
   ReasoningEndIgnored ensureReasoningEndIgnored() => $_ensure(31);
+
+  @$pb.TagNumber(39)
+  CompactionStarted get compactionStarted => $_getN(32);
+  @$pb.TagNumber(39)
+  set compactionStarted(CompactionStarted value) => $_setField(39, value);
+  @$pb.TagNumber(39)
+  $core.bool hasCompactionStarted() => $_has(32);
+  @$pb.TagNumber(39)
+  void clearCompactionStarted() => $_clearField(39);
+  @$pb.TagNumber(39)
+  CompactionStarted ensureCompactionStarted() => $_ensure(32);
+
+  @$pb.TagNumber(40)
+  CompactionDone get compactionDone => $_getN(33);
+  @$pb.TagNumber(40)
+  set compactionDone(CompactionDone value) => $_setField(40, value);
+  @$pb.TagNumber(40)
+  $core.bool hasCompactionDone() => $_has(33);
+  @$pb.TagNumber(40)
+  void clearCompactionDone() => $_clearField(40);
+  @$pb.TagNumber(40)
+  CompactionDone ensureCompactionDone() => $_ensure(33);
 }
 
 /// MessageStarted opens a message. Its text arrives as TextDelta events and
@@ -6631,6 +6813,370 @@ class ReasoningEndIgnored extends $pb.GeneratedMessage {
   void clearMessageId() => $_clearField(1);
 }
 
+/// CompactionStarted: flit is summarizing the older part of the
+/// conversation (automatically near the context limit, or because someone
+/// asked). CompactionDone follows.
+class CompactionStarted extends $pb.GeneratedMessage {
+  factory CompactionStarted({
+    $core.String? compactionId,
+    $core.bool? auto,
+    $core.String? client,
+    $fixnum.Int64? tokens,
+    $fixnum.Int64? contextLength,
+    $core.String? provider,
+    $core.String? model,
+  }) {
+    final result = CompactionStarted._();
+    if (compactionId != null) result.compactionId = compactionId;
+    if (auto != null) result.auto = auto;
+    if (client != null) result.client = client;
+    if (tokens != null) result.tokens = tokens;
+    if (contextLength != null) result.contextLength = contextLength;
+    if (provider != null) result.provider = provider;
+    if (model != null) result.model = model;
+    return result;
+  }
+
+  CompactionStarted._();
+
+  factory CompactionStarted.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CompactionStarted()..mergeFromBuffer(data, registry);
+  factory CompactionStarted.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CompactionStarted()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CompactionStarted',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: CompactionStarted.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'compactionId')
+    ..aOB(2, _omitFieldNames ? '' : 'auto')
+    ..aOS(3, _omitFieldNames ? '' : 'client')
+    ..aInt64(4, _omitFieldNames ? '' : 'tokens')
+    ..aInt64(5, _omitFieldNames ? '' : 'contextLength')
+    ..aOS(6, _omitFieldNames ? '' : 'provider')
+    ..aOS(7, _omitFieldNames ? '' : 'model')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CompactionStarted clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CompactionStarted copyWith(void Function(CompactionStarted) updates) =>
+      super.copyWith((message) => updates(message as CompactionStarted))
+          as CompactionStarted;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use CompactionStarted() / CompactionStarted.new instead')
+  static CompactionStarted create() => CompactionStarted._();
+  static $pb.GeneratedMessage $_createMessage() => CompactionStarted._();
+  @$core.override
+  CompactionStarted createEmptyInstance() => CompactionStarted._();
+  @$core.pragma('dart2js:noInline')
+  static CompactionStarted getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CompactionStarted>(
+          CompactionStarted.$_createMessage);
+  static CompactionStarted? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get compactionId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set compactionId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasCompactionId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearCompactionId() => $_clearField(1);
+
+  /// True when flit started it near the context limit; false for Compact.
+  @$pb.TagNumber(2)
+  $core.bool get auto => $_getBF(1);
+  @$pb.TagNumber(2)
+  set auto($core.bool value) => $_setBool(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasAuto() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearAuto() => $_clearField(2);
+
+  /// Who asked (Compact), for the log.
+  @$pb.TagNumber(3)
+  $core.String get client => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set client($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasClient() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearClient() => $_clearField(3);
+
+  /// The model's context use now, and its window (0 if unknown).
+  @$pb.TagNumber(4)
+  $fixnum.Int64 get tokens => $_getI64(3);
+  @$pb.TagNumber(4)
+  set tokens($fixnum.Int64 value) => $_setInt64(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasTokens() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearTokens() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $fixnum.Int64 get contextLength => $_getI64(4);
+  @$pb.TagNumber(5)
+  set contextLength($fixnum.Int64 value) => $_setInt64(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasContextLength() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearContextLength() => $_clearField(5);
+
+  /// The model writing the summary: the compaction task model, or the
+  /// session's own.
+  @$pb.TagNumber(6)
+  $core.String get provider => $_getSZ(5);
+  @$pb.TagNumber(6)
+  set provider($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasProvider() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearProvider() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.String get model => $_getSZ(6);
+  @$pb.TagNumber(7)
+  set model($core.String value) => $_setString(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasModel() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearModel() => $_clearField(7);
+}
+
+/// CompactionDone ends a compaction. Unless error is set, the model's
+/// context is rebuilt from here on as the summary (in the system prompt)
+/// followed by the events after covered_seq, the turns kept verbatim. When
+/// the cut falls inside a turn, the user message that started that turn is
+/// kept too. Older events stay in the log. With error set nothing changed
+/// and the session goes on with its full history.
+class CompactionDone extends $pb.GeneratedMessage {
+  factory CompactionDone({
+    $core.String? compactionId,
+    $core.bool? auto,
+    $core.String? summary,
+    $fixnum.Int64? coveredSeq,
+    $fixnum.Int64? tokensBefore,
+    $fixnum.Int64? tokensAfter,
+    $core.bool? tokensExact,
+    $fixnum.Int64? contextLength,
+    $core.String? provider,
+    $core.String? model,
+    $core.String? modelCallId,
+    $fixnum.Int64? elapsedMs,
+    $core.int? keptTurns,
+    $core.String? error,
+  }) {
+    final result = CompactionDone._();
+    if (compactionId != null) result.compactionId = compactionId;
+    if (auto != null) result.auto = auto;
+    if (summary != null) result.summary = summary;
+    if (coveredSeq != null) result.coveredSeq = coveredSeq;
+    if (tokensBefore != null) result.tokensBefore = tokensBefore;
+    if (tokensAfter != null) result.tokensAfter = tokensAfter;
+    if (tokensExact != null) result.tokensExact = tokensExact;
+    if (contextLength != null) result.contextLength = contextLength;
+    if (provider != null) result.provider = provider;
+    if (model != null) result.model = model;
+    if (modelCallId != null) result.modelCallId = modelCallId;
+    if (elapsedMs != null) result.elapsedMs = elapsedMs;
+    if (keptTurns != null) result.keptTurns = keptTurns;
+    if (error != null) result.error = error;
+    return result;
+  }
+
+  CompactionDone._();
+
+  factory CompactionDone.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CompactionDone()..mergeFromBuffer(data, registry);
+  factory CompactionDone.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CompactionDone()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CompactionDone',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: CompactionDone.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'compactionId')
+    ..aOB(2, _omitFieldNames ? '' : 'auto')
+    ..aOS(3, _omitFieldNames ? '' : 'summary')
+    ..aInt64(4, _omitFieldNames ? '' : 'coveredSeq')
+    ..aInt64(5, _omitFieldNames ? '' : 'tokensBefore')
+    ..aInt64(6, _omitFieldNames ? '' : 'tokensAfter')
+    ..aOB(7, _omitFieldNames ? '' : 'tokensExact')
+    ..aInt64(8, _omitFieldNames ? '' : 'contextLength')
+    ..aOS(9, _omitFieldNames ? '' : 'provider')
+    ..aOS(10, _omitFieldNames ? '' : 'model')
+    ..aOS(11, _omitFieldNames ? '' : 'modelCallId')
+    ..aInt64(12, _omitFieldNames ? '' : 'elapsedMs')
+    ..aI(13, _omitFieldNames ? '' : 'keptTurns')
+    ..aOS(14, _omitFieldNames ? '' : 'error')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CompactionDone clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CompactionDone copyWith(void Function(CompactionDone) updates) =>
+      super.copyWith((message) => updates(message as CompactionDone))
+          as CompactionDone;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use CompactionDone() / CompactionDone.new instead')
+  static CompactionDone create() => CompactionDone._();
+  static $pb.GeneratedMessage $_createMessage() => CompactionDone._();
+  @$core.override
+  CompactionDone createEmptyInstance() => CompactionDone._();
+  @$core.pragma('dart2js:noInline')
+  static CompactionDone getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CompactionDone>(
+          CompactionDone.$_createMessage);
+  static CompactionDone? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get compactionId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set compactionId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasCompactionId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearCompactionId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.bool get auto => $_getBF(1);
+  @$pb.TagNumber(2)
+  set auto($core.bool value) => $_setBool(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasAuto() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearAuto() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get summary => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set summary($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasSummary() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearSummary() => $_clearField(3);
+
+  /// The last event the summary covers (with any earlier summary). Events
+  /// after it reach the model verbatim.
+  @$pb.TagNumber(4)
+  $fixnum.Int64 get coveredSeq => $_getI64(3);
+  @$pb.TagNumber(4)
+  set coveredSeq($fixnum.Int64 value) => $_setInt64(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasCoveredSeq() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearCoveredSeq() => $_clearField(4);
+
+  /// Context use before and after (after: what the next call will send),
+  /// and whether they are exact counts (llama.cpp) or estimates.
+  @$pb.TagNumber(5)
+  $fixnum.Int64 get tokensBefore => $_getI64(4);
+  @$pb.TagNumber(5)
+  set tokensBefore($fixnum.Int64 value) => $_setInt64(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasTokensBefore() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearTokensBefore() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $fixnum.Int64 get tokensAfter => $_getI64(5);
+  @$pb.TagNumber(6)
+  set tokensAfter($fixnum.Int64 value) => $_setInt64(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasTokensAfter() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearTokensAfter() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.bool get tokensExact => $_getBF(6);
+  @$pb.TagNumber(7)
+  set tokensExact($core.bool value) => $_setBool(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasTokensExact() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearTokensExact() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $fixnum.Int64 get contextLength => $_getI64(7);
+  @$pb.TagNumber(8)
+  set contextLength($fixnum.Int64 value) => $_setInt64(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasContextLength() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearContextLength() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $core.String get provider => $_getSZ(8);
+  @$pb.TagNumber(9)
+  set provider($core.String value) => $_setString(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasProvider() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearProvider() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $core.String get model => $_getSZ(9);
+  @$pb.TagNumber(10)
+  set model($core.String value) => $_setString(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasModel() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearModel() => $_clearField(10);
+
+  /// The summarization call's record id (an export model_call with task
+  /// "compaction").
+  @$pb.TagNumber(11)
+  $core.String get modelCallId => $_getSZ(10);
+  @$pb.TagNumber(11)
+  set modelCallId($core.String value) => $_setString(10, value);
+  @$pb.TagNumber(11)
+  $core.bool hasModelCallId() => $_has(10);
+  @$pb.TagNumber(11)
+  void clearModelCallId() => $_clearField(11);
+
+  @$pb.TagNumber(12)
+  $fixnum.Int64 get elapsedMs => $_getI64(11);
+  @$pb.TagNumber(12)
+  set elapsedMs($fixnum.Int64 value) => $_setInt64(11, value);
+  @$pb.TagNumber(12)
+  $core.bool hasElapsedMs() => $_has(11);
+  @$pb.TagNumber(12)
+  void clearElapsedMs() => $_clearField(12);
+
+  /// Turns kept verbatim after the summary.
+  @$pb.TagNumber(13)
+  $core.int get keptTurns => $_getIZ(12);
+  @$pb.TagNumber(13)
+  set keptTurns($core.int value) => $_setSignedInt32(12, value);
+  @$pb.TagNumber(13)
+  $core.bool hasKeptTurns() => $_has(12);
+  @$pb.TagNumber(13)
+  void clearKeptTurns() => $_clearField(13);
+
+  /// Set when it failed (or was interrupted).
+  @$pb.TagNumber(14)
+  $core.String get error => $_getSZ(13);
+  @$pb.TagNumber(14)
+  set error($core.String value) => $_setString(13, value);
+  @$pb.TagNumber(14)
+  $core.bool hasError() => $_has(13);
+  @$pb.TagNumber(14)
+  void clearError() => $_clearField(14);
+}
+
 /// SessionService runs agent sessions. A session is a conversation with the
 /// agent in a working directory. Everything that happens in it is recorded as
 /// an append-only, numbered event log, so a client can attach at any point,
@@ -6716,6 +7262,19 @@ class SessionServiceApi {
           $pb.ClientContext? ctx, EndReasoningRequest request) =>
       _client.invoke<EndReasoningResponse>(ctx, 'SessionService',
           'EndReasoning', request, EndReasoningResponse());
+
+  /// Compact summarizes the older part of the conversation so it takes less
+  /// of the model's context: from then on the model sees the summary plus
+  /// the most recent turns instead of the whole log (nothing is deleted).
+  /// The log gets CompactionStarted and then CompactionDone. While the
+  /// session is idle it runs right away, as a turn of its own (messages
+  /// sent meanwhile are queued); while a turn runs, it happens at the
+  /// turn's next step (queued = true). flit also compacts on its own near
+  /// the context limit (agent.compaction in the config).
+  $async.Future<CompactResponse> compact(
+          $pb.ClientContext? ctx, CompactRequest request) =>
+      _client.invoke<CompactResponse>(
+          ctx, 'SessionService', 'Compact', request, CompactResponse());
 
   /// AnswerPrompt answers a prompt the agent is waiting on. The first answer
   /// wins; later answers fail with FAILED_PRECONDITION.

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -54,16 +55,36 @@ func (s *session) runTurn(ctx context.Context, turnID string) {
 		s.lastSlot = nil
 		s.m.saveAfterTurn(s, ref.provider, ref.router, ref.model, ref.slot)
 	}
+	s.endTurn(e)
+}
+
+// endTurn records how the turn (or compaction run) ended and marks the
+// session idle, together, so a client that sees the end can Send right
+// away. Then a compaction asked for too late in the turn runs, or else
+// messages queued during it start the next turn.
+func (s *session) endTurn(e end) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.cancelTurn = nil
+	ask := s.compactAsk
+	s.compactAsk = nil
 	if _, err := s.appendLocked(stateChanged(e.state, e.reason)); err != nil {
 		s.m.log.Error("could not record end of turn", "session", s.info.ID, "err", err)
 		return
 	}
+	// An interrupted turn leaves queued messages for the next Send.
+	if e == endInterrupted || s.m.closing.Load() {
+		return
+	}
+	if ask != nil && e.state == flitv1.TaskState_TASK_STATE_DONE {
+		if err := s.startCompactionLocked(*ask); err != nil {
+			s.m.log.Error("could not start compaction", "session", s.info.ID, "err", err)
+		}
+		return
+	}
 	// Messages queued during a turn that ended without another model call
-	// start the next one. An interrupted turn leaves them for the next Send.
-	if len(s.queue) == 0 || e == endInterrupted || s.m.closing.Load() {
+	// start the next one.
+	if len(s.queue) == 0 {
 		return
 	}
 	_, next, err := s.deliverQueuedLocked()
@@ -78,6 +99,7 @@ func (s *session) runTurn(ctx context.Context, turnID string) {
 // loop runs the turn and says how it ended. It returns an error only if the
 // event log can't be written.
 func (s *session) loop(ctx context.Context, turnID string) (end, error) {
+	autoFailed := false
 	for step := 0; ; step++ {
 		cfg := s.m.cfg()
 		if step >= cfg.Agent.MaxSteps {
@@ -85,17 +107,9 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 		}
 
 		info := s.snapshot()
-		provider, ok := cfg.Provider(info.Provider)
-		header, headerErr := provider.Header()
-		switch {
-		case info.Provider == "":
-			return s.stop("no provider configured for this session; add one under providers in the config and call SetModel", false)
-		case !ok:
-			return s.stop(fmt.Sprintf("provider %q is not in the config", info.Provider), false)
-		case info.Model == "":
-			return s.stop("no model chosen for this session; call SetModel or set agent.model in the config", false)
-		case headerErr != nil:
-			return s.stop(headerErr.Error(), false)
+		provider, header, stopMsg := checkModel(cfg, info)
+		if stopMsg != "" {
+			return s.stop(stopMsg, false)
 		}
 
 		if step == 0 {
@@ -105,24 +119,43 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 			// conversation before the next model call.
 			return end{}, err
 		}
-		history, err := s.m.store.EventsOfKinds(context.Background(), info.ID, historyKinds...)
+		cr, stopMsg, err := s.chatRequest(ctx, cfg, info)
 		if err != nil {
 			return end{}, err
 		}
-		var role *roles.Role
-		if info.Role != "" {
-			if role, err = s.m.role(info.Role); err != nil {
-				return s.stop(fmt.Sprintf("role %q: %v", info.Role, err), false)
+		if stopMsg != "" {
+			return s.stop(stopMsg, false)
+		}
+		llama, router := s.m.isLlamaCpp(info.Provider)
+
+		// Also a step boundary for compaction: asked for (Compact during
+		// the turn), or the request is near the context limit.
+		ask := s.takeCompactAsk()
+		if ask != nil || (cfg.Agent.Compaction.AutoOn() && !autoFailed) {
+			use := s.contextUse(ctx, cfg, info, provider, cr.req, ask != nil)
+			if ask != nil || use.over(cfg.Agent.Compaction.Threshold) {
+				o := compactOpts{auto: ask == nil, midTurn: true, minKeep: 1, turnID: turnID, before: use}
+				if ask != nil {
+					o.client, o.instructions = ask.client, ask.instructions
+				}
+				done, err := s.compact(ctx, cfg, info, cr, o)
+				if err != nil {
+					return end{}, err
+				}
+				if ctx.Err() != nil {
+					return endInterrupted, nil
+				}
+				if done == nil && o.auto {
+					// Don't try again on every step; the next turn will.
+					autoFailed = true
+				}
+				if done != nil {
+					cr.compaction = done
+					cr.req.Messages = cr.messages(cr.history, done)
+				}
 			}
 		}
-		set, extra, skillNames := s.toolSet(ctx, cfg, info)
-		system := systemPrompt(info.WorkingDir, role) + extra + promptAppends(cfg, info.Provider, info.Model)
-		req := llm.Request{
-			Model:    info.Model,
-			Messages: append([]llm.Message{{Role: "system", Content: system}}, buildMessages(history)...),
-			Tools:    tools.Definitions(set),
-		}
-		s.m.applyReasoning(&req, info.Provider, info.Model, info.Effort)
+		req, set, role, skillNames := cr.req, cr.set, cr.role, cr.skills
 
 		msgID := newID("msg")
 		if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_MessageStarted{MessageStarted: &flitv1.MessageStarted{
@@ -137,7 +170,6 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 			BaseURL: provider.BaseURL, APIKey: provider.Key(), Header: header, HTTP: s.m.http,
 			FirstTokenTimeout: cfg.Agent.ModelFirstTokenTimeout, StallTimeout: cfg.Agent.ModelStallTimeout,
 		}
-		llama, router := s.m.isLlamaCpp(info.Provider)
 		var slot *int
 		if llama {
 			req.ReturnProgress = true
@@ -167,7 +199,6 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 			}}}); err != nil {
 				return end{}, err
 			}
-			var lastProgress time.Time
 			var trace *llm.Trace
 			callCtx, cancelCall := context.WithCancelCause(ctx)
 			live := &liveCall{msgID: msgID, provider: provider, model: info.Model, router: router}
@@ -192,21 +223,7 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 						appendErr = err
 					}
 				},
-				Progress: func(p llm.PromptProgress) {
-					s.callActivity(0, 0)
-					// llama.cpp reports every batch; about once a second is
-					// plenty, plus the last one.
-					if time.Since(lastProgress) < progressInterval && p.Processed < p.Total {
-						return
-					}
-					lastProgress = time.Now()
-					if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_PromptProgress{PromptProgress: &flitv1.PromptProgress{
-						MessageId: msgID, Attempt: attempt, Processed: p.Processed, Total: p.Total, Cached: p.Cached,
-						ElapsedMs: p.Elapsed.Milliseconds(),
-					}}}); err != nil {
-						appendErr = err
-					}
-				},
+				Progress: s.progress(msgID, attempt, &appendErr),
 			})
 			stopWait()
 			lastTrace = trace
@@ -311,6 +328,94 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 		}
 		if ctx.Err() != nil {
 			return endInterrupted, nil
+		}
+	}
+}
+
+// checkModel finds the session's provider and its headers; stopMsg says
+// what's missing when the session can't call its model.
+func checkModel(cfg config.Config, info store.Session) (provider config.Provider, header http.Header, stopMsg string) {
+	provider, ok := cfg.Provider(info.Provider)
+	header, headerErr := provider.Header()
+	switch {
+	case info.Provider == "":
+		return provider, nil, "no provider configured for this session; add one under providers in the config and call SetModel"
+	case !ok:
+		return provider, nil, fmt.Sprintf("provider %q is not in the config", info.Provider)
+	case info.Model == "":
+		return provider, nil, "no model chosen for this session; call SetModel or set agent.model in the config"
+	case headerErr != nil:
+		return provider, nil, headerErr.Error()
+	}
+	return provider, header, ""
+}
+
+// chatReq is the next chat model call, built from the log.
+type chatReq struct {
+	req    llm.Request
+	set    []tools.Tool
+	role   *roles.Role
+	skills []string
+	// history is the conversation's events (historyKinds), all of them;
+	// compaction is the latest one in effect, if any.
+	history    []*flitv1.Event
+	compaction *flitv1.CompactionDone
+	// system is the system prompt without the compaction summary.
+	system string
+}
+
+// chatRequest builds the next model call: the system prompt, with the
+// latest compaction's summary, and the conversation since. stopMsg is set
+// when the session's role can't be loaded.
+func (s *session) chatRequest(ctx context.Context, cfg config.Config, info store.Session) (*chatReq, string, error) {
+	history, err := s.m.store.EventsOfKinds(context.Background(), info.ID, historyKinds...)
+	if err != nil {
+		return nil, "", err
+	}
+	cr := &chatReq{history: history, compaction: lastCompaction(history)}
+	if info.Role != "" {
+		if cr.role, err = s.m.role(info.Role); err != nil {
+			return nil, fmt.Sprintf("role %q: %v", info.Role, err), nil
+		}
+	}
+	set, extra, skillNames := s.toolSet(ctx, cfg, info)
+	cr.set, cr.skills = set, skillNames
+	cr.system = systemPrompt(info.WorkingDir, cr.role) + extra + promptAppends(cfg, info.Provider, info.Model)
+	cr.req = llm.Request{
+		Model:    info.Model,
+		Messages: cr.messages(history, cr.compaction),
+		Tools:    tools.Definitions(set),
+	}
+	s.m.applyReasoning(&cr.req, info.Provider, info.Model, info.Effort)
+	return cr, "", nil
+}
+
+// messages is the system prompt and conversation as the model sees events
+// after compaction c (nil: none).
+func (cr *chatReq) messages(events []*flitv1.Event, c *flitv1.CompactionDone) []llm.Message {
+	system := cr.system
+	if c != nil {
+		system += summarySection(c.Summary)
+	}
+	return append([]llm.Message{{Role: "system", Content: system}}, buildMessages(contextEvents(events, c))...)
+}
+
+// progress returns the Progress handler of a call's attempt: it logs
+// PromptProgress events, about once a second plus the last one (llama.cpp
+// reports every batch).
+func (s *session) progress(msgID string, attempt int32, appendErr *error) func(llm.PromptProgress) {
+	var last time.Time
+	return func(p llm.PromptProgress) {
+		s.callActivity(0, 0)
+		if time.Since(last) < progressInterval && p.Processed < p.Total {
+			return
+		}
+		last = time.Now()
+		if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_PromptProgress{PromptProgress: &flitv1.PromptProgress{
+			MessageId: msgID, Attempt: attempt, Processed: p.Processed, Total: p.Total, Cached: p.Cached,
+			ElapsedMs: p.Elapsed.Milliseconds(),
+		}}}); err != nil {
+			*appendErr = err
 		}
 	}
 }

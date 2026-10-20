@@ -179,6 +179,7 @@ const PromptCacheAction$json = {
     {'1': 'PROMPT_CACHE_ACTION_UNSPECIFIED', '2': 0},
     {'1': 'PROMPT_CACHE_ACTION_SAVED', '2': 1},
     {'1': 'PROMPT_CACHE_ACTION_RESTORED', '2': 2},
+    {'1': 'PROMPT_CACHE_ACTION_DISCARDED', '2': 3},
   ],
 };
 
@@ -186,7 +187,7 @@ const PromptCacheAction$json = {
 final $typed_data.Uint8List promptCacheActionDescriptor = $convert.base64Decode(
     'ChFQcm9tcHRDYWNoZUFjdGlvbhIjCh9QUk9NUFRfQ0FDSEVfQUNUSU9OX1VOU1BFQ0lGSUVEEA'
     'ASHQoZUFJPTVBUX0NBQ0hFX0FDVElPTl9TQVZFRBABEiAKHFBST01QVF9DQUNIRV9BQ1RJT05f'
-    'UkVTVE9SRUQQAg==');
+    'UkVTVE9SRUQQAhIhCh1QUk9NUFRfQ0FDSEVfQUNUSU9OX0RJU0NBUkRFRBAD');
 
 @$core.Deprecated('Use sessionDescriptor instead')
 const Session$json = {
@@ -539,6 +540,33 @@ const EndReasoningResponse$json = {
 /// Descriptor for `EndReasoningResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List endReasoningResponseDescriptor =
     $convert.base64Decode('ChRFbmRSZWFzb25pbmdSZXNwb25zZQ==');
+
+@$core.Deprecated('Use compactRequestDescriptor instead')
+const CompactRequest$json = {
+  '1': 'CompactRequest',
+  '2': [
+    {'1': 'session_id', '3': 1, '4': 1, '5': 9, '10': 'sessionId'},
+    {'1': 'client', '3': 2, '4': 1, '5': 9, '10': 'client'},
+    {'1': 'instructions', '3': 3, '4': 1, '5': 9, '10': 'instructions'},
+  ],
+};
+
+/// Descriptor for `CompactRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List compactRequestDescriptor = $convert.base64Decode(
+    'Cg5Db21wYWN0UmVxdWVzdBIdCgpzZXNzaW9uX2lkGAEgASgJUglzZXNzaW9uSWQSFgoGY2xpZW'
+    '50GAIgASgJUgZjbGllbnQSIgoMaW5zdHJ1Y3Rpb25zGAMgASgJUgxpbnN0cnVjdGlvbnM=');
+
+@$core.Deprecated('Use compactResponseDescriptor instead')
+const CompactResponse$json = {
+  '1': 'CompactResponse',
+  '2': [
+    {'1': 'queued', '3': 1, '4': 1, '5': 8, '10': 'queued'},
+  ],
+};
+
+/// Descriptor for `CompactResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List compactResponseDescriptor = $convert
+    .base64Decode('Cg9Db21wYWN0UmVzcG9uc2USFgoGcXVldWVkGAEgASgIUgZxdWV1ZWQ=');
 
 @$core.Deprecated('Use answerPromptRequestDescriptor instead')
 const AnswerPromptRequest$json = {
@@ -1160,6 +1188,24 @@ const Event$json = {
       '9': 0,
       '10': 'reasoningEndIgnored'
     },
+    {
+      '1': 'compaction_started',
+      '3': 39,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.CompactionStarted',
+      '9': 0,
+      '10': 'compactionStarted'
+    },
+    {
+      '1': 'compaction_done',
+      '3': 40,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.CompactionDone',
+      '9': 0,
+      '10': 'compactionDone'
+    },
   ],
   '8': [
     {'1': 'payload'},
@@ -1204,8 +1250,10 @@ final $typed_data.Uint8List eventDescriptor = $convert.base64Decode(
     'ABKAsyFC5mbGl0LnYxLlByb21wdENhY2hlSABSC3Byb21wdENhY2hlElgKF3JlYXNvbmluZ19l'
     'bmRfcmVxdWVzdGVkGCUgASgLMh4uZmxpdC52MS5SZWFzb25pbmdFbmRSZXF1ZXN0ZWRIAFIVcm'
     'Vhc29uaW5nRW5kUmVxdWVzdGVkElIKFXJlYXNvbmluZ19lbmRfaWdub3JlZBgmIAEoCzIcLmZs'
-    'aXQudjEuUmVhc29uaW5nRW5kSWdub3JlZEgAUhNyZWFzb25pbmdFbmRJZ25vcmVkQgkKB3BheW'
-    'xvYWQ=');
+    'aXQudjEuUmVhc29uaW5nRW5kSWdub3JlZEgAUhNyZWFzb25pbmdFbmRJZ25vcmVkEksKEmNvbX'
+    'BhY3Rpb25fc3RhcnRlZBgnIAEoCzIaLmZsaXQudjEuQ29tcGFjdGlvblN0YXJ0ZWRIAFIRY29t'
+    'cGFjdGlvblN0YXJ0ZWQSQgoPY29tcGFjdGlvbl9kb25lGCggASgLMhcuZmxpdC52MS5Db21wYW'
+    'N0aW9uRG9uZUgAUg5jb21wYWN0aW9uRG9uZUIJCgdwYXlsb2Fk');
 
 @$core.Deprecated('Use messageStartedDescriptor instead')
 const MessageStarted$json = {
@@ -1829,6 +1877,60 @@ const ReasoningEndIgnored$json = {
 final $typed_data.Uint8List reasoningEndIgnoredDescriptor = $convert.base64Decode(
     'ChNSZWFzb25pbmdFbmRJZ25vcmVkEh0KCm1lc3NhZ2VfaWQYASABKAlSCW1lc3NhZ2VJZA==');
 
+@$core.Deprecated('Use compactionStartedDescriptor instead')
+const CompactionStarted$json = {
+  '1': 'CompactionStarted',
+  '2': [
+    {'1': 'compaction_id', '3': 1, '4': 1, '5': 9, '10': 'compactionId'},
+    {'1': 'auto', '3': 2, '4': 1, '5': 8, '10': 'auto'},
+    {'1': 'client', '3': 3, '4': 1, '5': 9, '10': 'client'},
+    {'1': 'tokens', '3': 4, '4': 1, '5': 3, '10': 'tokens'},
+    {'1': 'context_length', '3': 5, '4': 1, '5': 3, '10': 'contextLength'},
+    {'1': 'provider', '3': 6, '4': 1, '5': 9, '10': 'provider'},
+    {'1': 'model', '3': 7, '4': 1, '5': 9, '10': 'model'},
+  ],
+};
+
+/// Descriptor for `CompactionStarted`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List compactionStartedDescriptor = $convert.base64Decode(
+    'ChFDb21wYWN0aW9uU3RhcnRlZBIjCg1jb21wYWN0aW9uX2lkGAEgASgJUgxjb21wYWN0aW9uSW'
+    'QSEgoEYXV0bxgCIAEoCFIEYXV0bxIWCgZjbGllbnQYAyABKAlSBmNsaWVudBIWCgZ0b2tlbnMY'
+    'BCABKANSBnRva2VucxIlCg5jb250ZXh0X2xlbmd0aBgFIAEoA1INY29udGV4dExlbmd0aBIaCg'
+    'hwcm92aWRlchgGIAEoCVIIcHJvdmlkZXISFAoFbW9kZWwYByABKAlSBW1vZGVs');
+
+@$core.Deprecated('Use compactionDoneDescriptor instead')
+const CompactionDone$json = {
+  '1': 'CompactionDone',
+  '2': [
+    {'1': 'compaction_id', '3': 1, '4': 1, '5': 9, '10': 'compactionId'},
+    {'1': 'auto', '3': 2, '4': 1, '5': 8, '10': 'auto'},
+    {'1': 'summary', '3': 3, '4': 1, '5': 9, '10': 'summary'},
+    {'1': 'covered_seq', '3': 4, '4': 1, '5': 3, '10': 'coveredSeq'},
+    {'1': 'tokens_before', '3': 5, '4': 1, '5': 3, '10': 'tokensBefore'},
+    {'1': 'tokens_after', '3': 6, '4': 1, '5': 3, '10': 'tokensAfter'},
+    {'1': 'tokens_exact', '3': 7, '4': 1, '5': 8, '10': 'tokensExact'},
+    {'1': 'context_length', '3': 8, '4': 1, '5': 3, '10': 'contextLength'},
+    {'1': 'provider', '3': 9, '4': 1, '5': 9, '10': 'provider'},
+    {'1': 'model', '3': 10, '4': 1, '5': 9, '10': 'model'},
+    {'1': 'model_call_id', '3': 11, '4': 1, '5': 9, '10': 'modelCallId'},
+    {'1': 'elapsed_ms', '3': 12, '4': 1, '5': 3, '10': 'elapsedMs'},
+    {'1': 'kept_turns', '3': 13, '4': 1, '5': 5, '10': 'keptTurns'},
+    {'1': 'error', '3': 14, '4': 1, '5': 9, '10': 'error'},
+  ],
+};
+
+/// Descriptor for `CompactionDone`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List compactionDoneDescriptor = $convert.base64Decode(
+    'Cg5Db21wYWN0aW9uRG9uZRIjCg1jb21wYWN0aW9uX2lkGAEgASgJUgxjb21wYWN0aW9uSWQSEg'
+    'oEYXV0bxgCIAEoCFIEYXV0bxIYCgdzdW1tYXJ5GAMgASgJUgdzdW1tYXJ5Eh8KC2NvdmVyZWRf'
+    'c2VxGAQgASgDUgpjb3ZlcmVkU2VxEiMKDXRva2Vuc19iZWZvcmUYBSABKANSDHRva2Vuc0JlZm'
+    '9yZRIhCgx0b2tlbnNfYWZ0ZXIYBiABKANSC3Rva2Vuc0FmdGVyEiEKDHRva2Vuc19leGFjdBgH'
+    'IAEoCFILdG9rZW5zRXhhY3QSJQoOY29udGV4dF9sZW5ndGgYCCABKANSDWNvbnRleHRMZW5ndG'
+    'gSGgoIcHJvdmlkZXIYCSABKAlSCHByb3ZpZGVyEhQKBW1vZGVsGAogASgJUgVtb2RlbBIiCg1t'
+    'b2RlbF9jYWxsX2lkGAsgASgJUgttb2RlbENhbGxJZBIdCgplbGFwc2VkX21zGAwgASgDUgllbG'
+    'Fwc2VkTXMSHQoKa2VwdF90dXJucxgNIAEoBVIJa2VwdFR1cm5zEhQKBWVycm9yGA4gASgJUgVl'
+    'cnJvcg==');
+
 const $core.Map<$core.String, $core.dynamic> SessionServiceBase$json = {
   '1': 'SessionService',
   '2': [
@@ -1880,6 +1982,11 @@ const $core.Map<$core.String, $core.dynamic> SessionServiceBase$json = {
       '1': 'EndReasoning',
       '2': '.flit.v1.EndReasoningRequest',
       '3': '.flit.v1.EndReasoningResponse'
+    },
+    {
+      '1': 'Compact',
+      '2': '.flit.v1.CompactRequest',
+      '3': '.flit.v1.CompactResponse'
     },
     {
       '1': 'AnswerPrompt',
@@ -1971,6 +2078,8 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.flit.v1.PromptCache': PromptCache$json,
   '.flit.v1.ReasoningEndRequested': ReasoningEndRequested$json,
   '.flit.v1.ReasoningEndIgnored': ReasoningEndIgnored$json,
+  '.flit.v1.CompactionStarted': CompactionStarted$json,
+  '.flit.v1.CompactionDone': CompactionDone$json,
   '.flit.v1.SendRequest': SendRequest$json,
   '.flit.v1.SendResponse': SendResponse$json,
   '.flit.v1.EditQueuedMessageRequest': EditQueuedMessageRequest$json,
@@ -1983,6 +2092,8 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.flit.v1.RetryModelCallResponse': RetryModelCallResponse$json,
   '.flit.v1.EndReasoningRequest': EndReasoningRequest$json,
   '.flit.v1.EndReasoningResponse': EndReasoningResponse$json,
+  '.flit.v1.CompactRequest': CompactRequest$json,
+  '.flit.v1.CompactResponse': CompactResponse$json,
   '.flit.v1.AnswerPromptRequest': AnswerPromptRequest$json,
   '.flit.v1.AnswerPromptResponse': AnswerPromptResponse$json,
   '.flit.v1.SetModelRequest': SetModelRequest$json,
@@ -2021,15 +2132,16 @@ final $typed_data.Uint8List sessionServiceDescriptor = $convert.base64Decode(
     '50ZXJydXB0UmVzcG9uc2USUQoOUmV0cnlNb2RlbENhbGwSHi5mbGl0LnYxLlJldHJ5TW9kZWxD'
     'YWxsUmVxdWVzdBofLmZsaXQudjEuUmV0cnlNb2RlbENhbGxSZXNwb25zZRJLCgxFbmRSZWFzb2'
     '5pbmcSHC5mbGl0LnYxLkVuZFJlYXNvbmluZ1JlcXVlc3QaHS5mbGl0LnYxLkVuZFJlYXNvbmlu'
-    'Z1Jlc3BvbnNlEksKDEFuc3dlclByb21wdBIcLmZsaXQudjEuQW5zd2VyUHJvbXB0UmVxdWVzdB'
-    'odLmZsaXQudjEuQW5zd2VyUHJvbXB0UmVzcG9uc2USPwoIU2V0TW9kZWwSGC5mbGl0LnYxLlNl'
-    'dE1vZGVsUmVxdWVzdBoZLmZsaXQudjEuU2V0TW9kZWxSZXNwb25zZRJCCglTZXRFZmZvcnQSGS'
-    '5mbGl0LnYxLlNldEVmZm9ydFJlcXVlc3QaGi5mbGl0LnYxLlNldEVmZm9ydFJlc3BvbnNlEjwK'
-    'B1NldFlvbG8SFy5mbGl0LnYxLlNldFlvbG9SZXF1ZXN0GhguZmxpdC52MS5TZXRZb2xvUmVzcG'
-    '9uc2USSAoLTW92ZVNlc3Npb24SGy5mbGl0LnYxLk1vdmVTZXNzaW9uUmVxdWVzdBocLmZsaXQu'
-    'djEuTW92ZVNlc3Npb25SZXNwb25zZRIzCgRSYXRlEhQuZmxpdC52MS5SYXRlUmVxdWVzdBoVLm'
-    'ZsaXQudjEuUmF0ZVJlc3BvbnNlElYKDkxpc3RNY3BTZXJ2ZXJzEh4uZmxpdC52MS5MaXN0TWNw'
-    'U2VydmVyc1JlcXVlc3QaHy5mbGl0LnYxLkxpc3RNY3BTZXJ2ZXJzUmVzcG9uc2UiA5ACARJLCg'
-    'xTZXRNY3BTZXJ2ZXISHC5mbGl0LnYxLlNldE1jcFNlcnZlclJlcXVlc3QaHS5mbGl0LnYxLlNl'
-    'dE1jcFNlcnZlclJlc3BvbnNlEkoKCkxpc3RTa2lsbHMSGi5mbGl0LnYxLkxpc3RTa2lsbHNSZX'
-    'F1ZXN0GhsuZmxpdC52MS5MaXN0U2tpbGxzUmVzcG9uc2UiA5ACAQ==');
+    'Z1Jlc3BvbnNlEjwKB0NvbXBhY3QSFy5mbGl0LnYxLkNvbXBhY3RSZXF1ZXN0GhguZmxpdC52MS'
+    '5Db21wYWN0UmVzcG9uc2USSwoMQW5zd2VyUHJvbXB0EhwuZmxpdC52MS5BbnN3ZXJQcm9tcHRS'
+    'ZXF1ZXN0Gh0uZmxpdC52MS5BbnN3ZXJQcm9tcHRSZXNwb25zZRI/CghTZXRNb2RlbBIYLmZsaX'
+    'QudjEuU2V0TW9kZWxSZXF1ZXN0GhkuZmxpdC52MS5TZXRNb2RlbFJlc3BvbnNlEkIKCVNldEVm'
+    'Zm9ydBIZLmZsaXQudjEuU2V0RWZmb3J0UmVxdWVzdBoaLmZsaXQudjEuU2V0RWZmb3J0UmVzcG'
+    '9uc2USPAoHU2V0WW9sbxIXLmZsaXQudjEuU2V0WW9sb1JlcXVlc3QaGC5mbGl0LnYxLlNldFlv'
+    'bG9SZXNwb25zZRJICgtNb3ZlU2Vzc2lvbhIbLmZsaXQudjEuTW92ZVNlc3Npb25SZXF1ZXN0Gh'
+    'wuZmxpdC52MS5Nb3ZlU2Vzc2lvblJlc3BvbnNlEjMKBFJhdGUSFC5mbGl0LnYxLlJhdGVSZXF1'
+    'ZXN0GhUuZmxpdC52MS5SYXRlUmVzcG9uc2USVgoOTGlzdE1jcFNlcnZlcnMSHi5mbGl0LnYxLk'
+    'xpc3RNY3BTZXJ2ZXJzUmVxdWVzdBofLmZsaXQudjEuTGlzdE1jcFNlcnZlcnNSZXNwb25zZSID'
+    'kAIBEksKDFNldE1jcFNlcnZlchIcLmZsaXQudjEuU2V0TWNwU2VydmVyUmVxdWVzdBodLmZsaX'
+    'QudjEuU2V0TWNwU2VydmVyUmVzcG9uc2USSgoKTGlzdFNraWxscxIaLmZsaXQudjEuTGlzdFNr'
+    'aWxsc1JlcXVlc3QaGy5mbGl0LnYxLkxpc3RTa2lsbHNSZXNwb25zZSIDkAIB');

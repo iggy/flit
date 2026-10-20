@@ -65,7 +65,14 @@ type printer struct {
 	waiting map[string]*flitv1.ModelCallWaiting
 	// lastProgress is the latest prompt progress of each open call.
 	lastProgress map[string]*flitv1.PromptProgress
-	last         time.Time
+	// compacting is the compaction in progress, if any.
+	compacting *compactionStart
+	last       time.Time
+}
+
+type compactionStart struct {
+	c  *flitv1.CompactionStarted
+	at time.Time
 }
 
 func (p *printer) printf(format string, args ...any) {
@@ -199,8 +206,12 @@ func (p *printer) event(ev *flitv1.Event) {
 	case ev.GetPromptCache() != nil:
 		c := ev.GetPromptCache()
 		what := "saved to"
-		if c.Action == flitv1.PromptCacheAction_PROMPT_CACHE_ACTION_RESTORED {
+		switch c.Action {
+		case flitv1.PromptCacheAction_PROMPT_CACHE_ACTION_RESTORED:
 			what = "restored from"
+		case flitv1.PromptCacheAction_PROMPT_CACHE_ACTION_DISCARDED:
+			p.line(at, 1, "prompt cache %s dropped: it holds the prompt from before compaction", c.File)
+			return
 		}
 		if c.Error != "" {
 			p.line(at, 1, "prompt cache (slot %d) not %s %s: %s", c.Slot, what, c.File, c.Error)
@@ -211,6 +222,28 @@ func (p *printer) event(ev *flitv1.Event) {
 		p.line(at, 2, "asked the model to stop thinking%s", paren(ev.GetReasoningEndRequested().Client))
 	case ev.GetReasoningEndIgnored() != nil:
 		p.line(at, 2, "the model kept thinking: it can't be cut short")
+	case ev.GetCompactionStarted() != nil:
+		c := ev.GetCompactionStarted()
+		p.compacting = &compactionStart{c: c, at: at}
+		p.line(at, 0, "compacting (%s) with %s/%s: context %s", how(c.Auto, c.Client), c.Provider, c.Model, used(c.Tokens, c.ContextLength))
+	case ev.GetCompactionDone() != nil:
+		c := ev.GetCompactionDone()
+		took := ""
+		if p.compacting != nil {
+			took = " after " + dur(at.Sub(p.compacting.at))
+		}
+		p.compacting = nil
+		if c.Error != "" {
+			p.line(at, 0, "compaction FAILED%s: %s", took, c.Error)
+			return
+		}
+		exact := "estimated"
+		if c.TokensExact {
+			exact = "counted"
+		}
+		p.line(at, 0, "compacted%s: events up to seq %d summarized, %d turn(s) kept; context %d -> %d tokens (%s)",
+			took, c.CoveredSeq, c.KeptTurns, c.TokensBefore, c.TokensAfter, exact)
+		p.line(at, 1, "summary (%d chars): %s", len(c.Summary), snippet(c.Summary, 200))
 	case ev.GetMessageQueued() != nil:
 		q := ev.GetMessageQueued()
 		p.queued[q.QueueId] = promptStart{title: q.Text, at: at}
@@ -329,6 +362,9 @@ func (p *printer) open(sess store.Session) {
 	for id, pr := range p.prompts {
 		items = append(items, item{pr.at, fmt.Sprintf("prompt %s waiting for the user for %s: %s", id, dur(p.now.Sub(pr.at)), pr.title)})
 	}
+	if c := p.compacting; c != nil {
+		items = append(items, item{c.at, fmt.Sprintf("compaction started %s ago and never finished (summary call on %s/%s)", dur(p.now.Sub(c.at)), c.c.Provider, c.c.Model)})
+	}
 	for _, q := range p.queued {
 		items = append(items, item{q.at, fmt.Sprintf("message queued %s ago, not delivered yet: %s", dur(p.now.Sub(q.at)), snippet(q.title, 80))})
 	}
@@ -346,6 +382,25 @@ func (p *printer) open(sess store.Session) {
 	for _, it := range items {
 		p.printf("  %s  %s\n", it.at.Local().Format("15:04:05.000"), it.text)
 	}
+}
+
+// how says who started a compaction.
+func how(auto bool, client string) string {
+	if auto {
+		return "automatic, near the context limit"
+	}
+	if client != "" {
+		return "asked for by " + client
+	}
+	return "asked for"
+}
+
+// used is context use, e.g. "3000/4096 tokens (73%)".
+func used(tokens, length int64) string {
+	if length <= 0 {
+		return fmt.Sprintf("%d tokens", tokens)
+	}
+	return fmt.Sprintf("%d/%d tokens (%d%%)", tokens, length, tokens*100/length)
 }
 
 func ms(n int64) time.Duration { return time.Duration(n) * time.Millisecond }

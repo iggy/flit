@@ -74,6 +74,12 @@ type Request struct {
 	// a cache restored into it is used).
 	IDSlot      *int  `json:"id_slot,omitempty"`
 	CachePrompt *bool `json:"cache_prompt,omitempty"`
+	// MaxTokens caps the reply (thinking included on llama.cpp); 0 means
+	// the provider's default.
+	MaxTokens int `json:"max_tokens,omitempty"`
+	// ToolChoice is "none" to offer the tools without letting the model
+	// call them (the prompt stays the same, so caches still match).
+	ToolChoice string `json:"tool_choice,omitempty"`
 }
 
 // Usage is token usage reported by the endpoint.

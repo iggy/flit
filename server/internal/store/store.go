@@ -495,6 +495,9 @@ func (s *Store) AppendEvent(ctx context.Context, sess Session, ev *flitv1.Event)
 	case ev.GetModelChanged() != nil:
 		q = `UPDATE sessions SET last_seq = ?, updated_at = ?, context_length = ? WHERE id = ? AND last_seq = ?`
 		args = []any{ev.Seq, at, ev.GetModelChanged().ContextLength, ev.SessionId, ev.Seq - 1}
+	case ev.GetCompactionDone() != nil && ev.GetCompactionDone().Error == "":
+		q = `UPDATE sessions SET last_seq = ?, updated_at = ?, context_tokens = ? WHERE id = ? AND last_seq = ?`
+		args = []any{ev.Seq, at, ev.GetCompactionDone().TokensAfter, ev.SessionId, ev.Seq - 1}
 	}
 	res, err := tx.ExecContext(ctx, q, args...)
 	if err != nil {

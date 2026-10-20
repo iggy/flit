@@ -178,6 +178,16 @@ class FlitChatNotifier extends Notifier<FlitChatState> {
     return _run((r) => r.endReasoning(sessionId, client: client));
   }
 
+  /// Compacts the conversation (summarizes its older part). Returns an
+  /// error message, or null once the server took the request; the chat
+  /// shows the compaction as it happens.
+  Future<String?> compact({String instructions = ''}) {
+    final client = ref.read(flitDeviceNameProvider);
+    return _run(
+      (r) => r.compact(sessionId, instructions: instructions, client: client),
+    );
+  }
+
   /// Sends the waiting model call again (the model hasn't answered).
   Future<String?> retryModelCall() {
     return _run((r) => r.retryModelCall(sessionId));

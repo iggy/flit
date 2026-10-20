@@ -333,6 +333,37 @@ FlitEvent eventFromProto(pb.Event e) {
         time: time,
         messageId: e.reasoningEndIgnored.messageId,
       );
+    case pb.Event_Payload.compactionStarted:
+      final c = e.compactionStarted;
+      return FlitCompactionStarted(
+        seq: seq,
+        time: time,
+        compactionId: c.compactionId,
+        auto: c.auto,
+        client: c.client,
+        tokens: c.tokens.toInt(),
+        contextLength: c.contextLength.toInt(),
+        provider: c.provider,
+        model: c.model,
+      );
+    case pb.Event_Payload.compactionDone:
+      final c = e.compactionDone;
+      return FlitCompactionDone(
+        seq: seq,
+        time: time,
+        compactionId: c.compactionId,
+        auto: c.auto,
+        summary: c.summary,
+        coveredSeq: c.coveredSeq.toInt(),
+        tokensBefore: c.tokensBefore.toInt(),
+        tokensAfter: c.tokensAfter.toInt(),
+        tokensExact: c.tokensExact,
+        contextLength: c.contextLength.toInt(),
+        provider: c.provider,
+        model: c.model,
+        keptTurns: c.keptTurns,
+        error: c.error,
+      );
     case pb.Event_Payload.modelCallStarted:
       return FlitModelCallStarted(
         seq: seq,
