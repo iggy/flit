@@ -330,6 +330,37 @@ func (m *Manager) saveAfterTurn(s *session, p config.Provider, router bool, mode
 	}
 }
 
+// discardKV forgets the session's prompt cache save files: after
+// compaction its prompt starts differently, so restoring one would load a
+// prefix the next call doesn't share. Each one dropped is logged.
+func (m *Manager) discardKV(s *session) {
+	info := s.snapshot()
+	m.kv.mu.Lock()
+	servers := make([]*kvServer, 0, len(m.kv.servers))
+	for _, srv := range m.kv.servers {
+		servers = append(servers, srv)
+	}
+	m.kv.mu.Unlock()
+	for _, srv := range servers {
+		srv.mu.Lock()
+		var dropped []*kvFile
+		for _, f := range srv.files {
+			if f.session == info.ID && f.tokens > 0 {
+				f.tokens = 0
+				dropped = append(dropped, f)
+			}
+		}
+		srv.mu.Unlock()
+		for _, f := range dropped {
+			if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_PromptCache{PromptCache: &flitv1.PromptCache{
+				Action: flitv1.PromptCacheAction_PROMPT_CACHE_ACTION_DISCARDED, File: f.name, Slot: -1,
+			}}}); err != nil {
+				m.log.Warn("record prompt cache discard", "session", info.ID, "err", err)
+			}
+		}
+	}
+}
+
 // --- Answer now ---
 
 // endReasoning asks the model of the session's running call to stop

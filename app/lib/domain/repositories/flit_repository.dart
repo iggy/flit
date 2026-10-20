@@ -48,6 +48,15 @@ abstract interface class FlitRepository {
   /// Asks the model to stop thinking and answer now (llama.cpp).
   Future<void> endReasoning(String sessionId, {String client = ''});
 
+  /// Summarizes the older part of the conversation to free up context: now
+  /// if the session is idle, else at the running turn's next step (then it
+  /// returns true). [instructions] are extra asks for the summary.
+  Future<bool> compact(
+    String sessionId, {
+    String instructions = '',
+    String client = '',
+  });
+
   /// Answer a pending prompt. [client] names this device in the session log.
   /// [forSession] also allows the prompt's session patterns from now on.
   Future<void> answerPrompt(

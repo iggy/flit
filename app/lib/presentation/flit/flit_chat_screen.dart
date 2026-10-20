@@ -11,6 +11,7 @@ import 'package:flit/domain/models/chat_message.dart';
 import 'package:flit/domain/models/flit_session.dart';
 import 'package:flit/presentation/chat/message_bubble.dart';
 import 'package:flit/presentation/flit/flit_call_status.dart';
+import 'package:flit/presentation/flit/flit_compaction.dart';
 import 'package:flit/presentation/flit/flit_mcp_sheet.dart';
 import 'package:flit/presentation/flit/flit_model_picker.dart';
 import 'package:flit/presentation/flit/flit_nav.dart';
@@ -91,6 +92,10 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
 
   Future<void> _send() async {
     final text = _input.text.trim();
+    final compact = flitCompactInstructions(text);
+    if (compact != null) {
+      return _compact(compact);
+    }
     final fold = ref.read(flitChatProvider(widget.sessionId)).fold;
     // Empty text sends what's queued (after a Stop), if anything is.
     if (_sending || (text.isEmpty && (fold.busy || fold.queued.isEmpty))) {
@@ -109,6 +114,28 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
       _jumpToLatest();
     } else {
       _snack('Not sent: $error');
+    }
+  }
+
+  /// /compact: summarize the older messages. While a turn runs, it waits
+  /// for the turn's next step.
+  Future<void> _compact(String instructions) async {
+    if (_sending) {
+      return;
+    }
+    setState(() => _sending = true);
+    final error = await ref
+        .read(flitChatProvider(widget.sessionId).notifier)
+        .compact(instructions: instructions);
+    if (!mounted) {
+      return;
+    }
+    setState(() => _sending = false);
+    if (error == null) {
+      _input.clear();
+      _jumpToLatest();
+    } else {
+      _snack('Could not compact: $error');
     }
   }
 
@@ -316,6 +343,9 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
           (prev?.fold.messages.length ?? 0) != next.fold.messages.length ||
           (prev?.fold.prompts.length ?? 0) != next.fold.prompts.length ||
           (prev?.fold.queued.length ?? 0) != next.fold.queued.length ||
+          (prev?.fold.compactions.length ?? 0) !=
+              next.fold.compactions.length ||
+          (prev?.fold.compacting == null) != (next.fold.compacting == null) ||
           (next.fold.messages.isNotEmpty && next.fold.messages.last.streaming);
       if (grew) {
         _onGrew();
@@ -473,9 +503,10 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
             FlitTodoPanel(todos: fold.todos),
             FlitSlashMenu(
               controller: _input,
-              skills:
-                  ref.watch(flitSkillsProvider(widget.sessionId)).value ??
-                  const <FlitSkill>[],
+              skills: <FlitSkill>[
+                flitCompactSkill,
+                ...?ref.watch(flitSkillsProvider(widget.sessionId)).value,
+              ],
             ),
             _Composer(
               controller: _input,
@@ -500,24 +531,48 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
       padding: const EdgeInsets.all(12),
       children: <Widget>[
         for (var i = 0; i < fold.messages.length; i++) ...<Widget>[
-          MessageBubble(message: fold.messages[i]),
-          if (_rateable(fold, i))
-            Align(
-              alignment: Alignment.centerLeft,
-              child: FlitRatingButtons(
-                rating: fold.ratings[fold.messageIds[i]],
-                onRate: (good) async {
-                  final error = await notifier.rateTurn(
-                    fold.messageIds[i]!,
-                    good: good,
-                  );
-                  if (error != null && mounted) {
-                    _snack('Could not rate: $error');
-                  }
-                },
+          for (final c in fold.compactions)
+            if (c.beforeIndex == i)
+              FlitCompactionMarkerView(
+                key: ValueKey<String>(c.compactionId),
+                marker: c,
               ),
+          // Greyed out once only a compaction summary of it reaches the
+          // model; still there to scroll back through.
+          Opacity(
+            opacity: fold.summarized(i) ? flitSummarizedOpacity : 1,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                MessageBubble(message: fold.messages[i]),
+                if (_rateable(fold, i))
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: FlitRatingButtons(
+                      rating: fold.ratings[fold.messageIds[i]],
+                      onRate: (good) async {
+                        final error = await notifier.rateTurn(
+                          fold.messageIds[i]!,
+                          good: good,
+                        );
+                        if (error != null && mounted) {
+                          _snack('Could not rate: $error');
+                        }
+                      },
+                    ),
+                  ),
+              ],
             ),
+          ),
         ],
+        for (final c in fold.compactions)
+          if (c.beforeIndex >= fold.messages.length)
+            FlitCompactionMarkerView(
+              key: ValueKey<String>(c.compactionId),
+              marker: c,
+            ),
+        if (fold.compacting != null)
+          FlitCompactingRow(compacting: fold.compacting!),
         for (final q in fold.queued)
           FlitQueuedBubble(
             key: ValueKey<String>(q.queueId),

@@ -62,6 +62,16 @@ service SessionService {
   // ReasoningEndIgnored and the model is marked as not supporting it.
   rpc EndReasoning(EndReasoningRequest) returns (EndReasoningResponse);
 
+  // Compact summarizes the older part of the conversation so it takes less
+  // of the model's context: from then on the model sees the summary plus
+  // the most recent turns instead of the whole log (nothing is deleted).
+  // The log gets CompactionStarted and then CompactionDone. While the
+  // session is idle it runs right away, as a turn of its own (messages
+  // sent meanwhile are queued); while a turn runs, it happens at the
+  // turn's next step (queued = true). flit also compacts on its own near
+  // the context limit (agent.compaction in the config).
+  rpc Compact(CompactRequest) returns (CompactResponse);
+
   // AnswerPrompt answers a prompt the agent is waiting on. The first answer
   // wins; later answers fail with FAILED_PRECONDITION.
   rpc AnswerPrompt(AnswerPromptRequest) returns (AnswerPromptResponse);
@@ -256,6 +266,20 @@ message EndReasoningRequest {
 
 message EndReasoningResponse {}
 
+message CompactRequest {
+  string session_id = 1;
+  // Who asked, for the log.
+  string client = 2;
+  // Optional extra instructions for the summary, e.g. "keep the API
+  // details".
+  string instructions = 3;
+}
+
+message CompactResponse {
+  // True when a turn is running and compaction waits for its next step.
+  bool queued = 1;
+}
+
 message AnswerPromptRequest {
   string session_id = 1;
   string prompt_id = 2;
@@ -413,6 +437,8 @@ message Event {
     PromptCache prompt_cache = 36;
     ReasoningEndRequested reasoning_end_requested = 37;
     ReasoningEndIgnored reasoning_end_ignored = 38;
+    CompactionStarted compaction_started = 39;
+    CompactionDone compaction_done = 40;
   }
 }
 
@@ -775,6 +801,9 @@ enum PromptCacheAction {
   PROMPT_CACHE_ACTION_SAVED = 1;
   // The session's saved cache was loaded back into a slot before a call.
   PROMPT_CACHE_ACTION_RESTORED = 2;
+  // The session's save file no longer matches its prompt (the conversation
+  // was compacted), so it won't be restored.
+  PROMPT_CACHE_ACTION_DISCARDED = 3;
 }
 
 // PromptCache is flit saving or restoring the session's llama.cpp prompt
@@ -804,4 +833,53 @@ message ReasoningEndRequested {
 // that model again.
 message ReasoningEndIgnored {
   string message_id = 1;
+}
+
+// CompactionStarted: flit is summarizing the older part of the
+// conversation (automatically near the context limit, or because someone
+// asked). CompactionDone follows.
+message CompactionStarted {
+  string compaction_id = 1;
+  // True when flit started it near the context limit; false for Compact.
+  bool auto = 2;
+  // Who asked (Compact), for the log.
+  string client = 3;
+  // The model's context use now, and its window (0 if unknown).
+  int64 tokens = 4;
+  int64 context_length = 5;
+  // The model writing the summary: the compaction task model, or the
+  // session's own.
+  string provider = 6;
+  string model = 7;
+}
+
+// CompactionDone ends a compaction. Unless error is set, the model's
+// context is rebuilt from here on as the summary (in the system prompt)
+// followed by the events after covered_seq, the turns kept verbatim. When
+// the cut falls inside a turn, the user message that started that turn is
+// kept too. Older events stay in the log. With error set nothing changed
+// and the session goes on with its full history.
+message CompactionDone {
+  string compaction_id = 1;
+  bool auto = 2;
+  string summary = 3;
+  // The last event the summary covers (with any earlier summary). Events
+  // after it reach the model verbatim.
+  int64 covered_seq = 4;
+  // Context use before and after (after: what the next call will send),
+  // and whether they are exact counts (llama.cpp) or estimates.
+  int64 tokens_before = 5;
+  int64 tokens_after = 6;
+  bool tokens_exact = 7;
+  int64 context_length = 8;
+  string provider = 9;
+  string model = 10;
+  // The summarization call's record id (an export model_call with task
+  // "compaction").
+  string model_call_id = 11;
+  int64 elapsed_ms = 12;
+  // Turns kept verbatim after the summary.
+  int32 kept_turns = 13;
+  // Set when it failed (or was interrupted).
+  string error = 14;
 }

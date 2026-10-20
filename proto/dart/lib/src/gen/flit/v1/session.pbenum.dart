@@ -307,14 +307,21 @@ class PromptCacheAction extends $pb.ProtobufEnum {
       PromptCacheAction._(
           2, _omitEnumNames ? '' : 'PROMPT_CACHE_ACTION_RESTORED');
 
+  /// The session's save file no longer matches its prompt (the conversation
+  /// was compacted), so it won't be restored.
+  static const PromptCacheAction PROMPT_CACHE_ACTION_DISCARDED =
+      PromptCacheAction._(
+          3, _omitEnumNames ? '' : 'PROMPT_CACHE_ACTION_DISCARDED');
+
   static const $core.List<PromptCacheAction> values = <PromptCacheAction>[
     PROMPT_CACHE_ACTION_UNSPECIFIED,
     PROMPT_CACHE_ACTION_SAVED,
     PROMPT_CACHE_ACTION_RESTORED,
+    PROMPT_CACHE_ACTION_DISCARDED,
   ];
 
   static final $core.List<PromptCacheAction?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 2);
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
   static PromptCacheAction? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 

@@ -210,6 +210,22 @@ func (c *Client) RestoreSlot(ctx context.Context, model string, slot int, filena
 	return out.NRestored, err
 }
 
+// InputTokens counts the prompt tokens of a chat completion request (the
+// model's template applied, tools included) without running it. req is
+// the request body; in router mode it must name the model.
+func (c *Client) InputTokens(ctx context.Context, req any) (int64, error) {
+	var out struct {
+		InputTokens *int64 `json:"input_tokens"`
+	}
+	if err := c.do(ctx, http.MethodPost, "/v1/chat/completions/input_tokens", nil, req, timeout, &out); err != nil {
+		return 0, err
+	}
+	if out.InputTokens == nil {
+		return 0, errors.New("llama.cpp: no input_tokens in the reply")
+	}
+	return *out.InputTokens, nil
+}
+
 // EndReasoning asks the server to end the reasoning block of running
 // completion id (one sent with reasoning_control). The server accepts it
 // even for models whose template it can't cut short; watch the stream to

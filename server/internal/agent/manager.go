@@ -405,6 +405,19 @@ func (m *Manager) EndReasoning(ctx context.Context, id, client string) error {
 	return s.endReasoning(ctx, client)
 }
 
+// Compact summarizes the older part of the session's conversation: now
+// if it's idle, else at the running turn's next step (queued).
+func (m *Manager) Compact(ctx context.Context, id, client, instructions string) (queued bool, err error) {
+	s, err := m.session(ctx, id)
+	if err != nil {
+		return false, err
+	}
+	if m.closing.Load() {
+		return false, errors.New("flit is shutting down")
+	}
+	return s.requestCompact(client, strings.TrimSpace(instructions))
+}
+
 // Answer is a reply to a prompt.
 type Answer struct {
 	Allow bool

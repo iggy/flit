@@ -61,6 +61,8 @@ const (
 	// SessionServiceEndReasoningProcedure is the fully-qualified name of the SessionService's
 	// EndReasoning RPC.
 	SessionServiceEndReasoningProcedure = "/flit.v1.SessionService/EndReasoning"
+	// SessionServiceCompactProcedure is the fully-qualified name of the SessionService's Compact RPC.
+	SessionServiceCompactProcedure = "/flit.v1.SessionService/Compact"
 	// SessionServiceAnswerPromptProcedure is the fully-qualified name of the SessionService's
 	// AnswerPrompt RPC.
 	SessionServiceAnswerPromptProcedure = "/flit.v1.SessionService/AnswerPrompt"
@@ -127,6 +129,15 @@ type SessionServiceClient interface {
 	// FAILED_PRECONDITION. If the model keeps thinking anyway, the log gets
 	// ReasoningEndIgnored and the model is marked as not supporting it.
 	EndReasoning(context.Context, *connect.Request[v1.EndReasoningRequest]) (*connect.Response[v1.EndReasoningResponse], error)
+	// Compact summarizes the older part of the conversation so it takes less
+	// of the model's context: from then on the model sees the summary plus
+	// the most recent turns instead of the whole log (nothing is deleted).
+	// The log gets CompactionStarted and then CompactionDone. While the
+	// session is idle it runs right away, as a turn of its own (messages
+	// sent meanwhile are queued); while a turn runs, it happens at the
+	// turn's next step (queued = true). flit also compacts on its own near
+	// the context limit (agent.compaction in the config).
+	Compact(context.Context, *connect.Request[v1.CompactRequest]) (*connect.Response[v1.CompactResponse], error)
 	// AnswerPrompt answers a prompt the agent is waiting on. The first answer
 	// wins; later answers fail with FAILED_PRECONDITION.
 	AnswerPrompt(context.Context, *connect.Request[v1.AnswerPromptRequest]) (*connect.Response[v1.AnswerPromptResponse], error)
@@ -227,6 +238,12 @@ func NewSessionServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(sessionServiceMethods.ByName("EndReasoning")),
 			connect.WithClientOptions(opts...),
 		),
+		compact: connect.NewClient[v1.CompactRequest, v1.CompactResponse](
+			httpClient,
+			baseURL+SessionServiceCompactProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("Compact")),
+			connect.WithClientOptions(opts...),
+		),
 		answerPrompt: connect.NewClient[v1.AnswerPromptRequest, v1.AnswerPromptResponse](
 			httpClient,
 			baseURL+SessionServiceAnswerPromptProcedure,
@@ -298,6 +315,7 @@ type sessionServiceClient struct {
 	interrupt           *connect.Client[v1.InterruptRequest, v1.InterruptResponse]
 	retryModelCall      *connect.Client[v1.RetryModelCallRequest, v1.RetryModelCallResponse]
 	endReasoning        *connect.Client[v1.EndReasoningRequest, v1.EndReasoningResponse]
+	compact             *connect.Client[v1.CompactRequest, v1.CompactResponse]
 	answerPrompt        *connect.Client[v1.AnswerPromptRequest, v1.AnswerPromptResponse]
 	setModel            *connect.Client[v1.SetModelRequest, v1.SetModelResponse]
 	setEffort           *connect.Client[v1.SetEffortRequest, v1.SetEffortResponse]
@@ -357,6 +375,11 @@ func (c *sessionServiceClient) RetryModelCall(ctx context.Context, req *connect.
 // EndReasoning calls flit.v1.SessionService.EndReasoning.
 func (c *sessionServiceClient) EndReasoning(ctx context.Context, req *connect.Request[v1.EndReasoningRequest]) (*connect.Response[v1.EndReasoningResponse], error) {
 	return c.endReasoning.CallUnary(ctx, req)
+}
+
+// Compact calls flit.v1.SessionService.Compact.
+func (c *sessionServiceClient) Compact(ctx context.Context, req *connect.Request[v1.CompactRequest]) (*connect.Response[v1.CompactResponse], error) {
+	return c.compact.CallUnary(ctx, req)
 }
 
 // AnswerPrompt calls flit.v1.SessionService.AnswerPrompt.
@@ -444,6 +467,15 @@ type SessionServiceHandler interface {
 	// FAILED_PRECONDITION. If the model keeps thinking anyway, the log gets
 	// ReasoningEndIgnored and the model is marked as not supporting it.
 	EndReasoning(context.Context, *connect.Request[v1.EndReasoningRequest]) (*connect.Response[v1.EndReasoningResponse], error)
+	// Compact summarizes the older part of the conversation so it takes less
+	// of the model's context: from then on the model sees the summary plus
+	// the most recent turns instead of the whole log (nothing is deleted).
+	// The log gets CompactionStarted and then CompactionDone. While the
+	// session is idle it runs right away, as a turn of its own (messages
+	// sent meanwhile are queued); while a turn runs, it happens at the
+	// turn's next step (queued = true). flit also compacts on its own near
+	// the context limit (agent.compaction in the config).
+	Compact(context.Context, *connect.Request[v1.CompactRequest]) (*connect.Response[v1.CompactResponse], error)
 	// AnswerPrompt answers a prompt the agent is waiting on. The first answer
 	// wins; later answers fail with FAILED_PRECONDITION.
 	AnswerPrompt(context.Context, *connect.Request[v1.AnswerPromptRequest]) (*connect.Response[v1.AnswerPromptResponse], error)
@@ -540,6 +572,12 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 		connect.WithSchema(sessionServiceMethods.ByName("EndReasoning")),
 		connect.WithHandlerOptions(opts...),
 	)
+	sessionServiceCompactHandler := connect.NewUnaryHandler(
+		SessionServiceCompactProcedure,
+		svc.Compact,
+		connect.WithSchema(sessionServiceMethods.ByName("Compact")),
+		connect.WithHandlerOptions(opts...),
+	)
 	sessionServiceAnswerPromptHandler := connect.NewUnaryHandler(
 		SessionServiceAnswerPromptProcedure,
 		svc.AnswerPrompt,
@@ -618,6 +656,8 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 			sessionServiceRetryModelCallHandler.ServeHTTP(w, r)
 		case SessionServiceEndReasoningProcedure:
 			sessionServiceEndReasoningHandler.ServeHTTP(w, r)
+		case SessionServiceCompactProcedure:
+			sessionServiceCompactHandler.ServeHTTP(w, r)
 		case SessionServiceAnswerPromptProcedure:
 			sessionServiceAnswerPromptHandler.ServeHTTP(w, r)
 		case SessionServiceSetModelProcedure:
@@ -683,6 +723,10 @@ func (UnimplementedSessionServiceHandler) RetryModelCall(context.Context, *conne
 
 func (UnimplementedSessionServiceHandler) EndReasoning(context.Context, *connect.Request[v1.EndReasoningRequest]) (*connect.Response[v1.EndReasoningResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.EndReasoning is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) Compact(context.Context, *connect.Request[v1.CompactRequest]) (*connect.Response[v1.CompactResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.Compact is not implemented"))
 }
 
 func (UnimplementedSessionServiceHandler) AnswerPrompt(context.Context, *connect.Request[v1.AnswerPromptRequest]) (*connect.Response[v1.AnswerPromptResponse], error) {

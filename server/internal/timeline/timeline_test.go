@@ -131,3 +131,47 @@ func TestTimelineLlamaCpp(t *testing.T) {
 		}
 	}
 }
+
+func TestTimelineCompaction(t *testing.T) {
+	l := &log{t0: time.Date(2026, 10, 20, 9, 0, 0, 0, time.Local)}
+	l.add(0, &flitv1.Event{Payload: &flitv1.Event_CompactionStarted{CompactionStarted: &flitv1.CompactionStarted{
+		CompactionId: "c1", Auto: true, Tokens: 3300, ContextLength: 4096, Provider: "local", Model: "small",
+	}}})
+	l.add(0, &flitv1.Event{Payload: &flitv1.Event_ModelCallStarted{ModelCallStarted: &flitv1.ModelCallStarted{MessageId: "x1", Attempt: 1}}})
+	l.add(4*time.Second, &flitv1.Event{Payload: &flitv1.Event_ModelCallEnded{ModelCallEnded: &flitv1.ModelCallEnded{MessageId: "x1", Attempt: 1, TotalMs: 4000}}})
+	l.add(4*time.Second, &flitv1.Event{Payload: &flitv1.Event_CompactionDone{CompactionDone: &flitv1.CompactionDone{
+		CompactionId: "c1", Auto: true, Summary: "Goal: fix the build.", CoveredSeq: 40, KeptTurns: 2,
+		TokensBefore: 3300, TokensAfter: 900, TokensExact: true,
+	}}})
+	l.add(4*time.Second, &flitv1.Event{Payload: &flitv1.Event_PromptCache{PromptCache: &flitv1.PromptCache{
+		Action: flitv1.PromptCacheAction_PROMPT_CACHE_ACTION_DISCARDED, File: "flit-kv-1.bin", Slot: -1,
+	}}})
+	l.add(5*time.Second, &flitv1.Event{Payload: &flitv1.Event_CompactionStarted{CompactionStarted: &flitv1.CompactionStarted{
+		CompactionId: "c2", Client: "phone", Tokens: 950, Provider: "local", Model: "small",
+	}}})
+	l.add(6*time.Second, &flitv1.Event{Payload: &flitv1.Event_CompactionDone{CompactionDone: &flitv1.CompactionDone{
+		CompactionId: "c2", Error: "the model wrote no summary",
+	}}})
+	l.add(7*time.Second, &flitv1.Event{Payload: &flitv1.Event_CompactionStarted{CompactionStarted: &flitv1.CompactionStarted{
+		CompactionId: "c3", Auto: true, Provider: "local", Model: "small",
+	}}})
+
+	var b strings.Builder
+	if err := Write(&b, store.Session{ID: "s1"}, l.evs, l.t0.Add(time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+	out := b.String()
+	for _, want := range []string{
+		"compacting (automatic, near the context limit) with local/small: context 3300/4096 tokens (80%)",
+		"compacted after 4.0s: events up to seq 40 summarized, 2 turn(s) kept; context 3300 -> 900 tokens (counted)",
+		"summary (20 chars): Goal: fix the build.",
+		"prompt cache flit-kv-1.bin dropped: it holds the prompt from before compaction",
+		"compacting (asked for by phone) with local/small: context 950 tokens",
+		"compaction FAILED after 1.0s: the model wrote no summary",
+		"compaction started 53.0s ago and never finished (summary call on local/small)",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q in:\n%s", want, out)
+		}
+	}
+}

@@ -114,6 +114,21 @@ abstract final class SessionService {
     flitv1session.EndReasoningResponse.new,
   );
 
+  /// Compact summarizes the older part of the conversation so it takes less
+  /// of the model's context: from then on the model sees the summary plus
+  /// the most recent turns instead of the whole log (nothing is deleted).
+  /// The log gets CompactionStarted and then CompactionDone. While the
+  /// session is idle it runs right away, as a turn of its own (messages
+  /// sent meanwhile are queued); while a turn runs, it happens at the
+  /// turn's next step (queued = true). flit also compacts on its own near
+  /// the context limit (agent.compaction in the config).
+  static const compact = connect.Spec(
+    '/$name/Compact',
+    connect.StreamType.unary,
+    flitv1session.CompactRequest.new,
+    flitv1session.CompactResponse.new,
+  );
+
   /// AnswerPrompt answers a prompt the agent is waiting on. The first answer
   /// wins; later answers fail with FAILED_PRECONDITION.
   static const answerPrompt = connect.Spec(

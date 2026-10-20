@@ -5,6 +5,7 @@ package llmtest
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -255,7 +256,14 @@ type Llama struct {
 	NoSlots, NoSave bool
 	// Saved is how many tokens a save writes and a restore reads.
 	Saved int
-	calls []string
+	// NCtx is each slot's context size (default 4096).
+	NCtx int
+	// InputTokens counts a request's prompt for
+	// /v1/chat/completions/input_tokens; nil counts a token per 4 bytes
+	// of the request body.
+	InputTokens func(req llm.Request) int
+	tokenCounts int
+	calls       []string
 }
 
 // Calls returns the recorded calls.
@@ -263,6 +271,14 @@ func (l *Llama) Calls() []string {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	return append([]string(nil), l.calls...)
+}
+
+// TokenCounts is how many input_tokens requests came (they aren't in
+// Calls).
+func (l *Llama) TokenCounts() int {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.tokenCounts
 }
 
 // SetBusy marks slot busy or free.
@@ -294,7 +310,11 @@ func (l *Llama) handle(w http.ResponseWriter, r *http.Request) bool {
 		}
 		var out []map[string]any
 		for i := range max(l.NSlots, 1) {
-			out = append(out, map[string]any{"id": i, "n_ctx": 4096, "is_processing": l.Busy[i]})
+			nctx := l.NCtx
+			if nctx == 0 {
+				nctx = 4096
+			}
+			out = append(out, map[string]any{"id": i, "n_ctx": nctx, "is_processing": l.Busy[i]})
 		}
 		_ = json.NewEncoder(w).Encode(out)
 		return true
@@ -318,6 +338,17 @@ func (l *Llama) handle(w http.ResponseWriter, r *http.Request) bool {
 		return true
 	case path == "/props":
 		_ = json.NewEncoder(w).Encode(map[string]any{"is_sleeping": l.State == "sleeping"})
+		return true
+	case path == "/v1/chat/completions/input_tokens":
+		body, _ := io.ReadAll(r.Body)
+		var req llm.Request
+		_ = json.Unmarshal(body, &req)
+		n := len(body) / 4
+		if l.InputTokens != nil {
+			n = l.InputTokens(req)
+		}
+		l.tokenCounts++
+		_ = json.NewEncoder(w).Encode(map[string]any{"input_tokens": n, "object": "response.input_tokens"})
 		return true
 	case path == "/v1/chat/completions/control":
 		var body struct{ ID, Action string }

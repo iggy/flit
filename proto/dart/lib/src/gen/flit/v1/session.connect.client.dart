@@ -210,6 +210,31 @@ extension type SessionServiceClient (connect.Transport _transport) {
     );
   }
 
+  /// Compact summarizes the older part of the conversation so it takes less
+  /// of the model's context: from then on the model sees the summary plus
+  /// the most recent turns instead of the whole log (nothing is deleted).
+  /// The log gets CompactionStarted and then CompactionDone. While the
+  /// session is idle it runs right away, as a turn of its own (messages
+  /// sent meanwhile are queued); while a turn runs, it happens at the
+  /// turn's next step (queued = true). flit also compacts on its own near
+  /// the context limit (agent.compaction in the config).
+  Future<flitv1session.CompactResponse> compact(
+    flitv1session.CompactRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.SessionService.compact,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
+
   /// AnswerPrompt answers a prompt the agent is waiting on. The first answer
   /// wins; later answers fail with FAILED_PRECONDITION.
   Future<flitv1session.AnswerPromptResponse> answerPrompt(

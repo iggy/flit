@@ -46,8 +46,10 @@ type session struct {
 	lastSlot *slotRef
 	// queue holds messages sent while a turn ran, in order, until the
 	// turn's next step delivers them (see queue.go).
-	queue   []queuedMessage
-	prompts map[string]pendingPrompt
+	queue []queuedMessage
+	// compactAsk is a Compact request for the running turn's next step.
+	compactAsk *compactAsk
+	prompts    map[string]pendingPrompt
 	// allowed are shell patterns allowed for the rest of the session
 	// ("allow for this session"), rebuilt from the log on load.
 	allowed []string
@@ -137,6 +139,8 @@ func (s *session) appendLocked(ev *flitv1.Event) (*flitv1.Event, error) {
 		s.info.ContextTokens, s.info.ContextLength = u.InputTokens+u.OutputTokens, u.ContextLength
 	case ev.GetModelChanged() != nil:
 		s.info.ContextLength = ev.GetModelChanged().ContextLength
+	case ev.GetCompactionDone() != nil && ev.GetCompactionDone().Error == "":
+		s.info.ContextTokens = ev.GetCompactionDone().TokensAfter
 	}
 	for sub := range s.subs {
 		select {

@@ -180,6 +180,18 @@ func (s *Service) EndReasoning(ctx context.Context, req *connect.Request[flitv1.
 	return connect.NewResponse(&flitv1.EndReasoningResponse{}), nil
 }
 
+// Compact implements flitv1connect.SessionServiceHandler.
+func (s *Service) Compact(ctx context.Context, req *connect.Request[flitv1.CompactRequest]) (*connect.Response[flitv1.CompactResponse], error) {
+	if err := required("session_id", req.Msg.SessionId); err != nil {
+		return nil, err
+	}
+	queued, err := s.M.Compact(ctx, req.Msg.SessionId, req.Msg.Client, req.Msg.Instructions)
+	if err != nil {
+		return nil, connectErr(err)
+	}
+	return connect.NewResponse(&flitv1.CompactResponse{Queued: queued}), nil
+}
+
 // EditQueuedMessage implements flitv1connect.SessionServiceHandler.
 func (s *Service) EditQueuedMessage(ctx context.Context, req *connect.Request[flitv1.EditQueuedMessageRequest]) (*connect.Response[flitv1.EditQueuedMessageResponse], error) {
 	m := req.Msg

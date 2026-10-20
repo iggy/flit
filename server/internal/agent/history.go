@@ -6,7 +6,7 @@ import (
 )
 
 // historyKinds are the event kinds needed to rebuild the conversation.
-var historyKinds = []string{"message_started", "message_done", "tool_call_started", "tool_call_done"}
+var historyKinds = []string{"message_started", "message_done", "tool_call_started", "tool_call_done", "compaction_done"}
 
 // notRun is the tool result recorded for a call whose turn ended before it
 // produced one, so the conversation stays valid for the next model call.
@@ -73,4 +73,63 @@ func buildMessages(events []*flitv1.Event) []llm.Message {
 		out = append(out, m)
 	}
 	return out
+}
+
+// lastCompaction is the newest compaction that took effect, or nil.
+func lastCompaction(events []*flitv1.Event) *flitv1.CompactionDone {
+	var c *flitv1.CompactionDone
+	for _, ev := range events {
+		if d := ev.GetCompactionDone(); d != nil && d.Error == "" {
+			c = d
+		}
+	}
+	return c
+}
+
+// contextEvents is the part of events the model sees after compaction c
+// (nil: all of them): the events after c.CoveredSeq and, when the cut fell
+// inside a turn, before them the user message that started that turn.
+func contextEvents(events []*flitv1.Event, c *flitv1.CompactionDone) []*flitv1.Event {
+	if c == nil {
+		return events
+	}
+	i := 0
+	for i < len(events) && events[i].Seq <= c.CoveredSeq {
+		i++
+	}
+	older, kept := events[:i], events[i:]
+	for _, ev := range kept {
+		if ms := ev.GetMessageStarted(); ms != nil {
+			if ms.Role == flitv1.Role_ROLE_USER {
+				return kept
+			}
+			// Cut inside a turn: keep the request it's working on.
+			userID := ""
+			for _, ev := range older {
+				if ms := ev.GetMessageStarted(); ms != nil && ms.Role == flitv1.Role_ROLE_USER {
+					userID = ms.MessageId
+				}
+			}
+			if userID == "" {
+				return kept
+			}
+			var out []*flitv1.Event
+			for _, ev := range older {
+				if ev.GetMessageStarted().GetMessageId() == userID || ev.GetMessageDone().GetMessageId() == userID {
+					out = append(out, ev)
+				}
+			}
+			return append(out, kept...)
+		}
+	}
+	return kept
+}
+
+// upTo is the events with seq <= seq.
+func upTo(events []*flitv1.Event, seq int64) []*flitv1.Event {
+	i := 0
+	for i < len(events) && events[i].Seq <= seq {
+		i++
+	}
+	return events[:i]
 }

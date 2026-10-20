@@ -179,6 +179,24 @@ final class FlitRepositoryImpl implements FlitRepository {
   }
 
   @override
+  Future<bool> compact(
+    String sessionId, {
+    String instructions = '',
+    String client = '',
+  }) {
+    return flitCall(() async {
+      final res = await _sessions.compact(
+        pb.CompactRequest(
+          sessionId: sessionId,
+          instructions: instructions,
+          client: client,
+        ),
+      );
+      return res.queued;
+    });
+  }
+
+  @override
   Future<void> retryModelCall(String sessionId) {
     return flitCall(() async {
       await _sessions.retryModelCall(
