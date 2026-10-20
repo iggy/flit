@@ -283,8 +283,14 @@ func TestBranchRatingsAndExport(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	gotBranches := []string{ratings[0].BranchID, ratings[1].BranchID, ratings[2].BranchID}
-	if !slices.Equal(gotBranches, []string{"", br.BranchID, ""}) || ratings[0].TurnID != ids["u2"] || ratings[1].TurnID != ids["u2"] {
+	// By rated reply: ratings made in the same clock tick (Windows) may
+	// come back in any order.
+	byCall := map[string][2]string{}
+	for _, r := range ratings {
+		byCall[r.ModelCallID] = [2]string{r.TurnID, r.BranchID}
+	}
+	if byCall[replies["a2"]] != [2]string{ids["u2"], ""} || byCall[replies["a2 again"]] != [2]string{ids["u2"], br.BranchID} ||
+		byCall[replies["a1"]] != [2]string{ids["u1"], ""} {
 		t.Fatalf("ratings %+v", ratings)
 	}
 
@@ -352,7 +358,12 @@ func TestBranchRatingsAndExport(t *testing.T) {
 		{ids["u2"], br.BranchID, "u1|a1|u2|a2 again", "bad", true},
 	}
 	for i, w := range want {
-		tr := turns[i]
+		var tr rec
+		for _, x := range turns {
+			if x.TurnID == w.turn && x.BranchID == w.branch {
+				tr = x
+			}
+		}
 		if tr.TurnID != w.turn || tr.BranchID != w.branch || conv(tr) != w.conv || tr.BranchHead != w.head ||
 			len(tr.Ratings) != 1 || tr.Ratings[0].Rating != w.rating {
 			t.Errorf("turn %d = %+v (%s), want %+v", i, tr, conv(tr), w)
