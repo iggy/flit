@@ -106,12 +106,14 @@ FlitTodoStatus _todoStatus(pb.TodoStatus s) {
 FlitEvent eventFromProto(pb.Event e) {
   final seq = e.seq.toInt();
   final time = e.hasTime() ? e.time.toDateTime() : null;
+  final branch = e.branchId;
   switch (e.whichPayload()) {
     case pb.Event_Payload.messageStarted:
       final p = e.messageStarted;
       return FlitMessageStarted(
         seq: seq,
         time: time,
+        branchId: branch,
         messageId: p.messageId,
         role: switch (p.role) {
           pb.Role.ROLE_USER => FlitRole.user,
@@ -125,6 +127,7 @@ FlitEvent eventFromProto(pb.Event e) {
       return FlitTextDelta(
         seq: seq,
         time: time,
+        branchId: branch,
         messageId: e.textDelta.messageId,
         text: e.textDelta.text,
       );
@@ -132,6 +135,7 @@ FlitEvent eventFromProto(pb.Event e) {
       return FlitReasoningDelta(
         seq: seq,
         time: time,
+        branchId: branch,
         messageId: e.reasoningDelta.messageId,
         text: e.reasoningDelta.text,
       );
@@ -140,6 +144,7 @@ FlitEvent eventFromProto(pb.Event e) {
       return FlitMessageDone(
         seq: seq,
         time: time,
+        branchId: branch,
         messageId: p.messageId,
         text: p.text,
         reasoning: p.reasoning,
@@ -150,6 +155,7 @@ FlitEvent eventFromProto(pb.Event e) {
       return FlitToolCallStarted(
         seq: seq,
         time: time,
+        branchId: branch,
         messageId: p.messageId,
         toolCallId: p.toolCallId,
         name: p.name,
@@ -159,6 +165,7 @@ FlitEvent eventFromProto(pb.Event e) {
       return FlitToolOutput(
         seq: seq,
         time: time,
+        branchId: branch,
         toolCallId: e.toolOutput.toolCallId,
         text: e.toolOutput.text,
       );
@@ -167,6 +174,7 @@ FlitEvent eventFromProto(pb.Event e) {
       return FlitToolCallDone(
         seq: seq,
         time: time,
+        branchId: branch,
         toolCallId: p.toolCallId,
         result: p.result,
         isError: p.isError,
@@ -177,6 +185,7 @@ FlitEvent eventFromProto(pb.Event e) {
       return FlitPromptRequested(
         seq: seq,
         time: time,
+        branchId: branch,
         promptId: p.promptId,
         toolCallId: p.toolCallId,
         title: p.title,
@@ -189,6 +198,7 @@ FlitEvent eventFromProto(pb.Event e) {
       return FlitPromptResolved(
         seq: seq,
         time: time,
+        branchId: branch,
         promptId: p.promptId,
         allowed:
             p.decision == pb.PromptDecision.PROMPT_DECISION_ALLOW ||
@@ -202,6 +212,7 @@ FlitEvent eventFromProto(pb.Event e) {
       return FlitTaskStateChanged(
         seq: seq,
         time: time,
+        branchId: branch,
         state: taskStateFromProto(e.taskStateChanged.state),
         reason: e.taskStateChanged.reason,
       );
@@ -209,6 +220,7 @@ FlitEvent eventFromProto(pb.Event e) {
       return FlitModelChanged(
         seq: seq,
         time: time,
+        branchId: branch,
         provider: e.modelChanged.provider,
         model: e.modelChanged.model,
         effort: e.modelChanged.effort,
@@ -219,6 +231,7 @@ FlitEvent eventFromProto(pb.Event e) {
       return FlitUsage(
         seq: seq,
         time: time,
+        branchId: branch,
         messageId: u.messageId,
         inputTokens: u.inputTokens.toInt(),
         outputTokens: u.outputTokens.toInt(),
@@ -233,6 +246,7 @@ FlitEvent eventFromProto(pb.Event e) {
       return FlitTodoUpdated(
         seq: seq,
         time: time,
+        branchId: branch,
         items: List<FlitTodo>.unmodifiable(
           e.todoUpdated.items.map(
             (i) => FlitTodo(content: i.content, status: _todoStatus(i.status)),
@@ -243,6 +257,7 @@ FlitEvent eventFromProto(pb.Event e) {
       return FlitTurnError(
         seq: seq,
         time: time,
+        branchId: branch,
         message: e.error.message,
         canContinue: e.error.turnCanContinue,
       );
@@ -251,6 +266,7 @@ FlitEvent eventFromProto(pb.Event e) {
       return FlitFeedback(
         seq: seq,
         time: time,
+        branchId: branch,
         target: f.target == pb.RatingTarget.RATING_TARGET_MODEL
             ? FlitRatingTarget.model
             : FlitRatingTarget.turn,
@@ -265,18 +281,21 @@ FlitEvent eventFromProto(pb.Event e) {
       return FlitMcpServersChanged(
         seq: seq,
         time: time,
+        branchId: branch,
         enabled: List<String>.unmodifiable(e.mcpServersChanged.enabled),
       );
     case pb.Event_Payload.sessionMoved:
       return FlitSessionMoved(
         seq: seq,
         time: time,
+        branchId: branch,
         projectId: e.sessionMoved.projectId,
       );
     case pb.Event_Payload.yoloChanged:
       return FlitYoloChanged(
         seq: seq,
         time: time,
+        branchId: branch,
         yolo: e.yoloChanged.yolo,
         client: e.yoloChanged.client,
       );
@@ -284,6 +303,7 @@ FlitEvent eventFromProto(pb.Event e) {
       return FlitMessageQueued(
         seq: seq,
         time: time,
+        branchId: branch,
         queueId: e.messageQueued.queueId,
         text: e.messageQueued.text,
         client: e.messageQueued.client,
@@ -292,6 +312,7 @@ FlitEvent eventFromProto(pb.Event e) {
       return FlitQueuedMessageUpdated(
         seq: seq,
         time: time,
+        branchId: branch,
         queueId: e.queuedMessageUpdated.queueId,
         text: e.queuedMessageUpdated.text,
         cancelled: e.queuedMessageUpdated.cancelled,
@@ -300,6 +321,7 @@ FlitEvent eventFromProto(pb.Event e) {
       return FlitQueuedMessageDelivered(
         seq: seq,
         time: time,
+        branchId: branch,
         queueId: e.queuedMessageDelivered.queueId,
         messageId: e.queuedMessageDelivered.messageId,
       );
@@ -308,6 +330,7 @@ FlitEvent eventFromProto(pb.Event e) {
       return FlitModelCallWaiting(
         seq: seq,
         time: time,
+        branchId: branch,
         messageId: w.messageId,
         totalSlots: w.totalSlots,
         reason: switch (w.reason) {
@@ -324,6 +347,7 @@ FlitEvent eventFromProto(pb.Event e) {
       return FlitReasoningEndRequested(
         seq: seq,
         time: time,
+        branchId: branch,
         messageId: e.reasoningEndRequested.messageId,
         client: e.reasoningEndRequested.client,
       );
@@ -331,6 +355,7 @@ FlitEvent eventFromProto(pb.Event e) {
       return FlitReasoningEndIgnored(
         seq: seq,
         time: time,
+        branchId: branch,
         messageId: e.reasoningEndIgnored.messageId,
       );
     case pb.Event_Payload.compactionStarted:
@@ -338,6 +363,7 @@ FlitEvent eventFromProto(pb.Event e) {
       return FlitCompactionStarted(
         seq: seq,
         time: time,
+        branchId: branch,
         compactionId: c.compactionId,
         auto: c.auto,
         client: c.client,
@@ -351,6 +377,7 @@ FlitEvent eventFromProto(pb.Event e) {
       return FlitCompactionDone(
         seq: seq,
         time: time,
+        branchId: branch,
         compactionId: c.compactionId,
         auto: c.auto,
         summary: c.summary,
@@ -368,6 +395,7 @@ FlitEvent eventFromProto(pb.Event e) {
       return FlitModelCallStarted(
         seq: seq,
         time: time,
+        branchId: branch,
         messageId: e.modelCallStarted.messageId,
         attempt: e.modelCallStarted.attempt,
       );
@@ -376,6 +404,7 @@ FlitEvent eventFromProto(pb.Event e) {
       return FlitPromptProgress(
         seq: seq,
         time: time,
+        branchId: branch,
         messageId: p.messageId,
         processed: p.processed.toInt(),
         total: p.total.toInt(),
@@ -386,6 +415,7 @@ FlitEvent eventFromProto(pb.Event e) {
       return FlitModelCallEnded(
         seq: seq,
         time: time,
+        branchId: branch,
         messageId: c.messageId,
         attempt: c.attempt,
         outcome: switch (c.outcome) {
@@ -407,6 +437,7 @@ FlitEvent eventFromProto(pb.Event e) {
       return FlitPermissionCheck(
         seq: seq,
         time: time,
+        branchId: branch,
         toolCallId: c.toolCallId,
         command: c.command,
         verdict: switch (c.verdict) {
@@ -424,8 +455,34 @@ FlitEvent eventFromProto(pb.Event e) {
       );
     // Prompt cache saves and restores are for flit debug session; the chat
     // has nothing to show for them.
+    case pb.Event_Payload.branchCreated:
+      final b = e.branchCreated;
+      return FlitBranchCreated(
+        seq: seq,
+        time: time,
+        branchId: branch,
+        newBranchId: b.branchId,
+        parentBranchId: b.parentBranchId,
+        forkSeq: b.forkSeq.toInt(),
+        kind: switch (b.kind) {
+          pb.BranchKind.BRANCH_KIND_RETRY => FlitBranchKind.retry,
+          pb.BranchKind.BRANCH_KIND_EDIT => FlitBranchKind.edit,
+          _ => FlitBranchKind.unknown,
+        },
+        messageId: b.messageId,
+        client: b.client,
+      );
+    case pb.Event_Payload.branchSwitched:
+      final b = e.branchSwitched;
+      return FlitBranchSwitched(
+        seq: seq,
+        time: time,
+        branchId: branch,
+        newBranchId: b.branchId,
+        client: b.client,
+      );
     case pb.Event_Payload.promptCache:
     case pb.Event_Payload.notSet:
-      return FlitUnknownEvent(seq: seq, time: time);
+      return FlitUnknownEvent(seq: seq, time: time, branchId: branch);
   }
 }

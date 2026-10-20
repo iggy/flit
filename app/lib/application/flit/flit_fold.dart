@@ -5,10 +5,16 @@
 /// too, whichever client sent them — so every attached client converges on
 /// the same view. Events at or below [FlitFoldState.lastSeq] are ignored,
 /// which makes replays after a reconnect idempotent.
+///
+/// A session's log can hold several branches of the conversation (see
+/// flit_branches.dart). The fold shows the active one: events on other
+/// branches only update the branch bookkeeping, and a branch switch
+/// re-folds the kept events of the new branch's path.
 library;
 
 import 'dart:convert';
 
+import 'package:flit/application/flit/flit_branches.dart';
 import 'package:flit/domain/models/chat_message.dart';
 import 'package:flit/domain/models/deep_equals.dart';
 import 'package:flit/domain/models/flit_event.dart';
@@ -381,6 +387,14 @@ final class FlitFoldState {
     this.compacting,
     this.compactions = const <FlitCompactionMarker>[],
     this.keptIndex,
+    this.activeBranch = '',
+    this.branches = const <String, FlitBranch>{},
+    this.branchChoices = const <String, FlitBranchChoice>{},
+    this.branchMessages = const <String, List<int>>{},
+    this.branchLastSeq = const <String, int>{},
+    this.pathLimits = const <String, int>{'': 1 << 53},
+    this.kept = const <FlitEvent>[],
+    this.keptCount = 0,
   });
 
   /// The seq of the event that started each entry of [messages].
@@ -402,6 +416,31 @@ final class FlitFoldState {
       compactions.isNotEmpty &&
       i < compactions.last.beforeIndex &&
       i != keptIndex;
+
+  /// The active branch ('' is the root); the fold shows its path.
+  final String activeBranch;
+
+  /// The session's branches besides the root, by id.
+  final Map<String, FlitBranch> branches;
+
+  /// Messages that start an alternative at a fork → the switch to show.
+  final Map<String, FlitBranchChoice> branchChoices;
+
+  /// Per branch, the seqs of the messages started on it (any branch).
+  final Map<String, List<int>> branchMessages;
+
+  /// Per branch, its most recent event's seq.
+  final Map<String, int> branchLastSeq;
+
+  /// The active path (see [flitPathLimits]).
+  final Map<String, int> pathLimits;
+
+  /// The events needed to re-fold another branch (not the deltas and live
+  /// output a finished message or tool doesn't need), the first
+  /// [keptCount] of them. The list is shared between states and only
+  /// appended to (see [_keep]).
+  final List<FlitEvent> kept;
+  final int keptCount;
 
   /// Messages whose model ignored "answer now" (from the log).
   final Set<String> reasoningEndIgnored;
@@ -508,9 +547,16 @@ final class FlitFoldState {
     List<FlitCompactionMarker>? compactions,
     int? keptIndex,
     bool clearKept = false,
+    String? activeBranch,
+    Map<String, FlitBranch>? branches,
+    Map<String, FlitBranchChoice>? branchChoices,
+    Map<String, List<int>>? branchMessages,
+    Map<String, int>? branchLastSeq,
+    Map<String, int>? pathLimits,
+    List<FlitEvent>? kept,
+    int? keptCount,
   }) {
     return FlitFoldState(
-      messageSeqs: messageSeqs ?? this.messageSeqs,
       compacting: clearCompacting ? null : (compacting ?? this.compacting),
       compactions: compactions ?? this.compactions,
       keptIndex: clearKept ? null : (keptIndex ?? this.keptIndex),
@@ -537,6 +583,15 @@ final class FlitFoldState {
       call: clearCall ? null : (call ?? this.call),
       queued: queued ?? this.queued,
       reasoningEndIgnored: reasoningEndIgnored ?? this.reasoningEndIgnored,
+      activeBranch: activeBranch ?? this.activeBranch,
+      branches: branches ?? this.branches,
+      branchChoices: branchChoices ?? this.branchChoices,
+      messageSeqs: messageSeqs ?? this.messageSeqs,
+      branchMessages: branchMessages ?? this.branchMessages,
+      branchLastSeq: branchLastSeq ?? this.branchLastSeq,
+      pathLimits: pathLimits ?? this.pathLimits,
+      kept: kept ?? this.kept,
+      keptCount: keptCount ?? this.keptCount,
     );
   }
 
@@ -572,7 +627,10 @@ final class FlitFoldState {
         deepListEquals(other.messageSeqs, messageSeqs) &&
         other.compacting == compacting &&
         deepListEquals(other.compactions, compactions) &&
-        other.keptIndex == keptIndex;
+        other.keptIndex == keptIndex &&
+        other.activeBranch == activeBranch &&
+        shallowMapEquals(other.branches, branches) &&
+        shallowMapEquals(other.branchChoices, branchChoices);
   }
 
   @override
@@ -593,6 +651,7 @@ final class FlitFoldState {
     Object.hashAll(queued),
     compacting,
     Object.hashAll(compactions),
+    activeBranch,
   );
 
   @override
@@ -616,6 +675,116 @@ FlitFoldState foldFlitEvent(FlitFoldState state, FlitEvent event) {
   if (event.seq <= state.lastSeq) {
     return state;
   }
+  final s = _track(state, event);
+  switch (event) {
+    case FlitBranchCreated():
+      return _withChoices(
+        s.copyWith(
+          lastSeq: event.seq,
+          branches: <String, FlitBranch>{
+            ...s.branches,
+            event.newBranchId: FlitBranch(
+              id: event.newBranchId,
+              parent: event.parentBranchId,
+              forkSeq: event.forkSeq,
+              createdSeq: event.seq,
+              kind: event.kind,
+              messageId: event.messageId,
+            ),
+          },
+        ),
+      );
+    case FlitBranchSwitched():
+      return _switchTo(s, event.newBranchId, event.seq);
+    default:
+      if (!flitOnPath(s.pathLimits, event)) {
+        return s.copyWith(lastSeq: event.seq);
+      }
+      final next = _apply(s, event);
+      return event is FlitMessageStarted ? _withChoices(next) : next;
+  }
+}
+
+/// Records [e] in the branch bookkeeping and keeps it for re-folding.
+FlitFoldState _track(FlitFoldState s, FlitEvent e) {
+  final branch = e.branchId;
+  var branchMessages = s.branchMessages;
+  if (e is FlitMessageStarted) {
+    branchMessages = <String, List<int>>{
+      ...branchMessages,
+      branch: <int>[...?branchMessages[branch], e.seq],
+    };
+  }
+  final skip = switch (e) {
+    FlitTextDelta() ||
+    FlitReasoningDelta() ||
+    FlitToolOutput() ||
+    FlitPromptProgress() ||
+    FlitModelCallWaiting() ||
+    FlitUnknownEvent() => true,
+    _ => false,
+  };
+  final (kept, keptCount) = skip ? (s.kept, s.keptCount) : _keep(s, e);
+  return s.copyWith(
+    branchMessages: branchMessages,
+    branchLastSeq: s.branchLastSeq[branch] == e.seq
+        ? null
+        : <String, int>{...s.branchLastSeq, branch: e.seq},
+    kept: kept,
+    keptCount: keptCount,
+  );
+}
+
+/// Appends [e] to the kept events. States share one list: appending in
+/// place is safe while this state's count is its end; otherwise (an older
+/// state folded again) it copies.
+(List<FlitEvent>, int) _keep(FlitFoldState s, FlitEvent e) {
+  if (s.keptCount > 0 && s.kept.length == s.keptCount) {
+    s.kept.add(e);
+    return (s.kept, s.keptCount + 1);
+  }
+  return (<FlitEvent>[...s.kept.take(s.keptCount), e], s.keptCount + 1);
+}
+
+/// Re-folds the kept events of [branch]'s path: the chat as that branch
+/// has it. Switches only happen between turns, so nothing is streaming
+/// and the deltas that weren't kept aren't needed.
+FlitFoldState _switchTo(FlitFoldState s, String branch, int seq) {
+  final limits = flitPathLimits(s.branches, branch);
+  var next = FlitFoldState(
+    activeBranch: branch,
+    branches: s.branches,
+    branchMessages: s.branchMessages,
+    branchLastSeq: s.branchLastSeq,
+    pathLimits: limits,
+    kept: s.kept,
+    keptCount: s.keptCount,
+  );
+  for (var i = 0; i < s.keptCount; i++) {
+    final e = s.kept[i];
+    if (e.seq < seq &&
+        e is! FlitBranchCreated &&
+        e is! FlitBranchSwitched &&
+        flitOnPath(limits, e)) {
+      next = _apply(next, e);
+    }
+  }
+  return _withChoices(next.copyWith(lastSeq: seq));
+}
+
+FlitFoldState _withChoices(FlitFoldState s) => s.copyWith(
+  branchChoices: flitBranchChoices(
+    branches: s.branches,
+    active: s.activeBranch,
+    messageIds: s.messageIds,
+    messageSeqs: s.messageSeqs,
+    branchMessages: s.branchMessages,
+    branchLastSeq: s.branchLastSeq,
+  ),
+);
+
+/// Folds one event of the active path into the chat.
+FlitFoldState _apply(FlitFoldState state, FlitEvent event) {
   final s = state.copyWith(lastSeq: event.seq);
   return switch (event) {
     FlitMessageStarted() => _started(s, event),
@@ -803,7 +972,7 @@ FlitFoldState foldFlitEvent(FlitFoldState state, FlitEvent event) {
         ),
       ],
     ),
-    FlitUnknownEvent() => s,
+    FlitUnknownEvent() || FlitBranchCreated() || FlitBranchSwitched() => s,
   };
 }
 

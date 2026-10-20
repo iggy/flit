@@ -10,6 +10,7 @@ import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/domain/models/chat_message.dart';
 import 'package:flit/domain/models/flit_session.dart';
 import 'package:flit/presentation/chat/message_bubble.dart';
+import 'package:flit/presentation/flit/flit_branch_controls.dart';
 import 'package:flit/presentation/flit/flit_call_status.dart';
 import 'package:flit/presentation/flit/flit_compaction.dart';
 import 'package:flit/presentation/flit/flit_mcp_sheet.dart';
@@ -280,6 +281,94 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
         fold.messageIds[i] != null;
   }
 
+  Future<void> _retryFrom(String messageId) async {
+    final error = await ref
+        .read(flitChatProvider(widget.sessionId).notifier)
+        .retryFrom(messageId);
+    if (!mounted) {
+      return;
+    }
+    if (error == null) {
+      _jumpToLatest();
+    } else {
+      _snack('Could not retry: $error');
+    }
+  }
+
+  Future<void> _editAndResend(String messageId, String text) async {
+    final edited = await showFlitEditMessageDialog(context, text);
+    if (edited == null || !mounted) {
+      return;
+    }
+    final error = await ref
+        .read(flitChatProvider(widget.sessionId).notifier)
+        .editAndResend(messageId, edited);
+    if (!mounted) {
+      return;
+    }
+    if (error == null) {
+      _jumpToLatest();
+    } else {
+      _snack('Not sent: $error');
+    }
+  }
+
+  Future<void> _switchBranch(String branchId) async {
+    final error = await ref
+        .read(flitChatProvider(widget.sessionId).notifier)
+        .switchBranch(branchId);
+    if (error != null && mounted) {
+      _snack('Could not switch: $error');
+    }
+  }
+
+  /// The controls under message [i]: the branch switch if it starts an
+  /// alternative, retry and edit on user messages (between turns, with
+  /// nothing queued), rating on finished replies.
+  Widget? _messageControls(
+    FlitFoldState fold,
+    int i,
+    FlitChatNotifier notifier,
+  ) {
+    final message = fold.messages[i];
+    final id = i < fold.messageIds.length ? fold.messageIds[i] : null;
+    final choice = id == null ? null : fold.branchChoices[id];
+    final user = message.role == MessageRole.user;
+    final canFork = user && id != null && !fold.busy && fold.queued.isEmpty;
+    final rateable = _rateable(fold, i);
+    if (choice == null && !canFork && !rateable) {
+      return null;
+    }
+    return Align(
+      alignment: user ? Alignment.centerRight : Alignment.centerLeft,
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: <Widget>[
+          if (choice != null)
+            FlitBranchSwitcher(
+              choice: choice,
+              onSwitch: fold.busy ? null : _switchBranch,
+            ),
+          if (canFork)
+            FlitUserMessageActions(
+              onRetry: () => _retryFrom(id),
+              onEdit: () => _editAndResend(id, message.text),
+            ),
+          if (rateable)
+            FlitRatingButtons(
+              rating: fold.ratings[id],
+              onRate: (good) async {
+                final error = await notifier.rateTurn(id!, good: good);
+                if (error != null && mounted) {
+                  _snack('Could not rate: $error');
+                }
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
   /// Recomputes [_following] from where the user is. It only runs when the
   /// position moves, not when content grows under it, so it reflects where
   /// the user was before new output arrived.
@@ -545,22 +634,7 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 MessageBubble(message: fold.messages[i]),
-                if (_rateable(fold, i))
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: FlitRatingButtons(
-                      rating: fold.ratings[fold.messageIds[i]],
-                      onRate: (good) async {
-                        final error = await notifier.rateTurn(
-                          fold.messageIds[i]!,
-                          good: good,
-                        );
-                        if (error != null && mounted) {
-                          _snack('Could not rate: $error');
-                        }
-                      },
-                    ),
-                  ),
+                ?_messageControls(fold, i, notifier),
               ],
             ),
           ),

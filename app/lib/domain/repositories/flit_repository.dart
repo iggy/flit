@@ -57,6 +57,29 @@ abstract interface class FlitRepository {
     String client = '',
   });
 
+  /// Start a new branch that keeps user message [messageId] and answers it
+  /// again. Only while idle with nothing queued.
+  Future<void> retryFromMessage(
+    String sessionId,
+    String messageId, {
+    String client = '',
+  });
+
+  /// Start a new branch with [text] in place of user message [messageId].
+  Future<void> editMessage(
+    String sessionId,
+    String messageId,
+    String text, {
+    String client = '',
+  });
+
+  /// Make another branch the active one ('' is the root branch).
+  Future<void> switchBranch(
+    String sessionId,
+    String branchId, {
+    String client = '',
+  });
+
   /// Answer a pending prompt. [client] names this device in the session log.
   /// [forSession] also allows the prompt's session patterns from now on.
   Future<void> answerPrompt(

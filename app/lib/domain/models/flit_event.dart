@@ -7,11 +7,15 @@ import 'package:flit/domain/models/flit_session.dart';
 
 /// One entry in a session's event log.
 sealed class FlitEvent {
-  const FlitEvent({required this.seq, this.time});
+  const FlitEvent({required this.seq, this.time, this.branchId = ''});
 
   /// Per-session sequence number, starting at 1.
   final int seq;
   final DateTime? time;
+
+  /// The conversation branch it was recorded on; empty is the root branch.
+  /// Session-wide events (see [flitSessionWide]) apply on every branch.
+  final String branchId;
 }
 
 /// Who wrote a message.
@@ -26,6 +30,7 @@ final class FlitMessageStarted extends FlitEvent {
     this.provider = '',
     this.model = '',
     super.time,
+    super.branchId,
   });
 
   final String messageId;
@@ -42,6 +47,7 @@ final class FlitTextDelta extends FlitEvent {
     required this.messageId,
     required this.text,
     super.time,
+    super.branchId,
   });
 
   final String messageId;
@@ -54,6 +60,7 @@ final class FlitReasoningDelta extends FlitEvent {
     required this.messageId,
     required this.text,
     super.time,
+    super.branchId,
   });
 
   final String messageId;
@@ -69,6 +76,7 @@ final class FlitMessageDone extends FlitEvent {
     required this.reasoning,
     required this.finishReason,
     super.time,
+    super.branchId,
   });
 
   final String messageId;
@@ -87,6 +95,7 @@ final class FlitToolCallStarted extends FlitEvent {
     required this.name,
     required this.arguments,
     super.time,
+    super.branchId,
   });
 
   final String messageId;
@@ -104,6 +113,7 @@ final class FlitToolOutput extends FlitEvent {
     required this.toolCallId,
     required this.text,
     super.time,
+    super.branchId,
   });
 
   final String toolCallId;
@@ -118,6 +128,7 @@ final class FlitToolCallDone extends FlitEvent {
     required this.isError,
     required this.truncated,
     super.time,
+    super.branchId,
   });
 
   final String toolCallId;
@@ -139,6 +150,7 @@ final class FlitPromptRequested extends FlitEvent {
     this.sessionPatterns = const <String>[],
     this.safetyReason = '',
     super.time,
+    super.branchId,
   });
 
   final String promptId;
@@ -165,6 +177,7 @@ final class FlitPromptResolved extends FlitEvent {
     required this.reason,
     this.forSession = false,
     super.time,
+    super.branchId,
   });
 
   final String promptId;
@@ -184,6 +197,7 @@ final class FlitTaskStateChanged extends FlitEvent {
     required this.state,
     required this.reason,
     super.time,
+    super.branchId,
   });
 
   final FlitTaskState state;
@@ -198,6 +212,7 @@ final class FlitModelChanged extends FlitEvent {
     this.effort = '',
     this.contextLength = 0,
     super.time,
+    super.branchId,
   });
 
   final String provider;
@@ -224,6 +239,7 @@ final class FlitUsage extends FlitEvent {
     this.timingSource = '',
     this.cachedTokens = 0,
     super.time,
+    super.branchId,
   });
 
   final String messageId;
@@ -267,7 +283,12 @@ final class FlitTodo {
 
 /// The agent's task list after it changed.
 final class FlitTodoUpdated extends FlitEvent {
-  const FlitTodoUpdated({required super.seq, required this.items, super.time});
+  const FlitTodoUpdated({
+    required super.seq,
+    required this.items,
+    super.time,
+    super.branchId,
+  });
 
   final List<FlitTodo> items;
 }
@@ -278,6 +299,7 @@ final class FlitTurnError extends FlitEvent {
     required this.message,
     required this.canContinue,
     super.time,
+    super.branchId,
   });
 
   final String message;
@@ -288,7 +310,7 @@ final class FlitTurnError extends FlitEvent {
 
 /// An event kind this app version doesn't know. Still advances the seq.
 final class FlitUnknownEvent extends FlitEvent {
-  const FlitUnknownEvent({required super.seq, super.time});
+  const FlitUnknownEvent({required super.seq, super.time, super.branchId});
 }
 
 /// Someone rated a turn or a model.
@@ -303,6 +325,7 @@ final class FlitFeedback extends FlitEvent {
     this.client = '',
     this.note = '',
     super.time,
+    super.branchId,
   });
 
   final FlitRatingTarget target;
@@ -320,6 +343,7 @@ final class FlitMcpServersChanged extends FlitEvent {
     required super.seq,
     required this.enabled,
     super.time,
+    super.branchId,
   });
 
   final List<String> enabled;
@@ -331,6 +355,7 @@ final class FlitSessionMoved extends FlitEvent {
     required super.seq,
     required this.projectId,
     super.time,
+    super.branchId,
   });
 
   final String projectId;
@@ -344,6 +369,7 @@ final class FlitYoloChanged extends FlitEvent {
     required this.yolo,
     this.client = '',
     super.time,
+    super.branchId,
   });
 
   final bool yolo;
@@ -377,6 +403,7 @@ final class FlitPermissionCheck extends FlitEvent {
     this.provider = '',
     this.model = '',
     super.time,
+    super.branchId,
   });
 
   final String toolCallId;
@@ -396,6 +423,7 @@ final class FlitMessageQueued extends FlitEvent {
     required this.text,
     this.client = '',
     super.time,
+    super.branchId,
   });
 
   final String queueId;
@@ -411,6 +439,7 @@ final class FlitQueuedMessageUpdated extends FlitEvent {
     this.text = '',
     this.cancelled = false,
     super.time,
+    super.branchId,
   });
 
   final String queueId;
@@ -425,6 +454,7 @@ final class FlitQueuedMessageDelivered extends FlitEvent {
     required this.queueId,
     required this.messageId,
     super.time,
+    super.branchId,
   });
 
   final String queueId;
@@ -442,6 +472,7 @@ final class FlitModelCallWaiting extends FlitEvent {
     required this.reason,
     this.totalSlots = 0,
     super.time,
+    super.branchId,
   });
 
   final String messageId;
@@ -456,6 +487,7 @@ final class FlitReasoningEndRequested extends FlitEvent {
     required this.messageId,
     this.client = '',
     super.time,
+    super.branchId,
   });
 
   final String messageId;
@@ -468,6 +500,7 @@ final class FlitReasoningEndIgnored extends FlitEvent {
     required super.seq,
     required this.messageId,
     super.time,
+    super.branchId,
   });
 
   final String messageId;
@@ -486,6 +519,7 @@ final class FlitCompactionStarted extends FlitEvent {
     this.provider = '',
     this.model = '',
     super.time,
+    super.branchId,
   });
 
   final String compactionId;
@@ -519,6 +553,7 @@ final class FlitCompactionDone extends FlitEvent {
     this.keptTurns = 0,
     this.error = '',
     super.time,
+    super.branchId,
   });
 
   final String compactionId;
@@ -549,6 +584,7 @@ final class FlitModelCallStarted extends FlitEvent {
     required this.messageId,
     required this.attempt,
     super.time,
+    super.branchId,
   });
 
   final String messageId;
@@ -564,6 +600,7 @@ final class FlitPromptProgress extends FlitEvent {
     required this.total,
     this.cached = 0,
     super.time,
+    super.branchId,
   });
 
   final String messageId;
@@ -585,6 +622,7 @@ final class FlitModelCallEnded extends FlitEvent {
     this.phase = '',
     this.willRetry = false,
     super.time,
+    super.branchId,
   });
 
   final String messageId;
@@ -597,3 +635,61 @@ final class FlitModelCallEnded extends FlitEvent {
   /// Whether the server sends it again.
   final bool willRetry;
 }
+
+/// How a branch was made.
+enum FlitBranchKind { retry, edit, unknown }
+
+/// A new branch of the conversation: it has its parent's events with
+/// seq <= [forkSeq], then its own.
+final class FlitBranchCreated extends FlitEvent {
+  const FlitBranchCreated({
+    required super.seq,
+    required this.newBranchId,
+    required this.parentBranchId,
+    required this.forkSeq,
+    required this.kind,
+    required this.messageId,
+    this.client = '',
+    super.time,
+    super.branchId,
+  });
+
+  final String newBranchId;
+  final String parentBranchId;
+  final int forkSeq;
+  final FlitBranchKind kind;
+
+  /// The user message retried or edited.
+  final String messageId;
+  final String client;
+}
+
+/// The session's active branch changed to [newBranchId].
+final class FlitBranchSwitched extends FlitEvent {
+  const FlitBranchSwitched({
+    required super.seq,
+    required this.newBranchId,
+    this.client = '',
+    super.time,
+    super.branchId,
+  });
+
+  final String newBranchId;
+  final String client;
+}
+
+/// Whether [e] is about the session rather than one branch's conversation:
+/// state, settings, the queue and branches. These apply on every branch.
+bool flitSessionWide(FlitEvent e) => switch (e) {
+  FlitTaskStateChanged() ||
+  FlitModelChanged() ||
+  FlitMcpServersChanged() ||
+  FlitSessionMoved() ||
+  FlitYoloChanged() ||
+  FlitMessageQueued() ||
+  FlitQueuedMessageUpdated() ||
+  FlitQueuedMessageDelivered() ||
+  FlitBranchCreated() ||
+  FlitBranchSwitched() => true,
+  _ => false,
+};
