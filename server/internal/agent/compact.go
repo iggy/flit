@@ -31,9 +31,9 @@ Write plain text under these headings:
 Goal: what the user wants overall, and their latest request.
 Progress: what has been done: files read or changed, commands run and what they showed, decisions made.
 Current state: what is in progress, open problems, and what to do next.
-Details: exact names, paths, values, errors and user preferences worth keeping.
+Details: the facts themselves, written out: names, paths, numbers, errors and what the user told you (write "favourite colour: teal", not "the user gave a favourite colour").
 
-Be brief and factual. Do not call tools, do not continue the task, and write nothing but the summary.`
+Be brief and factual, and only write what the conversation says. Do not call tools, do not continue the task, and write nothing but the summary.`
 
 // summarySection is the summary as it goes in the system prompt.
 func summarySection(summary string) string {
