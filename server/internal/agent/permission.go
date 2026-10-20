@@ -133,7 +133,7 @@ func (s *session) recordTaskCall(info store.Session, turnID, callID, kind string
 		toolsJSON, _ = json.Marshal(req.Tools)
 	}
 	c := &store.ModelCall{
-		ID: callID, SessionID: info.ID, TeamID: info.TeamID, ProjectID: info.ProjectID, TurnID: turnID, Task: kind,
+		ID: callID, SessionID: info.ID, TeamID: info.TeamID, ProjectID: info.ProjectID, TurnID: turnID, BranchID: info.BranchID, Task: kind,
 		Provider: task.Provider, Model: task.Model, Effort: task.Effort, FlitVersion: buildinfo.Get().Version, Params: requestParams(req),
 	}
 	resp := map[string]any{"role": "assistant", "content": ""}

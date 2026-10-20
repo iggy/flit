@@ -187,6 +187,11 @@ CREATE TABLE model_prefs (
 	`
 ALTER TABLE model_prefs ADD COLUMN no_reasoning_end INTEGER NOT NULL DEFAULT 0;
 `,
+	`
+ALTER TABLE sessions ADD COLUMN branch_id TEXT NOT NULL DEFAULT '';
+ALTER TABLE model_calls ADD COLUMN branch_id TEXT NOT NULL DEFAULT '';
+ALTER TABLE ratings ADD COLUMN branch_id TEXT NOT NULL DEFAULT '';
+`,
 }
 
 func (s *Store) migrate(ctx context.Context) error {
@@ -243,9 +248,12 @@ type Session struct {
 	MCPServers []string
 	// Yolo runs every shell command no deny rule matches.
 	Yolo bool
+	// BranchID is the active branch (see package branches); empty is the
+	// root.
+	BranchID string
 }
 
-const sessionCols = `id, team_id, project_id, title, working_dir, provider, model, state, last_seq, created_at, updated_at, effort, role, context_tokens, context_length, mcp_servers, yolo`
+const sessionCols = `id, team_id, project_id, title, working_dir, provider, model, state, last_seq, created_at, updated_at, effort, role, context_tokens, context_length, mcp_servers, yolo, branch_id`
 
 func joinNames(names []string) string { return strings.Join(names, "\n") }
 
@@ -261,7 +269,7 @@ func scanSession(row interface{ Scan(...any) error }) (Session, error) {
 	var created, updated int64
 	var mcp string
 	err := row.Scan(&s.ID, &s.TeamID, &s.ProjectID, &s.Title, &s.WorkingDir, &s.Provider, &s.Model,
-		&s.State, &s.LastSeq, &created, &updated, &s.Effort, &s.Role, &s.ContextTokens, &s.ContextLength, &mcp, &s.Yolo)
+		&s.State, &s.LastSeq, &created, &updated, &s.Effort, &s.Role, &s.ContextTokens, &s.ContextLength, &mcp, &s.Yolo, &s.BranchID)
 	s.MCPServers = splitNames(mcp)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Session{}, ErrNotFound
@@ -274,10 +282,10 @@ func scanSession(row interface{ Scan(...any) error }) (Session, error) {
 func (s *Store) CreateSession(ctx context.Context, sess *Session) error {
 	now := time.Now()
 	sess.CreatedAt, sess.UpdatedAt = now, now
-	_, err := s.db.ExecContext(ctx, `INSERT INTO sessions (`+sessionCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	_, err := s.db.ExecContext(ctx, `INSERT INTO sessions (`+sessionCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		sess.ID, sess.TeamID, sess.ProjectID, sess.Title, sess.WorkingDir, sess.Provider, sess.Model,
 		sess.State, sess.LastSeq, now.UnixNano(), now.UnixNano(), sess.Effort, sess.Role, sess.ContextTokens, sess.ContextLength,
-		joinNames(sess.MCPServers), sess.Yolo)
+		joinNames(sess.MCPServers), sess.Yolo, sess.BranchID)
 	return err
 }
 
@@ -466,7 +474,7 @@ func (s *Store) SessionIDsInStates(ctx context.Context, states ...flitv1.TaskSta
 // AppendEvent stores ev, which must carry the session's next sequence
 // number, and advances the session's last_seq in the same transaction,
 // along with what the event changes: state (TaskStateChanged), context use
-// (Usage) or context window (ModelChanged).
+// (Usage), context window (ModelChanged) or active branch (BranchSwitched).
 func (s *Store) AppendEvent(ctx context.Context, sess Session, ev *flitv1.Event) error {
 	payload, err := proto.Marshal(ev)
 	if err != nil {
@@ -498,6 +506,9 @@ func (s *Store) AppendEvent(ctx context.Context, sess Session, ev *flitv1.Event)
 	case ev.GetCompactionDone() != nil && ev.GetCompactionDone().Error == "":
 		q = `UPDATE sessions SET last_seq = ?, updated_at = ?, context_tokens = ? WHERE id = ? AND last_seq = ?`
 		args = []any{ev.Seq, at, ev.GetCompactionDone().TokensAfter, ev.SessionId, ev.Seq - 1}
+	case ev.GetBranchSwitched() != nil:
+		q = `UPDATE sessions SET last_seq = ?, updated_at = ?, branch_id = ? WHERE id = ? AND last_seq = ?`
+		args = []any{ev.Seq, at, ev.GetBranchSwitched().BranchId, ev.SessionId, ev.Seq - 1}
 	}
 	res, err := tx.ExecContext(ctx, q, args...)
 	if err != nil {

@@ -328,5 +328,31 @@ class PromptCacheAction extends $pb.ProtobufEnum {
   const PromptCacheAction._(super.value, super.name);
 }
 
+class BranchKind extends $pb.ProtobufEnum {
+  static const BranchKind BRANCH_KIND_UNSPECIFIED =
+      BranchKind._(0, _omitEnumNames ? '' : 'BRANCH_KIND_UNSPECIFIED');
+
+  /// RetryFromMessage: the same user message, answered again.
+  static const BranchKind BRANCH_KIND_RETRY =
+      BranchKind._(1, _omitEnumNames ? '' : 'BRANCH_KIND_RETRY');
+
+  /// EditMessage: a different user message in its place.
+  static const BranchKind BRANCH_KIND_EDIT =
+      BranchKind._(2, _omitEnumNames ? '' : 'BRANCH_KIND_EDIT');
+
+  static const $core.List<BranchKind> values = <BranchKind>[
+    BRANCH_KIND_UNSPECIFIED,
+    BRANCH_KIND_RETRY,
+    BRANCH_KIND_EDIT,
+  ];
+
+  static final $core.List<BranchKind?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 2);
+  static BranchKind? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const BranchKind._(super.value, super.name);
+}
+
 const $core.bool _omitEnumNames =
     $core.bool.fromEnvironment('protobuf.omit_enum_names');

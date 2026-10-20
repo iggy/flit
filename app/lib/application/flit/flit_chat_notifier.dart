@@ -212,6 +212,28 @@ class FlitChatNotifier extends Notifier<FlitChatState> {
     );
   }
 
+  /// Starts a new branch that answers user message [messageId] again.
+  Future<String?> retryFrom(String messageId) {
+    final client = ref.read(flitDeviceNameProvider);
+    return _run(
+      (r) => r.retryFromMessage(sessionId, messageId, client: client),
+    );
+  }
+
+  /// Starts a new branch with [text] in place of user message [messageId].
+  Future<String?> editAndResend(String messageId, String text) {
+    final client = ref.read(flitDeviceNameProvider);
+    return _run(
+      (r) => r.editMessage(sessionId, messageId, text, client: client),
+    );
+  }
+
+  /// Shows another branch of the conversation, for every client.
+  Future<String?> switchBranch(String branchId) {
+    final client = ref.read(flitDeviceNameProvider);
+    return _run((r) => r.switchBranch(sessionId, branchId, client: client));
+  }
+
   /// Marks the turn that produced [messageId] as good or bad.
   Future<String?> rateTurn(String messageId, {required bool good}) {
     return _run(

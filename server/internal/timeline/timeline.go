@@ -265,6 +265,17 @@ func (p *printer) event(ev *flitv1.Event) {
 			p.line(at, 1, "queued message delivered after %s", dur(at.Sub(q.at)))
 		}
 		delete(p.queued, d.QueueId)
+	case ev.GetBranchCreated() != nil:
+		b := ev.GetBranchCreated()
+		kind := "retry of"
+		if b.Kind == flitv1.BranchKind_BRANCH_KIND_EDIT {
+			kind = "edit of"
+		}
+		p.line(at, 0, "branch %s: %s %s, forked from %s after seq %d%s", b.BranchId, kind, b.MessageId,
+			branchName(b.ParentBranchId), b.ForkSeq, paren(b.Client))
+	case ev.GetBranchSwitched() != nil:
+		b := ev.GetBranchSwitched()
+		p.line(at, 0, "switched to branch %s%s", branchName(b.BranchId), paren(b.Client))
 	case ev.GetToolOutput() != nil, ev.GetTodoUpdated() != nil, ev.GetFeedback() != nil, ev.GetPermissionCheck() != nil:
 		// Not timeline material.
 	}
@@ -401,6 +412,13 @@ func used(tokens, length int64) string {
 		return fmt.Sprintf("%d tokens", tokens)
 	}
 	return fmt.Sprintf("%d/%d tokens (%d%%)", tokens, length, tokens*100/length)
+}
+
+func branchName(id string) string {
+	if id == "" {
+		return "root"
+	}
+	return id
 }
 
 func ms(n int64) time.Duration { return time.Duration(n) * time.Millisecond }

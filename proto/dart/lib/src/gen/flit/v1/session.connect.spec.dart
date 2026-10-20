@@ -209,4 +209,37 @@ abstract final class SessionService {
     flitv1session.ListSkillsResponse.new,
     idempotency: connect.Idempotency.noSideEffects,
   );
+
+  /// RetryFromMessage starts a new branch of the conversation that keeps
+  /// user message message_id (on the active branch's path) and everything
+  /// before it, drops what came after, and runs the turn again with the
+  /// session's current model. EditMessage does the same but forks just
+  /// before the message and sends text in its place. Both switch the
+  /// session to the new branch (BranchCreated, BranchSwitched) and fail
+  /// with FAILED_PRECONDITION while a turn is running (Interrupt first) or
+  /// while messages are queued (send or cancel them first). Files the agent
+  /// changed stay as they are: a branch only forks the conversation.
+  static const retryFromMessage = connect.Spec(
+    '/$name/RetryFromMessage',
+    connect.StreamType.unary,
+    flitv1session.RetryFromMessageRequest.new,
+    flitv1session.RetryFromMessageResponse.new,
+  );
+
+  static const editMessage = connect.Spec(
+    '/$name/EditMessage',
+    connect.StreamType.unary,
+    flitv1session.EditMessageRequest.new,
+    flitv1session.EditMessageResponse.new,
+  );
+
+  /// SwitchBranch makes another branch the active one: the next message
+  /// continues it and the model sees its history. FAILED_PRECONDITION while
+  /// a turn is running.
+  static const switchBranch = connect.Spec(
+    '/$name/SwitchBranch',
+    connect.StreamType.unary,
+    flitv1session.SwitchBranchRequest.new,
+    flitv1session.SwitchBranchResponse.new,
+  );
 }

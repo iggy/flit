@@ -71,7 +71,7 @@ this response".
 ```json
 {
   "type": "model_call", "format_version": 1,
-  "id": "msg_…", "session_id": "ses_…", "turn_id": "msg_…", "task": "chat",
+  "id": "msg_…", "session_id": "ses_…", "turn_id": "msg_…", "branch_id": "br_…", "task": "chat",
   "project": {"id": "proj_…", "name": "app"},
   "created_at": "2026-10-14T15:30:00Z",
   "provider": "llama", "model": "qwen3-coder", "reasoning_effort": "low",
@@ -117,7 +117,7 @@ response, so it includes every tool call and tool result in between.
 ```json
 {
   "type": "turn", "format_version": 1,
-  "turn_id": "msg_…", "session_id": "ses_…", "project": {…},
+  "turn_id": "msg_…", "branch_id": "br_…", "branch_head": true, "session_id": "ses_…", "project": {…},
   "created_at": "…", "provider": "llama", "model": "qwen3-coder", "reasoning_effort": "low",
   "model_calls": ["msg_…", "msg_…"],
   "messages": [ …system, user, assistant(tool_calls), tool, …, assistant(final)… ],
@@ -132,7 +132,10 @@ response, so it includes every tool call and tool result in between.
 ```
 
 A turn's conversation comes from its `chat` calls only (so a turn that was
-compacted part way through shows the summary and the steps kept after it). `permission_checks`
+compacted part way through shows the summary and the steps kept after it).
+`branch_head` marks the last turn of a branch (see below): its `messages`
+are that branch's whole conversation, as far as compaction left it.
+`permission_checks`
 are the safety check's verdicts (`safe`, `ask`, `block` or `error`) on the
 turn's shell commands; each one's model call is a separate `model_call`
 record with `task: "permission"`.
@@ -140,17 +143,55 @@ record with `task: "permission"`.
 ### `session`
 
 A summary of a session: its turns, the models used, and all its ratings
-(each with the `turn_id`/`model_call_id` it rates; model ratings given
-without a reply have neither).
+(each with the `turn_id`/`model_call_id`/`branch_id` it rates; model
+ratings given without a reply have neither).
 
 ```json
 {
   "type": "session", "format_version": 1,
   "session_id": "ses_…", "project": {…}, "working_dir": "/home/me/app",
   "created_at": "…", "turns": ["msg_…"], "models": ["llama/qwen3-coder"],
-  "ratings": [ … ]
+  "ratings": [ … ],
+  "branches": [
+    {"id": "", "head_turn_id": "msg_…"},
+    {"id": "br_…", "parent_id": "", "fork_seq": 41, "kind": "retry", "message_id": "msg_…",
+     "head_turn_id": "msg_…", "head_branch_id": "br_…"}
+  ]
 }
 ```
+
+### Branches
+
+A session can fork: "retry from here" and "edit and resend" start a new
+branch of the conversation (see [branches.md](branches.md)). In exports:
+
+- Records carry `branch_id`, the branch the call or turn ran on. It is
+  left out for the root branch, so a session that never forked exports as
+  before.
+- A turn is a user message answered on one branch. A retry answers the
+  same user message again on another branch, so two `turn` records can
+  share a `turn_id`; `(turn_id, branch_id)` identifies a turn.
+- Turns before a fork are shared by the branches and written once, with
+  their own ratings. Ratings are never copied onto other branches' turns
+  or calls.
+- **One conversation per branch**: the `turn` record with `branch_head`
+  is the branch's last turn, and its messages run from the root (or the
+  latest compaction summary on the branch's path) to the end of that
+  branch. Keep only those (`jq 'select(.type == "turn" and
+  .branch_head)'`) to get every branch as its own conversation without
+  the shorter prefixes. A session that never forked has one head: its
+  last turn.
+- The `session` record lists `branches` when the session forked: each
+  with its parent, `fork_seq` (the parent's events up to this seq are
+  part of the branch), `kind` (`retry` or `edit`), the user message it
+  was made from, and its head turn (`head_branch_id` names an ancestor
+  when the branch has no turn of its own yet). The root branch has the
+  empty id.
+- A compaction belongs to the branch it ran on: branches forked before
+  it keep their full history, branches forked after it inherit it. Its
+  `model_call` record (task `compaction`) carries that `branch_id`.
+- Filters (`--since`, `--model`, …) apply first: heads are the last turns
+  among the exported calls.
 
 ### Ratings
 

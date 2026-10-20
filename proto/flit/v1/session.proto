@@ -109,6 +109,23 @@ service SessionService {
   rpc ListSkills(ListSkillsRequest) returns (ListSkillsResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
   }
+
+  // RetryFromMessage starts a new branch of the conversation that keeps
+  // user message message_id (on the active branch's path) and everything
+  // before it, drops what came after, and runs the turn again with the
+  // session's current model. EditMessage does the same but forks just
+  // before the message and sends text in its place. Both switch the
+  // session to the new branch (BranchCreated, BranchSwitched) and fail
+  // with FAILED_PRECONDITION while a turn is running (Interrupt first) or
+  // while messages are queued (send or cancel them first). Files the agent
+  // changed stay as they are: a branch only forks the conversation.
+  rpc RetryFromMessage(RetryFromMessageRequest) returns (RetryFromMessageResponse);
+  rpc EditMessage(EditMessageRequest) returns (EditMessageResponse);
+
+  // SwitchBranch makes another branch the active one: the next message
+  // continues it and the model sees its history. FAILED_PRECONDITION while
+  // a turn is running.
+  rpc SwitchBranch(SwitchBranchRequest) returns (SwitchBranchResponse);
 }
 
 // TaskState is what a session's agent is doing.
@@ -154,6 +171,8 @@ message Session {
   repeated string mcp_servers = 16;
   // Yolo mode: every shell command runs unless a deny rule matches.
   bool yolo = 17;
+  // The active branch (see Event.branch_id); empty is the root branch.
+  string branch_id = 18;
 }
 
 message CreateSessionRequest {
@@ -377,6 +396,46 @@ message SetMcpServerRequest {
   bool enabled = 3;
 }
 
+message RetryFromMessageRequest {
+  string session_id = 1;
+  // A user message on the active branch's path.
+  string message_id = 2;
+  // Who asked, for the log.
+  string client = 3;
+}
+
+message RetryFromMessageResponse {
+  // The new branch.
+  string branch_id = 1;
+  // Sequence number of its BranchCreated event.
+  int64 seq = 2;
+}
+
+message EditMessageRequest {
+  string session_id = 1;
+  // A user message on the active branch's path.
+  string message_id = 2;
+  // The new text. Required.
+  string text = 3;
+  string client = 4;
+}
+
+message EditMessageResponse {
+  string branch_id = 1;
+  int64 seq = 2;
+}
+
+message SwitchBranchRequest {
+  string session_id = 1;
+  // Empty is the root branch.
+  string branch_id = 2;
+  string client = 3;
+}
+
+message SwitchBranchResponse {
+  Session session = 1;
+}
+
 message SetMcpServerResponse {
   Session session = 1;
 }
@@ -406,6 +465,13 @@ message Event {
   // Per-session sequence number, starting at 1, with no gaps.
   int64 seq = 2;
   google.protobuf.Timestamp time = 3;
+  // The branch the event belongs to: the session's active branch when it
+  // was recorded. Empty is the root branch (every event of a session that
+  // never forked). A branch's history is its ancestors' events up to each
+  // fork point plus its own events. Session-wide events (task state,
+  // model, yolo, MCP servers, project, queue, branches) apply whatever
+  // their branch_id.
+  string branch_id = 4;
 
   oneof payload {
     MessageStarted message_started = 10;
@@ -439,6 +505,8 @@ message Event {
     ReasoningEndIgnored reasoning_end_ignored = 38;
     CompactionStarted compaction_started = 39;
     CompactionDone compaction_done = 40;
+    BranchCreated branch_created = 41;
+    BranchSwitched branch_switched = 42;
   }
 }
 
@@ -882,4 +950,36 @@ message CompactionDone {
   int32 kept_turns = 13;
   // Set when it failed (or was interrupted).
   string error = 14;
+}
+
+enum BranchKind {
+  BRANCH_KIND_UNSPECIFIED = 0;
+  // RetryFromMessage: the same user message, answered again.
+  BRANCH_KIND_RETRY = 1;
+  // EditMessage: a different user message in its place.
+  BRANCH_KIND_EDIT = 2;
+}
+
+// BranchCreated is a new branch of the conversation. It holds its parent's
+// events with seq <= fork_seq (and, through the parent, the parent's
+// ancestors' up to their fork points), then its own. Branches that share a
+// parent and fork_seq are alternatives at the same point: clients show
+// them as "2 of 3" on the first message after the fork.
+message BranchCreated {
+  string branch_id = 1;
+  // Empty is the root branch.
+  string parent_branch_id = 2;
+  int64 fork_seq = 3;
+  BranchKind kind = 4;
+  // The user message it was made from: kept by a retry, replaced by an
+  // edit.
+  string message_id = 5;
+  string client = 6;
+}
+
+// BranchSwitched makes branch_id the active branch. It is recorded on
+// that branch.
+message BranchSwitched {
+  string branch_id = 1;
+  string client = 2;
 }

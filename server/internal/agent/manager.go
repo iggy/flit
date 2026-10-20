@@ -135,6 +135,9 @@ func (m *Manager) session(ctx context.Context, id string) (*session, error) {
 	if err := s.loadQueue(ctx); err != nil {
 		return nil, err
 	}
+	if err := s.loadBranches(ctx); err != nil {
+		return nil, err
+	}
 	m.sessions[id] = s
 	return s, nil
 }
@@ -513,6 +516,47 @@ func (m *Manager) MoveSession(ctx context.Context, id, projectID string) (store.
 		return store.Session{}, err
 	}
 	return s.move(ctx, p.ID)
+}
+
+// RetryFromMessage starts a new branch that keeps user message msgID and
+// answers it again with the session's current model.
+func (m *Manager) RetryFromMessage(ctx context.Context, id, msgID, client string) (ForkResult, error) {
+	return m.fork(ctx, id, msgID, "", client, false)
+}
+
+// EditMessage starts a new branch where text replaces user message msgID,
+// and runs a turn on it.
+func (m *Manager) EditMessage(ctx context.Context, id, msgID, text, client string) (ForkResult, error) {
+	if strings.TrimSpace(text) == "" {
+		return ForkResult{}, invalid("text is empty")
+	}
+	return m.fork(ctx, id, msgID, text, client, true)
+}
+
+func (m *Manager) fork(ctx context.Context, id, msgID, text, client string, edit bool) (ForkResult, error) {
+	if msgID == "" {
+		return ForkResult{}, invalid("message_id is required")
+	}
+	s, err := m.session(ctx, id)
+	if err != nil {
+		return ForkResult{}, err
+	}
+	if m.closing.Load() {
+		return ForkResult{}, errors.New("flit is shutting down")
+	}
+	return s.fork(ctx, msgID, text, client, edit)
+}
+
+// SwitchBranch makes another branch of the session active.
+func (m *Manager) SwitchBranch(ctx context.Context, id, branchID, client string) (store.Session, error) {
+	s, err := m.session(ctx, id)
+	if err != nil {
+		return store.Session{}, err
+	}
+	if err := s.switchBranch(branchID, client); err != nil {
+		return store.Session{}, err
+	}
+	return s.snapshot(), nil
 }
 
 // Rating is a good/bad mark on a turn or a model.

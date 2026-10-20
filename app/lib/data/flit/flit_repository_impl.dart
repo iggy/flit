@@ -206,6 +206,59 @@ final class FlitRepositoryImpl implements FlitRepository {
   }
 
   @override
+  Future<void> retryFromMessage(
+    String sessionId,
+    String messageId, {
+    String client = '',
+  }) {
+    return flitCall(() async {
+      await _sessions.retryFromMessage(
+        pb.RetryFromMessageRequest(
+          sessionId: sessionId,
+          messageId: messageId,
+          client: client,
+        ),
+      );
+    });
+  }
+
+  @override
+  Future<void> editMessage(
+    String sessionId,
+    String messageId,
+    String text, {
+    String client = '',
+  }) {
+    return flitCall(() async {
+      await _sessions.editMessage(
+        pb.EditMessageRequest(
+          sessionId: sessionId,
+          messageId: messageId,
+          text: text,
+          client: client,
+        ),
+      );
+    });
+  }
+
+  @override
+  Future<void> switchBranch(
+    String sessionId,
+    String branchId, {
+    String client = '',
+  }) {
+    return flitCall(() async {
+      await _sessions.switchBranch(
+        pb.SwitchBranchRequest(
+          sessionId: sessionId,
+          branchId: branchId,
+          client: client,
+        ),
+      );
+    });
+  }
+
+  @override
   Future<void> answerPrompt(
     String sessionId,
     String promptId, {

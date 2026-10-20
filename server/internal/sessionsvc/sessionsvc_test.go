@@ -165,6 +165,10 @@ func TestSessionAPI(t *testing.T) {
 		{err: second(c.AnswerPrompt(ctx, connect.NewRequest(&flitv1.AnswerPromptRequest{SessionId: s.Id, PromptId: "p"}))), code: connect.CodeInvalidArgument},
 		{err: second(c.AnswerPrompt(ctx, connect.NewRequest(&flitv1.AnswerPromptRequest{SessionId: s.Id, PromptId: "p", Decision: flitv1.PromptDecision_PROMPT_DECISION_ALLOW}))), code: connect.CodeFailedPrecondition},
 		{err: second(c.SetModel(ctx, connect.NewRequest(&flitv1.SetModelRequest{SessionId: s.Id, Provider: "nope", Model: "x"}))), code: connect.CodeInvalidArgument},
+		{err: second(c.RetryFromMessage(ctx, connect.NewRequest(&flitv1.RetryFromMessageRequest{SessionId: s.Id, MessageId: "msg_nope"}))), code: connect.CodeInvalidArgument},
+		{err: second(c.EditMessage(ctx, connect.NewRequest(&flitv1.EditMessageRequest{SessionId: s.Id, MessageId: "msg_nope", Text: "x"}))), code: connect.CodeInvalidArgument},
+		{err: second(c.SwitchBranch(ctx, connect.NewRequest(&flitv1.SwitchBranchRequest{SessionId: s.Id, BranchId: "br_nope"}))), code: connect.CodeInvalidArgument},
+		{err: second(c.SwitchBranch(ctx, connect.NewRequest(&flitv1.SwitchBranchRequest{}))), code: connect.CodeInvalidArgument},
 	} {
 		if connect.CodeOf(tc.err) != tc.code {
 			t.Errorf("got %v, want %v", tc.err, tc.code)

@@ -22,8 +22,11 @@ type ModelCall struct {
 	SessionID string
 	TeamID    string
 	ProjectID string
-	// TurnID is the id of the user message that started the turn.
+	// TurnID is the id of the user message that started the turn. A retry
+	// runs the same user message again on a new branch, so a turn is
+	// TurnID on BranchID.
 	TurnID    string
+	BranchID  string
 	CreatedAt time.Time
 	// Task is the kind of work: "chat" (the agent's own calls) or
 	// "permission" (a shell command safety check). Empty means chat.
@@ -57,6 +60,9 @@ type Rating struct {
 	ProjectID   string
 	TurnID      string
 	ModelCallID string
+	// BranchID is the branch of the rated call (the active branch for a
+	// model rating without one).
+	BranchID string
 	// Target is "turn" or "model".
 	Target    string
 	Good      bool
@@ -106,10 +112,10 @@ func (s *Store) RecordModelCall(ctx context.Context, c *ModelCall, messages [][]
 	}
 	_, err = tx.ExecContext(ctx, `INSERT INTO model_calls (id, session_id, team_id, project_id, turn_id, created_at,
 		provider, model, effort, flit_version, role, skills, request_messages, request_tools, request_params,
-		response, finish_reason, usage, metrics, error, task) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		response, finish_reason, usage, metrics, error, task, branch_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		c.ID, c.SessionID, c.TeamID, c.ProjectID, c.TurnID, c.CreatedAt.UnixNano(),
 		c.Provider, c.Model, c.Effort, c.FlitVersion, c.Role, string(skills), string(msgs), toolsHash, nullJSON(c.Params),
-		nullJSON(c.Response), c.FinishReason, nullJSON(c.Usage), nullJSON(c.Metrics), c.Error, taskOrChat(c.Task))
+		nullJSON(c.Response), c.FinishReason, nullJSON(c.Usage), nullJSON(c.Metrics), c.Error, taskOrChat(c.Task), c.BranchID)
 	if err != nil {
 		return err
 	}
@@ -185,9 +191,9 @@ func (s *Store) AddRating(ctx context.Context, r *Rating) error {
 		r.CreatedAt = time.Now()
 	}
 	_, err := s.db.ExecContext(ctx, `INSERT INTO ratings (id, session_id, team_id, project_id, turn_id, model_call_id,
-		target, good, note, client, provider, model, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		target, good, note, client, provider, model, created_at, branch_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		r.ID, r.SessionID, r.TeamID, r.ProjectID, r.TurnID, r.ModelCallID, r.Target, r.Good, r.Note, r.Client,
-		r.Provider, r.Model, r.CreatedAt.UnixNano())
+		r.Provider, r.Model, r.CreatedAt.UnixNano(), r.BranchID)
 	return err
 }
 
@@ -224,7 +230,7 @@ type ExportCall struct {
 func (s *Store) ExportModelCalls(ctx context.Context, f ExportFilter, fn func(ExportCall) error) error {
 	q := `SELECT c.id, c.session_id, c.team_id, c.project_id, c.turn_id, c.created_at, c.provider, c.model, c.effort,
 		c.flit_version, c.role, c.skills, c.request_params, c.response, c.finish_reason, c.usage, c.metrics, c.error,
-		c.task, p.name, s.working_dir
+		c.task, c.branch_id, p.name, s.working_dir
 		FROM model_calls c JOIN projects p ON p.id = c.project_id JOIN sessions s ON s.id = c.session_id
 		WHERE p.export_enabled = 1`
 	var args []any
@@ -256,7 +262,7 @@ func (s *Store) ExportModelCalls(ctx context.Context, f ExportFilter, fn func(Ex
 		var skills, params, response, usage, metrics string
 		if err := rows.Scan(&c.ID, &c.SessionID, &c.TeamID, &c.ProjectID, &c.TurnID, &created, &c.Provider, &c.Model,
 			&c.Effort, &c.FlitVersion, &c.Role, &skills, &params, &response, &c.FinishReason, &usage, &metrics, &c.Error,
-			&c.Task, &c.ProjectName, &c.WorkingDir); err != nil {
+			&c.Task, &c.BranchID, &c.ProjectName, &c.WorkingDir); err != nil {
 			rows.Close()
 			return err
 		}
@@ -282,7 +288,7 @@ func (s *Store) RatingsFor(ctx context.Context, sessionIDs []string) ([]Rating, 
 	if len(sessionIDs) == 0 {
 		return nil, nil
 	}
-	q := `SELECT id, session_id, team_id, project_id, turn_id, model_call_id, target, good, note, client, provider, model, created_at
+	q := `SELECT id, session_id, team_id, project_id, turn_id, model_call_id, target, good, note, client, provider, model, created_at, branch_id
 		FROM ratings WHERE session_id IN (?` + strings.Repeat(",?", len(sessionIDs)-1) + `) ORDER BY created_at, id`
 	args := make([]any, len(sessionIDs))
 	for i, id := range sessionIDs {
@@ -298,7 +304,7 @@ func (s *Store) RatingsFor(ctx context.Context, sessionIDs []string) ([]Rating, 
 		var r Rating
 		var created int64
 		if err := rows.Scan(&r.ID, &r.SessionID, &r.TeamID, &r.ProjectID, &r.TurnID, &r.ModelCallID, &r.Target, &r.Good,
-			&r.Note, &r.Client, &r.Provider, &r.Model, &created); err != nil {
+			&r.Note, &r.Client, &r.Provider, &r.Model, &created, &r.BranchID); err != nil {
 			return nil, err
 		}
 		r.CreatedAt = time.Unix(0, created)

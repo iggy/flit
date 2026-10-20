@@ -403,4 +403,67 @@ extension type SessionServiceClient (connect.Transport _transport) {
       onTrailer: onTrailer,
     );
   }
+
+  /// RetryFromMessage starts a new branch of the conversation that keeps
+  /// user message message_id (on the active branch's path) and everything
+  /// before it, drops what came after, and runs the turn again with the
+  /// session's current model. EditMessage does the same but forks just
+  /// before the message and sends text in its place. Both switch the
+  /// session to the new branch (BranchCreated, BranchSwitched) and fail
+  /// with FAILED_PRECONDITION while a turn is running (Interrupt first) or
+  /// while messages are queued (send or cancel them first). Files the agent
+  /// changed stay as they are: a branch only forks the conversation.
+  Future<flitv1session.RetryFromMessageResponse> retryFromMessage(
+    flitv1session.RetryFromMessageRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.SessionService.retryFromMessage,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
+
+  Future<flitv1session.EditMessageResponse> editMessage(
+    flitv1session.EditMessageRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.SessionService.editMessage,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
+
+  /// SwitchBranch makes another branch the active one: the next message
+  /// continues it and the model sees its history. FAILED_PRECONDITION while
+  /// a turn is running.
+  Future<flitv1session.SwitchBranchResponse> switchBranch(
+    flitv1session.SwitchBranchRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.SessionService.switchBranch,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
 }

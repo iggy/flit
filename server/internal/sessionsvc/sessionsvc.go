@@ -48,6 +48,7 @@ func toProto(s store.Session) *flitv1.Session {
 		ContextLength: s.ContextLength,
 		McpServers:    s.MCPServers,
 		Yolo:          s.Yolo,
+		BranchId:      s.BranchID,
 	}
 }
 
@@ -62,7 +63,8 @@ func connectErr(err error) error {
 		code = connect.CodeNotFound
 	case errors.Is(err, agent.ErrInvalid):
 		code = connect.CodeInvalidArgument
-	case errors.Is(err, agent.ErrBusy), errors.Is(err, agent.ErrPromptGone), errors.Is(err, agent.ErrNoCallToRetry), errors.Is(err, agent.ErrQueueGone), errors.Is(err, agent.ErrCantEndReasoning):
+	case errors.Is(err, agent.ErrBusy), errors.Is(err, agent.ErrPromptGone), errors.Is(err, agent.ErrNoCallToRetry), errors.Is(err, agent.ErrQueueGone), errors.Is(err, agent.ErrCantEndReasoning),
+		errors.Is(err, agent.ErrQueued):
 		code = connect.CodeFailedPrecondition
 	case errors.Is(err, agent.ErrSlowClient):
 		code = connect.CodeResourceExhausted
@@ -237,6 +239,54 @@ func (s *Service) RetryModelCall(ctx context.Context, req *connect.Request[flitv
 		return nil, connectErr(err)
 	}
 	return connect.NewResponse(&flitv1.RetryModelCallResponse{}), nil
+}
+
+// RetryFromMessage implements flitv1connect.SessionServiceHandler.
+func (s *Service) RetryFromMessage(ctx context.Context, req *connect.Request[flitv1.RetryFromMessageRequest]) (*connect.Response[flitv1.RetryFromMessageResponse], error) {
+	m := req.Msg
+	if err := required("session_id", m.SessionId); err != nil {
+		return nil, err
+	}
+	res, err := s.M.RetryFromMessage(ctx, m.SessionId, m.MessageId, orClientName(ctx, m.Client))
+	if err != nil {
+		return nil, connectErr(err)
+	}
+	return connect.NewResponse(&flitv1.RetryFromMessageResponse{BranchId: res.BranchID, Seq: res.Seq}), nil
+}
+
+// EditMessage implements flitv1connect.SessionServiceHandler.
+func (s *Service) EditMessage(ctx context.Context, req *connect.Request[flitv1.EditMessageRequest]) (*connect.Response[flitv1.EditMessageResponse], error) {
+	m := req.Msg
+	if err := required("session_id", m.SessionId); err != nil {
+		return nil, err
+	}
+	res, err := s.M.EditMessage(ctx, m.SessionId, m.MessageId, m.Text, orClientName(ctx, m.Client))
+	if err != nil {
+		return nil, connectErr(err)
+	}
+	return connect.NewResponse(&flitv1.EditMessageResponse{BranchId: res.BranchID, Seq: res.Seq}), nil
+}
+
+// SwitchBranch implements flitv1connect.SessionServiceHandler.
+func (s *Service) SwitchBranch(ctx context.Context, req *connect.Request[flitv1.SwitchBranchRequest]) (*connect.Response[flitv1.SwitchBranchResponse], error) {
+	m := req.Msg
+	if err := required("session_id", m.SessionId); err != nil {
+		return nil, err
+	}
+	sess, err := s.M.SwitchBranch(ctx, m.SessionId, m.BranchId, orClientName(ctx, m.Client))
+	if err != nil {
+		return nil, connectErr(err)
+	}
+	return connect.NewResponse(&flitv1.SwitchBranchResponse{Session: toProto(sess)}), nil
+}
+
+// orClientName is the client the request names, else the paired device's
+// name.
+func orClientName(ctx context.Context, client string) string {
+	if client != "" {
+		return client
+	}
+	return clientName(ctx)
 }
 
 // AnswerPrompt implements flitv1connect.SessionServiceHandler.

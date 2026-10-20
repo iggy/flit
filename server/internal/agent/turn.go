@@ -53,7 +53,7 @@ func (s *session) runTurn(ctx context.Context, turnID string) {
 	// else on the server wipes it.
 	if ref := s.lastSlot; ref != nil {
 		s.lastSlot = nil
-		s.m.saveAfterTurn(s, ref.provider, ref.router, ref.model, ref.slot)
+		s.m.saveAfterTurn(s, ref)
 	}
 	s.endTurn(e)
 }
@@ -176,7 +176,8 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 			prefs, _ := s.m.store.ModelPrefs(context.Background(), info.TeamID)
 			req.ReasoningControl = !prefs[store.ModelKey{Provider: info.Provider, Model: info.Model}].NoReasoningEnd
 			var restored *flitv1.Event
-			slot, restored = s.m.prepareSlot(ctx, cfg, info, provider, router, msgID, step == 0)
+			keys := s.kvKeys(cr.compaction != nil)
+			slot, restored = s.m.prepareSlot(ctx, cfg, info, keys, provider, router, msgID, step == 0)
 			if restored != nil {
 				if _, err := s.append(restored); err != nil {
 					return end{}, err
@@ -185,7 +186,7 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 			if slot != nil {
 				cachePrompt := true
 				req.IDSlot, req.CachePrompt = slot, &cachePrompt
-				s.lastSlot = &slotRef{provider: provider, router: router, model: info.Model, slot: *slot}
+				s.lastSlot = &slotRef{provider: provider, router: router, model: info.Model, slot: *slot, key: keys[0]}
 			}
 		}
 		var res *llm.Result
@@ -356,7 +357,8 @@ type chatReq struct {
 	set    []tools.Tool
 	role   *roles.Role
 	skills []string
-	// history is the conversation's events (historyKinds), all of them;
+	// history is the conversation's events (historyKinds) on the active
+	// branch's path;
 	// compaction is the latest one in effect, if any.
 	history    []*flitv1.Event
 	compaction *flitv1.CompactionDone
@@ -368,7 +370,7 @@ type chatReq struct {
 // latest compaction's summary, and the conversation since. stopMsg is set
 // when the session's role can't be loaded.
 func (s *session) chatRequest(ctx context.Context, cfg config.Config, info store.Session) (*chatReq, string, error) {
-	history, err := s.m.store.EventsOfKinds(context.Background(), info.ID, historyKinds...)
+	history, err := s.pathEvents(context.Background(), historyKinds...)
 	if err != nil {
 		return nil, "", err
 	}
@@ -607,7 +609,7 @@ func (s *session) recordCall(info store.Session, turnID, msgID string, role *rol
 		resp["reasoning_content"] = reasoning
 	}
 	c := &store.ModelCall{
-		ID: msgID, SessionID: info.ID, TeamID: info.TeamID, ProjectID: info.ProjectID, TurnID: turnID,
+		ID: msgID, SessionID: info.ID, TeamID: info.TeamID, ProjectID: info.ProjectID, TurnID: turnID, BranchID: info.BranchID,
 		Provider: info.Provider, Model: info.Model, Effort: info.Effort, FlitVersion: buildinfo.Get().Version,
 		Skills: skillNames, Params: params,
 	}

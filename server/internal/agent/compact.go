@@ -359,7 +359,7 @@ func (s *session) requestCompact(client, instructions string) (queued bool, err 
 	if s.info.Provider == "" || s.info.Model == "" {
 		return false, invalid("no model chosen for this session")
 	}
-	history, err := s.m.store.EventsOfKinds(context.Background(), s.info.ID, historyKinds...)
+	history, err := s.pathEventsLocked(context.Background(), historyKinds...)
 	if err != nil {
 		return false, err
 	}
