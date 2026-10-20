@@ -87,6 +87,15 @@ const (
 	// SessionServiceListSkillsProcedure is the fully-qualified name of the SessionService's ListSkills
 	// RPC.
 	SessionServiceListSkillsProcedure = "/flit.v1.SessionService/ListSkills"
+	// SessionServiceRetryFromMessageProcedure is the fully-qualified name of the SessionService's
+	// RetryFromMessage RPC.
+	SessionServiceRetryFromMessageProcedure = "/flit.v1.SessionService/RetryFromMessage"
+	// SessionServiceEditMessageProcedure is the fully-qualified name of the SessionService's
+	// EditMessage RPC.
+	SessionServiceEditMessageProcedure = "/flit.v1.SessionService/EditMessage"
+	// SessionServiceSwitchBranchProcedure is the fully-qualified name of the SessionService's
+	// SwitchBranch RPC.
+	SessionServiceSwitchBranchProcedure = "/flit.v1.SessionService/SwitchBranch"
 )
 
 // SessionServiceClient is a client for the flit.v1.SessionService service.
@@ -163,6 +172,21 @@ type SessionServiceClient interface {
 	// ListSkills lists the skills the session's agent can load: the repo's
 	// own (.agents/skills, .claude/skills) and the global ones.
 	ListSkills(context.Context, *connect.Request[v1.ListSkillsRequest]) (*connect.Response[v1.ListSkillsResponse], error)
+	// RetryFromMessage starts a new branch of the conversation that keeps
+	// user message message_id (on the active branch's path) and everything
+	// before it, drops what came after, and runs the turn again with the
+	// session's current model. EditMessage does the same but forks just
+	// before the message and sends text in its place. Both switch the
+	// session to the new branch (BranchCreated, BranchSwitched) and fail
+	// with FAILED_PRECONDITION while a turn is running (Interrupt first) or
+	// while messages are queued (send or cancel them first). Files the agent
+	// changed stay as they are: a branch only forks the conversation.
+	RetryFromMessage(context.Context, *connect.Request[v1.RetryFromMessageRequest]) (*connect.Response[v1.RetryFromMessageResponse], error)
+	EditMessage(context.Context, *connect.Request[v1.EditMessageRequest]) (*connect.Response[v1.EditMessageResponse], error)
+	// SwitchBranch makes another branch the active one: the next message
+	// continues it and the model sees its history. FAILED_PRECONDITION while
+	// a turn is running.
+	SwitchBranch(context.Context, *connect.Request[v1.SwitchBranchRequest]) (*connect.Response[v1.SwitchBranchResponse], error)
 }
 
 // NewSessionServiceClient constructs a client for the flit.v1.SessionService service. By default,
@@ -300,6 +324,24 @@ func NewSessionServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 			connect.WithClientOptions(opts...),
 		),
+		retryFromMessage: connect.NewClient[v1.RetryFromMessageRequest, v1.RetryFromMessageResponse](
+			httpClient,
+			baseURL+SessionServiceRetryFromMessageProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("RetryFromMessage")),
+			connect.WithClientOptions(opts...),
+		),
+		editMessage: connect.NewClient[v1.EditMessageRequest, v1.EditMessageResponse](
+			httpClient,
+			baseURL+SessionServiceEditMessageProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("EditMessage")),
+			connect.WithClientOptions(opts...),
+		),
+		switchBranch: connect.NewClient[v1.SwitchBranchRequest, v1.SwitchBranchResponse](
+			httpClient,
+			baseURL+SessionServiceSwitchBranchProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("SwitchBranch")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -325,6 +367,9 @@ type sessionServiceClient struct {
 	listMcpServers      *connect.Client[v1.ListMcpServersRequest, v1.ListMcpServersResponse]
 	setMcpServer        *connect.Client[v1.SetMcpServerRequest, v1.SetMcpServerResponse]
 	listSkills          *connect.Client[v1.ListSkillsRequest, v1.ListSkillsResponse]
+	retryFromMessage    *connect.Client[v1.RetryFromMessageRequest, v1.RetryFromMessageResponse]
+	editMessage         *connect.Client[v1.EditMessageRequest, v1.EditMessageResponse]
+	switchBranch        *connect.Client[v1.SwitchBranchRequest, v1.SwitchBranchResponse]
 }
 
 // CreateSession calls flit.v1.SessionService.CreateSession.
@@ -427,6 +472,21 @@ func (c *sessionServiceClient) ListSkills(ctx context.Context, req *connect.Requ
 	return c.listSkills.CallUnary(ctx, req)
 }
 
+// RetryFromMessage calls flit.v1.SessionService.RetryFromMessage.
+func (c *sessionServiceClient) RetryFromMessage(ctx context.Context, req *connect.Request[v1.RetryFromMessageRequest]) (*connect.Response[v1.RetryFromMessageResponse], error) {
+	return c.retryFromMessage.CallUnary(ctx, req)
+}
+
+// EditMessage calls flit.v1.SessionService.EditMessage.
+func (c *sessionServiceClient) EditMessage(ctx context.Context, req *connect.Request[v1.EditMessageRequest]) (*connect.Response[v1.EditMessageResponse], error) {
+	return c.editMessage.CallUnary(ctx, req)
+}
+
+// SwitchBranch calls flit.v1.SessionService.SwitchBranch.
+func (c *sessionServiceClient) SwitchBranch(ctx context.Context, req *connect.Request[v1.SwitchBranchRequest]) (*connect.Response[v1.SwitchBranchResponse], error) {
+	return c.switchBranch.CallUnary(ctx, req)
+}
+
 // SessionServiceHandler is an implementation of the flit.v1.SessionService service.
 type SessionServiceHandler interface {
 	// CreateSession starts a new, idle session. Give working_dir, or a
@@ -501,6 +561,21 @@ type SessionServiceHandler interface {
 	// ListSkills lists the skills the session's agent can load: the repo's
 	// own (.agents/skills, .claude/skills) and the global ones.
 	ListSkills(context.Context, *connect.Request[v1.ListSkillsRequest]) (*connect.Response[v1.ListSkillsResponse], error)
+	// RetryFromMessage starts a new branch of the conversation that keeps
+	// user message message_id (on the active branch's path) and everything
+	// before it, drops what came after, and runs the turn again with the
+	// session's current model. EditMessage does the same but forks just
+	// before the message and sends text in its place. Both switch the
+	// session to the new branch (BranchCreated, BranchSwitched) and fail
+	// with FAILED_PRECONDITION while a turn is running (Interrupt first) or
+	// while messages are queued (send or cancel them first). Files the agent
+	// changed stay as they are: a branch only forks the conversation.
+	RetryFromMessage(context.Context, *connect.Request[v1.RetryFromMessageRequest]) (*connect.Response[v1.RetryFromMessageResponse], error)
+	EditMessage(context.Context, *connect.Request[v1.EditMessageRequest]) (*connect.Response[v1.EditMessageResponse], error)
+	// SwitchBranch makes another branch the active one: the next message
+	// continues it and the model sees its history. FAILED_PRECONDITION while
+	// a turn is running.
+	SwitchBranch(context.Context, *connect.Request[v1.SwitchBranchRequest]) (*connect.Response[v1.SwitchBranchResponse], error)
 }
 
 // NewSessionServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -634,6 +709,24 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 		connect.WithHandlerOptions(opts...),
 	)
+	sessionServiceRetryFromMessageHandler := connect.NewUnaryHandler(
+		SessionServiceRetryFromMessageProcedure,
+		svc.RetryFromMessage,
+		connect.WithSchema(sessionServiceMethods.ByName("RetryFromMessage")),
+		connect.WithHandlerOptions(opts...),
+	)
+	sessionServiceEditMessageHandler := connect.NewUnaryHandler(
+		SessionServiceEditMessageProcedure,
+		svc.EditMessage,
+		connect.WithSchema(sessionServiceMethods.ByName("EditMessage")),
+		connect.WithHandlerOptions(opts...),
+	)
+	sessionServiceSwitchBranchHandler := connect.NewUnaryHandler(
+		SessionServiceSwitchBranchProcedure,
+		svc.SwitchBranch,
+		connect.WithSchema(sessionServiceMethods.ByName("SwitchBranch")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/flit.v1.SessionService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case SessionServiceCreateSessionProcedure:
@@ -676,6 +769,12 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 			sessionServiceSetMcpServerHandler.ServeHTTP(w, r)
 		case SessionServiceListSkillsProcedure:
 			sessionServiceListSkillsHandler.ServeHTTP(w, r)
+		case SessionServiceRetryFromMessageProcedure:
+			sessionServiceRetryFromMessageHandler.ServeHTTP(w, r)
+		case SessionServiceEditMessageProcedure:
+			sessionServiceEditMessageHandler.ServeHTTP(w, r)
+		case SessionServiceSwitchBranchProcedure:
+			sessionServiceSwitchBranchHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -763,4 +862,16 @@ func (UnimplementedSessionServiceHandler) SetMcpServer(context.Context, *connect
 
 func (UnimplementedSessionServiceHandler) ListSkills(context.Context, *connect.Request[v1.ListSkillsRequest]) (*connect.Response[v1.ListSkillsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.ListSkills is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) RetryFromMessage(context.Context, *connect.Request[v1.RetryFromMessageRequest]) (*connect.Response[v1.RetryFromMessageResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.RetryFromMessage is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) EditMessage(context.Context, *connect.Request[v1.EditMessageRequest]) (*connect.Response[v1.EditMessageResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.EditMessage is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) SwitchBranch(context.Context, *connect.Request[v1.SwitchBranchRequest]) (*connect.Response[v1.SwitchBranchResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.SwitchBranch is not implemented"))
 }

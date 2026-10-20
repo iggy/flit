@@ -61,6 +61,12 @@ abstract class SessionServiceBase extends $pb.GeneratedService {
       $pb.ServerContext ctx, $1.SetMcpServerRequest request);
   $async.Future<$1.ListSkillsResponse> listSkills(
       $pb.ServerContext ctx, $1.ListSkillsRequest request);
+  $async.Future<$1.RetryFromMessageResponse> retryFromMessage(
+      $pb.ServerContext ctx, $1.RetryFromMessageRequest request);
+  $async.Future<$1.EditMessageResponse> editMessage(
+      $pb.ServerContext ctx, $1.EditMessageRequest request);
+  $async.Future<$1.SwitchBranchResponse> switchBranch(
+      $pb.ServerContext ctx, $1.SwitchBranchRequest request);
 
   $pb.GeneratedMessage createRequest($core.String methodName) {
     switch (methodName) {
@@ -104,6 +110,12 @@ abstract class SessionServiceBase extends $pb.GeneratedService {
         return $1.SetMcpServerRequest();
       case 'ListSkills':
         return $1.ListSkillsRequest();
+      case 'RetryFromMessage':
+        return $1.RetryFromMessageRequest();
+      case 'EditMessage':
+        return $1.EditMessageRequest();
+      case 'SwitchBranch':
+        return $1.SwitchBranchRequest();
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }
@@ -153,6 +165,12 @@ abstract class SessionServiceBase extends $pb.GeneratedService {
         return setMcpServer(ctx, request as $1.SetMcpServerRequest);
       case 'ListSkills':
         return listSkills(ctx, request as $1.ListSkillsRequest);
+      case 'RetryFromMessage':
+        return retryFromMessage(ctx, request as $1.RetryFromMessageRequest);
+      case 'EditMessage':
+        return editMessage(ctx, request as $1.EditMessageRequest);
+      case 'SwitchBranch':
+        return switchBranch(ctx, request as $1.SwitchBranchRequest);
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }

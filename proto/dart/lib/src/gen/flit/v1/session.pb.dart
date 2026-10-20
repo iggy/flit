@@ -43,6 +43,7 @@ class Session extends $pb.GeneratedMessage {
     $fixnum.Int64? contextLength,
     $core.Iterable<$core.String>? mcpServers,
     $core.bool? yolo,
+    $core.String? branchId,
   }) {
     final result = Session._();
     if (id != null) result.id = id;
@@ -62,6 +63,7 @@ class Session extends $pb.GeneratedMessage {
     if (contextLength != null) result.contextLength = contextLength;
     if (mcpServers != null) result.mcpServers.addAll(mcpServers);
     if (yolo != null) result.yolo = yolo;
+    if (branchId != null) result.branchId = branchId;
     return result;
   }
 
@@ -98,6 +100,7 @@ class Session extends $pb.GeneratedMessage {
     ..aInt64(15, _omitFieldNames ? '' : 'contextLength')
     ..pPS(16, _omitFieldNames ? '' : 'mcpServers')
     ..aOB(17, _omitFieldNames ? '' : 'yolo')
+    ..aOS(18, _omitFieldNames ? '' : 'branchId')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -280,6 +283,16 @@ class Session extends $pb.GeneratedMessage {
   $core.bool hasYolo() => $_has(16);
   @$pb.TagNumber(17)
   void clearYolo() => $_clearField(17);
+
+  /// The active branch (see Event.branch_id); empty is the root branch.
+  @$pb.TagNumber(18)
+  $core.String get branchId => $_getSZ(17);
+  @$pb.TagNumber(18)
+  set branchId($core.String value) => $_setString(17, value);
+  @$pb.TagNumber(18)
+  $core.bool hasBranchId() => $_has(17);
+  @$pb.TagNumber(18)
+  void clearBranchId() => $_clearField(18);
 }
 
 class CreateSessionRequest extends $pb.GeneratedMessage {
@@ -2819,6 +2832,474 @@ class SetMcpServerRequest extends $pb.GeneratedMessage {
   void clearEnabled() => $_clearField(3);
 }
 
+class RetryFromMessageRequest extends $pb.GeneratedMessage {
+  factory RetryFromMessageRequest({
+    $core.String? sessionId,
+    $core.String? messageId,
+    $core.String? client,
+  }) {
+    final result = RetryFromMessageRequest._();
+    if (sessionId != null) result.sessionId = sessionId;
+    if (messageId != null) result.messageId = messageId;
+    if (client != null) result.client = client;
+    return result;
+  }
+
+  RetryFromMessageRequest._();
+
+  factory RetryFromMessageRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RetryFromMessageRequest()..mergeFromBuffer(data, registry);
+  factory RetryFromMessageRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RetryFromMessageRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RetryFromMessageRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: RetryFromMessageRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'sessionId')
+    ..aOS(2, _omitFieldNames ? '' : 'messageId')
+    ..aOS(3, _omitFieldNames ? '' : 'client')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RetryFromMessageRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RetryFromMessageRequest copyWith(
+          void Function(RetryFromMessageRequest) updates) =>
+      super.copyWith((message) => updates(message as RetryFromMessageRequest))
+          as RetryFromMessageRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use RetryFromMessageRequest() / RetryFromMessageRequest.new instead')
+  static RetryFromMessageRequest create() => RetryFromMessageRequest._();
+  static $pb.GeneratedMessage $_createMessage() => RetryFromMessageRequest._();
+  @$core.override
+  RetryFromMessageRequest createEmptyInstance() => RetryFromMessageRequest._();
+  @$core.pragma('dart2js:noInline')
+  static RetryFromMessageRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RetryFromMessageRequest>(
+          RetryFromMessageRequest.$_createMessage);
+  static RetryFromMessageRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get sessionId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set sessionId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSessionId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSessionId() => $_clearField(1);
+
+  /// A user message on the active branch's path.
+  @$pb.TagNumber(2)
+  $core.String get messageId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set messageId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasMessageId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearMessageId() => $_clearField(2);
+
+  /// Who asked, for the log.
+  @$pb.TagNumber(3)
+  $core.String get client => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set client($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasClient() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearClient() => $_clearField(3);
+}
+
+class RetryFromMessageResponse extends $pb.GeneratedMessage {
+  factory RetryFromMessageResponse({
+    $core.String? branchId,
+    $fixnum.Int64? seq,
+  }) {
+    final result = RetryFromMessageResponse._();
+    if (branchId != null) result.branchId = branchId;
+    if (seq != null) result.seq = seq;
+    return result;
+  }
+
+  RetryFromMessageResponse._();
+
+  factory RetryFromMessageResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RetryFromMessageResponse()..mergeFromBuffer(data, registry);
+  factory RetryFromMessageResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RetryFromMessageResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RetryFromMessageResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: RetryFromMessageResponse.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'branchId')
+    ..aInt64(2, _omitFieldNames ? '' : 'seq')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RetryFromMessageResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RetryFromMessageResponse copyWith(
+          void Function(RetryFromMessageResponse) updates) =>
+      super.copyWith((message) => updates(message as RetryFromMessageResponse))
+          as RetryFromMessageResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use RetryFromMessageResponse() / RetryFromMessageResponse.new instead')
+  static RetryFromMessageResponse create() => RetryFromMessageResponse._();
+  static $pb.GeneratedMessage $_createMessage() => RetryFromMessageResponse._();
+  @$core.override
+  RetryFromMessageResponse createEmptyInstance() =>
+      RetryFromMessageResponse._();
+  @$core.pragma('dart2js:noInline')
+  static RetryFromMessageResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RetryFromMessageResponse>(
+          RetryFromMessageResponse.$_createMessage);
+  static RetryFromMessageResponse? _defaultInstance;
+
+  /// The new branch.
+  @$pb.TagNumber(1)
+  $core.String get branchId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set branchId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasBranchId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearBranchId() => $_clearField(1);
+
+  /// Sequence number of its BranchCreated event.
+  @$pb.TagNumber(2)
+  $fixnum.Int64 get seq => $_getI64(1);
+  @$pb.TagNumber(2)
+  set seq($fixnum.Int64 value) => $_setInt64(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasSeq() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearSeq() => $_clearField(2);
+}
+
+class EditMessageRequest extends $pb.GeneratedMessage {
+  factory EditMessageRequest({
+    $core.String? sessionId,
+    $core.String? messageId,
+    $core.String? text,
+    $core.String? client,
+  }) {
+    final result = EditMessageRequest._();
+    if (sessionId != null) result.sessionId = sessionId;
+    if (messageId != null) result.messageId = messageId;
+    if (text != null) result.text = text;
+    if (client != null) result.client = client;
+    return result;
+  }
+
+  EditMessageRequest._();
+
+  factory EditMessageRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      EditMessageRequest()..mergeFromBuffer(data, registry);
+  factory EditMessageRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      EditMessageRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'EditMessageRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: EditMessageRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'sessionId')
+    ..aOS(2, _omitFieldNames ? '' : 'messageId')
+    ..aOS(3, _omitFieldNames ? '' : 'text')
+    ..aOS(4, _omitFieldNames ? '' : 'client')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  EditMessageRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  EditMessageRequest copyWith(void Function(EditMessageRequest) updates) =>
+      super.copyWith((message) => updates(message as EditMessageRequest))
+          as EditMessageRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use EditMessageRequest() / EditMessageRequest.new instead')
+  static EditMessageRequest create() => EditMessageRequest._();
+  static $pb.GeneratedMessage $_createMessage() => EditMessageRequest._();
+  @$core.override
+  EditMessageRequest createEmptyInstance() => EditMessageRequest._();
+  @$core.pragma('dart2js:noInline')
+  static EditMessageRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<EditMessageRequest>(
+          EditMessageRequest.$_createMessage);
+  static EditMessageRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get sessionId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set sessionId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSessionId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSessionId() => $_clearField(1);
+
+  /// A user message on the active branch's path.
+  @$pb.TagNumber(2)
+  $core.String get messageId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set messageId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasMessageId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearMessageId() => $_clearField(2);
+
+  /// The new text. Required.
+  @$pb.TagNumber(3)
+  $core.String get text => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set text($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasText() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearText() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get client => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set client($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasClient() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearClient() => $_clearField(4);
+}
+
+class EditMessageResponse extends $pb.GeneratedMessage {
+  factory EditMessageResponse({
+    $core.String? branchId,
+    $fixnum.Int64? seq,
+  }) {
+    final result = EditMessageResponse._();
+    if (branchId != null) result.branchId = branchId;
+    if (seq != null) result.seq = seq;
+    return result;
+  }
+
+  EditMessageResponse._();
+
+  factory EditMessageResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      EditMessageResponse()..mergeFromBuffer(data, registry);
+  factory EditMessageResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      EditMessageResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'EditMessageResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: EditMessageResponse.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'branchId')
+    ..aInt64(2, _omitFieldNames ? '' : 'seq')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  EditMessageResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  EditMessageResponse copyWith(void Function(EditMessageResponse) updates) =>
+      super.copyWith((message) => updates(message as EditMessageResponse))
+          as EditMessageResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core
+      .Deprecated('Use EditMessageResponse() / EditMessageResponse.new instead')
+  static EditMessageResponse create() => EditMessageResponse._();
+  static $pb.GeneratedMessage $_createMessage() => EditMessageResponse._();
+  @$core.override
+  EditMessageResponse createEmptyInstance() => EditMessageResponse._();
+  @$core.pragma('dart2js:noInline')
+  static EditMessageResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<EditMessageResponse>(
+          EditMessageResponse.$_createMessage);
+  static EditMessageResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get branchId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set branchId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasBranchId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearBranchId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $fixnum.Int64 get seq => $_getI64(1);
+  @$pb.TagNumber(2)
+  set seq($fixnum.Int64 value) => $_setInt64(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasSeq() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearSeq() => $_clearField(2);
+}
+
+class SwitchBranchRequest extends $pb.GeneratedMessage {
+  factory SwitchBranchRequest({
+    $core.String? sessionId,
+    $core.String? branchId,
+    $core.String? client,
+  }) {
+    final result = SwitchBranchRequest._();
+    if (sessionId != null) result.sessionId = sessionId;
+    if (branchId != null) result.branchId = branchId;
+    if (client != null) result.client = client;
+    return result;
+  }
+
+  SwitchBranchRequest._();
+
+  factory SwitchBranchRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SwitchBranchRequest()..mergeFromBuffer(data, registry);
+  factory SwitchBranchRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SwitchBranchRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SwitchBranchRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: SwitchBranchRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'sessionId')
+    ..aOS(2, _omitFieldNames ? '' : 'branchId')
+    ..aOS(3, _omitFieldNames ? '' : 'client')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SwitchBranchRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SwitchBranchRequest copyWith(void Function(SwitchBranchRequest) updates) =>
+      super.copyWith((message) => updates(message as SwitchBranchRequest))
+          as SwitchBranchRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core
+      .Deprecated('Use SwitchBranchRequest() / SwitchBranchRequest.new instead')
+  static SwitchBranchRequest create() => SwitchBranchRequest._();
+  static $pb.GeneratedMessage $_createMessage() => SwitchBranchRequest._();
+  @$core.override
+  SwitchBranchRequest createEmptyInstance() => SwitchBranchRequest._();
+  @$core.pragma('dart2js:noInline')
+  static SwitchBranchRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SwitchBranchRequest>(
+          SwitchBranchRequest.$_createMessage);
+  static SwitchBranchRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get sessionId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set sessionId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSessionId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSessionId() => $_clearField(1);
+
+  /// Empty is the root branch.
+  @$pb.TagNumber(2)
+  $core.String get branchId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set branchId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasBranchId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearBranchId() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get client => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set client($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasClient() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearClient() => $_clearField(3);
+}
+
+class SwitchBranchResponse extends $pb.GeneratedMessage {
+  factory SwitchBranchResponse({
+    Session? session,
+  }) {
+    final result = SwitchBranchResponse._();
+    if (session != null) result.session = session;
+    return result;
+  }
+
+  SwitchBranchResponse._();
+
+  factory SwitchBranchResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SwitchBranchResponse()..mergeFromBuffer(data, registry);
+  factory SwitchBranchResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SwitchBranchResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SwitchBranchResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: SwitchBranchResponse.$_createMessage)
+    ..aOM<Session>(1, _omitFieldNames ? '' : 'session',
+        subBuilder: Session.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SwitchBranchResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SwitchBranchResponse copyWith(void Function(SwitchBranchResponse) updates) =>
+      super.copyWith((message) => updates(message as SwitchBranchResponse))
+          as SwitchBranchResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use SwitchBranchResponse() / SwitchBranchResponse.new instead')
+  static SwitchBranchResponse create() => SwitchBranchResponse._();
+  static $pb.GeneratedMessage $_createMessage() => SwitchBranchResponse._();
+  @$core.override
+  SwitchBranchResponse createEmptyInstance() => SwitchBranchResponse._();
+  @$core.pragma('dart2js:noInline')
+  static SwitchBranchResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SwitchBranchResponse>(
+          SwitchBranchResponse.$_createMessage);
+  static SwitchBranchResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  Session get session => $_getN(0);
+  @$pb.TagNumber(1)
+  set session(Session value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSession() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSession() => $_clearField(1);
+  @$pb.TagNumber(1)
+  Session ensureSession() => $_ensure(0);
+}
+
 class SetMcpServerResponse extends $pb.GeneratedMessage {
   factory SetMcpServerResponse({
     Session? session,
@@ -3171,6 +3652,8 @@ enum Event_Payload {
   reasoningEndIgnored,
   compactionStarted,
   compactionDone,
+  branchCreated,
+  branchSwitched,
   notSet
 }
 
@@ -3180,6 +3663,7 @@ class Event extends $pb.GeneratedMessage {
     $core.String? sessionId,
     $fixnum.Int64? seq,
     $0.Timestamp? time,
+    $core.String? branchId,
     MessageStarted? messageStarted,
     TextDelta? textDelta,
     ReasoningDelta? reasoningDelta,
@@ -3211,11 +3695,14 @@ class Event extends $pb.GeneratedMessage {
     ReasoningEndIgnored? reasoningEndIgnored,
     CompactionStarted? compactionStarted,
     CompactionDone? compactionDone,
+    BranchCreated? branchCreated,
+    BranchSwitched? branchSwitched,
   }) {
     final result = Event._();
     if (sessionId != null) result.sessionId = sessionId;
     if (seq != null) result.seq = seq;
     if (time != null) result.time = time;
+    if (branchId != null) result.branchId = branchId;
     if (messageStarted != null) result.messageStarted = messageStarted;
     if (textDelta != null) result.textDelta = textDelta;
     if (reasoningDelta != null) result.reasoningDelta = reasoningDelta;
@@ -3251,6 +3738,8 @@ class Event extends $pb.GeneratedMessage {
       result.reasoningEndIgnored = reasoningEndIgnored;
     if (compactionStarted != null) result.compactionStarted = compactionStarted;
     if (compactionDone != null) result.compactionDone = compactionDone;
+    if (branchCreated != null) result.branchCreated = branchCreated;
+    if (branchSwitched != null) result.branchSwitched = branchSwitched;
     return result;
   }
 
@@ -3295,6 +3784,8 @@ class Event extends $pb.GeneratedMessage {
     38: Event_Payload.reasoningEndIgnored,
     39: Event_Payload.compactionStarted,
     40: Event_Payload.compactionDone,
+    41: Event_Payload.branchCreated,
+    42: Event_Payload.branchSwitched,
     0: Event_Payload.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
@@ -3332,12 +3823,15 @@ class Event extends $pb.GeneratedMessage {
       37,
       38,
       39,
-      40
+      40,
+      41,
+      42
     ])
     ..aOS(1, _omitFieldNames ? '' : 'sessionId')
     ..aInt64(2, _omitFieldNames ? '' : 'seq')
     ..aOM<$0.Timestamp>(3, _omitFieldNames ? '' : 'time',
         subBuilder: $0.Timestamp.$_createMessage)
+    ..aOS(4, _omitFieldNames ? '' : 'branchId')
     ..aOM<MessageStarted>(10, _omitFieldNames ? '' : 'messageStarted',
         subBuilder: MessageStarted.$_createMessage)
     ..aOM<TextDelta>(11, _omitFieldNames ? '' : 'textDelta',
@@ -3403,6 +3897,10 @@ class Event extends $pb.GeneratedMessage {
         subBuilder: CompactionStarted.$_createMessage)
     ..aOM<CompactionDone>(40, _omitFieldNames ? '' : 'compactionDone',
         subBuilder: CompactionDone.$_createMessage)
+    ..aOM<BranchCreated>(41, _omitFieldNames ? '' : 'branchCreated',
+        subBuilder: BranchCreated.$_createMessage)
+    ..aOM<BranchSwitched>(42, _omitFieldNames ? '' : 'branchSwitched',
+        subBuilder: BranchSwitched.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -3456,6 +3954,8 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(38)
   @$pb.TagNumber(39)
   @$pb.TagNumber(40)
+  @$pb.TagNumber(41)
+  @$pb.TagNumber(42)
   Event_Payload whichPayload() => _Event_PayloadByTag[$_whichOneof(0)]!;
   @$pb.TagNumber(10)
   @$pb.TagNumber(11)
@@ -3488,6 +3988,8 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(38)
   @$pb.TagNumber(39)
   @$pb.TagNumber(40)
+  @$pb.TagNumber(41)
+  @$pb.TagNumber(42)
   void clearPayload() => $_clearField($_whichOneof(0));
 
   @$pb.TagNumber(1)
@@ -3520,348 +4022,385 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $0.Timestamp ensureTime() => $_ensure(2);
 
+  /// The branch the event belongs to: the session's active branch when it
+  /// was recorded. Empty is the root branch (every event of a session that
+  /// never forked). A branch's history is its ancestors' events up to each
+  /// fork point plus its own events. Session-wide events (task state,
+  /// model, yolo, MCP servers, project, queue, branches) apply whatever
+  /// their branch_id.
+  @$pb.TagNumber(4)
+  $core.String get branchId => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set branchId($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasBranchId() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearBranchId() => $_clearField(4);
+
   @$pb.TagNumber(10)
-  MessageStarted get messageStarted => $_getN(3);
+  MessageStarted get messageStarted => $_getN(4);
   @$pb.TagNumber(10)
   set messageStarted(MessageStarted value) => $_setField(10, value);
   @$pb.TagNumber(10)
-  $core.bool hasMessageStarted() => $_has(3);
+  $core.bool hasMessageStarted() => $_has(4);
   @$pb.TagNumber(10)
   void clearMessageStarted() => $_clearField(10);
   @$pb.TagNumber(10)
-  MessageStarted ensureMessageStarted() => $_ensure(3);
+  MessageStarted ensureMessageStarted() => $_ensure(4);
 
   @$pb.TagNumber(11)
-  TextDelta get textDelta => $_getN(4);
+  TextDelta get textDelta => $_getN(5);
   @$pb.TagNumber(11)
   set textDelta(TextDelta value) => $_setField(11, value);
   @$pb.TagNumber(11)
-  $core.bool hasTextDelta() => $_has(4);
+  $core.bool hasTextDelta() => $_has(5);
   @$pb.TagNumber(11)
   void clearTextDelta() => $_clearField(11);
   @$pb.TagNumber(11)
-  TextDelta ensureTextDelta() => $_ensure(4);
+  TextDelta ensureTextDelta() => $_ensure(5);
 
   @$pb.TagNumber(12)
-  ReasoningDelta get reasoningDelta => $_getN(5);
+  ReasoningDelta get reasoningDelta => $_getN(6);
   @$pb.TagNumber(12)
   set reasoningDelta(ReasoningDelta value) => $_setField(12, value);
   @$pb.TagNumber(12)
-  $core.bool hasReasoningDelta() => $_has(5);
+  $core.bool hasReasoningDelta() => $_has(6);
   @$pb.TagNumber(12)
   void clearReasoningDelta() => $_clearField(12);
   @$pb.TagNumber(12)
-  ReasoningDelta ensureReasoningDelta() => $_ensure(5);
+  ReasoningDelta ensureReasoningDelta() => $_ensure(6);
 
   @$pb.TagNumber(13)
-  MessageDone get messageDone => $_getN(6);
+  MessageDone get messageDone => $_getN(7);
   @$pb.TagNumber(13)
   set messageDone(MessageDone value) => $_setField(13, value);
   @$pb.TagNumber(13)
-  $core.bool hasMessageDone() => $_has(6);
+  $core.bool hasMessageDone() => $_has(7);
   @$pb.TagNumber(13)
   void clearMessageDone() => $_clearField(13);
   @$pb.TagNumber(13)
-  MessageDone ensureMessageDone() => $_ensure(6);
+  MessageDone ensureMessageDone() => $_ensure(7);
 
   @$pb.TagNumber(14)
-  ToolCallStarted get toolCallStarted => $_getN(7);
+  ToolCallStarted get toolCallStarted => $_getN(8);
   @$pb.TagNumber(14)
   set toolCallStarted(ToolCallStarted value) => $_setField(14, value);
   @$pb.TagNumber(14)
-  $core.bool hasToolCallStarted() => $_has(7);
+  $core.bool hasToolCallStarted() => $_has(8);
   @$pb.TagNumber(14)
   void clearToolCallStarted() => $_clearField(14);
   @$pb.TagNumber(14)
-  ToolCallStarted ensureToolCallStarted() => $_ensure(7);
+  ToolCallStarted ensureToolCallStarted() => $_ensure(8);
 
   @$pb.TagNumber(15)
-  ToolOutput get toolOutput => $_getN(8);
+  ToolOutput get toolOutput => $_getN(9);
   @$pb.TagNumber(15)
   set toolOutput(ToolOutput value) => $_setField(15, value);
   @$pb.TagNumber(15)
-  $core.bool hasToolOutput() => $_has(8);
+  $core.bool hasToolOutput() => $_has(9);
   @$pb.TagNumber(15)
   void clearToolOutput() => $_clearField(15);
   @$pb.TagNumber(15)
-  ToolOutput ensureToolOutput() => $_ensure(8);
+  ToolOutput ensureToolOutput() => $_ensure(9);
 
   @$pb.TagNumber(16)
-  ToolCallDone get toolCallDone => $_getN(9);
+  ToolCallDone get toolCallDone => $_getN(10);
   @$pb.TagNumber(16)
   set toolCallDone(ToolCallDone value) => $_setField(16, value);
   @$pb.TagNumber(16)
-  $core.bool hasToolCallDone() => $_has(9);
+  $core.bool hasToolCallDone() => $_has(10);
   @$pb.TagNumber(16)
   void clearToolCallDone() => $_clearField(16);
   @$pb.TagNumber(16)
-  ToolCallDone ensureToolCallDone() => $_ensure(9);
+  ToolCallDone ensureToolCallDone() => $_ensure(10);
 
   @$pb.TagNumber(17)
-  PromptRequested get promptRequested => $_getN(10);
+  PromptRequested get promptRequested => $_getN(11);
   @$pb.TagNumber(17)
   set promptRequested(PromptRequested value) => $_setField(17, value);
   @$pb.TagNumber(17)
-  $core.bool hasPromptRequested() => $_has(10);
+  $core.bool hasPromptRequested() => $_has(11);
   @$pb.TagNumber(17)
   void clearPromptRequested() => $_clearField(17);
   @$pb.TagNumber(17)
-  PromptRequested ensurePromptRequested() => $_ensure(10);
+  PromptRequested ensurePromptRequested() => $_ensure(11);
 
   @$pb.TagNumber(18)
-  PromptResolved get promptResolved => $_getN(11);
+  PromptResolved get promptResolved => $_getN(12);
   @$pb.TagNumber(18)
   set promptResolved(PromptResolved value) => $_setField(18, value);
   @$pb.TagNumber(18)
-  $core.bool hasPromptResolved() => $_has(11);
+  $core.bool hasPromptResolved() => $_has(12);
   @$pb.TagNumber(18)
   void clearPromptResolved() => $_clearField(18);
   @$pb.TagNumber(18)
-  PromptResolved ensurePromptResolved() => $_ensure(11);
+  PromptResolved ensurePromptResolved() => $_ensure(12);
 
   @$pb.TagNumber(19)
-  TaskStateChanged get taskStateChanged => $_getN(12);
+  TaskStateChanged get taskStateChanged => $_getN(13);
   @$pb.TagNumber(19)
   set taskStateChanged(TaskStateChanged value) => $_setField(19, value);
   @$pb.TagNumber(19)
-  $core.bool hasTaskStateChanged() => $_has(12);
+  $core.bool hasTaskStateChanged() => $_has(13);
   @$pb.TagNumber(19)
   void clearTaskStateChanged() => $_clearField(19);
   @$pb.TagNumber(19)
-  TaskStateChanged ensureTaskStateChanged() => $_ensure(12);
+  TaskStateChanged ensureTaskStateChanged() => $_ensure(13);
 
   @$pb.TagNumber(20)
-  ModelChanged get modelChanged => $_getN(13);
+  ModelChanged get modelChanged => $_getN(14);
   @$pb.TagNumber(20)
   set modelChanged(ModelChanged value) => $_setField(20, value);
   @$pb.TagNumber(20)
-  $core.bool hasModelChanged() => $_has(13);
+  $core.bool hasModelChanged() => $_has(14);
   @$pb.TagNumber(20)
   void clearModelChanged() => $_clearField(20);
   @$pb.TagNumber(20)
-  ModelChanged ensureModelChanged() => $_ensure(13);
+  ModelChanged ensureModelChanged() => $_ensure(14);
 
   @$pb.TagNumber(21)
-  Usage get usage => $_getN(14);
+  Usage get usage => $_getN(15);
   @$pb.TagNumber(21)
   set usage(Usage value) => $_setField(21, value);
   @$pb.TagNumber(21)
-  $core.bool hasUsage() => $_has(14);
+  $core.bool hasUsage() => $_has(15);
   @$pb.TagNumber(21)
   void clearUsage() => $_clearField(21);
   @$pb.TagNumber(21)
-  Usage ensureUsage() => $_ensure(14);
+  Usage ensureUsage() => $_ensure(15);
 
   @$pb.TagNumber(22)
-  TurnError get error => $_getN(15);
+  TurnError get error => $_getN(16);
   @$pb.TagNumber(22)
   set error(TurnError value) => $_setField(22, value);
   @$pb.TagNumber(22)
-  $core.bool hasError() => $_has(15);
+  $core.bool hasError() => $_has(16);
   @$pb.TagNumber(22)
   void clearError() => $_clearField(22);
   @$pb.TagNumber(22)
-  TurnError ensureError() => $_ensure(15);
+  TurnError ensureError() => $_ensure(16);
 
   @$pb.TagNumber(23)
-  TodoUpdated get todoUpdated => $_getN(16);
+  TodoUpdated get todoUpdated => $_getN(17);
   @$pb.TagNumber(23)
   set todoUpdated(TodoUpdated value) => $_setField(23, value);
   @$pb.TagNumber(23)
-  $core.bool hasTodoUpdated() => $_has(16);
+  $core.bool hasTodoUpdated() => $_has(17);
   @$pb.TagNumber(23)
   void clearTodoUpdated() => $_clearField(23);
   @$pb.TagNumber(23)
-  TodoUpdated ensureTodoUpdated() => $_ensure(16);
+  TodoUpdated ensureTodoUpdated() => $_ensure(17);
 
   @$pb.TagNumber(24)
-  Feedback get feedback => $_getN(17);
+  Feedback get feedback => $_getN(18);
   @$pb.TagNumber(24)
   set feedback(Feedback value) => $_setField(24, value);
   @$pb.TagNumber(24)
-  $core.bool hasFeedback() => $_has(17);
+  $core.bool hasFeedback() => $_has(18);
   @$pb.TagNumber(24)
   void clearFeedback() => $_clearField(24);
   @$pb.TagNumber(24)
-  Feedback ensureFeedback() => $_ensure(17);
+  Feedback ensureFeedback() => $_ensure(18);
 
   @$pb.TagNumber(25)
-  McpServersChanged get mcpServersChanged => $_getN(18);
+  McpServersChanged get mcpServersChanged => $_getN(19);
   @$pb.TagNumber(25)
   set mcpServersChanged(McpServersChanged value) => $_setField(25, value);
   @$pb.TagNumber(25)
-  $core.bool hasMcpServersChanged() => $_has(18);
+  $core.bool hasMcpServersChanged() => $_has(19);
   @$pb.TagNumber(25)
   void clearMcpServersChanged() => $_clearField(25);
   @$pb.TagNumber(25)
-  McpServersChanged ensureMcpServersChanged() => $_ensure(18);
+  McpServersChanged ensureMcpServersChanged() => $_ensure(19);
 
   @$pb.TagNumber(26)
-  SessionMoved get sessionMoved => $_getN(19);
+  SessionMoved get sessionMoved => $_getN(20);
   @$pb.TagNumber(26)
   set sessionMoved(SessionMoved value) => $_setField(26, value);
   @$pb.TagNumber(26)
-  $core.bool hasSessionMoved() => $_has(19);
+  $core.bool hasSessionMoved() => $_has(20);
   @$pb.TagNumber(26)
   void clearSessionMoved() => $_clearField(26);
   @$pb.TagNumber(26)
-  SessionMoved ensureSessionMoved() => $_ensure(19);
+  SessionMoved ensureSessionMoved() => $_ensure(20);
 
   @$pb.TagNumber(27)
-  YoloChanged get yoloChanged => $_getN(20);
+  YoloChanged get yoloChanged => $_getN(21);
   @$pb.TagNumber(27)
   set yoloChanged(YoloChanged value) => $_setField(27, value);
   @$pb.TagNumber(27)
-  $core.bool hasYoloChanged() => $_has(20);
+  $core.bool hasYoloChanged() => $_has(21);
   @$pb.TagNumber(27)
   void clearYoloChanged() => $_clearField(27);
   @$pb.TagNumber(27)
-  YoloChanged ensureYoloChanged() => $_ensure(20);
+  YoloChanged ensureYoloChanged() => $_ensure(21);
 
   @$pb.TagNumber(28)
-  PermissionCheck get permissionCheck => $_getN(21);
+  PermissionCheck get permissionCheck => $_getN(22);
   @$pb.TagNumber(28)
   set permissionCheck(PermissionCheck value) => $_setField(28, value);
   @$pb.TagNumber(28)
-  $core.bool hasPermissionCheck() => $_has(21);
+  $core.bool hasPermissionCheck() => $_has(22);
   @$pb.TagNumber(28)
   void clearPermissionCheck() => $_clearField(28);
   @$pb.TagNumber(28)
-  PermissionCheck ensurePermissionCheck() => $_ensure(21);
+  PermissionCheck ensurePermissionCheck() => $_ensure(22);
 
   @$pb.TagNumber(29)
-  ModelCallStarted get modelCallStarted => $_getN(22);
+  ModelCallStarted get modelCallStarted => $_getN(23);
   @$pb.TagNumber(29)
   set modelCallStarted(ModelCallStarted value) => $_setField(29, value);
   @$pb.TagNumber(29)
-  $core.bool hasModelCallStarted() => $_has(22);
+  $core.bool hasModelCallStarted() => $_has(23);
   @$pb.TagNumber(29)
   void clearModelCallStarted() => $_clearField(29);
   @$pb.TagNumber(29)
-  ModelCallStarted ensureModelCallStarted() => $_ensure(22);
+  ModelCallStarted ensureModelCallStarted() => $_ensure(23);
 
   @$pb.TagNumber(30)
-  PromptProgress get promptProgress => $_getN(23);
+  PromptProgress get promptProgress => $_getN(24);
   @$pb.TagNumber(30)
   set promptProgress(PromptProgress value) => $_setField(30, value);
   @$pb.TagNumber(30)
-  $core.bool hasPromptProgress() => $_has(23);
+  $core.bool hasPromptProgress() => $_has(24);
   @$pb.TagNumber(30)
   void clearPromptProgress() => $_clearField(30);
   @$pb.TagNumber(30)
-  PromptProgress ensurePromptProgress() => $_ensure(23);
+  PromptProgress ensurePromptProgress() => $_ensure(24);
 
   @$pb.TagNumber(31)
-  ModelCallEnded get modelCallEnded => $_getN(24);
+  ModelCallEnded get modelCallEnded => $_getN(25);
   @$pb.TagNumber(31)
   set modelCallEnded(ModelCallEnded value) => $_setField(31, value);
   @$pb.TagNumber(31)
-  $core.bool hasModelCallEnded() => $_has(24);
+  $core.bool hasModelCallEnded() => $_has(25);
   @$pb.TagNumber(31)
   void clearModelCallEnded() => $_clearField(31);
   @$pb.TagNumber(31)
-  ModelCallEnded ensureModelCallEnded() => $_ensure(24);
+  ModelCallEnded ensureModelCallEnded() => $_ensure(25);
 
   @$pb.TagNumber(32)
-  MessageQueued get messageQueued => $_getN(25);
+  MessageQueued get messageQueued => $_getN(26);
   @$pb.TagNumber(32)
   set messageQueued(MessageQueued value) => $_setField(32, value);
   @$pb.TagNumber(32)
-  $core.bool hasMessageQueued() => $_has(25);
+  $core.bool hasMessageQueued() => $_has(26);
   @$pb.TagNumber(32)
   void clearMessageQueued() => $_clearField(32);
   @$pb.TagNumber(32)
-  MessageQueued ensureMessageQueued() => $_ensure(25);
+  MessageQueued ensureMessageQueued() => $_ensure(26);
 
   @$pb.TagNumber(33)
-  QueuedMessageUpdated get queuedMessageUpdated => $_getN(26);
+  QueuedMessageUpdated get queuedMessageUpdated => $_getN(27);
   @$pb.TagNumber(33)
   set queuedMessageUpdated(QueuedMessageUpdated value) => $_setField(33, value);
   @$pb.TagNumber(33)
-  $core.bool hasQueuedMessageUpdated() => $_has(26);
+  $core.bool hasQueuedMessageUpdated() => $_has(27);
   @$pb.TagNumber(33)
   void clearQueuedMessageUpdated() => $_clearField(33);
   @$pb.TagNumber(33)
-  QueuedMessageUpdated ensureQueuedMessageUpdated() => $_ensure(26);
+  QueuedMessageUpdated ensureQueuedMessageUpdated() => $_ensure(27);
 
   @$pb.TagNumber(34)
-  QueuedMessageDelivered get queuedMessageDelivered => $_getN(27);
+  QueuedMessageDelivered get queuedMessageDelivered => $_getN(28);
   @$pb.TagNumber(34)
   set queuedMessageDelivered(QueuedMessageDelivered value) =>
       $_setField(34, value);
   @$pb.TagNumber(34)
-  $core.bool hasQueuedMessageDelivered() => $_has(27);
+  $core.bool hasQueuedMessageDelivered() => $_has(28);
   @$pb.TagNumber(34)
   void clearQueuedMessageDelivered() => $_clearField(34);
   @$pb.TagNumber(34)
-  QueuedMessageDelivered ensureQueuedMessageDelivered() => $_ensure(27);
+  QueuedMessageDelivered ensureQueuedMessageDelivered() => $_ensure(28);
 
   @$pb.TagNumber(35)
-  ModelCallWaiting get modelCallWaiting => $_getN(28);
+  ModelCallWaiting get modelCallWaiting => $_getN(29);
   @$pb.TagNumber(35)
   set modelCallWaiting(ModelCallWaiting value) => $_setField(35, value);
   @$pb.TagNumber(35)
-  $core.bool hasModelCallWaiting() => $_has(28);
+  $core.bool hasModelCallWaiting() => $_has(29);
   @$pb.TagNumber(35)
   void clearModelCallWaiting() => $_clearField(35);
   @$pb.TagNumber(35)
-  ModelCallWaiting ensureModelCallWaiting() => $_ensure(28);
+  ModelCallWaiting ensureModelCallWaiting() => $_ensure(29);
 
   @$pb.TagNumber(36)
-  PromptCache get promptCache => $_getN(29);
+  PromptCache get promptCache => $_getN(30);
   @$pb.TagNumber(36)
   set promptCache(PromptCache value) => $_setField(36, value);
   @$pb.TagNumber(36)
-  $core.bool hasPromptCache() => $_has(29);
+  $core.bool hasPromptCache() => $_has(30);
   @$pb.TagNumber(36)
   void clearPromptCache() => $_clearField(36);
   @$pb.TagNumber(36)
-  PromptCache ensurePromptCache() => $_ensure(29);
+  PromptCache ensurePromptCache() => $_ensure(30);
 
   @$pb.TagNumber(37)
-  ReasoningEndRequested get reasoningEndRequested => $_getN(30);
+  ReasoningEndRequested get reasoningEndRequested => $_getN(31);
   @$pb.TagNumber(37)
   set reasoningEndRequested(ReasoningEndRequested value) =>
       $_setField(37, value);
   @$pb.TagNumber(37)
-  $core.bool hasReasoningEndRequested() => $_has(30);
+  $core.bool hasReasoningEndRequested() => $_has(31);
   @$pb.TagNumber(37)
   void clearReasoningEndRequested() => $_clearField(37);
   @$pb.TagNumber(37)
-  ReasoningEndRequested ensureReasoningEndRequested() => $_ensure(30);
+  ReasoningEndRequested ensureReasoningEndRequested() => $_ensure(31);
 
   @$pb.TagNumber(38)
-  ReasoningEndIgnored get reasoningEndIgnored => $_getN(31);
+  ReasoningEndIgnored get reasoningEndIgnored => $_getN(32);
   @$pb.TagNumber(38)
   set reasoningEndIgnored(ReasoningEndIgnored value) => $_setField(38, value);
   @$pb.TagNumber(38)
-  $core.bool hasReasoningEndIgnored() => $_has(31);
+  $core.bool hasReasoningEndIgnored() => $_has(32);
   @$pb.TagNumber(38)
   void clearReasoningEndIgnored() => $_clearField(38);
   @$pb.TagNumber(38)
-  ReasoningEndIgnored ensureReasoningEndIgnored() => $_ensure(31);
+  ReasoningEndIgnored ensureReasoningEndIgnored() => $_ensure(32);
 
   @$pb.TagNumber(39)
-  CompactionStarted get compactionStarted => $_getN(32);
+  CompactionStarted get compactionStarted => $_getN(33);
   @$pb.TagNumber(39)
   set compactionStarted(CompactionStarted value) => $_setField(39, value);
   @$pb.TagNumber(39)
-  $core.bool hasCompactionStarted() => $_has(32);
+  $core.bool hasCompactionStarted() => $_has(33);
   @$pb.TagNumber(39)
   void clearCompactionStarted() => $_clearField(39);
   @$pb.TagNumber(39)
-  CompactionStarted ensureCompactionStarted() => $_ensure(32);
+  CompactionStarted ensureCompactionStarted() => $_ensure(33);
 
   @$pb.TagNumber(40)
-  CompactionDone get compactionDone => $_getN(33);
+  CompactionDone get compactionDone => $_getN(34);
   @$pb.TagNumber(40)
   set compactionDone(CompactionDone value) => $_setField(40, value);
   @$pb.TagNumber(40)
-  $core.bool hasCompactionDone() => $_has(33);
+  $core.bool hasCompactionDone() => $_has(34);
   @$pb.TagNumber(40)
   void clearCompactionDone() => $_clearField(40);
   @$pb.TagNumber(40)
-  CompactionDone ensureCompactionDone() => $_ensure(33);
+  CompactionDone ensureCompactionDone() => $_ensure(34);
+
+  @$pb.TagNumber(41)
+  BranchCreated get branchCreated => $_getN(35);
+  @$pb.TagNumber(41)
+  set branchCreated(BranchCreated value) => $_setField(41, value);
+  @$pb.TagNumber(41)
+  $core.bool hasBranchCreated() => $_has(35);
+  @$pb.TagNumber(41)
+  void clearBranchCreated() => $_clearField(41);
+  @$pb.TagNumber(41)
+  BranchCreated ensureBranchCreated() => $_ensure(35);
+
+  @$pb.TagNumber(42)
+  BranchSwitched get branchSwitched => $_getN(36);
+  @$pb.TagNumber(42)
+  set branchSwitched(BranchSwitched value) => $_setField(42, value);
+  @$pb.TagNumber(42)
+  $core.bool hasBranchSwitched() => $_has(36);
+  @$pb.TagNumber(42)
+  void clearBranchSwitched() => $_clearField(42);
+  @$pb.TagNumber(42)
+  BranchSwitched ensureBranchSwitched() => $_ensure(36);
 }
 
 /// MessageStarted opens a message. Its text arrives as TextDelta events and
@@ -7177,6 +7716,203 @@ class CompactionDone extends $pb.GeneratedMessage {
   void clearError() => $_clearField(14);
 }
 
+/// BranchCreated is a new branch of the conversation. It holds its parent's
+/// events with seq <= fork_seq (and, through the parent, the parent's
+/// ancestors' up to their fork points), then its own. Branches that share a
+/// parent and fork_seq are alternatives at the same point: clients show
+/// them as "2 of 3" on the first message after the fork.
+class BranchCreated extends $pb.GeneratedMessage {
+  factory BranchCreated({
+    $core.String? branchId,
+    $core.String? parentBranchId,
+    $fixnum.Int64? forkSeq,
+    BranchKind? kind,
+    $core.String? messageId,
+    $core.String? client,
+  }) {
+    final result = BranchCreated._();
+    if (branchId != null) result.branchId = branchId;
+    if (parentBranchId != null) result.parentBranchId = parentBranchId;
+    if (forkSeq != null) result.forkSeq = forkSeq;
+    if (kind != null) result.kind = kind;
+    if (messageId != null) result.messageId = messageId;
+    if (client != null) result.client = client;
+    return result;
+  }
+
+  BranchCreated._();
+
+  factory BranchCreated.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      BranchCreated()..mergeFromBuffer(data, registry);
+  factory BranchCreated.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      BranchCreated()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'BranchCreated',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: BranchCreated.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'branchId')
+    ..aOS(2, _omitFieldNames ? '' : 'parentBranchId')
+    ..aInt64(3, _omitFieldNames ? '' : 'forkSeq')
+    ..aE<BranchKind>(4, _omitFieldNames ? '' : 'kind',
+        enumValues: BranchKind.values)
+    ..aOS(5, _omitFieldNames ? '' : 'messageId')
+    ..aOS(6, _omitFieldNames ? '' : 'client')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  BranchCreated clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  BranchCreated copyWith(void Function(BranchCreated) updates) =>
+      super.copyWith((message) => updates(message as BranchCreated))
+          as BranchCreated;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use BranchCreated() / BranchCreated.new instead')
+  static BranchCreated create() => BranchCreated._();
+  static $pb.GeneratedMessage $_createMessage() => BranchCreated._();
+  @$core.override
+  BranchCreated createEmptyInstance() => BranchCreated._();
+  @$core.pragma('dart2js:noInline')
+  static BranchCreated getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<BranchCreated>(
+          BranchCreated.$_createMessage);
+  static BranchCreated? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get branchId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set branchId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasBranchId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearBranchId() => $_clearField(1);
+
+  /// Empty is the root branch.
+  @$pb.TagNumber(2)
+  $core.String get parentBranchId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set parentBranchId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasParentBranchId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearParentBranchId() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $fixnum.Int64 get forkSeq => $_getI64(2);
+  @$pb.TagNumber(3)
+  set forkSeq($fixnum.Int64 value) => $_setInt64(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasForkSeq() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearForkSeq() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  BranchKind get kind => $_getN(3);
+  @$pb.TagNumber(4)
+  set kind(BranchKind value) => $_setField(4, value);
+  @$pb.TagNumber(4)
+  $core.bool hasKind() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearKind() => $_clearField(4);
+
+  /// The user message it was made from: kept by a retry, replaced by an
+  /// edit.
+  @$pb.TagNumber(5)
+  $core.String get messageId => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set messageId($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasMessageId() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearMessageId() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.String get client => $_getSZ(5);
+  @$pb.TagNumber(6)
+  set client($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasClient() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearClient() => $_clearField(6);
+}
+
+/// BranchSwitched makes branch_id the active branch. It is recorded on
+/// that branch.
+class BranchSwitched extends $pb.GeneratedMessage {
+  factory BranchSwitched({
+    $core.String? branchId,
+    $core.String? client,
+  }) {
+    final result = BranchSwitched._();
+    if (branchId != null) result.branchId = branchId;
+    if (client != null) result.client = client;
+    return result;
+  }
+
+  BranchSwitched._();
+
+  factory BranchSwitched.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      BranchSwitched()..mergeFromBuffer(data, registry);
+  factory BranchSwitched.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      BranchSwitched()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'BranchSwitched',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: BranchSwitched.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'branchId')
+    ..aOS(2, _omitFieldNames ? '' : 'client')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  BranchSwitched clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  BranchSwitched copyWith(void Function(BranchSwitched) updates) =>
+      super.copyWith((message) => updates(message as BranchSwitched))
+          as BranchSwitched;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use BranchSwitched() / BranchSwitched.new instead')
+  static BranchSwitched create() => BranchSwitched._();
+  static $pb.GeneratedMessage $_createMessage() => BranchSwitched._();
+  @$core.override
+  BranchSwitched createEmptyInstance() => BranchSwitched._();
+  @$core.pragma('dart2js:noInline')
+  static BranchSwitched getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<BranchSwitched>(
+          BranchSwitched.$_createMessage);
+  static BranchSwitched? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get branchId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set branchId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasBranchId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearBranchId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get client => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set client($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasClient() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearClient() => $_clearField(2);
+}
+
 /// SessionService runs agent sessions. A session is a conversation with the
 /// agent in a working directory. Everything that happens in it is recorded as
 /// an append-only, numbered event log, so a client can attach at any point,
@@ -7336,6 +8072,32 @@ class SessionServiceApi {
           $pb.ClientContext? ctx, ListSkillsRequest request) =>
       _client.invoke<ListSkillsResponse>(
           ctx, 'SessionService', 'ListSkills', request, ListSkillsResponse());
+
+  /// RetryFromMessage starts a new branch of the conversation that keeps
+  /// user message message_id (on the active branch's path) and everything
+  /// before it, drops what came after, and runs the turn again with the
+  /// session's current model. EditMessage does the same but forks just
+  /// before the message and sends text in its place. Both switch the
+  /// session to the new branch (BranchCreated, BranchSwitched) and fail
+  /// with FAILED_PRECONDITION while a turn is running (Interrupt first) or
+  /// while messages are queued (send or cancel them first). Files the agent
+  /// changed stay as they are: a branch only forks the conversation.
+  $async.Future<RetryFromMessageResponse> retryFromMessage(
+          $pb.ClientContext? ctx, RetryFromMessageRequest request) =>
+      _client.invoke<RetryFromMessageResponse>(ctx, 'SessionService',
+          'RetryFromMessage', request, RetryFromMessageResponse());
+  $async.Future<EditMessageResponse> editMessage(
+          $pb.ClientContext? ctx, EditMessageRequest request) =>
+      _client.invoke<EditMessageResponse>(
+          ctx, 'SessionService', 'EditMessage', request, EditMessageResponse());
+
+  /// SwitchBranch makes another branch the active one: the next message
+  /// continues it and the model sees its history. FAILED_PRECONDITION while
+  /// a turn is running.
+  $async.Future<SwitchBranchResponse> switchBranch(
+          $pb.ClientContext? ctx, SwitchBranchRequest request) =>
+      _client.invoke<SwitchBranchResponse>(ctx, 'SessionService',
+          'SwitchBranch', request, SwitchBranchResponse());
 }
 
 const $core.bool _omitFieldNames =

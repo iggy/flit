@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
+	"github.com/iggy/flit/server/internal/branches"
 	"github.com/iggy/flit/server/internal/store"
 )
 
@@ -51,6 +53,7 @@ type rating struct {
 	// Only on session records: what was rated.
 	TurnID      string `json:"turn_id,omitempty"`
 	ModelCallID string `json:"model_call_id,omitempty"`
+	BranchID    string `json:"branch_id,omitempty"`
 }
 
 type project struct {
@@ -64,6 +67,7 @@ type modelCallRecord struct {
 	ID            string            `json:"id"`
 	SessionID     string            `json:"session_id"`
 	TurnID        string            `json:"turn_id"`
+	BranchID      string            `json:"branch_id,omitempty"`
 	Task          string            `json:"task"`
 	Project       project           `json:"project"`
 	CreatedAt     time.Time         `json:"created_at"`
@@ -86,19 +90,23 @@ type modelCallRecord struct {
 }
 
 type turnRecord struct {
-	Type          string            `json:"type"`
-	FormatVersion int               `json:"format_version"`
-	TurnID        string            `json:"turn_id"`
-	SessionID     string            `json:"session_id"`
-	Project       project           `json:"project"`
-	CreatedAt     time.Time         `json:"created_at"`
-	Provider      string            `json:"provider"`
-	Model         string            `json:"model"`
-	Effort        string            `json:"reasoning_effort,omitempty"`
-	ModelCalls    []string          `json:"model_calls"`
-	Messages      []json.RawMessage `json:"messages"`
-	Tools         json.RawMessage   `json:"tools,omitempty"`
-	FinishReason  string            `json:"finish_reason"`
+	Type          string `json:"type"`
+	FormatVersion int    `json:"format_version"`
+	TurnID        string `json:"turn_id"`
+	BranchID      string `json:"branch_id,omitempty"`
+	// BranchHead marks the last turn of a branch: its messages are that
+	// branch's whole conversation.
+	BranchHead   bool              `json:"branch_head,omitempty"`
+	SessionID    string            `json:"session_id"`
+	Project      project           `json:"project"`
+	CreatedAt    time.Time         `json:"created_at"`
+	Provider     string            `json:"provider"`
+	Model        string            `json:"model"`
+	Effort       string            `json:"reasoning_effort,omitempty"`
+	ModelCalls   []string          `json:"model_calls"`
+	Messages     []json.RawMessage `json:"messages"`
+	Tools        json.RawMessage   `json:"tools,omitempty"`
+	FinishReason string            `json:"finish_reason"`
 	// PermissionChecks are the safety check's verdicts on shell commands
 	// in this turn.
 	PermissionChecks []permissionCheck `json:"permission_checks"`
@@ -125,6 +133,26 @@ type sessionRecord struct {
 	Turns         []string  `json:"turns"`
 	Models        []string  `json:"models"`
 	Ratings       []rating  `json:"ratings"`
+	// Branches, for sessions that forked.
+	Branches []branch `json:"branches,omitempty"`
+}
+
+type branch struct {
+	// ID is empty for the root branch.
+	ID       string `json:"id"`
+	ParentID string `json:"parent_id,omitempty"`
+	ForkSeq  int64  `json:"fork_seq,omitempty"`
+	// Kind is "retry" or "edit" ("" for the root); MessageID is the user
+	// message retried or edited.
+	Kind      string `json:"kind,omitempty"`
+	MessageID string `json:"message_id,omitempty"`
+	// HeadTurnID is the branch's last turn (the turn record with this
+	// turn_id and branch_id has branch_head set); empty if it has none
+	// in this export.
+	HeadTurnID string `json:"head_turn_id"`
+	// HeadBranchID is the branch that turn ran on: this one, or an
+	// ancestor if the branch has no turns of its own yet.
+	HeadBranchID string `json:"head_branch_id,omitempty"`
 }
 
 func toRating(r store.Rating) rating {
@@ -187,9 +215,10 @@ func Write(ctx context.Context, st *store.Store, w io.Writer, opts Options) (Sta
 			byCall[r.ModelCallID] = append(byCall[r.ModelCallID], rr)
 		}
 		if r.Target == "turn" && r.TurnID != "" {
-			byTurn[r.TurnID] = append(byTurn[r.TurnID], rr)
+			k := turnKey(r.TurnID, r.BranchID)
+			byTurn[k] = append(byTurn[k], rr)
 		}
-		rr.TurnID, rr.ModelCallID = r.TurnID, r.ModelCallID
+		rr.TurnID, rr.ModelCallID, rr.BranchID = r.TurnID, r.ModelCallID, r.BranchID
 		bySession[r.SessionID] = append(bySession[r.SessionID], rr)
 	}
 
@@ -213,12 +242,13 @@ func Write(ctx context.Context, st *store.Store, w io.Writer, opts Options) (Sta
 		proj := project{ID: c.ProjectID, Name: c.ProjectName}
 		if want(opts, "model_call") {
 			rec := modelCallRecord{
-				Type: "model_call", FormatVersion: FormatVersion, ID: c.ID, SessionID: c.SessionID, TurnID: c.TurnID, Task: c.Task,
+				Type: "model_call", FormatVersion: FormatVersion, ID: c.ID, SessionID: c.SessionID, TurnID: c.TurnID,
+				BranchID: c.BranchID, Task: c.Task,
 				Project: proj, CreatedAt: c.CreatedAt, Provider: c.Provider, Model: c.Model, Effort: c.Effort,
 				FlitVersion: c.FlitVersion, Role: c.Role, Skills: c.Skills, Params: c.Params, Messages: msgs,
 				Tools: tools, Response: c.Response, FinishReason: c.FinishReason, Usage: nonNull(c.Usage),
 				Metrics: nonNull(c.Metrics), Error: c.Error,
-				Ratings: orEmpty(byCall[c.ID]), TurnRatings: orEmpty(byTurn[c.TurnID]),
+				Ratings: orEmpty(byCall[c.ID]), TurnRatings: orEmpty(byTurn[turnKey(c.TurnID, c.BranchID)]),
 			}
 			if keep(opts, append(slices.Clone(rec.Ratings), rec.TurnRatings...)) {
 				if err := enc.write(rec); err != nil {
@@ -231,13 +261,15 @@ func Write(ctx context.Context, st *store.Store, w io.Writer, opts Options) (Sta
 			continue // safety checks aren't part of the conversation
 		}
 		// A turn's conversation is its last call's request plus that
-		// call's response.
-		t := turns[c.TurnID]
+		// call's response. A retry answers the same user message again on
+		// another branch: that's another turn.
+		tk := turnKey(c.TurnID, c.BranchID)
+		t := turns[tk]
 		if t == nil {
-			t = &turnAcc{rec: turnRecord{Type: "turn", FormatVersion: FormatVersion, TurnID: c.TurnID, SessionID: c.SessionID,
-				Project: proj, CreatedAt: c.CreatedAt}}
-			turns[c.TurnID] = t
-			turnOrder = append(turnOrder, c.TurnID)
+			t = &turnAcc{rec: turnRecord{Type: "turn", FormatVersion: FormatVersion, TurnID: c.TurnID, BranchID: c.BranchID,
+				SessionID: c.SessionID, Project: proj, CreatedAt: c.CreatedAt}}
+			turns[tk] = t
+			turnOrder = append(turnOrder, tk)
 		}
 		t.rec.ModelCalls = append(t.rec.ModelCalls, c.ID)
 		t.rec.Provider, t.rec.Model, t.rec.Effort, t.rec.FinishReason = c.Provider, c.Model, c.Effort, c.FinishReason
@@ -257,6 +289,20 @@ func Write(ctx context.Context, st *store.Store, w io.Writer, opts Options) (Sta
 		}
 		if m := c.Provider + "/" + c.Model; !slices.Contains(s.Models, m) {
 			s.Models = append(s.Models, m)
+		}
+	}
+	heads, err := branchHeads(ctx, st, sessionOrder, calls)
+	if err != nil {
+		return stats, err
+	}
+	for id, bs := range heads {
+		if len(bs) > 1 {
+			sessions[id].Branches = bs
+		}
+		for _, b := range bs {
+			if t := turns[turnKey(b.HeadTurnID, b.HeadBranchID)]; t != nil && b.HeadTurnID != "" {
+				t.rec.BranchHead = true
+			}
 		}
 	}
 	if want(opts, "turn") {
@@ -298,8 +344,57 @@ func Write(ctx context.Context, st *store.Store, w io.Writer, opts Options) (Sta
 	return stats, nil
 }
 
+// turnKey identifies a turn: its user message on a branch.
+func turnKey(turnID, branchID string) string { return turnID + "@" + branchID }
+
+// branchHeads finds each session's branches and the last turn on each
+// one's path among calls (the calls exported).
+func branchHeads(ctx context.Context, st *store.Store, sessions []string, calls []store.ExportCall) (map[string][]branch, error) {
+	out := map[string][]branch{}
+	for _, id := range sessions {
+		evs, err := st.EventsOfKinds(ctx, id, "branch_created", "message_started")
+		if err != nil {
+			return nil, err
+		}
+		tree := branches.New(evs)
+		seq := map[string]int64{} // message id -> seq of its MessageStarted
+		for _, ev := range evs {
+			if ms := ev.GetMessageStarted(); ms != nil {
+				seq[ms.MessageId] = ev.Seq
+			}
+		}
+		var list []branch
+		for _, b := range tree.Branches() {
+			path := tree.Path(b.ID)
+			rec := branch{ID: b.ID, ParentID: b.Parent, ForkSeq: b.ForkSeq, MessageID: b.MessageID, Kind: branchKind(b.Kind)}
+			var headSeq int64
+			for _, c := range calls {
+				if c.SessionID != id || c.Task != "chat" {
+					continue
+				}
+				if s, ok := seq[c.ID]; ok && s > headSeq && path.Includes(c.BranchID, s) {
+					headSeq, rec.HeadTurnID, rec.HeadBranchID = s, c.TurnID, c.BranchID
+				}
+			}
+			list = append(list, rec)
+		}
+		out[id] = list
+	}
+	return out, nil
+}
+
+func branchKind(k flitv1.BranchKind) string {
+	switch k {
+	case flitv1.BranchKind_BRANCH_KIND_RETRY:
+		return "retry"
+	case flitv1.BranchKind_BRANCH_KIND_EDIT:
+		return "edit"
+	}
+	return ""
+}
+
 // permissionChecks reads the sessions' safety check verdicts from their
-// event logs, by turn.
+// event logs, by turn (turnKey).
 func permissionChecks(ctx context.Context, st *store.Store, sessions []string) (map[string][]permissionCheck, error) {
 	out := map[string][]permissionCheck{}
 	for _, id := range sessions {
@@ -310,7 +405,8 @@ func permissionChecks(ctx context.Context, st *store.Store, sessions []string) (
 		for _, ev := range evs {
 			c := ev.GetPermissionCheck()
 			verdict := strings.ToLower(strings.TrimPrefix(c.Verdict.String(), "PERMISSION_VERDICT_"))
-			out[c.TurnId] = append(out[c.TurnId], permissionCheck{
+			k := turnKey(c.TurnId, ev.BranchId)
+			out[k] = append(out[k], permissionCheck{
 				ToolCallID: c.ToolCallId, Command: c.Command, Verdict: verdict, Reason: c.Reason,
 				Provider: c.Provider, Model: c.Model, ModelCallID: c.ModelCallId,
 			})

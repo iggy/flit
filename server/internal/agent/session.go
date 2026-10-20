@@ -13,6 +13,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
+	"github.com/iggy/flit/server/internal/branches"
 	"github.com/iggy/flit/server/internal/store"
 	"github.com/iggy/flit/server/internal/tools"
 )
@@ -53,6 +54,9 @@ type session struct {
 	// allowed are shell patterns allowed for the rest of the session
 	// ("allow for this session"), rebuilt from the log on load.
 	allowed []string
+	// tree is the session's conversation branches; info.BranchID is the
+	// active one (see branch.go).
+	tree *branches.Tree
 }
 
 type pendingPrompt struct {
@@ -77,6 +81,7 @@ func newSession(m *Manager, info store.Session) *session {
 		info:    info,
 		subs:    map[*subscriber]struct{}{},
 		prompts: map[string]pendingPrompt{},
+		tree:    branches.New(nil),
 	}
 }
 
@@ -124,6 +129,10 @@ func (s *session) append(ev *flitv1.Event) (*flitv1.Event, error) {
 
 func (s *session) appendLocked(ev *flitv1.Event) (*flitv1.Event, error) {
 	ev.SessionId = s.info.ID
+	ev.BranchId = s.info.BranchID
+	if sw := ev.GetBranchSwitched(); sw != nil {
+		ev.BranchId = sw.BranchId
+	}
 	ev.Seq = s.info.LastSeq + 1
 	ev.Time = timestamppb.New(time.Now())
 	if err := s.m.store.AppendEvent(context.Background(), s.info, ev); err != nil {
@@ -141,6 +150,10 @@ func (s *session) appendLocked(ev *flitv1.Event) (*flitv1.Event, error) {
 		s.info.ContextLength = ev.GetModelChanged().ContextLength
 	case ev.GetCompactionDone() != nil && ev.GetCompactionDone().Error == "":
 		s.info.ContextTokens = ev.GetCompactionDone().TokensAfter
+	case ev.GetBranchCreated() != nil:
+		s.tree.Add(ev)
+	case ev.GetBranchSwitched() != nil:
+		s.info.BranchID = ev.GetBranchSwitched().BranchId
 	}
 	for sub := range s.subs {
 		select {
@@ -560,34 +573,29 @@ func (s *session) rate(ctx context.Context, r Rating) error {
 	}
 	info := s.snapshot()
 	fb.Provider, fb.Model = info.Provider, info.Model
-	modelCallID := ""
+	modelCallID, branch := "", info.BranchID
 	if r.MessageID != "" {
-		evs, err := s.m.store.EventsOfKinds(ctx, info.ID, "message_started")
+		started, err := s.messageStarted(ctx, r.MessageID)
 		if err != nil {
 			return err
 		}
-		found := false
-		for _, ev := range evs {
-			if ms := ev.GetMessageStarted(); ms.GetMessageId() == r.MessageID {
-				if ms.Role != flitv1.Role_ROLE_ASSISTANT {
-					return invalid("message %s is not an assistant message", r.MessageID)
-				}
-				found = true
-				if ms.Model != "" {
-					fb.Provider, fb.Model = ms.Provider, ms.Model
-				}
-			}
+		ms := started.GetMessageStarted()
+		if ms.Role != flitv1.Role_ROLE_ASSISTANT {
+			return invalid("message %s is not an assistant message", r.MessageID)
 		}
-		if !found {
-			return invalid("no message %s in this session", r.MessageID)
+		if ms.Model != "" {
+			fb.Provider, fb.Model = ms.Provider, ms.Model
 		}
+		// The rating belongs to the branch the reply was written on, which
+		// may be an ancestor of the active one.
+		branch = started.BranchId
 		turn, err := s.m.store.ModelCallTurn(ctx, r.MessageID)
 		switch {
 		case err == nil:
 			fb.TurnId, modelCallID = turn, r.MessageID
 		case errors.Is(err, store.ErrNotFound):
 			// Recorded before model calls were kept: find the turn in the log.
-			if fb.TurnId, err = s.turnOf(ctx, r.MessageID); err != nil {
+			if fb.TurnId, err = s.turnOf(ctx, started); err != nil {
 				return err
 			}
 		default:
@@ -603,27 +611,44 @@ func (s *session) rate(ctx context.Context, r Rating) error {
 	}
 	return s.m.store.AddRating(ctx, &store.Rating{
 		ID: newID("rat"), SessionID: info.ID, TeamID: info.TeamID, ProjectID: info.ProjectID,
-		TurnID: fb.TurnId, ModelCallID: modelCallID, Target: target, Good: r.Good, Note: r.Note,
+		TurnID: fb.TurnId, ModelCallID: modelCallID, BranchID: branch, Target: target, Good: r.Good, Note: r.Note,
 		Client: r.Client, Provider: fb.Provider, Model: fb.Model,
 	})
 }
 
-// turnOf finds the user message that started the turn containing
-// messageID.
-func (s *session) turnOf(ctx context.Context, messageID string) (string, error) {
+// messageStarted returns the MessageStarted event of message id, on any
+// branch.
+func (s *session) messageStarted(ctx context.Context, id string) (*flitv1.Event, error) {
 	evs, err := s.m.store.EventsOfKinds(ctx, s.snapshot().ID, "message_started")
+	if err != nil {
+		return nil, err
+	}
+	for _, ev := range evs {
+		if ev.GetMessageStarted().GetMessageId() == id {
+			return ev, nil
+		}
+	}
+	return nil, invalid("no message %s in this session", id)
+}
+
+// turnOf finds the user message that started the turn containing the
+// message started by ev, on that message's branch.
+func (s *session) turnOf(ctx context.Context, started *flitv1.Event) (string, error) {
+	s.mu.Lock()
+	id, path := s.info.ID, s.tree.Path(started.BranchId)
+	s.mu.Unlock()
+	evs, err := s.m.store.EventsOfKinds(ctx, id, "message_started")
 	if err != nil {
 		return "", err
 	}
 	turn := ""
-	for _, ev := range evs {
-		ms := ev.GetMessageStarted()
-		if ms.Role == flitv1.Role_ROLE_USER {
+	for _, ev := range path.Filter(evs) {
+		if ev.Seq > started.Seq {
+			break
+		}
+		if ms := ev.GetMessageStarted(); ms.Role == flitv1.Role_ROLE_USER {
 			turn = ms.MessageId
 		}
-		if ms.MessageId == messageID {
-			return turn, nil
-		}
 	}
-	return "", nil
+	return turn, nil
 }

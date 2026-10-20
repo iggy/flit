@@ -189,6 +189,21 @@ final $typed_data.Uint8List promptCacheActionDescriptor = $convert.base64Decode(
     'ASHQoZUFJPTVBUX0NBQ0hFX0FDVElPTl9TQVZFRBABEiAKHFBST01QVF9DQUNIRV9BQ1RJT05f'
     'UkVTVE9SRUQQAhIhCh1QUk9NUFRfQ0FDSEVfQUNUSU9OX0RJU0NBUkRFRBAD');
 
+@$core.Deprecated('Use branchKindDescriptor instead')
+const BranchKind$json = {
+  '1': 'BranchKind',
+  '2': [
+    {'1': 'BRANCH_KIND_UNSPECIFIED', '2': 0},
+    {'1': 'BRANCH_KIND_RETRY', '2': 1},
+    {'1': 'BRANCH_KIND_EDIT', '2': 2},
+  ],
+};
+
+/// Descriptor for `BranchKind`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List branchKindDescriptor = $convert.base64Decode(
+    'CgpCcmFuY2hLaW5kEhsKF0JSQU5DSF9LSU5EX1VOU1BFQ0lGSUVEEAASFQoRQlJBTkNIX0tJTk'
+    'RfUkVUUlkQARIUChBCUkFOQ0hfS0lORF9FRElUEAI=');
+
 @$core.Deprecated('Use sessionDescriptor instead')
 const Session$json = {
   '1': 'Session',
@@ -231,6 +246,7 @@ const Session$json = {
     {'1': 'context_length', '3': 15, '4': 1, '5': 3, '10': 'contextLength'},
     {'1': 'mcp_servers', '3': 16, '4': 3, '5': 9, '10': 'mcpServers'},
     {'1': 'yolo', '3': 17, '4': 1, '5': 8, '10': 'yolo'},
+    {'1': 'branch_id', '3': 18, '4': 1, '5': 9, '10': 'branchId'},
   ],
 };
 
@@ -245,7 +261,8 @@ final $typed_data.Uint8List sessionDescriptor = $convert.base64Decode(
     'IAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCnVwZGF0ZVRpbWUSFgoGZWZmb3J0GA'
     'wgASgJUgZlZmZvcnQSEgoEcm9sZRgNIAEoCVIEcm9sZRIlCg5jb250ZXh0X3Rva2VucxgOIAEo'
     'A1INY29udGV4dFRva2VucxIlCg5jb250ZXh0X2xlbmd0aBgPIAEoA1INY29udGV4dExlbmd0aB'
-    'IfCgttY3Bfc2VydmVycxgQIAMoCVIKbWNwU2VydmVycxISCgR5b2xvGBEgASgIUgR5b2xv');
+    'IfCgttY3Bfc2VydmVycxgQIAMoCVIKbWNwU2VydmVycxISCgR5b2xvGBEgASgIUgR5b2xvEhsK'
+    'CWJyYW5jaF9pZBgSIAEoCVIIYnJhbmNoSWQ=');
 
 @$core.Deprecated('Use createSessionRequestDescriptor instead')
 const CreateSessionRequest$json = {
@@ -825,6 +842,102 @@ final $typed_data.Uint8List setMcpServerRequestDescriptor = $convert.base64Decod
     'ChNTZXRNY3BTZXJ2ZXJSZXF1ZXN0Eh0KCnNlc3Npb25faWQYASABKAlSCXNlc3Npb25JZBIWCg'
     'ZzZXJ2ZXIYAiABKAlSBnNlcnZlchIYCgdlbmFibGVkGAMgASgIUgdlbmFibGVk');
 
+@$core.Deprecated('Use retryFromMessageRequestDescriptor instead')
+const RetryFromMessageRequest$json = {
+  '1': 'RetryFromMessageRequest',
+  '2': [
+    {'1': 'session_id', '3': 1, '4': 1, '5': 9, '10': 'sessionId'},
+    {'1': 'message_id', '3': 2, '4': 1, '5': 9, '10': 'messageId'},
+    {'1': 'client', '3': 3, '4': 1, '5': 9, '10': 'client'},
+  ],
+};
+
+/// Descriptor for `RetryFromMessageRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List retryFromMessageRequestDescriptor = $convert.base64Decode(
+    'ChdSZXRyeUZyb21NZXNzYWdlUmVxdWVzdBIdCgpzZXNzaW9uX2lkGAEgASgJUglzZXNzaW9uSW'
+    'QSHQoKbWVzc2FnZV9pZBgCIAEoCVIJbWVzc2FnZUlkEhYKBmNsaWVudBgDIAEoCVIGY2xpZW50');
+
+@$core.Deprecated('Use retryFromMessageResponseDescriptor instead')
+const RetryFromMessageResponse$json = {
+  '1': 'RetryFromMessageResponse',
+  '2': [
+    {'1': 'branch_id', '3': 1, '4': 1, '5': 9, '10': 'branchId'},
+    {'1': 'seq', '3': 2, '4': 1, '5': 3, '10': 'seq'},
+  ],
+};
+
+/// Descriptor for `RetryFromMessageResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List retryFromMessageResponseDescriptor =
+    $convert.base64Decode(
+        'ChhSZXRyeUZyb21NZXNzYWdlUmVzcG9uc2USGwoJYnJhbmNoX2lkGAEgASgJUghicmFuY2hJZB'
+        'IQCgNzZXEYAiABKANSA3NlcQ==');
+
+@$core.Deprecated('Use editMessageRequestDescriptor instead')
+const EditMessageRequest$json = {
+  '1': 'EditMessageRequest',
+  '2': [
+    {'1': 'session_id', '3': 1, '4': 1, '5': 9, '10': 'sessionId'},
+    {'1': 'message_id', '3': 2, '4': 1, '5': 9, '10': 'messageId'},
+    {'1': 'text', '3': 3, '4': 1, '5': 9, '10': 'text'},
+    {'1': 'client', '3': 4, '4': 1, '5': 9, '10': 'client'},
+  ],
+};
+
+/// Descriptor for `EditMessageRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List editMessageRequestDescriptor = $convert.base64Decode(
+    'ChJFZGl0TWVzc2FnZVJlcXVlc3QSHQoKc2Vzc2lvbl9pZBgBIAEoCVIJc2Vzc2lvbklkEh0KCm'
+    '1lc3NhZ2VfaWQYAiABKAlSCW1lc3NhZ2VJZBISCgR0ZXh0GAMgASgJUgR0ZXh0EhYKBmNsaWVu'
+    'dBgEIAEoCVIGY2xpZW50');
+
+@$core.Deprecated('Use editMessageResponseDescriptor instead')
+const EditMessageResponse$json = {
+  '1': 'EditMessageResponse',
+  '2': [
+    {'1': 'branch_id', '3': 1, '4': 1, '5': 9, '10': 'branchId'},
+    {'1': 'seq', '3': 2, '4': 1, '5': 3, '10': 'seq'},
+  ],
+};
+
+/// Descriptor for `EditMessageResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List editMessageResponseDescriptor = $convert.base64Decode(
+    'ChNFZGl0TWVzc2FnZVJlc3BvbnNlEhsKCWJyYW5jaF9pZBgBIAEoCVIIYnJhbmNoSWQSEAoDc2'
+    'VxGAIgASgDUgNzZXE=');
+
+@$core.Deprecated('Use switchBranchRequestDescriptor instead')
+const SwitchBranchRequest$json = {
+  '1': 'SwitchBranchRequest',
+  '2': [
+    {'1': 'session_id', '3': 1, '4': 1, '5': 9, '10': 'sessionId'},
+    {'1': 'branch_id', '3': 2, '4': 1, '5': 9, '10': 'branchId'},
+    {'1': 'client', '3': 3, '4': 1, '5': 9, '10': 'client'},
+  ],
+};
+
+/// Descriptor for `SwitchBranchRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List switchBranchRequestDescriptor = $convert.base64Decode(
+    'ChNTd2l0Y2hCcmFuY2hSZXF1ZXN0Eh0KCnNlc3Npb25faWQYASABKAlSCXNlc3Npb25JZBIbCg'
+    'licmFuY2hfaWQYAiABKAlSCGJyYW5jaElkEhYKBmNsaWVudBgDIAEoCVIGY2xpZW50');
+
+@$core.Deprecated('Use switchBranchResponseDescriptor instead')
+const SwitchBranchResponse$json = {
+  '1': 'SwitchBranchResponse',
+  '2': [
+    {
+      '1': 'session',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.Session',
+      '10': 'session'
+    },
+  ],
+};
+
+/// Descriptor for `SwitchBranchResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List switchBranchResponseDescriptor = $convert.base64Decode(
+    'ChRTd2l0Y2hCcmFuY2hSZXNwb25zZRIqCgdzZXNzaW9uGAEgASgLMhAuZmxpdC52MS5TZXNzaW'
+    '9uUgdzZXNzaW9u');
+
 @$core.Deprecated('Use setMcpServerResponseDescriptor instead')
 const SetMcpServerResponse$json = {
   '1': 'SetMcpServerResponse',
@@ -927,6 +1040,7 @@ const Event$json = {
       '6': '.google.protobuf.Timestamp',
       '10': 'time'
     },
+    {'1': 'branch_id', '3': 4, '4': 1, '5': 9, '10': 'branchId'},
     {
       '1': 'message_started',
       '3': 10,
@@ -1206,6 +1320,24 @@ const Event$json = {
       '9': 0,
       '10': 'compactionDone'
     },
+    {
+      '1': 'branch_created',
+      '3': 41,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.BranchCreated',
+      '9': 0,
+      '10': 'branchCreated'
+    },
+    {
+      '1': 'branch_switched',
+      '3': 42,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.BranchSwitched',
+      '9': 0,
+      '10': 'branchSwitched'
+    },
   ],
   '8': [
     {'1': 'payload'},
@@ -1215,45 +1347,48 @@ const Event$json = {
 /// Descriptor for `Event`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List eventDescriptor = $convert.base64Decode(
     'CgVFdmVudBIdCgpzZXNzaW9uX2lkGAEgASgJUglzZXNzaW9uSWQSEAoDc2VxGAIgASgDUgNzZX'
-    'ESLgoEdGltZRgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSBHRpbWUSQgoPbWVz'
-    'c2FnZV9zdGFydGVkGAogASgLMhcuZmxpdC52MS5NZXNzYWdlU3RhcnRlZEgAUg5tZXNzYWdlU3'
-    'RhcnRlZBIzCgp0ZXh0X2RlbHRhGAsgASgLMhIuZmxpdC52MS5UZXh0RGVsdGFIAFIJdGV4dERl'
-    'bHRhEkIKD3JlYXNvbmluZ19kZWx0YRgMIAEoCzIXLmZsaXQudjEuUmVhc29uaW5nRGVsdGFIAF'
-    'IOcmVhc29uaW5nRGVsdGESOQoMbWVzc2FnZV9kb25lGA0gASgLMhQuZmxpdC52MS5NZXNzYWdl'
-    'RG9uZUgAUgttZXNzYWdlRG9uZRJGChF0b29sX2NhbGxfc3RhcnRlZBgOIAEoCzIYLmZsaXQudj'
-    'EuVG9vbENhbGxTdGFydGVkSABSD3Rvb2xDYWxsU3RhcnRlZBI2Cgt0b29sX291dHB1dBgPIAEo'
-    'CzITLmZsaXQudjEuVG9vbE91dHB1dEgAUgp0b29sT3V0cHV0Ej0KDnRvb2xfY2FsbF9kb25lGB'
-    'AgASgLMhUuZmxpdC52MS5Ub29sQ2FsbERvbmVIAFIMdG9vbENhbGxEb25lEkUKEHByb21wdF9y'
-    'ZXF1ZXN0ZWQYESABKAsyGC5mbGl0LnYxLlByb21wdFJlcXVlc3RlZEgAUg9wcm9tcHRSZXF1ZX'
-    'N0ZWQSQgoPcHJvbXB0X3Jlc29sdmVkGBIgASgLMhcuZmxpdC52MS5Qcm9tcHRSZXNvbHZlZEgA'
-    'Ug5wcm9tcHRSZXNvbHZlZBJJChJ0YXNrX3N0YXRlX2NoYW5nZWQYEyABKAsyGS5mbGl0LnYxLl'
-    'Rhc2tTdGF0ZUNoYW5nZWRIAFIQdGFza1N0YXRlQ2hhbmdlZBI8Cg1tb2RlbF9jaGFuZ2VkGBQg'
-    'ASgLMhUuZmxpdC52MS5Nb2RlbENoYW5nZWRIAFIMbW9kZWxDaGFuZ2VkEiYKBXVzYWdlGBUgAS'
-    'gLMg4uZmxpdC52MS5Vc2FnZUgAUgV1c2FnZRIqCgVlcnJvchgWIAEoCzISLmZsaXQudjEuVHVy'
-    'bkVycm9ySABSBWVycm9yEjkKDHRvZG9fdXBkYXRlZBgXIAEoCzIULmZsaXQudjEuVG9kb1VwZG'
-    'F0ZWRIAFILdG9kb1VwZGF0ZWQSLwoIZmVlZGJhY2sYGCABKAsyES5mbGl0LnYxLkZlZWRiYWNr'
-    'SABSCGZlZWRiYWNrEkwKE21jcF9zZXJ2ZXJzX2NoYW5nZWQYGSABKAsyGi5mbGl0LnYxLk1jcF'
-    'NlcnZlcnNDaGFuZ2VkSABSEW1jcFNlcnZlcnNDaGFuZ2VkEjwKDXNlc3Npb25fbW92ZWQYGiAB'
-    'KAsyFS5mbGl0LnYxLlNlc3Npb25Nb3ZlZEgAUgxzZXNzaW9uTW92ZWQSOQoMeW9sb19jaGFuZ2'
-    'VkGBsgASgLMhQuZmxpdC52MS5Zb2xvQ2hhbmdlZEgAUgt5b2xvQ2hhbmdlZBJFChBwZXJtaXNz'
-    'aW9uX2NoZWNrGBwgASgLMhguZmxpdC52MS5QZXJtaXNzaW9uQ2hlY2tIAFIPcGVybWlzc2lvbk'
-    'NoZWNrEkkKEm1vZGVsX2NhbGxfc3RhcnRlZBgdIAEoCzIZLmZsaXQudjEuTW9kZWxDYWxsU3Rh'
-    'cnRlZEgAUhBtb2RlbENhbGxTdGFydGVkEkIKD3Byb21wdF9wcm9ncmVzcxgeIAEoCzIXLmZsaX'
-    'QudjEuUHJvbXB0UHJvZ3Jlc3NIAFIOcHJvbXB0UHJvZ3Jlc3MSQwoQbW9kZWxfY2FsbF9lbmRl'
-    'ZBgfIAEoCzIXLmZsaXQudjEuTW9kZWxDYWxsRW5kZWRIAFIObW9kZWxDYWxsRW5kZWQSPwoObW'
-    'Vzc2FnZV9xdWV1ZWQYICABKAsyFi5mbGl0LnYxLk1lc3NhZ2VRdWV1ZWRIAFINbWVzc2FnZVF1'
-    'ZXVlZBJVChZxdWV1ZWRfbWVzc2FnZV91cGRhdGVkGCEgASgLMh0uZmxpdC52MS5RdWV1ZWRNZX'
-    'NzYWdlVXBkYXRlZEgAUhRxdWV1ZWRNZXNzYWdlVXBkYXRlZBJbChhxdWV1ZWRfbWVzc2FnZV9k'
-    'ZWxpdmVyZWQYIiABKAsyHy5mbGl0LnYxLlF1ZXVlZE1lc3NhZ2VEZWxpdmVyZWRIAFIWcXVldW'
-    'VkTWVzc2FnZURlbGl2ZXJlZBJJChJtb2RlbF9jYWxsX3dhaXRpbmcYIyABKAsyGS5mbGl0LnYx'
-    'Lk1vZGVsQ2FsbFdhaXRpbmdIAFIQbW9kZWxDYWxsV2FpdGluZxI5Cgxwcm9tcHRfY2FjaGUYJC'
-    'ABKAsyFC5mbGl0LnYxLlByb21wdENhY2hlSABSC3Byb21wdENhY2hlElgKF3JlYXNvbmluZ19l'
-    'bmRfcmVxdWVzdGVkGCUgASgLMh4uZmxpdC52MS5SZWFzb25pbmdFbmRSZXF1ZXN0ZWRIAFIVcm'
-    'Vhc29uaW5nRW5kUmVxdWVzdGVkElIKFXJlYXNvbmluZ19lbmRfaWdub3JlZBgmIAEoCzIcLmZs'
-    'aXQudjEuUmVhc29uaW5nRW5kSWdub3JlZEgAUhNyZWFzb25pbmdFbmRJZ25vcmVkEksKEmNvbX'
-    'BhY3Rpb25fc3RhcnRlZBgnIAEoCzIaLmZsaXQudjEuQ29tcGFjdGlvblN0YXJ0ZWRIAFIRY29t'
-    'cGFjdGlvblN0YXJ0ZWQSQgoPY29tcGFjdGlvbl9kb25lGCggASgLMhcuZmxpdC52MS5Db21wYW'
-    'N0aW9uRG9uZUgAUg5jb21wYWN0aW9uRG9uZUIJCgdwYXlsb2Fk');
+    'ESLgoEdGltZRgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSBHRpbWUSGwoJYnJh'
+    'bmNoX2lkGAQgASgJUghicmFuY2hJZBJCCg9tZXNzYWdlX3N0YXJ0ZWQYCiABKAsyFy5mbGl0Ln'
+    'YxLk1lc3NhZ2VTdGFydGVkSABSDm1lc3NhZ2VTdGFydGVkEjMKCnRleHRfZGVsdGEYCyABKAsy'
+    'Ei5mbGl0LnYxLlRleHREZWx0YUgAUgl0ZXh0RGVsdGESQgoPcmVhc29uaW5nX2RlbHRhGAwgAS'
+    'gLMhcuZmxpdC52MS5SZWFzb25pbmdEZWx0YUgAUg5yZWFzb25pbmdEZWx0YRI5CgxtZXNzYWdl'
+    'X2RvbmUYDSABKAsyFC5mbGl0LnYxLk1lc3NhZ2VEb25lSABSC21lc3NhZ2VEb25lEkYKEXRvb2'
+    'xfY2FsbF9zdGFydGVkGA4gASgLMhguZmxpdC52MS5Ub29sQ2FsbFN0YXJ0ZWRIAFIPdG9vbENh'
+    'bGxTdGFydGVkEjYKC3Rvb2xfb3V0cHV0GA8gASgLMhMuZmxpdC52MS5Ub29sT3V0cHV0SABSCn'
+    'Rvb2xPdXRwdXQSPQoOdG9vbF9jYWxsX2RvbmUYECABKAsyFS5mbGl0LnYxLlRvb2xDYWxsRG9u'
+    'ZUgAUgx0b29sQ2FsbERvbmUSRQoQcHJvbXB0X3JlcXVlc3RlZBgRIAEoCzIYLmZsaXQudjEuUH'
+    'JvbXB0UmVxdWVzdGVkSABSD3Byb21wdFJlcXVlc3RlZBJCCg9wcm9tcHRfcmVzb2x2ZWQYEiAB'
+    'KAsyFy5mbGl0LnYxLlByb21wdFJlc29sdmVkSABSDnByb21wdFJlc29sdmVkEkkKEnRhc2tfc3'
+    'RhdGVfY2hhbmdlZBgTIAEoCzIZLmZsaXQudjEuVGFza1N0YXRlQ2hhbmdlZEgAUhB0YXNrU3Rh'
+    'dGVDaGFuZ2VkEjwKDW1vZGVsX2NoYW5nZWQYFCABKAsyFS5mbGl0LnYxLk1vZGVsQ2hhbmdlZE'
+    'gAUgxtb2RlbENoYW5nZWQSJgoFdXNhZ2UYFSABKAsyDi5mbGl0LnYxLlVzYWdlSABSBXVzYWdl'
+    'EioKBWVycm9yGBYgASgLMhIuZmxpdC52MS5UdXJuRXJyb3JIAFIFZXJyb3ISOQoMdG9kb191cG'
+    'RhdGVkGBcgASgLMhQuZmxpdC52MS5Ub2RvVXBkYXRlZEgAUgt0b2RvVXBkYXRlZBIvCghmZWVk'
+    'YmFjaxgYIAEoCzIRLmZsaXQudjEuRmVlZGJhY2tIAFIIZmVlZGJhY2sSTAoTbWNwX3NlcnZlcn'
+    'NfY2hhbmdlZBgZIAEoCzIaLmZsaXQudjEuTWNwU2VydmVyc0NoYW5nZWRIAFIRbWNwU2VydmVy'
+    'c0NoYW5nZWQSPAoNc2Vzc2lvbl9tb3ZlZBgaIAEoCzIVLmZsaXQudjEuU2Vzc2lvbk1vdmVkSA'
+    'BSDHNlc3Npb25Nb3ZlZBI5Cgx5b2xvX2NoYW5nZWQYGyABKAsyFC5mbGl0LnYxLllvbG9DaGFu'
+    'Z2VkSABSC3lvbG9DaGFuZ2VkEkUKEHBlcm1pc3Npb25fY2hlY2sYHCABKAsyGC5mbGl0LnYxLl'
+    'Blcm1pc3Npb25DaGVja0gAUg9wZXJtaXNzaW9uQ2hlY2sSSQoSbW9kZWxfY2FsbF9zdGFydGVk'
+    'GB0gASgLMhkuZmxpdC52MS5Nb2RlbENhbGxTdGFydGVkSABSEG1vZGVsQ2FsbFN0YXJ0ZWQSQg'
+    'oPcHJvbXB0X3Byb2dyZXNzGB4gASgLMhcuZmxpdC52MS5Qcm9tcHRQcm9ncmVzc0gAUg5wcm9t'
+    'cHRQcm9ncmVzcxJDChBtb2RlbF9jYWxsX2VuZGVkGB8gASgLMhcuZmxpdC52MS5Nb2RlbENhbG'
+    'xFbmRlZEgAUg5tb2RlbENhbGxFbmRlZBI/Cg5tZXNzYWdlX3F1ZXVlZBggIAEoCzIWLmZsaXQu'
+    'djEuTWVzc2FnZVF1ZXVlZEgAUg1tZXNzYWdlUXVldWVkElUKFnF1ZXVlZF9tZXNzYWdlX3VwZG'
+    'F0ZWQYISABKAsyHS5mbGl0LnYxLlF1ZXVlZE1lc3NhZ2VVcGRhdGVkSABSFHF1ZXVlZE1lc3Nh'
+    'Z2VVcGRhdGVkElsKGHF1ZXVlZF9tZXNzYWdlX2RlbGl2ZXJlZBgiIAEoCzIfLmZsaXQudjEuUX'
+    'VldWVkTWVzc2FnZURlbGl2ZXJlZEgAUhZxdWV1ZWRNZXNzYWdlRGVsaXZlcmVkEkkKEm1vZGVs'
+    'X2NhbGxfd2FpdGluZxgjIAEoCzIZLmZsaXQudjEuTW9kZWxDYWxsV2FpdGluZ0gAUhBtb2RlbE'
+    'NhbGxXYWl0aW5nEjkKDHByb21wdF9jYWNoZRgkIAEoCzIULmZsaXQudjEuUHJvbXB0Q2FjaGVI'
+    'AFILcHJvbXB0Q2FjaGUSWAoXcmVhc29uaW5nX2VuZF9yZXF1ZXN0ZWQYJSABKAsyHi5mbGl0Ln'
+    'YxLlJlYXNvbmluZ0VuZFJlcXVlc3RlZEgAUhVyZWFzb25pbmdFbmRSZXF1ZXN0ZWQSUgoVcmVh'
+    'c29uaW5nX2VuZF9pZ25vcmVkGCYgASgLMhwuZmxpdC52MS5SZWFzb25pbmdFbmRJZ25vcmVkSA'
+    'BSE3JlYXNvbmluZ0VuZElnbm9yZWQSSwoSY29tcGFjdGlvbl9zdGFydGVkGCcgASgLMhouZmxp'
+    'dC52MS5Db21wYWN0aW9uU3RhcnRlZEgAUhFjb21wYWN0aW9uU3RhcnRlZBJCCg9jb21wYWN0aW'
+    '9uX2RvbmUYKCABKAsyFy5mbGl0LnYxLkNvbXBhY3Rpb25Eb25lSABSDmNvbXBhY3Rpb25Eb25l'
+    'Ej8KDmJyYW5jaF9jcmVhdGVkGCkgASgLMhYuZmxpdC52MS5CcmFuY2hDcmVhdGVkSABSDWJyYW'
+    '5jaENyZWF0ZWQSQgoPYnJhbmNoX3N3aXRjaGVkGCogASgLMhcuZmxpdC52MS5CcmFuY2hTd2l0'
+    'Y2hlZEgAUg5icmFuY2hTd2l0Y2hlZEIJCgdwYXlsb2Fk');
 
 @$core.Deprecated('Use messageStartedDescriptor instead')
 const MessageStarted$json = {
@@ -1931,6 +2066,47 @@ final $typed_data.Uint8List compactionDoneDescriptor = $convert.base64Decode(
     'Fwc2VkTXMSHQoKa2VwdF90dXJucxgNIAEoBVIJa2VwdFR1cm5zEhQKBWVycm9yGA4gASgJUgVl'
     'cnJvcg==');
 
+@$core.Deprecated('Use branchCreatedDescriptor instead')
+const BranchCreated$json = {
+  '1': 'BranchCreated',
+  '2': [
+    {'1': 'branch_id', '3': 1, '4': 1, '5': 9, '10': 'branchId'},
+    {'1': 'parent_branch_id', '3': 2, '4': 1, '5': 9, '10': 'parentBranchId'},
+    {'1': 'fork_seq', '3': 3, '4': 1, '5': 3, '10': 'forkSeq'},
+    {
+      '1': 'kind',
+      '3': 4,
+      '4': 1,
+      '5': 14,
+      '6': '.flit.v1.BranchKind',
+      '10': 'kind'
+    },
+    {'1': 'message_id', '3': 5, '4': 1, '5': 9, '10': 'messageId'},
+    {'1': 'client', '3': 6, '4': 1, '5': 9, '10': 'client'},
+  ],
+};
+
+/// Descriptor for `BranchCreated`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List branchCreatedDescriptor = $convert.base64Decode(
+    'Cg1CcmFuY2hDcmVhdGVkEhsKCWJyYW5jaF9pZBgBIAEoCVIIYnJhbmNoSWQSKAoQcGFyZW50X2'
+    'JyYW5jaF9pZBgCIAEoCVIOcGFyZW50QnJhbmNoSWQSGQoIZm9ya19zZXEYAyABKANSB2ZvcmtT'
+    'ZXESJwoEa2luZBgEIAEoDjITLmZsaXQudjEuQnJhbmNoS2luZFIEa2luZBIdCgptZXNzYWdlX2'
+    'lkGAUgASgJUgltZXNzYWdlSWQSFgoGY2xpZW50GAYgASgJUgZjbGllbnQ=');
+
+@$core.Deprecated('Use branchSwitchedDescriptor instead')
+const BranchSwitched$json = {
+  '1': 'BranchSwitched',
+  '2': [
+    {'1': 'branch_id', '3': 1, '4': 1, '5': 9, '10': 'branchId'},
+    {'1': 'client', '3': 2, '4': 1, '5': 9, '10': 'client'},
+  ],
+};
+
+/// Descriptor for `BranchSwitched`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List branchSwitchedDescriptor = $convert.base64Decode(
+    'Cg5CcmFuY2hTd2l0Y2hlZBIbCglicmFuY2hfaWQYASABKAlSCGJyYW5jaElkEhYKBmNsaWVudB'
+    'gCIAEoCVIGY2xpZW50');
+
 const $core.Map<$core.String, $core.dynamic> SessionServiceBase$json = {
   '1': 'SessionService',
   '2': [
@@ -2031,6 +2207,21 @@ const $core.Map<$core.String, $core.dynamic> SessionServiceBase$json = {
       '3': '.flit.v1.ListSkillsResponse',
       '4': {'34': 1},
     },
+    {
+      '1': 'RetryFromMessage',
+      '2': '.flit.v1.RetryFromMessageRequest',
+      '3': '.flit.v1.RetryFromMessageResponse'
+    },
+    {
+      '1': 'EditMessage',
+      '2': '.flit.v1.EditMessageRequest',
+      '3': '.flit.v1.EditMessageResponse'
+    },
+    {
+      '1': 'SwitchBranch',
+      '2': '.flit.v1.SwitchBranchRequest',
+      '3': '.flit.v1.SwitchBranchResponse'
+    },
   ],
 };
 
@@ -2080,6 +2271,8 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.flit.v1.ReasoningEndIgnored': ReasoningEndIgnored$json,
   '.flit.v1.CompactionStarted': CompactionStarted$json,
   '.flit.v1.CompactionDone': CompactionDone$json,
+  '.flit.v1.BranchCreated': BranchCreated$json,
+  '.flit.v1.BranchSwitched': BranchSwitched$json,
   '.flit.v1.SendRequest': SendRequest$json,
   '.flit.v1.SendResponse': SendResponse$json,
   '.flit.v1.EditQueuedMessageRequest': EditQueuedMessageRequest$json,
@@ -2114,6 +2307,12 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.flit.v1.ListSkillsRequest': ListSkillsRequest$json,
   '.flit.v1.ListSkillsResponse': ListSkillsResponse$json,
   '.flit.v1.Skill': Skill$json,
+  '.flit.v1.RetryFromMessageRequest': RetryFromMessageRequest$json,
+  '.flit.v1.RetryFromMessageResponse': RetryFromMessageResponse$json,
+  '.flit.v1.EditMessageRequest': EditMessageRequest$json,
+  '.flit.v1.EditMessageResponse': EditMessageResponse$json,
+  '.flit.v1.SwitchBranchRequest': SwitchBranchRequest$json,
+  '.flit.v1.SwitchBranchResponse': SwitchBranchResponse$json,
 };
 
 /// Descriptor for `SessionService`. Decode as a `google.protobuf.ServiceDescriptorProto`.
@@ -2144,4 +2343,9 @@ final $typed_data.Uint8List sessionServiceDescriptor = $convert.base64Decode(
     'xpc3RNY3BTZXJ2ZXJzUmVxdWVzdBofLmZsaXQudjEuTGlzdE1jcFNlcnZlcnNSZXNwb25zZSID'
     'kAIBEksKDFNldE1jcFNlcnZlchIcLmZsaXQudjEuU2V0TWNwU2VydmVyUmVxdWVzdBodLmZsaX'
     'QudjEuU2V0TWNwU2VydmVyUmVzcG9uc2USSgoKTGlzdFNraWxscxIaLmZsaXQudjEuTGlzdFNr'
-    'aWxsc1JlcXVlc3QaGy5mbGl0LnYxLkxpc3RTa2lsbHNSZXNwb25zZSIDkAIB');
+    'aWxsc1JlcXVlc3QaGy5mbGl0LnYxLkxpc3RTa2lsbHNSZXNwb25zZSIDkAIBElcKEFJldHJ5Rn'
+    'JvbU1lc3NhZ2USIC5mbGl0LnYxLlJldHJ5RnJvbU1lc3NhZ2VSZXF1ZXN0GiEuZmxpdC52MS5S'
+    'ZXRyeUZyb21NZXNzYWdlUmVzcG9uc2USSAoLRWRpdE1lc3NhZ2USGy5mbGl0LnYxLkVkaXRNZX'
+    'NzYWdlUmVxdWVzdBocLmZsaXQudjEuRWRpdE1lc3NhZ2VSZXNwb25zZRJLCgxTd2l0Y2hCcmFu'
+    'Y2gSHC5mbGl0LnYxLlN3aXRjaEJyYW5jaFJlcXVlc3QaHS5mbGl0LnYxLlN3aXRjaEJyYW5jaF'
+    'Jlc3BvbnNl');

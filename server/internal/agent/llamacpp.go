@@ -60,6 +60,8 @@ type slotRef struct {
 	router   bool
 	model    string
 	slot     int
+	// key names the cache: the session and branch (see kvKeys).
+	key string
 }
 
 // liveCall is the model call a session has in flight (session.call).
@@ -160,10 +162,13 @@ func (s *session) callStarted(c *liveCall) bool {
 // servers with a unified KV cache. So flit saves it to a file the moment a
 // turn ends, and restores it before the next turn's first call, into the
 // slot the call is then pinned to (id_slot). A save that captured nothing
-// is never restored.
+// is never restored. Each branch of a session has its own cache (key
+// session/branch, just the session for the root branch), so switching
+// branches never restores another branch's conversation; a branch without
+// a save of its own starts from its nearest ancestor's.
 
-// kvPool tracks, per llama.cpp server, which slot each session used last
-// and which save file holds whose cache.
+// kvPool tracks, per llama.cpp server, which slot each session branch used
+// last and which save file holds whose cache.
 type kvPool struct {
 	mu      sync.Mutex
 	servers map[string]*kvServer // by provider name
@@ -174,15 +179,15 @@ type kvServer struct {
 	mu sync.Mutex
 	// off: the server has no slot API, or can't save.
 	off bool
-	// last is the slot each session last used, per model.
-	last  map[string]map[string]int // model → session → slot
+	// last is the slot each session branch last used, per model.
+	last  map[string]map[string]int // model → key → slot
 	files []*kvFile
 }
 
 type kvFile struct {
-	name, session, model string
-	tokens               int
-	used                 time.Time
+	name, key, model string
+	tokens           int
+	used             time.Time
 }
 
 func (p *kvPool) server(name string) *kvServer {
@@ -199,22 +204,22 @@ func (p *kvPool) server(name string) *kvServer {
 	return srv
 }
 
-// fileFor returns the session's save file for model, if it holds a cache.
-func (srv *kvServer) fileFor(session, model string) *kvFile {
+// fileFor returns key's save file for model, if it holds a cache.
+func (srv *kvServer) fileFor(key, model string) *kvFile {
 	for _, f := range srv.files {
-		if f.session == session && f.model == model && f.tokens > 0 {
+		if f.key == key && f.model == model && f.tokens > 0 {
 			return f
 		}
 	}
 	return nil
 }
 
-// claimFile gives the session a save file: its own, a new one while the
-// pool has room, else the least recently used.
-func (srv *kvServer) claimFile(session, model string, n int) *kvFile {
+// claimFile gives key a save file: its own, a new one while the pool has
+// room, else the least recently used.
+func (srv *kvServer) claimFile(key, model string, n int) *kvFile {
 	var oldest *kvFile
 	for _, f := range srv.files {
-		if f.session == session {
+		if f.key == key {
 			f.model, f.used = model, time.Now()
 			return f
 		}
@@ -223,19 +228,20 @@ func (srv *kvServer) claimFile(session, model string, n int) *kvFile {
 		}
 	}
 	if len(srv.files) < n {
-		f := &kvFile{name: fmt.Sprintf("flit-kv-%d.bin", len(srv.files)), session: session, model: model, used: time.Now()}
+		f := &kvFile{name: fmt.Sprintf("flit-kv-%d.bin", len(srv.files)), key: key, model: model, used: time.Now()}
 		srv.files = append(srv.files, f)
 		return f
 	}
-	oldest.session, oldest.model, oldest.tokens, oldest.used = session, model, 0, time.Now()
+	oldest.key, oldest.model, oldest.tokens, oldest.used = key, model, 0, time.Now()
 	return oldest
 }
 
 // prepareSlot picks the slot for a session's llama.cpp call (its last one
 // if free, else a free one) and, on a turn's first call, restores the
-// session's saved cache into it. It returns the slot to pin (nil: let the
-// server choose) and a PromptCache event for the log, if any.
-func (m *Manager) prepareSlot(ctx context.Context, cfg config.Config, info store.Session, p config.Provider, router bool, msgID string, first bool) (*int, *flitv1.Event) {
+// branch's saved cache into it. keys are the branch's cache keys, best
+// first (kvKeys). It returns the slot to pin (nil: let the server choose)
+// and a PromptCache event for the log, if any.
+func (m *Manager) prepareSlot(ctx context.Context, cfg config.Config, info store.Session, keys []string, p config.Provider, router bool, msgID string, first bool) (*int, *flitv1.Event) {
 	if !cfg.LlamaCpp.KVCacheOn() {
 		return nil, nil
 	}
@@ -254,7 +260,12 @@ func (m *Manager) prepareSlot(ctx context.Context, cfg config.Config, info store
 		}
 		return nil, nil
 	}
-	last, had := srv.last[info.Model][info.ID]
+	last, had := -1, false
+	for _, k := range keys {
+		if last, had = srv.last[info.Model][k]; had {
+			break
+		}
+	}
 	pick := -1
 	for _, sl := range slots {
 		if sl.IsProcessing {
@@ -274,8 +285,13 @@ func (m *Manager) prepareSlot(ctx context.Context, cfg config.Config, info store
 	if srv.last[info.Model] == nil {
 		srv.last[info.Model] = map[string]int{}
 	}
-	srv.last[info.Model][info.ID] = pick
-	f := srv.fileFor(info.ID, info.Model)
+	srv.last[info.Model][keys[0]] = pick
+	var f *kvFile
+	for _, k := range keys {
+		if f = srv.fileFor(k, info.Model); f != nil {
+			break
+		}
+	}
 	if !first || f == nil {
 		return &pick, nil
 	}
@@ -295,10 +311,11 @@ func (m *Manager) prepareSlot(ctx context.Context, cfg config.Config, info store
 	return &pick, &flitv1.Event{Payload: &flitv1.Event_PromptCache{PromptCache: pc}}
 }
 
-// saveAfterTurn saves the session's cache from the slot its last call
-// used, and logs it. A save of nothing (the cache was already gone) leaves
-// no file to restore.
-func (m *Manager) saveAfterTurn(s *session, p config.Provider, router bool, model string, slot int) {
+// saveAfterTurn saves the session branch's cache from the slot its last
+// call used, and logs it. A save of nothing (the cache was already gone)
+// leaves no file to restore.
+func (m *Manager) saveAfterTurn(s *session, ref *slotRef) {
+	p, router, model, slot := ref.provider, ref.router, ref.model, ref.slot
 	cfg := m.cfg()
 	if !cfg.LlamaCpp.KVCacheOn() || m.closing.Load() {
 		return
@@ -310,7 +327,7 @@ func (m *Manager) saveAfterTurn(s *session, p config.Provider, router bool, mode
 		return
 	}
 	info := s.snapshot()
-	f := srv.claimFile(info.ID, model, cfg.LlamaCpp.KVCacheFiles)
+	f := srv.claimFile(ref.key, model, cfg.LlamaCpp.KVCacheFiles)
 	start := time.Now()
 	n, err := m.llamaClient(p, router).SaveSlot(context.Background(), model, slot, f.name)
 	f.tokens = n
@@ -330,11 +347,13 @@ func (m *Manager) saveAfterTurn(s *session, p config.Provider, router bool, mode
 	}
 }
 
-// discardKV forgets the session's prompt cache save files: after
+// discardKV forgets the active branch's prompt cache save files: after
 // compaction its prompt starts differently, so restoring one would load a
-// prefix the next call doesn't share. Each one dropped is logged.
+// prefix the next call doesn't share. Other branches' prompts haven't
+// changed; their caches stay. Each one dropped is logged.
 func (m *Manager) discardKV(s *session) {
 	info := s.snapshot()
+	key := kvKey(info.ID, info.BranchID)
 	m.kv.mu.Lock()
 	servers := make([]*kvServer, 0, len(m.kv.servers))
 	for _, srv := range m.kv.servers {
@@ -345,7 +364,7 @@ func (m *Manager) discardKV(s *session) {
 		srv.mu.Lock()
 		var dropped []*kvFile
 		for _, f := range srv.files {
-			if f.session == info.ID && f.tokens > 0 {
+			if f.key == key && f.tokens > 0 {
 				f.tokens = 0
 				dropped = append(dropped, f)
 			}
