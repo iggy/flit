@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/iggy/flit/server/internal/config"
+	"github.com/iggy/flit/server/internal/memory"
 	"github.com/iggy/flit/server/internal/roles"
 )
 
@@ -27,9 +29,10 @@ const basePrompt = `You are flit, a coding agent. You help the user with softwar
 - When you're done, reply briefly with what you did.`
 
 // systemPrompt builds the system prompt for a session working in dir with
-// an optional role. The instruction files, role and memory file are re-read
-// each time, so edits apply on the next model call.
-func systemPrompt(dir string, role *roles.Role) string {
+// an optional role and the user and project memory layers. The instruction
+// files, role and memory files are re-read each time, so edits apply on the
+// next model call.
+func systemPrompt(dir string, role *roles.Role, layers []memory.Layer) string {
 	var b strings.Builder
 	b.WriteString(basePrompt)
 	fmt.Fprintf(&b, "\n\nEnvironment:\n- Working directory: %s\n- OS: %s/%s\n- Date: %s\n",
@@ -70,5 +73,40 @@ func systemPrompt(dir string, role *roles.Role) string {
 			}
 		}
 	}
+	for _, l := range layers {
+		if l.Content == "" {
+			continue
+		}
+		what := "the user, in every project"
+		if l.Kind == memory.Project {
+			what = "this project"
+		}
+		fmt.Fprintf(&b, "\nLessons from earlier sessions about %s (%s). Follow them when their situation applies:\n\n<%s-memory>\n%s\n</%s-memory>\n",
+			what, l.Path, l.Kind, l.Content, l.Kind)
+	}
 	return b.String()
+}
+
+// memoryLayers reads the user memory and, for a session in a project, the
+// project's, each cut to the configured budget. Unreadable files are
+// logged and skipped.
+func (m *Manager) memoryLayers(cfg config.Config, projectID string) []memory.Layer {
+	if m.DataDir == "" {
+		return nil
+	}
+	paths := []memory.Layer{{Kind: memory.User, Path: memory.UserPath(m.DataDir)}}
+	if projectID != "" {
+		paths = append(paths, memory.Layer{Kind: memory.Project, Path: memory.ProjectPath(m.DataDir, projectID)})
+	}
+	var out []memory.Layer
+	for _, l := range paths {
+		content, cut, err := memory.ReadCapped(l.Path, cfg.Learning.MemoryMaxBytes)
+		if err != nil {
+			m.log.Warn("could not read memory file", "path", l.Path, "err", err)
+			continue
+		}
+		l.Content, l.Truncated = content, cut
+		out = append(out, l)
+	}
+	return out
 }

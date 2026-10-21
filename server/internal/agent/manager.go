@@ -69,6 +69,9 @@ type Manager struct {
 	SkillsDirs func() []string
 	// Crons, if set, gives sessions the cron tool. Set before use.
 	Crons CronControl
+	// DataDir, if set, holds the user and project memory files (see
+	// package memory). Set before use.
+	DataDir string
 
 	// kv tracks llama.cpp slots and prompt cache save files.
 	kv kvPool

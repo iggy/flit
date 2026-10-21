@@ -234,6 +234,13 @@ state, and the agent's todo list.
   chat format, filterable by date, project, model and rating, with
   `--redact` for public datasets. Projects can opt out. See
   [docs/export.md](docs/export.md).
+- **Manual self-learning**: `flit learn <session>`, `/learn` in the chat or
+  "Learn from this session" in the app asks a model (`agent.tasks.learning`)
+  what a finished session taught: lessons for the user and project memory
+  files (plain Markdown, injected into every session's prompt within a byte
+  budget), the role's memory file, or a new skill. You accept, edit or
+  reject each proposal; nothing is written until you do. See
+  [docs/learning.md](docs/learning.md).
 
 ### Sessions and tools
 

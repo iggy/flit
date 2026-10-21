@@ -22,6 +22,7 @@ import (
 	"github.com/iggy/flit/server/internal/config"
 	"github.com/iggy/flit/server/internal/cronsvc"
 	"github.com/iggy/flit/server/internal/devices"
+	"github.com/iggy/flit/server/internal/learn"
 	"github.com/iggy/flit/server/internal/models"
 	"github.com/iggy/flit/server/internal/modelsvc"
 	"github.com/iggy/flit/server/internal/scheduler"
@@ -45,6 +46,8 @@ type Deps struct {
 	Store *store.Store
 	// Crons runs cron jobs; nil leaves CronService out.
 	Crons *scheduler.Scheduler
+	// Learning runs learning passes; nil leaves LearningService out.
+	Learning *learn.Service
 }
 
 // NewHandler returns the API handler. Every RPC requires the admin token or
@@ -63,6 +66,9 @@ func NewHandler(adminToken string, d Deps) http.Handler {
 	}
 	if d.Catalog != nil {
 		mux.Handle(flitv1connect.NewModelServiceHandler(&modelsvc.Models{Catalog: d.Catalog, Store: d.Store}, opts))
+	}
+	if d.Learning != nil {
+		mux.Handle(flitv1connect.NewLearningServiceHandler(&learn.API{S: d.Learning}, opts))
 	}
 	if d.RolesDir != nil {
 		mux.Handle(flitv1connect.NewRoleServiceHandler(&modelsvc.Roles{Dir: d.RolesDir}, opts))

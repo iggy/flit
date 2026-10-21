@@ -14,6 +14,7 @@ import 'package:flit/presentation/flit/flit_branch_controls.dart';
 import 'package:flit/presentation/flit/flit_call_status.dart';
 import 'package:flit/presentation/flit/flit_changes.dart';
 import 'package:flit/presentation/flit/flit_compaction.dart';
+import 'package:flit/presentation/flit/flit_learn_sheet.dart';
 import 'package:flit/presentation/flit/flit_mcp_sheet.dart';
 import 'package:flit/presentation/flit/flit_model_picker.dart';
 import 'package:flit/presentation/flit/flit_nav.dart';
@@ -97,6 +98,10 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
     final compact = flitCompactInstructions(text);
     if (compact != null) {
       return _compact(compact);
+    }
+    if (flitIsLearnCommand(text)) {
+      _input.clear();
+      return showFlitLearnSheet(context, widget.sessionId);
     }
     final fold = ref.read(flitChatProvider(widget.sessionId)).fold;
     // Empty text sends what's queued (after a Stop), if anything is.
@@ -601,6 +606,7 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
               controller: _input,
               skills: <FlitSkill>[
                 flitCompactSkill,
+                flitLearnSkill,
                 ...?ref.watch(flitSkillsProvider(widget.sessionId)).value,
               ],
             ),

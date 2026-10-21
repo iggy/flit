@@ -385,7 +385,7 @@ func (s *session) chatRequest(ctx context.Context, cfg config.Config, info store
 	}
 	set, extra, skillNames := s.toolSet(ctx, cfg, info)
 	cr.set, cr.skills = set, skillNames
-	cr.system = systemPrompt(info.WorkingDir, cr.role) + extra + promptAppends(cfg, info.Provider, info.Model)
+	cr.system = systemPrompt(info.WorkingDir, cr.role, s.m.memoryLayers(cfg, info.ProjectID)) + extra + promptAppends(cfg, info.Provider, info.Model)
 	cr.req = llm.Request{
 		Model:    info.Model,
 		Messages: cr.messages(history, cr.compaction),

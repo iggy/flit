@@ -217,6 +217,30 @@ CREATE TABLE cron_runs (
 CREATE INDEX cron_runs_by_job ON cron_runs (team_id, job, started_at);
 CREATE INDEX cron_runs_by_time ON cron_runs (team_id, started_at);
 `,
+	`
+CREATE TABLE learn_proposals (
+	id          TEXT PRIMARY KEY,
+	session_id  TEXT NOT NULL REFERENCES sessions(id),
+	team_id     TEXT NOT NULL,
+	project_id  TEXT NOT NULL,
+	created_at  INTEGER NOT NULL,
+	action      TEXT NOT NULL,
+	target      TEXT NOT NULL,
+	skill       TEXT NOT NULL,
+	cue         TEXT NOT NULL,
+	lesson      TEXT NOT NULL,
+	evidence    TEXT NOT NULL,
+	old_text    TEXT NOT NULL,
+	new_text    TEXT NOT NULL,
+	path        TEXT NOT NULL,
+	provider    TEXT NOT NULL,
+	model       TEXT NOT NULL,
+	status      TEXT NOT NULL,
+	decided_at  INTEGER
+);
+CREATE INDEX learn_proposals_by_session ON learn_proposals (session_id, created_at);
+CREATE INDEX learn_proposals_by_status ON learn_proposals (status, created_at);
+`,
 }
 
 func (s *Store) migrate(ctx context.Context) error {
