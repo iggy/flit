@@ -123,8 +123,22 @@ type MCPServer struct {
 	// ${VAR} in a value is replaced with that environment variable when
 	// connecting; an unset one fails the server.
 	Headers map[string]string `yaml:"headers"`
+	// OAuth configures sign-in for url servers that need it. Servers that
+	// support dynamic client registration need nothing here: run
+	// "flit mcp login NAME" once.
+	OAuth *MCPOAuth `yaml:"oauth"`
 	// Enabled is whether new sessions start with it on. Default true.
 	Enabled *bool `yaml:"enabled"`
+}
+
+// MCPOAuth is a client registered by hand with an MCP server's
+// authorization server, for servers that don't support dynamic client
+// registration. ${VAR} in client_secret is read from the environment.
+type MCPOAuth struct {
+	ClientID     string `yaml:"client_id"`
+	ClientSecret string `yaml:"client_secret"`
+	// Scopes replaces the scopes the server asks for.
+	Scopes []string `yaml:"scopes"`
 }
 
 // EnabledByDefault reports whether new sessions get this server.
@@ -507,6 +521,10 @@ func (c Config) Validate() error {
 			return fmt.Errorf("mcp_servers %q: args, env and dir only apply to command servers", m.Name)
 		case m.Command != "" && len(m.Headers) > 0:
 			return fmt.Errorf("mcp_servers %q: headers only apply to url servers", m.Name)
+		case m.Command != "" && m.OAuth != nil:
+			return fmt.Errorf("mcp_servers %q: oauth only applies to url servers", m.Name)
+		case m.OAuth != nil && m.OAuth.ClientID == "" && m.OAuth.ClientSecret != "":
+			return fmt.Errorf("mcp_servers %q: oauth.client_secret needs oauth.client_id", m.Name)
 		}
 		if m.URL != "" {
 			if u, err := url.Parse(m.URL); err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
@@ -635,6 +653,11 @@ mcp_servers: []
 #    headers:                            # ${VAR} is read from the environment
 #      Authorization: Bearer ${DOCS_MCP_TOKEN}
 #    enabled: true
+#  - name: tracker                       # a server that needs a browser
+#    url: https://mcp.example.com/mcp    # sign-in: run "flit mcp login tracker"
+#    oauth:                              # only for servers without dynamic
+#      client_id: my-client-id           # client registration; register
+#      client_secret: ${TRACKER_SECRET}  # http://127.0.0.1:7434/callback
 
 web:
   # web_fetch: read a web page as text.

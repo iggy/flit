@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -42,6 +43,15 @@ func ExpandHeaders(in map[string]string) (map[string]string, error) {
 		return nil, fmt.Errorf("headers use unset environment variables: %s", strings.Join(slices.Compact(missing), ", "))
 	}
 	return out, nil
+}
+
+// ExpandEnv replaces ${VAR} in s like ExpandHeaders does.
+func ExpandEnv(s string) (string, error) {
+	out, err := ExpandHeaders(map[string]string{"": s})
+	if err != nil {
+		return "", errors.New(strings.Replace(err.Error(), "headers use", "uses", 1))
+	}
+	return out[""], nil
 }
 
 // Header returns the headers to send with every request to the provider:

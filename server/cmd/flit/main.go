@@ -7,6 +7,7 @@
 //	flit pair [--url URL] [--config FILE] [--data-dir DIR]
 //	flit devices [--all] | flit devices revoke ID
 //	flit debug session [ID]
+//	flit mcp list | flit mcp login NAME | flit mcp logout NAME
 //	flit version
 package main
 
@@ -47,6 +48,9 @@ Usage:
   flit devices revoke ID      revoke a paired device
   flit export [flags]         write recorded sessions as JSONL (see docs/export.md)
   flit debug session [ID]     print a session's timeline, to see where a turn got stuck
+  flit mcp list               list MCP servers and which are signed in
+  flit mcp login NAME         sign in to a remote MCP server that needs OAuth
+  flit mcp logout NAME        forget an MCP server's sign-in
   flit version                print version information
 
 Flags for serve, token, pair and devices:
@@ -113,6 +117,8 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		return exportCmd(ctx, stdout, stderr, args, defaultConfig)
 	case "debug":
 		return debugCmd(ctx, stdout, stderr, args, defaultConfig)
+	case "mcp":
+		return mcpCmd(ctx, os.Stdin, stdout, stderr, args, defaultConfig)
 	case "help", "-h", "--help":
 		fmt.Fprintf(stdout, usage, defaultConfig)
 		return nil
@@ -241,6 +247,7 @@ func serve(ctx context.Context, stderr io.Writer, configPath, dataDirFlag string
 		return dirs
 	}
 	mcpServers := mcpclient.New(current, log)
+	mcpServers.Tokens = mcpclient.NewTokenStore(filepath.Join(dataDir, mcpclient.TokenFileName))
 	defer mcpServers.Close()
 	sessions.MCP = mcpServers
 	go func() {
