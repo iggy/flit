@@ -64,6 +64,7 @@ type Config struct {
 	CronsDir string   `yaml:"crons_dir"`
 	Notify   Notify   `yaml:"notify"`
 	Learning Learning `yaml:"learning"`
+	LSP      LSP      `yaml:"lsp"`
 }
 
 // Notify configures notifications flit sends itself (the app shows its
@@ -219,6 +220,161 @@ type Git struct {
 
 // IsEnabled reports whether the git tools are offered.
 func (g Git) IsEnabled() bool { return g.Enabled == nil || *g.Enabled }
+
+// LSP configures the language servers that check files after the write
+// and patch tools change them. One server runs per language for the whole
+// flit server, shared by every session and project.
+type LSP struct {
+	// Enabled turns diagnostics on. Default true; files whose language
+	// has no server on PATH are skipped quietly.
+	Enabled *bool `yaml:"enabled"`
+	// IdleTimeout stops a server nothing has used for this long; it starts
+	// again on the next edit. Default 10m.
+	IdleTimeout time.Duration `yaml:"idle_timeout"`
+	// WaitTimeout is the longest an edit waits for a server's diagnostics
+	// (starting it included). Default 3s. The edit itself never fails or
+	// waits longer because of a language server.
+	WaitTimeout time.Duration `yaml:"wait_timeout"`
+	// Debounce is how long the diagnostics must stay unchanged before they
+	// are reported, since servers often publish more than once. Default
+	// 300ms.
+	Debounce time.Duration `yaml:"debounce"`
+	// Severity is the least severe diagnostic reported: error, warning,
+	// info or hint. Default warning.
+	Severity string `yaml:"severity"`
+	// MaxLines caps the diagnostics shown per edit; the rest are counted.
+	// Default 10.
+	MaxLines int `yaml:"max_lines"`
+	// Servers add to or change the built-in servers (see
+	// BuiltinLSPServers). An entry named like a built-in one is merged
+	// into it: the fields it sets win (env and init_options key by key),
+	// the rest come from the built-in. Each file goes to the first server,
+	// these before the built-ins, that handles its extension and whose
+	// command is on PATH.
+	Servers []LSPServer `yaml:"servers"`
+}
+
+// LSPServer is a language server flit starts and speaks LSP to over stdio.
+type LSPServer struct {
+	Name    string            `yaml:"name"`
+	Command string            `yaml:"command"`
+	Args    []string          `yaml:"args"`
+	Env     map[string]string `yaml:"env"`
+	// Languages maps LSP language ids to the file extensions they cover,
+	// e.g. {typescript: [.ts, .mts], typescriptreact: [.tsx]}.
+	Languages map[string][]string `yaml:"languages"`
+	// RootMarkers are files or directories that mark a project root, e.g.
+	// go.mod. The nearest directory above an edited file holding one
+	// becomes a workspace folder of the server; without one, the
+	// session's working directory does.
+	RootMarkers []string `yaml:"root_markers"`
+	// InitOptions are sent as initializationOptions.
+	InitOptions map[string]any `yaml:"init_options"`
+	// Enabled false turns the server off, e.g. to drop a built-in one.
+	// Default true.
+	Enabled *bool `yaml:"enabled"`
+}
+
+// IsEnabled reports whether diagnostics are on.
+func (l LSP) IsEnabled() bool { return l.Enabled == nil || *l.Enabled }
+
+// IsEnabled reports whether the server may be used.
+func (s LSPServer) IsEnabled() bool { return s.Enabled == nil || *s.Enabled }
+
+// BuiltinLSPServers are the servers used when their command is on PATH,
+// unless the config turns them off. For Python, basedpyright is tried
+// before pyright.
+func BuiltinLSPServers() []LSPServer {
+	python := map[string][]string{"python": {".py", ".pyi"}}
+	pyRoots := []string{"pyproject.toml", "pyrightconfig.json", "setup.py", "setup.cfg", "requirements.txt"}
+	return []LSPServer{
+		{Name: "gopls", Command: "gopls", Languages: map[string][]string{"go": {".go"}},
+			RootMarkers: []string{"go.mod", "go.work"}},
+		{Name: "rust-analyzer", Command: "rust-analyzer", Languages: map[string][]string{"rust": {".rs"}},
+			RootMarkers: []string{"Cargo.toml"}},
+		{Name: "basedpyright", Command: "basedpyright-langserver", Args: []string{"--stdio"}, Languages: python,
+			RootMarkers: pyRoots},
+		{Name: "pyright", Command: "pyright-langserver", Args: []string{"--stdio"}, Languages: python,
+			RootMarkers: pyRoots},
+		{Name: "typescript-language-server", Command: "typescript-language-server", Args: []string{"--stdio"},
+			Languages: map[string][]string{
+				"typescript":      {".ts", ".mts", ".cts"},
+				"typescriptreact": {".tsx"},
+				"javascript":      {".js", ".mjs", ".cjs"},
+				"javascriptreact": {".jsx"},
+			},
+			RootMarkers: []string{"tsconfig.json", "jsconfig.json", "package.json"}},
+		{Name: "clangd", Command: "clangd", Languages: map[string][]string{
+			"c":   {".c", ".h"},
+			"cpp": {".cc", ".cpp", ".cxx", ".hh", ".hpp", ".hxx"},
+		},
+			RootMarkers: []string{"compile_commands.json", "compile_flags.txt", ".clangd"}},
+	}
+}
+
+// Resolved returns the servers in the order files try them: the
+// configured ones, merged into the built-in of the same name if any, then
+// the built-ins nothing names. Servers turned off are left out.
+func (l LSP) Resolved() []LSPServer {
+	builtin := map[string]LSPServer{}
+	for _, b := range BuiltinLSPServers() {
+		builtin[b.Name] = b
+	}
+	var out []LSPServer
+	for _, s := range l.Servers {
+		if b, ok := builtin[s.Name]; ok {
+			s = s.over(b)
+			delete(builtin, s.Name)
+		}
+		if s.IsEnabled() {
+			out = append(out, s)
+		}
+	}
+	for _, b := range BuiltinLSPServers() {
+		if _, ok := builtin[b.Name]; ok {
+			out = append(out, b)
+		}
+	}
+	return out
+}
+
+// over returns s with the fields it leaves unset taken from base. A list
+// set to [] counts as set; env and init_options merge key by key.
+func (s LSPServer) over(base LSPServer) LSPServer {
+	if s.Command == "" {
+		s.Command = base.Command
+	}
+	if s.Args == nil {
+		s.Args = base.Args
+	}
+	if s.Languages == nil {
+		s.Languages = base.Languages
+	}
+	if s.RootMarkers == nil {
+		s.RootMarkers = base.RootMarkers
+	}
+	s.Env = mergeMaps(base.Env, s.Env)
+	s.InitOptions = mergeMaps(base.InitOptions, s.InitOptions)
+	return s
+}
+
+// mergeMaps returns base with over's keys set on top; nil if both are.
+func mergeMaps[V any](base, over map[string]V) map[string]V {
+	if base == nil && over == nil {
+		return nil
+	}
+	out := make(map[string]V, len(base)+len(over))
+	for k, v := range base {
+		out[k] = v
+	}
+	for k, v := range over {
+		out[k] = v
+	}
+	return out
+}
+
+// LSPSeverities are the accepted LSP.Severity values, most severe first.
+var LSPSeverities = []string{"error", "warning", "info", "hint"}
 
 // ProviderKinds are the accepted Provider.Kind values.
 var ProviderKinds = []string{"auto", "openai", "openrouter", "llamacpp", "gomodel"}
@@ -405,6 +561,15 @@ func Default() Config {
 		Git:                Git{Enabled: ptr(true)},
 		LlamaCpp:           LlamaCpp{KVCache: ptr(true), KVCacheFiles: 4},
 		Learning:           Learning{MemoryMaxBytes: 6000},
+		LSP: LSP{
+			Enabled:     ptr(true),
+			IdleTimeout: 10 * time.Minute,
+			WaitTimeout: 3 * time.Second,
+			Debounce:    300 * time.Millisecond,
+			Severity:    "warning",
+			MaxLines:    10,
+			Servers:     []LSPServer{},
+		},
 		Agent: Agent{
 			Tasks:              map[string]TaskModel{},
 			ModelPromptAppends: map[string]string{},
@@ -484,6 +649,21 @@ func (c *Config) fillDefaults() {
 	}
 	if c.LlamaCpp.KVCacheFiles == 0 {
 		c.LlamaCpp.KVCacheFiles = d.LlamaCpp.KVCacheFiles
+	}
+	if c.LSP.IdleTimeout == 0 {
+		c.LSP.IdleTimeout = d.LSP.IdleTimeout
+	}
+	if c.LSP.WaitTimeout == 0 {
+		c.LSP.WaitTimeout = d.LSP.WaitTimeout
+	}
+	if c.LSP.Debounce == 0 {
+		c.LSP.Debounce = d.LSP.Debounce
+	}
+	if c.LSP.Severity == "" {
+		c.LSP.Severity = d.LSP.Severity
+	}
+	if c.LSP.MaxLines == 0 {
+		c.LSP.MaxLines = d.LSP.MaxLines
 	}
 
 	if c.Shell.MaxTimeout == 0 {
@@ -613,6 +793,9 @@ func (c Config) Validate() error {
 	if c.LlamaCpp.KVCacheFiles < 0 || c.LlamaCpp.KVCacheFiles > 64 {
 		return errors.New("llamacpp.kv_cache_files must be 1-64")
 	}
+	if err := c.LSP.validate(); err != nil {
+		return err
+	}
 	if c.Agent.ModelRetries < 0 || c.Agent.ModelRetries > 5 {
 		return errors.New("agent.model_retries must be between 0 and 5")
 	}
@@ -653,6 +836,47 @@ func (c Config) Validate() error {
 		if strings.TrimSpace(pat) == "" {
 			return errors.New("shell: empty pattern in allow/deny")
 		}
+	}
+	return nil
+}
+
+func (l LSP) validate() error {
+	if l.IdleTimeout < 0 || l.WaitTimeout < 0 || l.Debounce < 0 || l.MaxLines < 0 {
+		return errors.New("lsp: timeouts and max_lines must not be negative")
+	}
+	if !slices.Contains(LSPSeverities, l.Severity) {
+		return fmt.Errorf("lsp.severity %q: want one of %s", l.Severity, strings.Join(LSPSeverities, ", "))
+	}
+	seen := map[string]bool{}
+	builtin := map[string]LSPServer{}
+	for _, b := range BuiltinLSPServers() {
+		builtin[b.Name] = b
+	}
+	for i, s := range l.Servers {
+		if b, ok := builtin[s.Name]; ok {
+			s = s.over(b)
+		}
+		switch {
+		case s.Name == "":
+			return fmt.Errorf("lsp.servers[%d]: name is required", i)
+		case seen[s.Name]:
+			return fmt.Errorf("lsp.servers: duplicate name %q", s.Name)
+		case s.Command == "" && s.IsEnabled():
+			return fmt.Errorf("lsp.servers %q: command is required", s.Name)
+		case len(s.Languages) == 0 && s.IsEnabled():
+			return fmt.Errorf("lsp.servers %q: languages is required", s.Name)
+		}
+		for lang, exts := range s.Languages {
+			if lang == "" || len(exts) == 0 {
+				return fmt.Errorf("lsp.servers %q: languages: each language id needs extensions", s.Name)
+			}
+			for _, e := range exts {
+				if !strings.HasPrefix(e, ".") || len(e) < 2 {
+					return fmt.Errorf("lsp.servers %q: extension %q must start with a dot", s.Name, e)
+				}
+			}
+		}
+		seen[s.Name] = true
 	}
 	return nil
 }
@@ -770,6 +994,41 @@ llamacpp:
   # whole context and can be gigabytes; llama.cpp can't delete them, so
   # flit sticks to flit-kv-0.bin .. flit-kv-<n-1>.bin.
   kv_cache_files: 4
+
+lsp:
+  # After write and patch change a file, ask its language server for errors
+  # and warnings in that file and show them to the model with the tool
+  # result (nothing is added when the file is clean). One server per
+  # language runs for all sessions and projects. Built in, used when their
+  # command is on PATH: gopls, rust-analyzer, basedpyright-langserver,
+  # pyright-langserver, typescript-language-server, clangd.
+  enabled: true
+  # Stop a server nobody has used for this long; it restarts on the next
+  # edit.
+  idle_timeout: 10m
+  # Longest an edit waits for diagnostics, starting the server included.
+  # A slow or missing server never fails the edit.
+  wait_timeout: 3s
+  # Report once the diagnostics have stopped changing for this long.
+  debounce: 300ms
+  # Least severe diagnostic shown: error, warning, info or hint.
+  severity: warning
+  # Most diagnostics shown per edit; the rest are counted.
+  max_lines: 10
+  # Add servers, or change built-in ones by naming them: what you set wins
+  # (env and init_options key by key), the rest is kept. enabled: false
+  # turns one off. These are tried before the built-ins.
+  servers: []
+  #  - name: zls
+  #    command: zls
+  #    args: []
+  #    languages: {zig: [.zig]}
+  #    root_markers: [build.zig]
+  #    init_options: {}
+  #  - name: gopls
+  #    init_options: {staticcheck: true}
+  #  - name: clangd
+  #    enabled: false
 
 agent:
   # Defaults for sessions that don't choose their own (or get one from

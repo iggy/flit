@@ -405,6 +405,7 @@ func (r *subagentRun) runTool(ctx context.Context, set []tools.Tool, tc llm.Tool
 			return r.s.approve(ctx, tc.ID, a)
 		}
 		env.Assess = r.s.assessor(cfg, r.turnID, tc.ID)
+		env.Diagnose = r.s.m.LSP.Checker(info.WorkingDir)
 	}
 	res := tools.Run(ctx, env, set, tc.Function.Name, tc.Function.Arguments)
 	if appendErr != nil && !errors.Is(appendErr, errInterrupted) {

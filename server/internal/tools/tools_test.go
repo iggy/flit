@@ -462,3 +462,32 @@ func TestAgentToolWithoutSubagent(t *testing.T) {
 		t.Fatalf("%+v", res)
 	}
 }
+
+func TestEditsReportDiagnostics(t *testing.T) {
+	env := newEnv(t)
+	var asked []string
+	env.Diagnose = func(ctx context.Context, path string) string {
+		asked = append(asked, path)
+		if strings.Contains(path, "clean") {
+			return ""
+		}
+		return "Diagnostics:\nbad.go:1:1 error: nope"
+	}
+	r := run(t, env, "write", map[string]any{"path": "bad.go", "content": "package x\n"})
+	if r.IsError || r.Text != "wrote 10 bytes to bad.go\n\nDiagnostics:\nbad.go:1:1 error: nope" {
+		t.Fatalf("write = %+v", r)
+	}
+	r = run(t, env, "patch", map[string]any{"path": "bad.go", "edits": []map[string]any{{"old_string": "x", "new_string": "y"}}})
+	if r.IsError || !strings.HasSuffix(r.Text, "\n\nDiagnostics:\nbad.go:1:1 error: nope") {
+		t.Fatalf("patch = %+v", r)
+	}
+	if r := run(t, env, "write", map[string]any{"path": "clean.go", "content": "package x\n"}); r.Text != "wrote 10 bytes to clean.go" {
+		t.Fatalf("clean write = %+v", r)
+	}
+	// A failed edit isn't checked.
+	run(t, env, "patch", map[string]any{"path": "bad.go", "edits": []map[string]any{{"old_string": "zzz", "new_string": "y"}}})
+	want := []string{filepath.Join(env.Dir, "bad.go"), filepath.Join(env.Dir, "bad.go"), filepath.Join(env.Dir, "clean.go")}
+	if strings.Join(asked, ",") != strings.Join(want, ",") {
+		t.Fatalf("asked about %v, want %v", asked, want)
+	}
+}

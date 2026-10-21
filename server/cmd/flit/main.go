@@ -35,6 +35,7 @@ import (
 	"github.com/iggy/flit/server/internal/config"
 	"github.com/iggy/flit/server/internal/devices"
 	"github.com/iggy/flit/server/internal/learn"
+	"github.com/iggy/flit/server/internal/lsp"
 	"github.com/iggy/flit/server/internal/mcpclient"
 	"github.com/iggy/flit/server/internal/models"
 	"github.com/iggy/flit/server/internal/notify"
@@ -271,6 +272,9 @@ func serve(ctx context.Context, stderr io.Writer, configPath, dataDirFlag string
 	mcpServers.Tokens = mcpclient.NewTokenStore(filepath.Join(dataDir, mcpclient.TokenFileName))
 	defer mcpServers.Close()
 	sessions.MCP = mcpServers
+	languageServers := lsp.New(current, log)
+	defer languageServers.Close()
+	sessions.LSP = languageServers
 	go func() {
 		if err := catalog.Refresh(ctx, ""); err != nil {
 			log.Warn("model discovery", "err", err)

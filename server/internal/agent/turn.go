@@ -488,6 +488,7 @@ func (s *session) runTool(ctx context.Context, turnID string, set []tools.Tool, 
 		},
 		SessionAllowed: s.sessionAllowed(),
 		Assess:         s.assessor(cfg, turnID, tc.ID),
+		Diagnose:       s.m.LSP.Checker(info.WorkingDir),
 		Todo: func(items []tools.TodoItem) {
 			ev := &flitv1.TodoUpdated{}
 			for _, it := range items {

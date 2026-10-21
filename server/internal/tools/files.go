@@ -104,7 +104,7 @@ var writeTool = Tool{
 		if err := writeFile(p, []byte(a.Content)); err != nil {
 			return errorf("%v", err)
 		}
-		return Result{Text: fmt.Sprintf("wrote %d bytes to %s", len(a.Content), rel(env.Dir, p))}
+		return withDiagnostics(ctx, env, p, Result{Text: fmt.Sprintf("wrote %d bytes to %s", len(a.Content), rel(env.Dir, p))})
 	},
 }
 
@@ -183,7 +183,7 @@ var patchTool = Tool{
 		if err := writeFile(p, []byte(s)); err != nil {
 			return errorf("%v", err)
 		}
-		return Result{Text: fmt.Sprintf("applied %d edit(s) to %s", len(a.Edits), rel(env.Dir, p))}
+		return withDiagnostics(ctx, env, p, Result{Text: fmt.Sprintf("applied %d edit(s) to %s", len(a.Edits), rel(env.Dir, p))})
 	},
 }
 
