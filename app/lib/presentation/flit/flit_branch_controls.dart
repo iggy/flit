@@ -81,7 +81,7 @@ class FlitUserMessageActions extends StatelessWidget {
       children: <Widget>[
         IconButton(
           key: flitRetryFromKey,
-          tooltip: 'Retry from here',
+          tooltip: "Retry from here (files aren't rewound)",
           visualDensity: VisualDensity.compact,
           iconSize: 16,
           color: color,
@@ -152,7 +152,7 @@ class _EditMessageDialogState extends State<_EditMessageDialog> {
             border: OutlineInputBorder(),
             helperText:
                 'Starts a new branch from here. The original stays '
-                'one arrow away.',
+                "one arrow away. Files the agent changed aren't rewound.",
             helperMaxLines: 2,
           ),
         ),
