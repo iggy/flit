@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -404,6 +405,61 @@ func TestSkillTool(t *testing.T) {
 	}
 	if r := call(`{"name":"init","file":"go.mod"}`); !r.IsError {
 		t.Fatalf("built-in file = %+v", r)
+	}
+}
+
+func TestReadOnlySet(t *testing.T) {
+	set := append(append(All(), GitTools()...), WebFetchTool(), AgentTool())
+	var names []string
+	for _, tl := range ReadOnlySet(set, true) {
+		names = append(names, tl.Name)
+	}
+	want := []string{"read", "list", "grep", "shell", "git_status", "git_diff", "git_log", "web_fetch"}
+	if !slices.Equal(names, want) {
+		t.Fatalf("read-only set = %v, want %v", names, want)
+	}
+	for _, tl := range ReadOnlySet(set, false) {
+		if tl.Name == "shell" {
+			t.Fatal("shell offered with shell.read_only off")
+		}
+	}
+}
+
+func TestReadOnlyShell(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "a.txt"), []byte("hello\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	asked := false
+	env := &Env{Dir: dir, Shell: config.Default().Shell, Yolo: true, SessionAllowed: []string{"rm *"},
+		Approve: func(context.Context, Approval) (bool, error) { asked = true; return true, nil }}
+	env.Shell.Allow = []string{"touch *"}
+	set := ReadOnlySet(All(), true)
+	if res := Run(context.Background(), env, set, "shell", `{"command":"cat a.txt | wc -l"}`); res.IsError || !strings.Contains(res.Text, "1") {
+		t.Fatalf("read-only command: %+v", res)
+	}
+	// Allow patterns, session patterns and yolo don't widen it.
+	for _, cmd := range []string{"touch b.txt", "rm a.txt", "echo x > b.txt", "sed -i s/h/j/ a.txt"} {
+		if res := Run(context.Background(), env, set, "shell", `{"command":"`+cmd+`"}`); !res.IsError || !strings.Contains(res.Text, "only read-only") {
+			t.Fatalf("%s: %+v", cmd, res)
+		}
+	}
+	env.Shell.Deny = []string{"cat *"}
+	if res := Run(context.Background(), env, set, "shell", `{"command":"cat a.txt"}`); !res.IsError {
+		t.Fatalf("deny rule ignored: %+v", res)
+	}
+	if asked {
+		t.Fatal("the read-only shell asked for approval")
+	}
+	if _, err := os.Stat(filepath.Join(dir, "b.txt")); err == nil {
+		t.Fatal("a refused command ran")
+	}
+}
+
+func TestAgentToolWithoutSubagent(t *testing.T) {
+	res := Run(context.Background(), &Env{Dir: t.TempDir()}, []Tool{AgentTool()}, "agent", `{"kind":"explore","task":"x"}`)
+	if !res.IsError || !strings.Contains(res.Text, "can't start subagents") {
+		t.Fatalf("%+v", res)
 	}
 }
 

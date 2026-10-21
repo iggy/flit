@@ -121,7 +121,7 @@ func verdictProto(v tools.Verdict) flitv1.PermissionVerdict {
 }
 
 // recordTaskCall stores a model call made for a task other than chat
-// (the shell safety check, compaction) for export.
+// (the shell safety check, compaction, subagents) for export.
 func (s *session) recordTaskCall(info store.Session, turnID, callID, kind string, task config.TaskModel, req llm.Request, res *llm.Result, callErr error) {
 	var messages [][]byte
 	for _, m := range req.Messages {
@@ -141,6 +141,9 @@ func (s *session) recordTaskCall(info store.Session, turnID, callID, kind string
 		resp["content"] = res.Text
 		if res.Reasoning != "" {
 			resp["reasoning_content"] = res.Reasoning
+		}
+		if len(res.ToolCalls) > 0 {
+			resp["tool_calls"] = res.ToolCalls
 		}
 		c.FinishReason = res.FinishReason
 		if res.Usage != nil {

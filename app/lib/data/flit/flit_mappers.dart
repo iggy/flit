@@ -7,6 +7,7 @@ import 'package:flit/domain/models/flit_event.dart';
 import 'package:flit/domain/models/flit_git.dart';
 import 'package:flit/domain/models/flit_learning.dart';
 import 'package:flit/domain/models/flit_session.dart';
+import 'package:flit/domain/models/subagent.dart';
 import 'package:flit_api/flit_api.dart' as pb;
 
 FlitTaskState taskStateFromProto(pb.TaskState state) {
@@ -616,6 +617,58 @@ FlitEvent eventFromProto(pb.Event e) {
         branchId: branch,
         newBranchId: b.branchId,
         client: b.client,
+      );
+    case pb.Event_Payload.subagentStarted:
+      final a = e.subagentStarted;
+      return FlitSubagentStarted(
+        seq: seq,
+        time: time,
+        branchId: branch,
+        toolCallId: a.toolCallId,
+        kind: switch (a.kind) {
+          pb.SubagentKind.SUBAGENT_KIND_EXPLORE => SubagentKind.explore,
+          pb.SubagentKind.SUBAGENT_KIND_BUILD => SubagentKind.build,
+          _ => SubagentKind.unknown,
+        },
+        provider: a.provider,
+        model: a.model,
+        task: a.task,
+        maxSteps: a.maxSteps,
+      );
+    case pb.Event_Payload.subagentEvent:
+      final a = e.subagentEvent;
+      // The inner event carries only its payload.
+      final inner = a.event.deepCopy()
+        ..seq = e.seq
+        ..branchId = e.branchId;
+      if (e.hasTime()) {
+        inner.time = e.time;
+      }
+      return FlitSubagentEvent(
+        seq: seq,
+        time: time,
+        branchId: branch,
+        toolCallId: a.toolCallId,
+        event: eventFromProto(inner),
+      );
+    case pb.Event_Payload.subagentDone:
+      final a = e.subagentDone;
+      return FlitSubagentDone(
+        seq: seq,
+        time: time,
+        branchId: branch,
+        toolCallId: a.toolCallId,
+        status: switch (a.outcome) {
+          pb.SubagentOutcome.SUBAGENT_OUTCOME_DONE => SubagentStatus.done,
+          pb.SubagentOutcome.SUBAGENT_OUTCOME_STEP_LIMIT =>
+            SubagentStatus.stepLimit,
+          pb.SubagentOutcome.SUBAGENT_OUTCOME_CANCELLED =>
+            SubagentStatus.cancelled,
+          _ => SubagentStatus.error,
+        },
+        report: a.report,
+        error: a.error,
+        steps: a.steps,
       );
     case pb.Event_Payload.promptCache:
     // Which cron job started the session; the app shows that from

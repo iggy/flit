@@ -429,5 +429,69 @@ class GitFileStatus extends $pb.ProtobufEnum {
   const GitFileStatus._(super.value, super.name);
 }
 
+/// SubagentKind is what a subagent may do.
+class SubagentKind extends $pb.ProtobufEnum {
+  static const SubagentKind SUBAGENT_KIND_UNSPECIFIED =
+      SubagentKind._(0, _omitEnumNames ? '' : 'SUBAGENT_KIND_UNSPECIFIED');
+
+  /// Read-only tools only; never asks the user anything.
+  static const SubagentKind SUBAGENT_KIND_EXPLORE =
+      SubagentKind._(1, _omitEnumNames ? '' : 'SUBAGENT_KIND_EXPLORE');
+
+  /// Every tool the session has (but agent); its calls go through the
+  /// session's permission rules and prompts like the agent's own.
+  static const SubagentKind SUBAGENT_KIND_BUILD =
+      SubagentKind._(2, _omitEnumNames ? '' : 'SUBAGENT_KIND_BUILD');
+
+  static const $core.List<SubagentKind> values = <SubagentKind>[
+    SUBAGENT_KIND_UNSPECIFIED,
+    SUBAGENT_KIND_EXPLORE,
+    SUBAGENT_KIND_BUILD,
+  ];
+
+  static final $core.List<SubagentKind?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 2);
+  static SubagentKind? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const SubagentKind._(super.value, super.name);
+}
+
+class SubagentOutcome extends $pb.ProtobufEnum {
+  static const SubagentOutcome SUBAGENT_OUTCOME_UNSPECIFIED = SubagentOutcome._(
+      0, _omitEnumNames ? '' : 'SUBAGENT_OUTCOME_UNSPECIFIED');
+
+  /// It finished and wrote its report.
+  static const SubagentOutcome SUBAGENT_OUTCOME_DONE =
+      SubagentOutcome._(1, _omitEnumNames ? '' : 'SUBAGENT_OUTCOME_DONE');
+
+  /// It hit its step cap; report is what it wrote when told to stop.
+  static const SubagentOutcome SUBAGENT_OUTCOME_STEP_LIMIT =
+      SubagentOutcome._(2, _omitEnumNames ? '' : 'SUBAGENT_OUTCOME_STEP_LIMIT');
+
+  /// The turn was stopped.
+  static const SubagentOutcome SUBAGENT_OUTCOME_CANCELLED =
+      SubagentOutcome._(3, _omitEnumNames ? '' : 'SUBAGENT_OUTCOME_CANCELLED');
+
+  /// It could not run or its model call failed (see error).
+  static const SubagentOutcome SUBAGENT_OUTCOME_ERROR =
+      SubagentOutcome._(4, _omitEnumNames ? '' : 'SUBAGENT_OUTCOME_ERROR');
+
+  static const $core.List<SubagentOutcome> values = <SubagentOutcome>[
+    SUBAGENT_OUTCOME_UNSPECIFIED,
+    SUBAGENT_OUTCOME_DONE,
+    SUBAGENT_OUTCOME_STEP_LIMIT,
+    SUBAGENT_OUTCOME_CANCELLED,
+    SUBAGENT_OUTCOME_ERROR,
+  ];
+
+  static final $core.List<SubagentOutcome?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
+  static SubagentOutcome? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const SubagentOutcome._(super.value, super.name);
+}
+
 const $core.bool _omitEnumNames =
     $core.bool.fromEnvironment('protobuf.omit_enum_names');

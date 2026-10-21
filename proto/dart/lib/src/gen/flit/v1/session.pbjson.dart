@@ -246,6 +246,40 @@ final $typed_data.Uint8List gitFileStatusDescriptor = $convert.base64Decode(
     'ZHSVRfRklMRV9TVEFUVVNfQ09QSUVEEAUSIAocR0lUX0ZJTEVfU1RBVFVTX1RZUEVfQ0hBTkdF'
     'RBAGEhwKGEdJVF9GSUxFX1NUQVRVU19VTk1FUkdFRBAH');
 
+@$core.Deprecated('Use subagentKindDescriptor instead')
+const SubagentKind$json = {
+  '1': 'SubagentKind',
+  '2': [
+    {'1': 'SUBAGENT_KIND_UNSPECIFIED', '2': 0},
+    {'1': 'SUBAGENT_KIND_EXPLORE', '2': 1},
+    {'1': 'SUBAGENT_KIND_BUILD', '2': 2},
+  ],
+};
+
+/// Descriptor for `SubagentKind`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List subagentKindDescriptor = $convert.base64Decode(
+    'CgxTdWJhZ2VudEtpbmQSHQoZU1VCQUdFTlRfS0lORF9VTlNQRUNJRklFRBAAEhkKFVNVQkFHRU'
+    '5UX0tJTkRfRVhQTE9SRRABEhcKE1NVQkFHRU5UX0tJTkRfQlVJTEQQAg==');
+
+@$core.Deprecated('Use subagentOutcomeDescriptor instead')
+const SubagentOutcome$json = {
+  '1': 'SubagentOutcome',
+  '2': [
+    {'1': 'SUBAGENT_OUTCOME_UNSPECIFIED', '2': 0},
+    {'1': 'SUBAGENT_OUTCOME_DONE', '2': 1},
+    {'1': 'SUBAGENT_OUTCOME_STEP_LIMIT', '2': 2},
+    {'1': 'SUBAGENT_OUTCOME_CANCELLED', '2': 3},
+    {'1': 'SUBAGENT_OUTCOME_ERROR', '2': 4},
+  ],
+};
+
+/// Descriptor for `SubagentOutcome`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List subagentOutcomeDescriptor = $convert.base64Decode(
+    'Cg9TdWJhZ2VudE91dGNvbWUSIAocU1VCQUdFTlRfT1VUQ09NRV9VTlNQRUNJRklFRBAAEhkKFV'
+    'NVQkFHRU5UX09VVENPTUVfRE9ORRABEh8KG1NVQkFHRU5UX09VVENPTUVfU1RFUF9MSU1JVBAC'
+    'Eh4KGlNVQkFHRU5UX09VVENPTUVfQ0FOQ0VMTEVEEAMSGgoWU1VCQUdFTlRfT1VUQ09NRV9FUl'
+    'JPUhAE');
+
 @$core.Deprecated('Use sessionDescriptor instead')
 const Session$json = {
   '1': 'Session',
@@ -1395,6 +1429,33 @@ const Event$json = {
       '9': 0,
       '10': 'cronRun'
     },
+    {
+      '1': 'subagent_started',
+      '3': 44,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.SubagentStarted',
+      '9': 0,
+      '10': 'subagentStarted'
+    },
+    {
+      '1': 'subagent_event',
+      '3': 45,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.SubagentEvent',
+      '9': 0,
+      '10': 'subagentEvent'
+    },
+    {
+      '1': 'subagent_done',
+      '3': 46,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.SubagentDone',
+      '9': 0,
+      '10': 'subagentDone'
+    },
   ],
   '8': [
     {'1': 'payload'},
@@ -1446,7 +1507,11 @@ final $typed_data.Uint8List eventDescriptor = $convert.base64Decode(
     'Ej8KDmJyYW5jaF9jcmVhdGVkGCkgASgLMhYuZmxpdC52MS5CcmFuY2hDcmVhdGVkSABSDWJyYW'
     '5jaENyZWF0ZWQSQgoPYnJhbmNoX3N3aXRjaGVkGCogASgLMhcuZmxpdC52MS5CcmFuY2hTd2l0'
     'Y2hlZEgAUg5icmFuY2hTd2l0Y2hlZBI0Cghjcm9uX3J1bhgrIAEoCzIXLmZsaXQudjEuQ3Jvbl'
-    'J1blN0YXJ0ZWRIAFIHY3JvblJ1bkIJCgdwYXlsb2Fk');
+    'J1blN0YXJ0ZWRIAFIHY3JvblJ1bhJFChBzdWJhZ2VudF9zdGFydGVkGCwgASgLMhguZmxpdC52'
+    'MS5TdWJhZ2VudFN0YXJ0ZWRIAFIPc3ViYWdlbnRTdGFydGVkEj8KDnN1YmFnZW50X2V2ZW50GC'
+    '0gASgLMhYuZmxpdC52MS5TdWJhZ2VudEV2ZW50SABSDXN1YmFnZW50RXZlbnQSPAoNc3ViYWdl'
+    'bnRfZG9uZRguIAEoCzIVLmZsaXQudjEuU3ViYWdlbnREb25lSABSDHN1YmFnZW50RG9uZUIJCg'
+    'dwYXlsb2Fk');
 
 @$core.Deprecated('Use messageStartedDescriptor instead')
 const MessageStarted$json = {
@@ -2347,6 +2412,81 @@ final $typed_data.Uint8List cronRunStartedDescriptor = $convert.base64Decode(
     'Fza190aW1lb3V0X3NlY29uZHMYCCABKANSEWFza1RpbWVvdXRTZWNvbmRzEhIKBHlvbG8YCSAB'
     'KAhSBHlvbG8=');
 
+@$core.Deprecated('Use subagentStartedDescriptor instead')
+const SubagentStarted$json = {
+  '1': 'SubagentStarted',
+  '2': [
+    {'1': 'tool_call_id', '3': 1, '4': 1, '5': 9, '10': 'toolCallId'},
+    {
+      '1': 'kind',
+      '3': 2,
+      '4': 1,
+      '5': 14,
+      '6': '.flit.v1.SubagentKind',
+      '10': 'kind'
+    },
+    {'1': 'provider', '3': 3, '4': 1, '5': 9, '10': 'provider'},
+    {'1': 'model', '3': 4, '4': 1, '5': 9, '10': 'model'},
+    {'1': 'effort', '3': 5, '4': 1, '5': 9, '10': 'effort'},
+    {'1': 'task', '3': 6, '4': 1, '5': 9, '10': 'task'},
+    {'1': 'max_steps', '3': 7, '4': 1, '5': 5, '10': 'maxSteps'},
+  ],
+};
+
+/// Descriptor for `SubagentStarted`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List subagentStartedDescriptor = $convert.base64Decode(
+    'Cg9TdWJhZ2VudFN0YXJ0ZWQSIAoMdG9vbF9jYWxsX2lkGAEgASgJUgp0b29sQ2FsbElkEikKBG'
+    'tpbmQYAiABKA4yFS5mbGl0LnYxLlN1YmFnZW50S2luZFIEa2luZBIaCghwcm92aWRlchgDIAEo'
+    'CVIIcHJvdmlkZXISFAoFbW9kZWwYBCABKAlSBW1vZGVsEhYKBmVmZm9ydBgFIAEoCVIGZWZmb3'
+    'J0EhIKBHRhc2sYBiABKAlSBHRhc2sSGwoJbWF4X3N0ZXBzGAcgASgFUghtYXhTdGVwcw==');
+
+@$core.Deprecated('Use subagentEventDescriptor instead')
+const SubagentEvent$json = {
+  '1': 'SubagentEvent',
+  '2': [
+    {'1': 'tool_call_id', '3': 1, '4': 1, '5': 9, '10': 'toolCallId'},
+    {
+      '1': 'event',
+      '3': 2,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.Event',
+      '10': 'event'
+    },
+  ],
+};
+
+/// Descriptor for `SubagentEvent`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List subagentEventDescriptor = $convert.base64Decode(
+    'Cg1TdWJhZ2VudEV2ZW50EiAKDHRvb2xfY2FsbF9pZBgBIAEoCVIKdG9vbENhbGxJZBIkCgVldm'
+    'VudBgCIAEoCzIOLmZsaXQudjEuRXZlbnRSBWV2ZW50');
+
+@$core.Deprecated('Use subagentDoneDescriptor instead')
+const SubagentDone$json = {
+  '1': 'SubagentDone',
+  '2': [
+    {'1': 'tool_call_id', '3': 1, '4': 1, '5': 9, '10': 'toolCallId'},
+    {
+      '1': 'outcome',
+      '3': 2,
+      '4': 1,
+      '5': 14,
+      '6': '.flit.v1.SubagentOutcome',
+      '10': 'outcome'
+    },
+    {'1': 'report', '3': 3, '4': 1, '5': 9, '10': 'report'},
+    {'1': 'error', '3': 4, '4': 1, '5': 9, '10': 'error'},
+    {'1': 'steps', '3': 5, '4': 1, '5': 5, '10': 'steps'},
+  ],
+};
+
+/// Descriptor for `SubagentDone`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List subagentDoneDescriptor = $convert.base64Decode(
+    'CgxTdWJhZ2VudERvbmUSIAoMdG9vbF9jYWxsX2lkGAEgASgJUgp0b29sQ2FsbElkEjIKB291dG'
+    'NvbWUYAiABKA4yGC5mbGl0LnYxLlN1YmFnZW50T3V0Y29tZVIHb3V0Y29tZRIWCgZyZXBvcnQY'
+    'AyABKAlSBnJlcG9ydBIUCgVlcnJvchgEIAEoCVIFZXJyb3ISFAoFc3RlcHMYBSABKAVSBXN0ZX'
+    'Bz');
+
 const $core.Map<$core.String, $core.dynamic> SessionServiceBase$json = {
   '1': 'SessionService',
   '2': [
@@ -2526,6 +2666,9 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.flit.v1.BranchCreated': BranchCreated$json,
   '.flit.v1.BranchSwitched': BranchSwitched$json,
   '.flit.v1.CronRunStarted': CronRunStarted$json,
+  '.flit.v1.SubagentStarted': SubagentStarted$json,
+  '.flit.v1.SubagentEvent': SubagentEvent$json,
+  '.flit.v1.SubagentDone': SubagentDone$json,
   '.flit.v1.SendRequest': SendRequest$json,
   '.flit.v1.SendResponse': SendResponse$json,
   '.flit.v1.EditQueuedMessageRequest': EditQueuedMessageRequest$json,

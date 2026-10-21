@@ -28,6 +28,7 @@ func WebFetchTool() Tool { return webFetchTool }
 
 var webFetchTool = Tool{
 	Name:        "web_fetch",
+	ReadOnly:    true,
 	Description: "Fetch a web page (http/https) and return its text. HTML is converted to plain text; JSON and text are returned as is.",
 	Schema: `{"type":"object","properties":{
 "url":{"type":"string","description":"The page to fetch"}
@@ -159,6 +160,7 @@ func collapseBlankLines(s string) string {
 func WebSearchTool(baseURL string) Tool {
 	return Tool{
 		Name:        "web_search",
+		ReadOnly:    true,
 		Description: "Search the web. Returns titles, URLs and snippets; use web_fetch to read a result.",
 		Schema: `{"type":"object","properties":{
 "query":{"type":"string","description":"What to search for"}

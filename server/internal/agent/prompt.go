@@ -35,29 +35,8 @@ const basePrompt = `You are flit, a coding agent. You help the user with softwar
 func systemPrompt(dir string, role *roles.Role, layers []memory.Layer) string {
 	var b strings.Builder
 	b.WriteString(basePrompt)
-	fmt.Fprintf(&b, "\n\nEnvironment:\n- Working directory: %s\n- OS: %s/%s\n- Date: %s\n",
-		dir, runtime.GOOS, runtime.GOARCH, time.Now().Format("2006-01-02"))
-
-	seen := map[string]string{} // content -> first file name
-	for _, name := range instructionFiles {
-		data, err := os.ReadFile(filepath.Join(dir, name))
-		if err != nil {
-			continue
-		}
-		content := strings.TrimSpace(string(data))
-		if content == "" {
-			continue
-		}
-		if first, dup := seen[content]; dup {
-			fmt.Fprintf(&b, "\n(%s has the same content as %s.)\n", name, first)
-			continue
-		}
-		seen[content] = name
-		if len(content) > maxInstructionBytes {
-			content = content[:maxInstructionBytes] + "\n[... truncated ...]"
-		}
-		fmt.Fprintf(&b, "\nProject instructions from %s (follow them):\n\n<%s>\n%s\n</%s>\n", name, name, content, name)
-	}
+	writeEnvironment(&b, dir)
+	writeInstructions(&b, dir)
 
 	if role != nil {
 		if role.Prompt != "" {
@@ -85,6 +64,36 @@ func systemPrompt(dir string, role *roles.Role, layers []memory.Layer) string {
 			what, l.Path, l.Kind, l.Content, l.Kind)
 	}
 	return b.String()
+}
+
+// writeEnvironment adds the working directory, OS and date.
+func writeEnvironment(b *strings.Builder, dir string) {
+	fmt.Fprintf(b, "\n\nEnvironment:\n- Working directory: %s\n- OS: %s/%s\n- Date: %s\n",
+		dir, runtime.GOOS, runtime.GOARCH, time.Now().Format("2006-01-02"))
+}
+
+// writeInstructions adds the working directory's instruction files.
+func writeInstructions(b *strings.Builder, dir string) {
+	seen := map[string]string{} // content -> first file name
+	for _, name := range instructionFiles {
+		data, err := os.ReadFile(filepath.Join(dir, name))
+		if err != nil {
+			continue
+		}
+		content := strings.TrimSpace(string(data))
+		if content == "" {
+			continue
+		}
+		if first, dup := seen[content]; dup {
+			fmt.Fprintf(b, "\n(%s has the same content as %s.)\n", name, first)
+			continue
+		}
+		seen[content] = name
+		if len(content) > maxInstructionBytes {
+			content = content[:maxInstructionBytes] + "\n[... truncated ...]"
+		}
+		fmt.Fprintf(b, "\nProject instructions from %s (follow them):\n\n<%s>\n%s\n</%s>\n", name, name, content, name)
+	}
 }
 
 // memoryLayers reads the user memory and, for a session in a project, the

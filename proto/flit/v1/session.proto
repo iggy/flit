@@ -536,6 +536,9 @@ message Event {
     BranchCreated branch_created = 41;
     BranchSwitched branch_switched = 42;
     CronRunStarted cron_run = 43;
+    SubagentStarted subagent_started = 44;
+    SubagentEvent subagent_event = 45;
+    SubagentDone subagent_done = 46;
   }
 }
 
@@ -1130,4 +1133,67 @@ message CronRunStarted {
   CronAsk ask = 7;
   int64 ask_timeout_seconds = 8;
   bool yolo = 9;
+}
+
+// SubagentKind is what a subagent may do.
+enum SubagentKind {
+  SUBAGENT_KIND_UNSPECIFIED = 0;
+  // Read-only tools only; never asks the user anything.
+  SUBAGENT_KIND_EXPLORE = 1;
+  // Every tool the session has (but agent); its calls go through the
+  // session's permission rules and prompts like the agent's own.
+  SUBAGENT_KIND_BUILD = 2;
+}
+
+// SubagentStarted opens the run of a subagent for the agent tool call
+// tool_call_id. Its own events follow as SubagentEvent and it ends with
+// SubagentDone, before that tool call's ToolCallDone.
+message SubagentStarted {
+  string tool_call_id = 1;
+  SubagentKind kind = 2;
+  // The model it runs on (agent.tasks.explore / build, else the
+  // session's).
+  string provider = 3;
+  string model = 4;
+  string effort = 5;
+  // What it was asked to do.
+  string task = 6;
+  // Its step cap (agent.subagents.max_steps).
+  int32 max_steps = 7;
+}
+
+// SubagentEvent is one event of a subagent's own conversation: the same
+// payloads the session's log uses for the agent (MessageStarted, deltas,
+// MessageDone, ToolCallStarted, ToolOutput, ToolCallDone, ModelCallStarted,
+// ModelCallEnded, Usage, ...). event carries only its payload; seq, time
+// and branch are the outer event's. Its permission prompts and safety
+// checks are not wrapped: they are the session's own PromptRequested,
+// PromptResolved and PermissionCheck events, naming the subagent's tool
+// call.
+message SubagentEvent {
+  string tool_call_id = 1;
+  Event event = 2;
+}
+
+enum SubagentOutcome {
+  SUBAGENT_OUTCOME_UNSPECIFIED = 0;
+  // It finished and wrote its report.
+  SUBAGENT_OUTCOME_DONE = 1;
+  // It hit its step cap; report is what it wrote when told to stop.
+  SUBAGENT_OUTCOME_STEP_LIMIT = 2;
+  // The turn was stopped.
+  SUBAGENT_OUTCOME_CANCELLED = 3;
+  // It could not run or its model call failed (see error).
+  SUBAGENT_OUTCOME_ERROR = 4;
+}
+
+// SubagentDone closes a subagent run.
+message SubagentDone {
+  string tool_call_id = 1;
+  SubagentOutcome outcome = 2;
+  // Its final report: all of it that the agent sees (as the tool result).
+  string report = 3;
+  string error = 4;
+  // Model calls it made.
+  int32 steps = 5;
 }

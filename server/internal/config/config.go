@@ -380,7 +380,7 @@ var LSPSeverities = []string{"error", "warning", "info", "hint"}
 var ProviderKinds = []string{"auto", "openai", "openrouter", "llamacpp", "gomodel"}
 
 // Tasks are the kinds of work that can have their own model.
-var Tasks = []string{"chat", "planning", "cron", "compaction", "search", "permission", "learning"}
+var Tasks = []string{"chat", "planning", "cron", "compaction", "search", "permission", "learning", "explore", "build"}
 
 // TaskModel picks a model for one kind of work.
 type TaskModel struct {
@@ -420,8 +420,9 @@ type Agent struct {
 	// flit asks the user (see docs/shell.md); compaction summarizes long
 	// conversations (see Compaction; without it the session's own model
 	// does); cron runs cron jobs that pick no model of their own (see
-	// docs/cron.md); planning and search are for those features as they
-	// arrive.
+	// docs/cron.md); explore and build run the agent tool's subagents of
+	// that kind (see Subagents; without one the session's own model does);
+	// planning and search are for those features as they arrive.
 	Tasks map[string]TaskModel `yaml:"tasks"`
 	// ModelPromptAppends adds text to the system prompt for specific
 	// models, keyed "provider/model".
@@ -444,7 +445,24 @@ type Agent struct {
 	// Compaction summarizes the older part of a long conversation so it
 	// fits the model's context (tasks.compaction picks the model).
 	Compaction Compaction `yaml:"compaction"`
+	// Subagents configures the agent tool (tasks.explore and tasks.build
+	// pick the models).
+	Subagents Subagents `yaml:"subagents"`
 }
+
+// Subagents configures the agent tool, which runs a task in a fresh
+// context (read-only "explore", or "build" with the session's tools and
+// permission rules) and gives the agent only its final report.
+type Subagents struct {
+	// Enabled offers the agent tool. Default true.
+	Enabled *bool `yaml:"enabled"`
+	// MaxSteps caps a subagent's model calls (1-200); at the cap it is
+	// told to stop and report. Default 20.
+	MaxSteps int `yaml:"max_steps"`
+}
+
+// IsEnabled reports whether the agent tool is offered.
+func (s Subagents) IsEnabled() bool { return s.Enabled == nil || *s.Enabled }
 
 // Compaction configures context compaction.
 type Compaction struct {
@@ -570,6 +588,7 @@ func Default() Config {
 				KeepTurns:        2,
 				MaxSummaryTokens: 4096,
 			},
+			Subagents: Subagents{Enabled: ptr(true), MaxSteps: 20},
 		},
 		Shell: Shell{
 			Timeout:    2 * time.Minute,
@@ -621,6 +640,9 @@ func (c *Config) fillDefaults() {
 	}
 	if c.Agent.Compaction.Threshold == 0 {
 		c.Agent.Compaction.Threshold = d.Agent.Compaction.Threshold
+	}
+	if c.Agent.Subagents.MaxSteps == 0 {
+		c.Agent.Subagents.MaxSteps = d.Agent.Subagents.MaxSteps
 	}
 	if c.Agent.Compaction.KeepTurns == 0 {
 		c.Agent.Compaction.KeepTurns = d.Agent.Compaction.KeepTurns
@@ -782,6 +804,9 @@ func (c Config) Validate() error {
 	}
 	if cp := c.Agent.Compaction; cp.KeepTurns < 1 || cp.KeepTurns > 50 {
 		return errors.New("agent.compaction.keep_turns must be between 1 and 50")
+	}
+	if n := c.Agent.Subagents.MaxSteps; n < 1 || n > 200 {
+		return errors.New("agent.subagents.max_steps must be between 1 and 200")
 	}
 	if c.Learning.MemoryMaxBytes < 0 || c.Learning.TranscriptMaxBytes < 0 {
 		return errors.New("learning: limits must not be negative")
@@ -1014,20 +1039,22 @@ agent:
   # off to turn thinking off on llama.cpp. Empty means the model's default.
   effort: ""
   # A model per kind of work: chat, permission, planning, cron, compaction,
-  # search, learning. chat overrides the defaults above. permission rates shell
-  # commands (safe, ask or block) before flit asks you; without it, flit
-  # just asks. compaction writes the summary when a long conversation is
-  # compacted; without it, the session's own model does. cron runs cron
-  # jobs that don't pick a model (or get one from their role); without it,
-  # they use the chat model. learning reads a finished session and
-  # proposes lessons to remember ("flit learn", or "Learn from this
-  # session" in the app); without it, the chat model does. planning and
-  # search aren't used yet.
+  # search, learning, explore, build. chat overrides the defaults above.
+  # permission rates shell commands (safe, ask or block) before flit asks
+  # you; without it, flit just asks. compaction writes the summary when a
+  # long conversation is compacted; without it, the session's own model
+  # does. cron runs cron jobs that don't pick a model (or get one from
+  # their role); without it, they use the chat model. learning reads a
+  # finished session and proposes lessons to remember ("flit learn", or
+  # "Learn from this session" in the app); without it, the chat model
+  # does. explore and build run the agent tool's subagents; without them,
+  # the session's own model does. planning and search aren't used yet.
   tasks: {}
   #   chat:       {provider: local, model: qwen3-coder, effort: medium}
   #   cron:       {provider: local, model: qwen3-4b, effort: off}
   #   permission: {provider: local, model: qwen3-4b, effort: off}
   #   compaction: {provider: local, model: qwen3-4b, effort: off}
+  #   explore:    {provider: local, model: qwen3-4b, effort: low}
   #   learning:   {provider: local, model: qwen3-coder, effort: off}
   # Extra system prompt text for specific models ("provider/model"); a
   # provider's prompt_append applies to all its models.
@@ -1061,6 +1088,15 @@ agent:
     # Longest summary, thinking included; a cut-off summary counts as
     # failed and the session goes on uncompacted. 0 means no cap.
     max_summary_tokens: 4096
+  # The agent tool hands a task to a subagent with a fresh context and
+  # gets back only its final report. explore subagents only read (files,
+  # grep, git, web, read-only shell commands) and never ask you anything;
+  # build subagents get the session's tools, and their commands follow the
+  # session's shell rules and prompts. Subagents can't start subagents.
+  subagents:
+    enabled: true
+    # Maximum model calls per subagent; at the cap it is told to report.
+    max_steps: 20
 
 # Memory: lessons flit keeps between sessions, as Markdown files you can
 # edit: <data_dir>/memory/user.md (every session) and

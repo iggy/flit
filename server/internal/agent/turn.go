@@ -498,6 +498,13 @@ func (s *session) runTool(ctx context.Context, turnID string, set []tools.Tool, 
 				appendErr = err
 			}
 		},
+		Subagent: func(ctx context.Context, raw json.RawMessage) tools.Result {
+			res, err := s.runSubagent(ctx, turnID, tc.ID, raw)
+			if err != nil {
+				appendErr = err
+			}
+			return res
+		},
 	}
 	res := tools.Run(ctx, env, set, tc.Function.Name, tc.Function.Arguments)
 	if appendErr != nil && !errors.Is(appendErr, errInterrupted) {
@@ -542,7 +549,8 @@ func todoStatus(s string) flitv1.TodoStatus {
 }
 
 // toolSet is the tools offered this turn: the core tools, git and web tools
-// as configured, the skill tool when there are skills, and the tools of the
+// as configured, the skill tool when there are skills, the agent tool
+// (agent.subagents.enabled), and the tools of the
 // session's enabled MCP servers. extra is system prompt text that goes with
 // them (the skill list, unavailable MCP servers).
 func (s *session) toolSet(ctx context.Context, cfg config.Config, info store.Session) ([]tools.Tool, string, []string) {
@@ -575,6 +583,9 @@ func (s *session) toolSet(ctx context.Context, cfg config.Config, info store.Ses
 				skillNames = append(skillNames, sk.Name)
 			}
 		}
+	}
+	if cfg.Agent.Subagents.IsEnabled() {
+		set = append(set, tools.AgentTool())
 	}
 	if s.m.Crons != nil {
 		set = append(set, s.m.cronTool(s.m.Crons))

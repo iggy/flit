@@ -248,8 +248,8 @@ func TestTurnWithToolCall(t *testing.T) {
 	if sys.Role != "system" || !strings.Contains(sys.Content, "Always say please.") || !strings.Contains(sys.Content, h.dir) {
 		t.Fatalf("system prompt: %s", sys.Content)
 	}
-	// The built-ins plus skill (flit's own /init skill is always there).
-	if len(reqs[0].Tools) != 13 || reqs[0].Model != "test-model" {
+	// The built-ins plus skill (flit's own /init skill is always there) and agent.
+	if len(reqs[0].Tools) != 14 || reqs[0].Model != "test-model" {
 		t.Fatalf("first request tools=%d model=%s", len(reqs[0].Tools), reqs[0].Model)
 	}
 	second := reqs[1].Messages

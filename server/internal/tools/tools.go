@@ -43,6 +43,9 @@ type Env struct {
 	// write or patch tool just changed, formatted for the model, or "" if
 	// there are none. It must return promptly. May be nil.
 	Diagnose func(ctx context.Context, path string) string
+	// Subagent runs the agent tool's subagent. Nil inside a subagent, so
+	// subagents can't start subagents.
+	Subagent func(ctx context.Context, args json.RawMessage) Result
 }
 
 // withDiagnostics adds env.Diagnose's report on p to a successful edit's
@@ -109,12 +112,31 @@ type Tool struct {
 	Name        string
 	Description string
 	Schema      string // JSON Schema of the arguments object
-	Run         func(ctx context.Context, env *Env, args json.RawMessage) Result
+	// ReadOnly tools only read (files, git, the web), so explore
+	// subagents may have them (see ReadOnlySet).
+	ReadOnly bool
+	Run      func(ctx context.Context, env *Env, args json.RawMessage) Result
 }
 
 // All returns the core built-in tools, always offered.
 func All() []Tool {
 	return []Tool{readTool, writeTool, patchTool, listTool, grepTool, shellTool, todoTool}
+}
+
+// ReadOnlySet is the part of set that only reads: the ReadOnly tools, and
+// shell as ReadOnlyShellTool when set has shell and readOnly (the built-in
+// read-only list, shell.read_only) is on.
+func ReadOnlySet(set []Tool, readOnly bool) []Tool {
+	var out []Tool
+	for _, t := range set {
+		switch {
+		case t.ReadOnly:
+			out = append(out, t)
+		case t.Name == shellTool.Name && readOnly:
+			out = append(out, readOnlyShellTool)
+		}
+	}
+	return out
 }
 
 // Definitions returns set in chat completions format.

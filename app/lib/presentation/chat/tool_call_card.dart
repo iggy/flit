@@ -8,6 +8,7 @@ import 'dart:convert';
 
 import 'package:flit/domain/models/tool_call.dart';
 import 'package:flit/presentation/chat/collapse_footer.dart';
+import 'package:flit/presentation/chat/subagent_card.dart';
 import 'package:flutter/material.dart';
 
 /// Renders one [ToolCall] attached to an assistant message (protocol §7:
@@ -72,6 +73,10 @@ class _ToolCallCardState extends State<ToolCallCard> {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final tool = widget.tool;
+    final subagent = tool.subagent;
+    if (subagent != null) {
+      return SubagentCard(tool: tool, subagent: subagent);
+    }
     final contextLine = tool.context;
     final hasDetails =
         tool.result != null || tool.summary != null || tool.inlineDiff != null;

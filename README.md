@@ -132,8 +132,8 @@ first; both are kept on the server, so every device sees the same ones. For a
 llama.cpp router, the picker can also load and unload models.
 `agent.tasks` in the config can set a model per kind of work (`chat` is used
 for new sessions, `permission` rates shell commands, `compaction` writes the
-summary when a conversation is compacted; `planning`, `cron` and `search` are
-for features to come).
+summary when a conversation is compacted, `explore` and `build` run
+subagents; `planning`, `cron` and `search` are for features to come).
 
 Roles are Markdown files in `roles/` next to the config. The body is added to
 the system prompt; YAML frontmatter can set a default model and effort and a
@@ -273,6 +273,31 @@ current model call or tool, before the next call), or starts the next turn
 if the agent was finishing. Queued messages show in every client and can be
 edited or cancelled until then. Stop keeps them queued; they go out first
 with your next message (or press Send with an empty box).
+
+The agent can hand a self-contained task to a **subagent** with the `agent`
+tool. A subagent starts with an empty context (a short system prompt and the
+task), works until it's done or reaches `agent.subagents.max_steps` (20; at
+the cap it is told to write its report), and only its final report goes back
+into the agent's context, which keeps that context small. There are two
+kinds:
+
+- **explore** only reads: `read`, `list`, `grep`, `git_status`/`diff`/`log`,
+  `web_fetch`/`web_search`, and `shell` limited to the built-in read-only
+  commands (`shell.deny` still applies; allow patterns, "allow for this
+  session" and yolo don't widen it). Write tools and MCP tools aren't
+  offered, and it never asks you anything.
+- **build** has the session's tools (MCP servers included) and the
+  project's `AGENTS.md`. Its shell commands go through the session's rules,
+  safety check, yolo mode and prompts exactly like the agent's own; prompts
+  show in the session as usual.
+
+Subagents can't start subagents, and don't get `todo` or skills. They run on
+`agent.tasks.explore` / `agent.tasks.build` when set, otherwise on the
+session's model. Stopping the turn stops the subagent. Everything a subagent
+does is in the session's event log (`subagent_started`, its events wrapped in
+`subagent_event`, `subagent_done`), so it replays; the app shows it as a card
+with the kind, model and status that expands to its tool calls and report.
+`agent.subagents.enabled: false` turns the tool off.
 
 Long conversations are compacted so they keep fitting the model's context.
 Before a model call that would fill `agent.compaction.threshold` of the

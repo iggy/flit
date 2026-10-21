@@ -9,6 +9,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/iggy/flit/server/internal/config"
 )
 
 // shellKeep is how much output the shell tool holds at each end before
@@ -19,17 +21,9 @@ var shellTool = Tool{
 	Name: "shell",
 	Description: "Run a shell command (sh -c on Unix, cmd /C on Windows) and return its combined stdout and stderr " +
 		"and exit code. Some commands need the user's approval first. Long output is cut to its start and end.",
-	Schema: `{"type":"object","properties":{
-"command":{"type":"string","description":"The command line"},
-"workdir":{"type":"string","description":"Directory to run in, relative to the working directory (default .)"},
-"timeout_seconds":{"type":"integer","description":"Kill the command after this many seconds (default from config)"}
-},"required":["command"]}`,
+	Schema: shellSchema,
 	Run: func(ctx context.Context, env *Env, raw json.RawMessage) Result {
-		var a struct {
-			Command        string `json:"command"`
-			Workdir        string `json:"workdir"`
-			TimeoutSeconds int    `json:"timeout_seconds"`
-		}
+		var a shellArgs
 		if err := decode(raw, &a); err != nil {
 			return errorf("%v", err)
 		}
@@ -78,34 +72,82 @@ var shellTool = Tool{
 			}
 		}
 
-		timeout := timeoutFor(a.TimeoutSeconds, env.Shell.Timeout, env.Shell.MaxTimeout)
-		runCtx, cancel := context.WithTimeout(ctx, timeout)
-		defer cancel()
-
-		cmd := shellCommand(runCtx, a.Command)
-		cmd.Dir = dir
-		out := &headTail{keep: shellKeep, live: env.Output}
-		cmd.Stdout, cmd.Stderr = out, out
-		cmd.WaitDelay = 2 * time.Second
-		err = cmd.Run()
-
-		text := out.String()
-		if text != "" && !strings.HasSuffix(text, "\n") {
-			text += "\n"
-		}
-		var exitErr *exec.ExitError
-		switch {
-		case ctx.Err() != nil:
-			return Result{Text: text + "[interrupted]", IsError: true}
-		case errors.Is(runCtx.Err(), context.DeadlineExceeded):
-			return Result{Text: text + fmt.Sprintf("[killed: timed out after %s]", timeout), IsError: true}
-		case errors.As(err, &exitErr):
-			return Result{Text: text + fmt.Sprintf("[exit code %d]", exitErr.ExitCode()), IsError: true}
-		case err != nil:
-			return errorf("%s[failed to run: %v]", text, err)
-		}
-		return Result{Text: text + "[exit code 0]"}
+		return runShell(ctx, env, dir, a.Command, a.TimeoutSeconds)
 	},
+}
+
+// shellSchema is the shell tools' arguments.
+const shellSchema = `{"type":"object","properties":{
+"command":{"type":"string","description":"The command line"},
+"workdir":{"type":"string","description":"Directory to run in, relative to the working directory (default .)"},
+"timeout_seconds":{"type":"integer","description":"Kill the command after this many seconds (default from config)"}
+},"required":["command"]}`
+
+type shellArgs struct {
+	Command        string `json:"command"`
+	Workdir        string `json:"workdir"`
+	TimeoutSeconds int    `json:"timeout_seconds"`
+}
+
+// readOnlyShellTool is shell for explore subagents: it runs only commands
+// whose every part is on the built-in read-only list (and that no deny rule
+// matches), and refuses the rest without asking anyone.
+var readOnlyShellTool = Tool{
+	Name: "shell",
+	Description: "Run a read-only shell command (ls, cat, head, grep, rg, find, git log/show/diff, ...) and return its output " +
+		"and exit code. Commands that could change anything are refused.",
+	Schema: shellSchema,
+	Run: func(ctx context.Context, env *Env, raw json.RawMessage) Result {
+		var a shellArgs
+		if err := decode(raw, &a); err != nil {
+			return errorf("%v", err)
+		}
+		if strings.TrimSpace(a.Command) == "" {
+			return errorf("command is empty")
+		}
+		dir, err := resolve(env.Dir, a.Workdir)
+		if err != nil {
+			return errorf("%v", err)
+		}
+		ro := true
+		check := CheckShell(a.Command, Rules{Shell: config.Shell{Deny: env.Shell.Deny, ReadOnly: &ro, Default: "deny"}})
+		if check.Decision != Allow {
+			return errorf("only read-only commands can run here (%s); use another command or report what you found", check.Reason)
+		}
+		return runShell(ctx, env, dir, a.Command, a.TimeoutSeconds)
+	},
+}
+
+// runShell runs command in dir, already allowed, with the requested
+// timeout in seconds (0: the default).
+func runShell(ctx context.Context, env *Env, dir, command string, timeoutSeconds int) Result {
+	timeout := timeoutFor(timeoutSeconds, env.Shell.Timeout, env.Shell.MaxTimeout)
+	runCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	cmd := shellCommand(runCtx, command)
+	cmd.Dir = dir
+	out := &headTail{keep: shellKeep, live: env.Output}
+	cmd.Stdout, cmd.Stderr = out, out
+	cmd.WaitDelay = 2 * time.Second
+	err := cmd.Run()
+
+	text := out.String()
+	if text != "" && !strings.HasSuffix(text, "\n") {
+		text += "\n"
+	}
+	var exitErr *exec.ExitError
+	switch {
+	case ctx.Err() != nil:
+		return Result{Text: text + "[interrupted]", IsError: true}
+	case errors.Is(runCtx.Err(), context.DeadlineExceeded):
+		return Result{Text: text + fmt.Sprintf("[killed: timed out after %s]", timeout), IsError: true}
+	case errors.As(err, &exitErr):
+		return Result{Text: text + fmt.Sprintf("[exit code %d]", exitErr.ExitCode()), IsError: true}
+	case err != nil:
+		return errorf("%s[failed to run: %v]", text, err)
+	}
+	return Result{Text: text + "[exit code 0]"}
 }
 
 // headTail keeps the first and last keep bytes written to it, counts what
