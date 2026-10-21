@@ -242,4 +242,28 @@ abstract final class SessionService {
     flitv1session.SwitchBranchRequest.new,
     flitv1session.SwitchBranchResponse.new,
   );
+
+  /// GitStatus reports the git repository the session works in: branch,
+  /// upstream, counts like git status, and the files changed since the
+  /// session's base commit (Session.base_commit), committed or not. A
+  /// working directory outside git is not an error: is_repo is false.
+  /// Clients refresh it when a turn ends or a tool call finishes.
+  static const gitStatus = connect.Spec(
+    '/$name/GitStatus',
+    connect.StreamType.unary,
+    flitv1session.GitStatusRequest.new,
+    flitv1session.GitStatusResponse.new,
+    idempotency: connect.Idempotency.noSideEffects,
+  );
+
+  /// GitDiff returns the unified diff of the session's changes: the base
+  /// commit against the working tree, untracked files included as new
+  /// files. The repository's index is left untouched.
+  static const gitDiff = connect.Spec(
+    '/$name/GitDiff',
+    connect.StreamType.unary,
+    flitv1session.GitDiffRequest.new,
+    flitv1session.GitDiffResponse.new,
+    idempotency: connect.Idempotency.noSideEffects,
+  );
 }

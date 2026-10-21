@@ -14,6 +14,7 @@ import (
 	"github.com/iggy/flit/server/gen/flit/v1/flitv1connect"
 	"github.com/iggy/flit/server/internal/agent"
 	"github.com/iggy/flit/server/internal/auth"
+	"github.com/iggy/flit/server/internal/gitx"
 	"github.com/iggy/flit/server/internal/store"
 )
 
@@ -49,6 +50,7 @@ func toProto(s store.Session) *flitv1.Session {
 		McpServers:    s.MCPServers,
 		Yolo:          s.Yolo,
 		BranchId:      s.BranchID,
+		BaseCommit:    s.BaseCommit,
 	}
 }
 
@@ -65,6 +67,8 @@ func connectErr(err error) error {
 		code = connect.CodeInvalidArgument
 	case errors.Is(err, agent.ErrBusy), errors.Is(err, agent.ErrPromptGone), errors.Is(err, agent.ErrNoCallToRetry), errors.Is(err, agent.ErrQueueGone), errors.Is(err, agent.ErrCantEndReasoning),
 		errors.Is(err, agent.ErrQueued):
+		code = connect.CodeFailedPrecondition
+	case errors.Is(err, gitx.ErrNoGit):
 		code = connect.CodeFailedPrecondition
 	case errors.Is(err, agent.ErrSlowClient):
 		code = connect.CodeResourceExhausted
@@ -486,4 +490,76 @@ func (s *Service) ListSkills(ctx context.Context, req *connect.Request[flitv1.Li
 		res.Skills = append(res.Skills, &flitv1.Skill{Name: sk.Name, Description: sk.Description, Source: sk.Source})
 	}
 	return connect.NewResponse(res), nil
+}
+
+// Diff size limits for GitDiff.
+const (
+	defaultDiffBytes = 1 << 20
+	maxDiffBytes     = 8 << 20
+)
+
+var diffBaseKinds = map[gitx.BaseKind]flitv1.GitDiffBase{
+	gitx.BaseSession:     flitv1.GitDiffBase_GIT_DIFF_BASE_SESSION_START,
+	gitx.BaseHeadNoBase:  flitv1.GitDiffBase_GIT_DIFF_BASE_HEAD_NO_BASE,
+	gitx.BaseHeadMissing: flitv1.GitDiffBase_GIT_DIFF_BASE_HEAD_BASE_MISSING,
+	gitx.BaseEmpty:       flitv1.GitDiffBase_GIT_DIFF_BASE_EMPTY_TREE,
+}
+
+var fileStatuses = map[gitx.FileStatus]flitv1.GitFileStatus{
+	gitx.FileModified:    flitv1.GitFileStatus_GIT_FILE_STATUS_MODIFIED,
+	gitx.FileAdded:       flitv1.GitFileStatus_GIT_FILE_STATUS_ADDED,
+	gitx.FileDeleted:     flitv1.GitFileStatus_GIT_FILE_STATUS_DELETED,
+	gitx.FileRenamed:     flitv1.GitFileStatus_GIT_FILE_STATUS_RENAMED,
+	gitx.FileCopied:      flitv1.GitFileStatus_GIT_FILE_STATUS_COPIED,
+	gitx.FileTypeChanged: flitv1.GitFileStatus_GIT_FILE_STATUS_TYPE_CHANGED,
+	gitx.FileUnmerged:    flitv1.GitFileStatus_GIT_FILE_STATUS_UNMERGED,
+}
+
+// GitStatus implements flitv1connect.SessionServiceHandler.
+func (s *Service) GitStatus(ctx context.Context, req *connect.Request[flitv1.GitStatusRequest]) (*connect.Response[flitv1.GitStatusResponse], error) {
+	if err := required("session_id", req.Msg.SessionId); err != nil {
+		return nil, err
+	}
+	st, err := s.M.GitStatus(ctx, req.Msg.SessionId)
+	if err != nil {
+		return nil, connectErr(err)
+	}
+	res := &flitv1.GitStatusResponse{IsRepo: st.IsRepo}
+	if st.IsRepo {
+		res = &flitv1.GitStatusResponse{
+			IsRepo: true, Root: st.Root, Branch: st.Branch, Head: st.Head, Detached: st.Detached,
+			Upstream: st.Upstream, Ahead: int32(st.Ahead), Behind: int32(st.Behind),
+			StagedCount: int32(st.Staged), UnstagedCount: int32(st.Unstaged), UntrackedCount: int32(st.Untracked),
+			ConflictedCount: int32(st.Conflicted),
+			BaseCommit:      st.BaseCommit, DiffBase: st.Base.Rev, DiffBaseKind: diffBaseKinds[st.Base.Kind],
+			FilesTruncated: st.FilesTruncated,
+		}
+		for _, f := range st.Files {
+			res.Files = append(res.Files, &flitv1.GitFileChange{
+				Path: f.Path, OldPath: f.OldPath, Status: fileStatuses[f.Status],
+				Additions: int32(f.Additions), Deletions: int32(f.Deletions), Binary: f.Binary,
+				Staged: f.Staged, Unstaged: f.Unstaged, Untracked: f.Untracked,
+			})
+		}
+	}
+	return connect.NewResponse(res), nil
+}
+
+// GitDiff implements flitv1connect.SessionServiceHandler.
+func (s *Service) GitDiff(ctx context.Context, req *connect.Request[flitv1.GitDiffRequest]) (*connect.Response[flitv1.GitDiffResponse], error) {
+	if err := required("session_id", req.Msg.SessionId); err != nil {
+		return nil, err
+	}
+	limit := int(req.Msg.MaxBytes)
+	if limit <= 0 {
+		limit = defaultDiffBytes
+	}
+	d, err := s.M.GitDiff(ctx, req.Msg.SessionId, req.Msg.Path, min(limit, maxDiffBytes))
+	if err != nil {
+		return nil, connectErr(err)
+	}
+	return connect.NewResponse(&flitv1.GitDiffResponse{
+		IsRepo: d.IsRepo, DiffBase: d.Base.Rev, DiffBaseKind: diffBaseKinds[d.Base.Kind],
+		Diff: d.Text, Truncated: d.Truncated,
+	}), nil
 }
