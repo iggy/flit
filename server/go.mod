@@ -9,9 +9,10 @@ require (
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	go.yaml.in/yaml/v3 v3.0.5
 	golang.org/x/net v0.61.0
-	golang.org/x/oauth2 v0.35.0
+	golang.org/x/oauth2 v0.37.0
 	google.golang.org/protobuf v1.36.12
 	modernc.org/sqlite v1.60.1
+	mvdan.cc/sh/v3 v3.14.1
 )
 
 require (
@@ -30,5 +31,4 @@ require (
 	modernc.org/libc v1.77.1 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect
-	mvdan.cc/sh/v3 v3.14.1 // indirect
 )
