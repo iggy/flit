@@ -39,6 +39,22 @@ type Env struct {
 	// Todo receives the agent's task list whenever the todo tool changes
 	// it. May be nil.
 	Todo func([]TodoItem)
+	// Diagnose returns a language server's diagnostics for a file the
+	// write or patch tool just changed, formatted for the model, or "" if
+	// there are none. It must return promptly. May be nil.
+	Diagnose func(ctx context.Context, path string) string
+}
+
+// withDiagnostics adds env.Diagnose's report on p to a successful edit's
+// result.
+func withDiagnostics(ctx context.Context, env *Env, p string, res Result) Result {
+	if env.Diagnose == nil || res.IsError {
+		return res
+	}
+	if d := env.Diagnose(ctx, p); d != "" {
+		res.Text += "\n\n" + d
+	}
+	return res
 }
 
 // ErrNotApproved wraps an Approve error that means nobody approved it (an

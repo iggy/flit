@@ -266,3 +266,69 @@ func TestCompactionSettings(t *testing.T) {
 		t.Fatal("empty compaction task counts as set")
 	}
 }
+
+func TestLSPSettings(t *testing.T) {
+	cfg, err := Parse([]byte("lsp:\n  wait_timeout: 5s\n  severity: error\n  servers:\n" +
+		"    - name: zls\n      command: zls\n      languages: {zig: [.zig, .zon]}\n      root_markers: [build.zig]\n      init_options: {enable_snippets: false}\n" +
+		"    - {name: clangd, enabled: false}\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	l := cfg.LSP
+	if !l.IsEnabled() || l.WaitTimeout != 5*time.Second || l.IdleTimeout != 10*time.Minute || l.Severity != "error" || l.MaxLines != 10 {
+		t.Fatalf("lsp = %+v", l)
+	}
+	if len(l.Servers) != 2 || l.Servers[0].Languages["zig"][1] != ".zon" || l.Servers[0].InitOptions["enable_snippets"] != false || l.Servers[1].IsEnabled() {
+		t.Fatalf("servers = %+v", l.Servers)
+	}
+	for _, bad := range []string{
+		"lsp: {severity: loud}",
+		"lsp: {wait_timeout: -1s}",
+		"lsp: {servers: [{command: x, languages: {x: [.x]}}]}",
+		"lsp: {servers: [{name: x, languages: {x: [.x]}}]}",
+		"lsp: {servers: [{name: x, command: x}]}",
+		"lsp: {servers: [{name: x, command: x, languages: {x: [x]}}]}",
+		"lsp: {servers: [{name: x, command: x, languages: {x: [.x]}}, {name: x, command: y, languages: {y: [.y]}}]}",
+		"lsp: {servers: [{name: x, command: x, languages: {x: [.x]}, extensions: [.x]}]}",
+	} {
+		if _, err := Parse([]byte(bad)); err == nil {
+			t.Errorf("%q: no error", bad)
+		}
+	}
+}
+
+func TestLSPServerMergesIntoBuiltin(t *testing.T) {
+	cfg, err := Parse([]byte("lsp:\n  servers:\n" +
+		"    - name: gopls\n      init_options: {staticcheck: true}\n      env: {GOFLAGS: -mod=mod}\n" +
+		"    - name: pyright\n      args: []\n" +
+		"    - {name: clangd, enabled: false}\n" +
+		"    - {name: zls, command: zls, languages: {zig: [.zig]}}\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := map[string]LSPServer{}
+	var order []string
+	for _, s := range cfg.LSP.Resolved() {
+		got[s.Name] = s
+		order = append(order, s.Name)
+	}
+	if want := "gopls pyright zls rust-analyzer basedpyright typescript-language-server"; strings.Join(order, " ") != want {
+		t.Fatalf("order %v, want %s", order, want)
+	}
+	g := got["gopls"]
+	if g.Command != "gopls" || len(g.Languages["go"]) != 1 || g.RootMarkers[0] != "go.mod" ||
+		g.InitOptions["staticcheck"] != true || g.Env["GOFLAGS"] != "-mod=mod" {
+		t.Fatalf("gopls = %+v", g)
+	}
+	if p := got["pyright"]; p.Command != "pyright-langserver" || p.Args == nil || len(p.Args) != 0 {
+		t.Fatalf("pyright = %+v", p)
+	}
+	// Builtins keep their own values when nothing names them.
+	if r := got["rust-analyzer"]; r.Command != "rust-analyzer" {
+		t.Fatalf("rust-analyzer = %+v", r)
+	}
+	// Merging can't make a built-in invalid; a bad extension still fails.
+	if _, err := Parse([]byte("lsp: {servers: [{name: gopls, languages: {go: [go]}}]}")); err == nil {
+		t.Fatal("bad extension in a built-in override: no error")
+	}
+}

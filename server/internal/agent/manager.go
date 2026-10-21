@@ -26,6 +26,7 @@ import (
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
 	"github.com/iggy/flit/server/internal/config"
 	"github.com/iggy/flit/server/internal/gitx"
+	"github.com/iggy/flit/server/internal/lsp"
 	"github.com/iggy/flit/server/internal/mcpclient"
 	"github.com/iggy/flit/server/internal/models"
 	"github.com/iggy/flit/server/internal/roles"
@@ -72,6 +73,8 @@ type Manager struct {
 	// DataDir, if set, holds the user and project memory files (see
 	// package memory). Set before use.
 	DataDir string
+	// LSP, if set, checks files the edit tools change. Set before use.
+	LSP *lsp.Manager
 
 	// kv tracks llama.cpp slots and prompt cache save files.
 	kv kvPool
