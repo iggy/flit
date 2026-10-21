@@ -9,7 +9,9 @@ import (
 	"net/http/httptest"
 	"os"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
@@ -164,4 +166,143 @@ func TestManagerHTTP(t *testing.T) {
 	if st := m.Status(); st[3].Running || !strings.Contains(st[3].Err, "FLIT_TEST_MCP_UNSET") {
 		t.Fatalf("status = %+v", st[3])
 	}
+}
+
+// swapHandler lets a test replace the server behind a URL, as a restart
+// would.
+type swapHandler struct {
+	mu sync.Mutex
+	h  http.Handler
+}
+
+func (s *swapHandler) set(h http.Handler) {
+	s.mu.Lock()
+	s.h = h
+	s.mu.Unlock()
+}
+
+func (s *swapHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	s.mu.Lock()
+	h := s.h
+	s.mu.Unlock()
+	h.ServeHTTP(w, r)
+}
+
+// A remote server that restarts (forgetting its sessions) gets a new
+// session, and the call that hit the missing session is retried.
+func TestManagerHTTPReconnect(t *testing.T) {
+	fresh := func() http.Handler {
+		return mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server { return newTestServer() }, nil)
+	}
+	sw := &swapHandler{h: fresh()}
+	ts := httptest.NewServer(sw)
+	defer ts.Close()
+	cfg := config.Default()
+	cfg.MCPServers = []config.MCPServer{{Name: "remote", URL: ts.URL}}
+	m := New(func() config.Config { return cfg }, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	defer m.Close()
+	ctx := context.Background()
+
+	tools, err := m.Tools(ctx, []string{"remote"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var echo Tool
+	for _, tl := range tools {
+		if tl.Name == "echo" {
+			echo = tl
+		}
+	}
+	for i := range 2 {
+		sw.set(fresh())
+		out, isErr, err := m.Call(ctx, echo, json.RawMessage(`{"text":"again"}`))
+		if err != nil || isErr || out != "echo: again" {
+			t.Fatalf("call %d after restart = %q, %v, %v", i, out, isErr, err)
+		}
+	}
+}
+
+// A server that fails to start is tried again after retryAfter, not
+// only after a config change.
+func TestManagerRetriesFailedStart(t *testing.T) {
+	sw := &swapHandler{h: http.NotFoundHandler()}
+	ts := httptest.NewServer(sw)
+	defer ts.Close()
+	cfg := config.Default()
+	cfg.MCPServers = []config.MCPServer{{Name: "remote", URL: ts.URL}}
+	m := New(func() config.Config { return cfg }, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	defer m.Close()
+	ctx := context.Background()
+	if _, err := m.Tools(ctx, []string{"remote"}); err == nil {
+		t.Fatal("expected failure")
+	}
+	sw.set(mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server { return newTestServer() }, nil))
+	if _, err := m.Tools(ctx, []string{"remote"}); err == nil {
+		t.Fatal("retried before retryAfter")
+	}
+	m.mu.Lock()
+	m.servers["remote"].failed = time.Now().Add(-retryAfter)
+	m.mu.Unlock()
+	if tools, err := m.Tools(ctx, []string{"remote"}); err != nil || len(tools) != 2 {
+		t.Fatalf("after retryAfter: %v, %v", tools, err)
+	}
+}
+
+// A server's tools/list_changed notification refreshes its tools, and its
+// log messages reach flit's log.
+func TestManagerToolListChanged(t *testing.T) {
+	srv := newTestServer()
+	ts := httptest.NewServer(mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server { return srv }, nil))
+	defer ts.Close()
+	cfg := config.Default()
+	cfg.MCPServers = []config.MCPServer{{Name: "remote", URL: ts.URL}}
+	var logs syncBuf
+	m := New(func() config.Config { return cfg }, slog.New(slog.NewTextHandler(&logs, &slog.HandlerOptions{Level: slog.LevelDebug})))
+	defer m.Close()
+	ctx := context.Background()
+	if tools, err := m.Tools(ctx, []string{"remote"}); err != nil || len(tools) != 2 {
+		t.Fatalf("tools = %v, %v", tools, err)
+	}
+	mcp.AddTool(srv, &mcp.Tool{Name: "late", Description: "Added later."},
+		func(ctx context.Context, req *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, any, error) {
+			_ = req.Session.Log(ctx, &mcp.LoggingMessageParams{Level: "warning", Logger: "late", Data: "careful"})
+			return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: "here"}}}, nil, nil
+		})
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		tools, _ := m.Tools(ctx, []string{"remote"})
+		if len(tools) == 3 {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("tools never refreshed: %v", tools)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if out, _, err := m.Call(ctx, Tool{Server: "remote", Name: "late"}, nil); err != nil || out != "here" {
+		t.Fatalf("late call = %q, %v", out, err)
+	}
+	for !strings.Contains(logs.String(), "careful") {
+		if time.Now().After(deadline) {
+			t.Fatalf("server log not forwarded:\n%s", logs.String())
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+}
+
+type syncBuf struct {
+	mu sync.Mutex
+	b  strings.Builder
+}
+
+func (s *syncBuf) Write(p []byte) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.b.Write(p)
+}
+
+func (s *syncBuf) String() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.b.String()
 }

@@ -35,7 +35,8 @@ func TestParse(t *testing.T) {
 func TestParseMCPServers(t *testing.T) {
 	cfg, err := Parse([]byte("mcp_servers:\n" +
 		"  - {name: local, command: uvx, args: [mcp-server-fetch]}\n" +
-		"  - name: remote\n    url: https://example.com/mcp\n    headers:\n      Authorization: Bearer t\n"))
+		"  - name: remote\n    url: https://example.com/mcp\n    headers:\n      Authorization: Bearer t\n" +
+		"  - name: signed\n    url: https://example.com/mcp\n    oauth: {client_id: c, client_secret: \"${S}\", scopes: [read]}\n"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,6 +64,9 @@ func TestParseErrors(t *testing.T) {
 		"mcp bad url":            "mcp_servers:\n  - {name: a, url: h/mcp}\n",
 		"mcp url with args":      "mcp_servers:\n  - {name: a, url: http://h/mcp, args: [x]}\n",
 		"mcp command headers":    "mcp_servers:\n  - {name: a, command: x, headers: {A: b}}\n",
+		"mcp command oauth":      "mcp_servers:\n  - {name: a, command: x, oauth: {client_id: c}}\n",
+		"mcp secret no id":       "mcp_servers:\n  - {name: a, url: http://h/mcp, oauth: {client_secret: s}}\n",
+		"mcp oauth unknown":      "mcp_servers:\n  - {name: a, url: http://h/mcp, oauth: {client: c}}\n",
 		"compaction threshold":   "agent:\n  compaction:\n    threshold: 1.5\n",
 		"compaction keep":        "agent:\n  compaction:\n    keep_turns: 100\n",
 		"compaction max":         "agent:\n  compaction:\n    max_summary_tokens: -1\n",

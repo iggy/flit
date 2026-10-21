@@ -174,6 +174,29 @@ state, and the agent's todo list.
 
   Each session turns servers on or off at runtime; only enabled servers'
   tools are sent to the model.
+
+  Remote servers that need a browser sign-in (OAuth) work too: run
+  `flit mcp login NAME` on the machine flit runs on. It registers flit with
+  the server's authorization server, opens the sign-in page, and saves the
+  token (refreshed automatically) in `mcp-oauth.yaml` in the data dir. When
+  the browser is on another machine, paste the address it lands on into
+  the terminal. Servers that don't support dynamic client registration take
+  a client you registered by hand, with redirect URL
+  `http://127.0.0.1:7434/callback` (change the port with `--port`):
+
+  ```yaml
+    - name: tracker
+      url: https://mcp.example.com/mcp
+      oauth:
+        client_id: my-client-id
+        client_secret: ${TRACKER_SECRET}   # optional; ${VAR} from the environment
+        scopes: [read]                     # optional; replaces what the server asks for
+  ```
+
+  `flit mcp list` shows which servers are signed in and `flit mcp logout
+  NAME` forgets a sign-in. flit resumes dropped event streams, reconnects
+  when a server restarts or forgets the session, picks up a server's new
+  tools when it says they changed, and logs what servers log.
 - **Skills** in the [Agent Skills](https://agentskills.io) format come from
   the repo the session works in (`.agents/skills/`, and `.claude/skills/`
   for compatibility, at the working directory and the git root) and from
