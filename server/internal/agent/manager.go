@@ -25,6 +25,7 @@ import (
 
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
 	"github.com/iggy/flit/server/internal/config"
+	"github.com/iggy/flit/server/internal/gitx"
 	"github.com/iggy/flit/server/internal/mcpclient"
 	"github.com/iggy/flit/server/internal/models"
 	"github.com/iggy/flit/server/internal/roles"
@@ -66,6 +67,11 @@ type Manager struct {
 	MCP *mcpclient.Manager
 	// SkillsDirs, if set, returns the skills directories. Set before use.
 	SkillsDirs func() []string
+	// Crons, if set, gives sessions the cron tool. Set before use.
+	Crons CronControl
+	// DataDir, if set, holds the user and project memory files (see
+	// package memory). Set before use.
+	DataDir string
 
 	// kv tracks llama.cpp slots and prompt cache save files.
 	kv kvPool
@@ -156,6 +162,8 @@ type CreateOptions struct {
 	ProjectID string
 	// Yolo turns yolo mode on or off; nil means the config's shell.yolo.
 	Yolo *bool
+	// CronID marks the session as a run of that cron job.
+	CronID string
 }
 
 // contextLength is the model's context window, if the catalog knows it.
@@ -246,6 +254,7 @@ func (m *Manager) Create(ctx context.Context, o CreateOptions) (store.Session, e
 		Effort:     effort,
 		Role:       o.Role,
 		Yolo:       m.cfg().Shell.Yolo,
+		CronID:     o.CronID,
 	}
 	if o.Yolo != nil {
 		info.Yolo = *o.Yolo
@@ -256,6 +265,13 @@ func (m *Manager) Create(ctx context.Context, o CreateOptions) (store.Session, e
 		}
 	}
 	info.ContextLength = m.contextLength(provider, model)
+	// The base commit is what the Changes view diffs against. A directory
+	// outside git (or git not installed) just has none.
+	if base, err := gitx.Head(ctx, dir); err == nil {
+		info.BaseCommit = base
+	} else {
+		m.log.Debug("no base commit", "dir", dir, "err", err)
+	}
 	if err := m.store.CreateSession(ctx, &info); err != nil {
 		return store.Session{}, err
 	}
@@ -293,9 +309,9 @@ func (m *Manager) Get(ctx context.Context, id string) (store.Session, error) {
 }
 
 // List returns sessions, most recently updated first, optionally only one
-// project's.
-func (m *Manager) List(ctx context.Context, projectID string, limit, offset int) ([]store.Session, error) {
-	list, err := m.store.ListSessions(ctx, projectID, limit, offset)
+// project's. Archived sessions are left out unless archived is set.
+func (m *Manager) List(ctx context.Context, projectID string, archived bool, limit, offset int) ([]store.Session, error) {
+	list, err := m.store.ListSessionsArchived(ctx, projectID, archived, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -639,4 +655,33 @@ func (m *Manager) Skills(ctx context.Context, id string) ([]skills.Skill, error)
 	}
 	list, _ := skills.Load(skills.SessionDirs(s.snapshot().WorkingDir, global))
 	return skills.WithBuiltin(list), nil
+}
+
+// maxGitFiles caps the changed files GitStatus lists.
+const maxGitFiles = 2000
+
+// GitStatus reports the git repository a session works in, with the files
+// changed since the session's base commit.
+func (m *Manager) GitStatus(ctx context.Context, id string) (*gitx.Status, error) {
+	s, err := m.session(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	info := s.snapshot()
+	return gitx.GetStatus(ctx, info.WorkingDir, info.BaseCommit, maxGitFiles)
+}
+
+// GitDiff returns the unified diff of a session's changes since its base
+// commit, optionally for one path relative to the repository root, cut at
+// maxBytes.
+func (m *Manager) GitDiff(ctx context.Context, id, path string, maxBytes int) (*gitx.Diff, error) {
+	if path != "" && (strings.HasPrefix(path, "-") || !filepath.IsLocal(path)) {
+		return nil, invalid("path must be relative to the repository root")
+	}
+	s, err := m.session(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	info := s.snapshot()
+	return gitx.GetDiff(ctx, info.WorkingDir, info.BaseCommit, path, maxBytes)
 }

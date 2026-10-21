@@ -1,0 +1,122 @@
+syntax = "proto3";
+
+package flit.v1;
+
+option go_package = "github.com/iggy/flit/server/gen/flit/v1;flitv1";
+
+// LearningService is manual self-learning: a pass over a finished session
+// proposes lessons for the memory files (user, project, role) and skills,
+// and nothing is written until a proposal is accepted. See
+// docs/learning.md.
+service LearningService {
+  // Learn runs the learning pass (the learning task's model) on a session
+  // and returns its proposals, stored as pending. They replace the
+  // session's earlier pending proposals. An empty list is a normal
+  // answer: most sessions teach nothing new.
+  rpc Learn(LearnRequest) returns (LearnResponse);
+  rpc ListLearnProposals(ListLearnProposalsRequest) returns (ListLearnProposalsResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+  // AcceptLearnProposal writes a pending proposal, optionally with edited
+  // text, and marks it accepted. FAILED_PRECONDITION when it was already
+  // decided or the file changed underneath it.
+  rpc AcceptLearnProposal(AcceptLearnProposalRequest) returns (AcceptLearnProposalResponse);
+  rpc RejectLearnProposal(RejectLearnProposalRequest) returns (RejectLearnProposalResponse);
+}
+
+enum LearnAction {
+  LEARN_ACTION_UNSPECIFIED = 0;
+  LEARN_ACTION_ADD = 1;
+  LEARN_ACTION_UPDATE = 2;
+  LEARN_ACTION_REMOVE = 3;
+}
+
+enum LearnTarget {
+  LEARN_TARGET_UNSPECIFIED = 0;
+  // The user memory file, in every session.
+  LEARN_TARGET_USER = 1;
+  // The session's project's memory file.
+  LEARN_TARGET_PROJECT = 2;
+  // The session's role's memory_file.
+  LEARN_TARGET_ROLE = 3;
+  // A skill's SKILL.md.
+  LEARN_TARGET_SKILL = 4;
+}
+
+enum LearnStatus {
+  LEARN_STATUS_UNSPECIFIED = 0;
+  LEARN_STATUS_PENDING = 1;
+  LEARN_STATUS_ACCEPTED = 2;
+  LEARN_STATUS_REJECTED = 3;
+}
+
+message LearnProposal {
+  string id = 1;
+  string session_id = 2;
+  string project_id = 3;
+  LearnAction action = 4;
+  LearnTarget target = 5;
+  // The skill's name, for LEARN_TARGET_SKILL.
+  string skill = 6;
+  // The lesson as the model gave it: when it applies, what to do, and the
+  // turns it comes from ("T2, T5").
+  string cue = 7;
+  string lesson = 8;
+  string evidence = 9;
+  // The memory entry or SKILL.md being updated or removed; empty for add.
+  string old_text = 10;
+  // What will be written: a Markdown list item, or a whole SKILL.md.
+  // Empty for remove. Once accepted, what was written.
+  string new_text = 11;
+  // The file the change goes to.
+  string path = 12;
+  // The model that proposed it.
+  string provider = 13;
+  string model = 14;
+  LearnStatus status = 15;
+  int64 created_at_ms = 16;
+  // 0 while pending.
+  int64 decided_at_ms = 17;
+}
+
+message LearnRequest {
+  string session_id = 1;
+}
+
+message LearnResponse {
+  repeated LearnProposal proposals = 1;
+  // Why proposals the model made were left out (invalid, duplicates, ...).
+  repeated string dropped = 2;
+  // The model that ran the pass.
+  string provider = 3;
+  string model = 4;
+}
+
+message ListLearnProposalsRequest {
+  // Empty means every session's.
+  string session_id = 1;
+  // Include accepted and rejected ones.
+  bool include_decided = 2;
+}
+
+message ListLearnProposalsResponse {
+  repeated LearnProposal proposals = 1;
+}
+
+message AcceptLearnProposalRequest {
+  string id = 1;
+  // Replaces the proposal's new_text when set.
+  optional string text = 2;
+}
+
+message AcceptLearnProposalResponse {
+  LearnProposal proposal = 1;
+}
+
+message RejectLearnProposalRequest {
+  string id = 1;
+}
+
+message RejectLearnProposalResponse {
+  LearnProposal proposal = 1;
+}

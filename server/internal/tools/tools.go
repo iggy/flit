@@ -6,6 +6,7 @@ package tools
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -42,6 +43,10 @@ type Env struct {
 	// subagents can't start subagents.
 	Subagent func(ctx context.Context, args json.RawMessage) Result
 }
+
+// ErrNotApproved wraps an Approve error that means nobody approved it (an
+// unattended run); tools report it to the model as it is.
+var ErrNotApproved = errors.New("not approved")
 
 // Approval is what the user is asked to allow.
 type Approval struct {

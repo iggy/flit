@@ -4,7 +4,10 @@ import 'package:connectrpc/connect.dart' as connect;
 import 'package:fixnum/fixnum.dart';
 import 'package:flit/data/flit/flit_errors.dart';
 import 'package:flit/data/flit/flit_mappers.dart';
+import 'package:flit/domain/models/flit_cron.dart';
 import 'package:flit/domain/models/flit_event.dart';
+import 'package:flit/domain/models/flit_git.dart';
+import 'package:flit/domain/models/flit_learning.dart';
 import 'package:flit/domain/models/flit_session.dart';
 import 'package:flit/domain/repositories/flit_repository.dart';
 import 'package:flit_api/flit_api.dart' as pb;
@@ -15,12 +18,16 @@ final class FlitRepositoryImpl implements FlitRepository {
     : _sessions = pb.SessionServiceClient(transport),
       _models = pb.ModelServiceClient(transport),
       _roles = pb.RoleServiceClient(transport),
-      _projects = pb.ProjectServiceClient(transport);
+      _projects = pb.ProjectServiceClient(transport),
+      _crons = pb.CronServiceClient(transport),
+      _learning = pb.LearningServiceClient(transport);
 
+  final pb.CronServiceClient _crons;
   final pb.SessionServiceClient _sessions;
   final pb.ModelServiceClient _models;
   final pb.RoleServiceClient _roles;
   final pb.ProjectServiceClient _projects;
+  final pb.LearningServiceClient _learning;
 
   /// Page size for [listSessions]; it fetches every page.
   static const int _pageSize = 200;
@@ -492,6 +499,113 @@ final class FlitRepositoryImpl implements FlitRepository {
         pb.SetProjectExportRequest(projectId: projectId, enabled: enabled),
       );
       return projectFromProto(res.project);
+    });
+  }
+
+  @override
+  Future<FlitGitStatus> gitStatus(String sessionId) {
+    return flitCall(() async {
+      final res = await _sessions.gitStatus(
+        pb.GitStatusRequest(sessionId: sessionId),
+      );
+      return gitStatusFromProto(res);
+    });
+  }
+
+  @override
+  Future<List<FlitCronJob>> listCronJobs() {
+    return flitCall(() async {
+      final res = await _crons.listCronJobs(pb.ListCronJobsRequest());
+      return res.jobs.map(cronJobFromProto).toList(growable: false);
+    });
+  }
+
+  @override
+  Future<FlitGitDiff> gitDiff(String sessionId, {String path = ''}) {
+    return flitCall(() async {
+      final res = await _sessions.gitDiff(
+        pb.GitDiffRequest(sessionId: sessionId, path: path),
+      );
+      return gitDiffFromProto(res);
+    });
+  }
+
+  @override
+  Future<FlitCronRun> runCronJob(String name) {
+    return flitCall(() async {
+      final res = await _crons.runCronJob(pb.RunCronJobRequest(name: name));
+      return cronRunFromProto(res.run);
+    });
+  }
+
+  @override
+  Future<FlitCronJob> setCronJobEnabled(String name, {required bool enabled}) {
+    return flitCall(() async {
+      final res = await _crons.setCronJobEnabled(
+        pb.SetCronJobEnabledRequest(name: name, enabled: enabled),
+      );
+      return cronJobFromProto(res.job);
+    });
+  }
+
+  @override
+  Future<List<FlitCronRun>> listCronRuns({String name = '', int limit = 50}) {
+    return flitCall(() async {
+      final res = await _crons.listCronRuns(
+        pb.ListCronRunsRequest(name: name, pageSize: limit),
+      );
+      return res.runs.map(cronRunFromProto).toList(growable: false);
+    });
+  }
+
+  @override
+  Future<FlitLearnResult> learn(String sessionId) {
+    return flitCall(() async {
+      final res = await _learning.learn(pb.LearnRequest(sessionId: sessionId));
+      return FlitLearnResult(
+        proposals: res.proposals.map(learnProposalFromProto).toList(),
+        dropped: res.dropped.toList(),
+        provider: res.provider,
+        model: res.model,
+      );
+    });
+  }
+
+  @override
+  Future<List<FlitLearnProposal>> listLearnProposals({
+    String sessionId = '',
+    bool includeDecided = false,
+  }) {
+    return flitCall(() async {
+      final res = await _learning.listLearnProposals(
+        pb.ListLearnProposalsRequest(
+          sessionId: sessionId,
+          includeDecided: includeDecided,
+        ),
+      );
+      return res.proposals.map(learnProposalFromProto).toList();
+    });
+  }
+
+  @override
+  Future<FlitLearnProposal> acceptLearnProposal(String id, {String? text}) {
+    return flitCall(() async {
+      final req = pb.AcceptLearnProposalRequest(id: id);
+      if (text != null) {
+        req.text = text;
+      }
+      final res = await _learning.acceptLearnProposal(req);
+      return learnProposalFromProto(res.proposal);
+    });
+  }
+
+  @override
+  Future<FlitLearnProposal> rejectLearnProposal(String id) {
+    return flitCall(() async {
+      final res = await _learning.rejectLearnProposal(
+        pb.RejectLearnProposalRequest(id: id),
+      );
+      return learnProposalFromProto(res.proposal);
     });
   }
 }

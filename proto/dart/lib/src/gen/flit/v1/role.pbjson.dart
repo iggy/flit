@@ -26,6 +26,7 @@ const AgentRole$json = {
     {'1': 'effort', '3': 5, '4': 1, '5': 9, '10': 'effort'},
     {'1': 'memory_file', '3': 6, '4': 1, '5': 9, '10': 'memoryFile'},
     {'1': 'error', '3': 7, '4': 1, '5': 9, '10': 'error'},
+    {'1': 'builtin', '3': 8, '4': 1, '5': 8, '10': 'builtin'},
   ],
 };
 
@@ -34,7 +35,7 @@ final $typed_data.Uint8List agentRoleDescriptor = $convert.base64Decode(
     'CglBZ2VudFJvbGUSEgoEbmFtZRgBIAEoCVIEbmFtZRIgCgtkZXNjcmlwdGlvbhgCIAEoCVILZG'
     'VzY3JpcHRpb24SGgoIcHJvdmlkZXIYAyABKAlSCHByb3ZpZGVyEhQKBW1vZGVsGAQgASgJUgVt'
     'b2RlbBIWCgZlZmZvcnQYBSABKAlSBmVmZm9ydBIfCgttZW1vcnlfZmlsZRgGIAEoCVIKbWVtb3'
-    'J5RmlsZRIUCgVlcnJvchgHIAEoCVIFZXJyb3I=');
+    'J5RmlsZRIUCgVlcnJvchgHIAEoCVIFZXJyb3ISGAoHYnVpbHRpbhgIIAEoCFIHYnVpbHRpbg==');
 
 @$core.Deprecated('Use listRolesRequestDescriptor instead')
 const ListRolesRequest$json = {

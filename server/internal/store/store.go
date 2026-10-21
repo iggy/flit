@@ -192,6 +192,55 @@ ALTER TABLE sessions ADD COLUMN branch_id TEXT NOT NULL DEFAULT '';
 ALTER TABLE model_calls ADD COLUMN branch_id TEXT NOT NULL DEFAULT '';
 ALTER TABLE ratings ADD COLUMN branch_id TEXT NOT NULL DEFAULT '';
 `,
+	`
+ALTER TABLE sessions ADD COLUMN base_commit TEXT NOT NULL DEFAULT '';
+`,
+	`
+ALTER TABLE sessions ADD COLUMN cron_id TEXT NOT NULL DEFAULT '';
+ALTER TABLE sessions ADD COLUMN archived INTEGER NOT NULL DEFAULT 0;
+CREATE INDEX sessions_by_cron ON sessions (cron_id, created_at) WHERE cron_id != '';
+CREATE TABLE cron_runs (
+	id           TEXT PRIMARY KEY,
+	team_id      TEXT NOT NULL,
+	job          TEXT NOT NULL,
+	project_id   TEXT NOT NULL,
+	session_id   TEXT NOT NULL,
+	cause        TEXT NOT NULL,
+	state        TEXT NOT NULL,
+	scheduled_at INTEGER NOT NULL,
+	started_at   INTEGER NOT NULL,
+	finished_at  INTEGER,
+	summary      TEXT NOT NULL,
+	refused      TEXT NOT NULL,
+	quiet        INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX cron_runs_by_job ON cron_runs (team_id, job, started_at);
+CREATE INDEX cron_runs_by_time ON cron_runs (team_id, started_at);
+`,
+	`
+CREATE TABLE learn_proposals (
+	id          TEXT PRIMARY KEY,
+	session_id  TEXT NOT NULL REFERENCES sessions(id),
+	team_id     TEXT NOT NULL,
+	project_id  TEXT NOT NULL,
+	created_at  INTEGER NOT NULL,
+	action      TEXT NOT NULL,
+	target      TEXT NOT NULL,
+	skill       TEXT NOT NULL,
+	cue         TEXT NOT NULL,
+	lesson      TEXT NOT NULL,
+	evidence    TEXT NOT NULL,
+	old_text    TEXT NOT NULL,
+	new_text    TEXT NOT NULL,
+	path        TEXT NOT NULL,
+	provider    TEXT NOT NULL,
+	model       TEXT NOT NULL,
+	status      TEXT NOT NULL,
+	decided_at  INTEGER
+);
+CREATE INDEX learn_proposals_by_session ON learn_proposals (session_id, created_at);
+CREATE INDEX learn_proposals_by_status ON learn_proposals (status, created_at);
+`,
 }
 
 func (s *Store) migrate(ctx context.Context) error {
@@ -251,9 +300,16 @@ type Session struct {
 	// BranchID is the active branch (see package branches); empty is the
 	// root.
 	BranchID string
+	// BaseCommit is the commit HEAD was on when the session was created;
+	// empty if its directory wasn't in a git repository with commits.
+	BaseCommit string
+	// CronID is the cron job whose run this is; empty for other sessions.
+	CronID string
+	// Archived sessions are left out of ListSessions.
+	Archived bool
 }
 
-const sessionCols = `id, team_id, project_id, title, working_dir, provider, model, state, last_seq, created_at, updated_at, effort, role, context_tokens, context_length, mcp_servers, yolo, branch_id`
+const sessionCols = `id, team_id, project_id, title, working_dir, provider, model, state, last_seq, created_at, updated_at, effort, role, context_tokens, context_length, mcp_servers, yolo, branch_id, base_commit, cron_id, archived`
 
 func joinNames(names []string) string { return strings.Join(names, "\n") }
 
@@ -269,7 +325,7 @@ func scanSession(row interface{ Scan(...any) error }) (Session, error) {
 	var created, updated int64
 	var mcp string
 	err := row.Scan(&s.ID, &s.TeamID, &s.ProjectID, &s.Title, &s.WorkingDir, &s.Provider, &s.Model,
-		&s.State, &s.LastSeq, &created, &updated, &s.Effort, &s.Role, &s.ContextTokens, &s.ContextLength, &mcp, &s.Yolo, &s.BranchID)
+		&s.State, &s.LastSeq, &created, &updated, &s.Effort, &s.Role, &s.ContextTokens, &s.ContextLength, &mcp, &s.Yolo, &s.BranchID, &s.BaseCommit, &s.CronID, &s.Archived)
 	s.MCPServers = splitNames(mcp)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Session{}, ErrNotFound
@@ -282,10 +338,10 @@ func scanSession(row interface{ Scan(...any) error }) (Session, error) {
 func (s *Store) CreateSession(ctx context.Context, sess *Session) error {
 	now := time.Now()
 	sess.CreatedAt, sess.UpdatedAt = now, now
-	_, err := s.db.ExecContext(ctx, `INSERT INTO sessions (`+sessionCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	_, err := s.db.ExecContext(ctx, `INSERT INTO sessions (`+sessionCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		sess.ID, sess.TeamID, sess.ProjectID, sess.Title, sess.WorkingDir, sess.Provider, sess.Model,
 		sess.State, sess.LastSeq, now.UnixNano(), now.UnixNano(), sess.Effort, sess.Role, sess.ContextTokens, sess.ContextLength,
-		joinNames(sess.MCPServers), sess.Yolo, sess.BranchID)
+		joinNames(sess.MCPServers), sess.Yolo, sess.BranchID, sess.BaseCommit, sess.CronID, sess.Archived)
 	return err
 }
 
@@ -296,9 +352,16 @@ func (s *Store) GetSession(ctx context.Context, id string) (Session, error) {
 
 // ListSessions returns up to limit sessions, most recently updated first,
 // skipping the first offset; only those in projectID unless it is empty.
+// Archived sessions are left out.
 func (s *Store) ListSessions(ctx context.Context, projectID string, limit, offset int) ([]Session, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT `+sessionCols+` FROM sessions WHERE ? = '' OR project_id = ? ORDER BY updated_at DESC, id LIMIT ? OFFSET ?`,
-		projectID, projectID, limit, offset)
+	return s.ListSessionsArchived(ctx, projectID, false, limit, offset)
+}
+
+// ListSessionsArchived is ListSessions, with archived sessions included if
+// archived is true.
+func (s *Store) ListSessionsArchived(ctx context.Context, projectID string, archived bool, limit, offset int) ([]Session, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT `+sessionCols+` FROM sessions WHERE (? = '' OR project_id = ?) AND (? OR NOT archived) ORDER BY updated_at DESC, id LIMIT ? OFFSET ?`,
+		projectID, projectID, archived, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -378,7 +441,7 @@ func (s *Store) CreateProject(ctx context.Context, p *Project) error {
 }
 
 const projectQuery = `SELECT p.id, p.team_id, p.name, p.directory, p.created_at,
-	(SELECT count(*) FROM sessions s WHERE s.project_id = p.id), p.export_enabled FROM projects p`
+	(SELECT count(*) FROM sessions s WHERE s.project_id = p.id AND NOT s.archived), p.export_enabled FROM projects p`
 
 func scanProject(row interface{ Scan(...any) error }) (Project, error) {
 	var p Project

@@ -665,17 +665,17 @@ func TestBuildMessagesFillsMissingToolResults(t *testing.T) {
 
 func TestSystemPromptInstructionFiles(t *testing.T) {
 	dir := t.TempDir()
-	if p := systemPrompt(dir, nil); strings.Contains(p, "Project instructions") {
+	if p := systemPrompt(dir, nil, nil); strings.Contains(p, "Project instructions") {
 		t.Fatal("instructions without files")
 	}
 	os.WriteFile(filepath.Join(dir, "AGENTS.md"), []byte("rule one"), 0o644)
 	os.WriteFile(filepath.Join(dir, "CLAUDE.md"), []byte("rule one\n"), 0o644)
-	p := systemPrompt(dir, nil)
+	p := systemPrompt(dir, nil, nil)
 	if strings.Count(p, "rule one") != 1 || !strings.Contains(p, "CLAUDE.md has the same content as AGENTS.md") {
 		t.Fatalf("duplicate files: %s", p)
 	}
 	os.WriteFile(filepath.Join(dir, "CLAUDE.md"), []byte("rule two"), 0o644)
-	if p := systemPrompt(dir, nil); !strings.Contains(p, "rule one") || !strings.Contains(p, "rule two") {
+	if p := systemPrompt(dir, nil, nil); !strings.Contains(p, "rule one") || !strings.Contains(p, "rule two") {
 		t.Fatalf("both files: %s", p)
 	}
 }
@@ -800,7 +800,7 @@ func TestProjectsMoveAndRate(t *testing.T) {
 		t.Fatalf("move = %+v, %v", moved, err)
 	}
 	w.waitFor("moved", func(ev *flitv1.Event) bool { return ev.GetSessionMoved().GetProjectId() == p.ID })
-	if list, _ := h.m.List(ctx, p.ID, 10, 0); len(list) != 2 {
+	if list, _ := h.m.List(ctx, p.ID, false, 10, 0); len(list) != 2 {
 		t.Fatalf("project sessions = %d", len(list))
 	}
 	if list, _ := h.m.Projects(ctx); len(list) != 2 || list[1].SessionCount != 2 {

@@ -107,6 +107,15 @@ func TestBuiltin(t *testing.T) {
 	if init.Name == "" || !strings.Contains(init.Body, "AGENTS.md") || !strings.Contains(init.Body, "ask the user") {
 		t.Fatalf("init = %+v", init)
 	}
+	var grill Skill
+	for _, s := range list {
+		if s.Name == "grill-me" {
+			grill = s
+		}
+	}
+	if grill.Name == "" || !strings.Contains(grill.Body, "ONE question") || !strings.Contains(grill.Body, "PROJECT.md") {
+		t.Fatalf("grill-me = %+v", grill)
+	}
 }
 
 // A repo or global skill with a built-in's name replaces it.
@@ -116,7 +125,7 @@ func TestWithBuiltin(t *testing.T) {
 	for _, s := range got {
 		names = append(names, s.Name+"@"+s.Source)
 	}
-	if strings.Join(names, ",") != "init@repo .agents/skills,zeta@" {
+	if strings.Join(names, ",") != "grill-me@built-in,init@repo .agents/skills,zeta@" {
 		t.Fatalf("got %v", names)
 	}
 	if got := WithBuiltin(nil); len(got) == 0 || got[0].Source != BuiltinSource {

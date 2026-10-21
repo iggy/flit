@@ -42,7 +42,14 @@ final class FlitSession {
     this.contextLength = 0,
     this.mcpServers = const <String>[],
     this.yolo = false,
+    this.cronJob = '',
   });
+
+  /// The cron job this session is a run of; empty for ordinary sessions.
+  final String cronJob;
+
+  /// Whether this session is a cron job's run.
+  bool get isCronRun => cronJob.isNotEmpty;
 
   /// MCP servers enabled for the session.
   final List<String> mcpServers;
@@ -206,6 +213,7 @@ final class FlitAgentRole {
     this.model = '',
     this.effort = '',
     this.error = '',
+    this.builtin = false,
   });
 
   final String name;
@@ -216,6 +224,9 @@ final class FlitAgentRole {
 
   /// Why the role file couldn't be read; such roles can't be picked.
   final String error;
+
+  /// Ships with flit; a role file with the same name replaces it.
+  final bool builtin;
 
   @override
   bool operator ==(Object other) =>

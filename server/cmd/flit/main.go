@@ -7,6 +7,9 @@
 //	flit pair [--url URL] [--config FILE] [--data-dir DIR]
 //	flit devices [--all] | flit devices revoke ID
 //	flit debug session [ID]
+//	flit mcp list | flit mcp login NAME | flit mcp logout NAME
+//	flit cron list | flit cron run NAME
+//	flit learn [--yes] [--dry-run] [--pending] ID
 //	flit version
 package main
 
@@ -24,15 +27,19 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+	_ "time/tzdata" // cron jobs' timezone: works without the OS's zone files
 
 	"github.com/iggy/flit/server/internal/agent"
 	"github.com/iggy/flit/server/internal/auth"
 	"github.com/iggy/flit/server/internal/buildinfo"
 	"github.com/iggy/flit/server/internal/config"
 	"github.com/iggy/flit/server/internal/devices"
+	"github.com/iggy/flit/server/internal/learn"
 	"github.com/iggy/flit/server/internal/mcpclient"
 	"github.com/iggy/flit/server/internal/models"
+	"github.com/iggy/flit/server/internal/notify"
 	"github.com/iggy/flit/server/internal/paths"
+	"github.com/iggy/flit/server/internal/scheduler"
 	"github.com/iggy/flit/server/internal/server"
 	"github.com/iggy/flit/server/internal/store"
 )
@@ -47,6 +54,14 @@ Usage:
   flit devices revoke ID      revoke a paired device
   flit export [flags]         write recorded sessions as JSONL (see docs/export.md)
   flit debug session [ID]     print a session's timeline, to see where a turn got stuck
+  flit mcp list               list MCP servers and which are signed in
+  flit mcp login NAME         sign in to a remote MCP server that needs OAuth
+  flit mcp logout NAME        forget an MCP server's sign-in
+  flit config defaults        print the default config
+  flit config update          add new default settings to the config (--dry-run shows a diff)
+  flit cron list              list cron jobs (see docs/cron.md)
+  flit cron run NAME          run a cron job now and wait for its result
+  flit learn ID               propose lessons from a session to remember (see docs/learning.md)
   flit version                print version information
 
 Flags for serve, token, pair and devices:
@@ -113,6 +128,14 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		return exportCmd(ctx, stdout, stderr, args, defaultConfig)
 	case "debug":
 		return debugCmd(ctx, stdout, stderr, args, defaultConfig)
+	case "mcp":
+		return mcpCmd(ctx, os.Stdin, stdout, stderr, args, defaultConfig)
+	case "config":
+		return configCmd(stdout, stderr, args, defaultConfig)
+	case "cron":
+		return cronCmd(ctx, stdout, stderr, args, defaultConfig)
+	case "learn":
+		return learnCmd(ctx, stdout, stderr, args, defaultConfig)
 	case "help", "-h", "--help":
 		fmt.Fprintf(stdout, usage, defaultConfig)
 		return nil
@@ -232,15 +255,20 @@ func serve(ctx context.Context, stderr io.Writer, configPath, dataDirFlag string
 	}
 	rolesDir := func() string { return relToConfig(current().RolesDir) }
 	catalog := models.NewCatalog(current, func() string { return relToConfig(current().ModelOverridesFile) }, log)
-	sessions.Catalog, sessions.RolesDir = catalog, rolesDir
-	sessions.SkillsDirs = func() []string {
+	sessions.Catalog, sessions.RolesDir, sessions.DataDir = catalog, rolesDir, dataDir
+	skillsDirs := func() []string {
 		var dirs []string
 		for _, d := range current().SkillsDirs {
 			dirs = append(dirs, relToConfig(d))
 		}
 		return dirs
 	}
+	sessions.SkillsDirs = skillsDirs
+	learning := &learn.Service{
+		Store: st, Config: current, DataDir: dataDir, RolesDir: rolesDir, SkillsDirs: skillsDirs, Catalog: catalog, Log: log,
+	}
 	mcpServers := mcpclient.New(current, log)
+	mcpServers.Tokens = mcpclient.NewTokenStore(filepath.Join(dataDir, mcpclient.TokenFileName))
 	defer mcpServers.Close()
 	sessions.MCP = mcpServers
 	go func() {
@@ -252,9 +280,23 @@ func serve(ctx context.Context, stderr io.Writer, configPath, dataDirFlag string
 		log.Warn("no providers configured; add one under providers in the config to run sessions", "config", configPath)
 	}
 
-	srv := server.New(server.NewHandler(token, server.Deps{Sessions: sessions, Devices: devices.New(st), Config: current, Catalog: catalog, RolesDir: rolesDir, Store: st}), log)
+	ntfy := &notify.Ntfy{Config: current, Log: log}
+	crons := &scheduler.Scheduler{
+		M: sessions, Store: st, CronsDir: func() string { return relToConfig(current().CronsDir) }, DataDir: dataDir, Log: log,
+		Notify: func(ctx context.Context, m notify.Message) { _ = ntfy.Send(ctx, m) },
+	}
+	sessions.Crons = crons
+
+	srv := server.New(server.NewHandler(token, server.Deps{Sessions: sessions, Devices: devices.New(st), Config: current, Catalog: catalog, RolesDir: rolesDir, Store: st, Crons: crons, Learning: learning}), log)
 	if err := srv.Apply(cfg); err != nil {
 		return err
+	}
+	// Only once the address is ours: another flit on the same data dir
+	// would otherwise have its running cron runs marked failed.
+	cronCtx, stopCrons := context.WithCancel(ctx)
+	defer stopCrons()
+	if err := crons.Start(cronCtx); err != nil {
+		return fmt.Errorf("start cron jobs: %w", err)
 	}
 
 	watchErr := make(chan error, 1)
@@ -287,5 +329,11 @@ func serve(ctx context.Context, stderr io.Writer, configPath, dataDirFlag string
 	log.Info("shutting down")
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	return srv.Shutdown(shutdownCtx)
+	err = srv.Shutdown(shutdownCtx)
+	// Stop the turns, then let cron runs record how they ended before the
+	// database closes.
+	stopCrons()
+	sessions.Close()
+	crons.Wait()
+	return err
 }

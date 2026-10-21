@@ -59,6 +59,33 @@ type Config struct {
 	Web        Web      `yaml:"web"`
 	Git        Git      `yaml:"git"`
 	LlamaCpp   LlamaCpp `yaml:"llamacpp"`
+	// CronsDir holds cron job files (*.md with YAML frontmatter; see
+	// docs/cron.md). Relative paths are relative to the config file.
+	CronsDir string   `yaml:"crons_dir"`
+	Notify   Notify   `yaml:"notify"`
+	Learning Learning `yaml:"learning"`
+}
+
+// Notify configures notifications flit sends itself (the app shows its
+// own while it's connected).
+type Notify struct {
+	// Ntfy is an ntfy topic URL (e.g. https://ntfy.sh/my-topic) that cron
+	// run results are posted to. Empty means none.
+	Ntfy string `yaml:"ntfy"`
+	// NtfyHeaders are sent with each post, e.g. Authorization. ${VAR} in a
+	// value is replaced with that environment variable.
+	NtfyHeaders map[string]string `yaml:"ntfy_headers"`
+}
+
+// Learning configures memory and the learning pass (see docs/learning.md).
+type Learning struct {
+	// MemoryMaxBytes caps each memory layer (user, project) in the system
+	// prompt; the rest is cut with a marker. 0 means no cap.
+	MemoryMaxBytes int `yaml:"memory_max_bytes"`
+	// TranscriptMaxBytes caps the session transcript sent to the learning
+	// model. 0 means from the model's context window (24000 when that is
+	// unknown).
+	TranscriptMaxBytes int `yaml:"transcript_max_bytes"`
 }
 
 // MCPServer returns the MCP server named name.
@@ -123,8 +150,22 @@ type MCPServer struct {
 	// ${VAR} in a value is replaced with that environment variable when
 	// connecting; an unset one fails the server.
 	Headers map[string]string `yaml:"headers"`
+	// OAuth configures sign-in for url servers that need it. Servers that
+	// support dynamic client registration need nothing here: run
+	// "flit mcp login NAME" once.
+	OAuth *MCPOAuth `yaml:"oauth"`
 	// Enabled is whether new sessions start with it on. Default true.
 	Enabled *bool `yaml:"enabled"`
+}
+
+// MCPOAuth is a client registered by hand with an MCP server's
+// authorization server, for servers that don't support dynamic client
+// registration. ${VAR} in client_secret is read from the environment.
+type MCPOAuth struct {
+	ClientID     string `yaml:"client_id"`
+	ClientSecret string `yaml:"client_secret"`
+	// Scopes replaces the scopes the server asks for.
+	Scopes []string `yaml:"scopes"`
 }
 
 // EnabledByDefault reports whether new sessions get this server.
@@ -183,7 +224,7 @@ func (g Git) IsEnabled() bool { return g.Enabled == nil || *g.Enabled }
 var ProviderKinds = []string{"auto", "openai", "openrouter", "llamacpp", "gomodel"}
 
 // Tasks are the kinds of work that can have their own model.
-var Tasks = []string{"chat", "planning", "cron", "compaction", "search", "permission", "explore", "build"}
+var Tasks = []string{"chat", "planning", "cron", "compaction", "search", "permission", "learning", "explore", "build"}
 
 // TaskModel picks a model for one kind of work.
 type TaskModel struct {
@@ -222,9 +263,10 @@ type Agent struct {
 	// sessions' default model and permission rates shell commands before
 	// flit asks the user (see docs/shell.md); compaction summarizes long
 	// conversations (see Compaction; without it the session's own model
-	// does); explore and build run the agent tool's subagents of that
-	// kind (see Subagents; without one the session's own model does);
-	// planning, cron and search are for those features as they arrive.
+	// does); cron runs cron jobs that pick no model of their own (see
+	// docs/cron.md); explore and build run the agent tool's subagents of
+	// that kind (see Subagents; without one the session's own model does);
+	// planning and search are for those features as they arrive.
 	Tasks map[string]TaskModel `yaml:"tasks"`
 	// ModelPromptAppends adds text to the system prompt for specific
 	// models, keyed "provider/model".
@@ -355,11 +397,14 @@ func Default() Config {
 		Providers:          []Provider{},
 		ModelOverridesFile: "models.yaml",
 		RolesDir:           "roles",
+		CronsDir:           "crons",
+		Notify:             Notify{NtfyHeaders: map[string]string{}},
 		MCPServers:         []MCPServer{},
 		SkillsDirs:         []string{"skills"},
 		Web:                Web{Fetch: ptr(true)},
 		Git:                Git{Enabled: ptr(true)},
 		LlamaCpp:           LlamaCpp{KVCache: ptr(true), KVCacheFiles: 4},
+		Learning:           Learning{MemoryMaxBytes: 6000},
 		Agent: Agent{
 			Tasks:              map[string]TaskModel{},
 			ModelPromptAppends: map[string]string{},
@@ -453,6 +498,9 @@ func (c *Config) fillDefaults() {
 	if c.RolesDir == "" {
 		c.RolesDir = d.RolesDir
 	}
+	if c.CronsDir == "" {
+		c.CronsDir = d.CronsDir
+	}
 }
 
 // Load reads and parses the config file at path.
@@ -529,6 +577,10 @@ func (c Config) Validate() error {
 			return fmt.Errorf("mcp_servers %q: args, env and dir only apply to command servers", m.Name)
 		case m.Command != "" && len(m.Headers) > 0:
 			return fmt.Errorf("mcp_servers %q: headers only apply to url servers", m.Name)
+		case m.Command != "" && m.OAuth != nil:
+			return fmt.Errorf("mcp_servers %q: oauth only applies to url servers", m.Name)
+		case m.OAuth != nil && m.OAuth.ClientID == "" && m.OAuth.ClientSecret != "":
+			return fmt.Errorf("mcp_servers %q: oauth.client_secret needs oauth.client_id", m.Name)
 		}
 		if m.URL != "" {
 			if u, err := url.Parse(m.URL); err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
@@ -573,6 +625,9 @@ func (c Config) Validate() error {
 	if n := c.Agent.Subagents.MaxSteps; n < 1 || n > 200 {
 		return errors.New("agent.subagents.max_steps must be between 1 and 200")
 	}
+	if c.Learning.MemoryMaxBytes < 0 || c.Learning.TranscriptMaxBytes < 0 {
+		return errors.New("learning: limits must not be negative")
+	}
 	if c.Agent.Compaction.MaxSummaryTokens < 0 {
 		return errors.New("agent.compaction.max_summary_tokens must not be negative")
 	}
@@ -583,6 +638,16 @@ func (c Config) Validate() error {
 	case "ask", "allow", "deny":
 	default:
 		return fmt.Errorf("shell.default %q: want ask, allow or deny", c.Shell.Default)
+	}
+	if c.Notify.Ntfy != "" {
+		if u, err := url.Parse(c.Notify.Ntfy); err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			return fmt.Errorf("notify.ntfy %q must be an http(s) URL", c.Notify.Ntfy)
+		}
+	}
+	for k := range c.Notify.NtfyHeaders {
+		if !headerName.MatchString(k) {
+			return fmt.Errorf("notify.ntfy_headers: %q is not a valid header name", k)
+		}
 	}
 	for _, pat := range append(append([]string{}, c.Shell.Allow...), c.Shell.Deny...) {
 		if strings.TrimSpace(pat) == "" {
@@ -640,6 +705,20 @@ model_overrides_file: models.yaml
 # Role files (*.md with YAML frontmatter), relative to this file.
 roles_dir: roles
 
+# Cron jobs: one Markdown file per job (YAML frontmatter with the schedule,
+# the body is the prompt), relative to this file. flit runs each job
+# unattended on its schedule as a new session. See docs/cron.md.
+crons_dir: crons
+
+# Notifications flit sends itself, for when the app isn't open. ntfy posts
+# cron run results (a report, needs attention, failed) to an ntfy topic,
+# e.g. https://ntfy.sh/<a-long-random-topic> or your own server; runs with
+# nothing to report stay quiet. Empty means off.
+notify:
+  ntfy: ""
+  ntfy_headers: {}
+  #  Authorization: Bearer ${NTFY_TOKEN}   # ${VAR} is read from the environment
+
 # Skills in the Agent Skills format (a directory per skill with SKILL.md),
 # relative to this file. The agent sees names and descriptions and loads a
 # skill when it needs it.
@@ -660,6 +739,11 @@ mcp_servers: []
 #    headers:                            # ${VAR} is read from the environment
 #      Authorization: Bearer ${DOCS_MCP_TOKEN}
 #    enabled: true
+#  - name: tracker                       # a server that needs a browser
+#    url: https://mcp.example.com/mcp    # sign-in: run "flit mcp login tracker"
+#    oauth:                              # only for servers without dynamic
+#      client_id: my-client-id           # client registration; register
+#      client_secret: ${TRACKER_SECRET}  # http://127.0.0.1:7434/callback
 
 web:
   # web_fetch: read a web page as text.
@@ -696,17 +780,23 @@ agent:
   # off to turn thinking off on llama.cpp. Empty means the model's default.
   effort: ""
   # A model per kind of work: chat, permission, planning, cron, compaction,
-  # search, explore, build. chat overrides the defaults above. permission
-  # rates shell commands (safe, ask or block) before flit asks you; without
-  # it, flit just asks. compaction writes the summary when a long
-  # conversation is compacted; explore and build run the agent tool's
-  # subagents; without them, the session's own model does. planning, cron
-  # and search aren't used yet.
+  # search, learning, explore, build. chat overrides the defaults above.
+  # permission rates shell commands (safe, ask or block) before flit asks
+  # you; without it, flit just asks. compaction writes the summary when a
+  # long conversation is compacted; without it, the session's own model
+  # does. cron runs cron jobs that don't pick a model (or get one from
+  # their role); without it, they use the chat model. learning reads a
+  # finished session and proposes lessons to remember ("flit learn", or
+  # "Learn from this session" in the app); without it, the chat model
+  # does. explore and build run the agent tool's subagents; without them,
+  # the session's own model does. planning and search aren't used yet.
   tasks: {}
   #   chat:       {provider: local, model: qwen3-coder, effort: medium}
+  #   cron:       {provider: local, model: qwen3-4b, effort: off}
   #   permission: {provider: local, model: qwen3-4b, effort: off}
   #   compaction: {provider: local, model: qwen3-4b, effort: off}
   #   explore:    {provider: local, model: qwen3-4b, effort: low}
+  #   learning:   {provider: local, model: qwen3-coder, effort: off}
   # Extra system prompt text for specific models ("provider/model"); a
   # provider's prompt_append applies to all its models.
   model_prompt_appends: {}
@@ -748,6 +838,19 @@ agent:
     enabled: true
     # Maximum model calls per subagent; at the cap it is told to report.
     max_steps: 20
+
+# Memory: lessons flit keeps between sessions, as Markdown files you can
+# edit: <data_dir>/memory/user.md (every session) and
+# <data_dir>/memory/projects/<project id>.md (that project's sessions).
+# "flit learn <session>" proposes additions; nothing is written until you
+# accept. See docs/learning.md.
+learning:
+  # Each memory file is cut to this many bytes in the system prompt.
+  # 0 means no cap.
+  memory_max_bytes: 6000
+  # Longest session transcript sent to the learning model; long tool
+  # output is trimmed first. 0 means from the model's context window.
+  transcript_max_bytes: 0
 
 shell:
   timeout: 2m

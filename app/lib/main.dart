@@ -1,5 +1,6 @@
 import 'package:flit/application/config/skin_providers.dart';
 import 'package:flit/application/config/window_providers.dart';
+import 'package:flit/application/flit/flit_cron.dart';
 import 'package:flit/application/notifications/notification_providers.dart';
 import 'package:flit/core/platform/desktop_window.dart';
 import 'package:flit/core/router/app_router.dart';
@@ -59,6 +60,9 @@ class _FlitAppState extends ConsumerState<FlitApp> {
     // it is the only listener of background.complete / approval prompts, so
     // nothing else would mount it.
     ref.watch(notificationBridgeProvider);
+    // Likewise for finished flit cron runs (polls only while notifications
+    // are on and a flit server is connected).
+    ref.watch(flitCronNotifierProvider);
     return MaterialApp.router(
       title: 'Flit',
       // Themes come from the skin providers (P9-07): the gateway-pushed skin

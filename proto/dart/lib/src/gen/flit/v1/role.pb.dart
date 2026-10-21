@@ -26,6 +26,7 @@ class AgentRole extends $pb.GeneratedMessage {
     $core.String? effort,
     $core.String? memoryFile,
     $core.String? error,
+    $core.bool? builtin,
   }) {
     final result = AgentRole._();
     if (name != null) result.name = name;
@@ -35,6 +36,7 @@ class AgentRole extends $pb.GeneratedMessage {
     if (effort != null) result.effort = effort;
     if (memoryFile != null) result.memoryFile = memoryFile;
     if (error != null) result.error = error;
+    if (builtin != null) result.builtin = builtin;
     return result;
   }
 
@@ -58,6 +60,7 @@ class AgentRole extends $pb.GeneratedMessage {
     ..aOS(5, _omitFieldNames ? '' : 'effort')
     ..aOS(6, _omitFieldNames ? '' : 'memoryFile')
     ..aOS(7, _omitFieldNames ? '' : 'error')
+    ..aOB(8, _omitFieldNames ? '' : 'builtin')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -147,6 +150,17 @@ class AgentRole extends $pb.GeneratedMessage {
   $core.bool hasError() => $_has(6);
   @$pb.TagNumber(7)
   void clearError() => $_clearField(7);
+
+  /// Set for roles that ship with flit. A file in the roles directory with
+  /// the same name replaces one.
+  @$pb.TagNumber(8)
+  $core.bool get builtin => $_getBF(7);
+  @$pb.TagNumber(8)
+  set builtin($core.bool value) => $_setBool(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasBuiltin() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearBuiltin() => $_clearField(8);
 }
 
 class ListRolesRequest extends $pb.GeneratedMessage {

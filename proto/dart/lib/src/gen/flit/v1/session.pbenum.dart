@@ -354,6 +354,81 @@ class BranchKind extends $pb.ProtobufEnum {
   const BranchKind._(super.value, super.name);
 }
 
+/// GitDiffBase says what a session's changes are compared against.
+class GitDiffBase extends $pb.ProtobufEnum {
+  static const GitDiffBase GIT_DIFF_BASE_UNSPECIFIED =
+      GitDiffBase._(0, _omitEnumNames ? '' : 'GIT_DIFF_BASE_UNSPECIFIED');
+
+  /// The session's base commit.
+  static const GitDiffBase GIT_DIFF_BASE_SESSION_START =
+      GitDiffBase._(1, _omitEnumNames ? '' : 'GIT_DIFF_BASE_SESSION_START');
+
+  /// HEAD, because the session has no base commit.
+  static const GitDiffBase GIT_DIFF_BASE_HEAD_NO_BASE =
+      GitDiffBase._(2, _omitEnumNames ? '' : 'GIT_DIFF_BASE_HEAD_NO_BASE');
+
+  /// HEAD, because the base commit no longer exists in the repository.
+  static const GitDiffBase GIT_DIFF_BASE_HEAD_BASE_MISSING =
+      GitDiffBase._(3, _omitEnumNames ? '' : 'GIT_DIFF_BASE_HEAD_BASE_MISSING');
+
+  /// The empty tree: there is no base and no HEAD commit, so every file is
+  /// new.
+  static const GitDiffBase GIT_DIFF_BASE_EMPTY_TREE =
+      GitDiffBase._(4, _omitEnumNames ? '' : 'GIT_DIFF_BASE_EMPTY_TREE');
+
+  static const $core.List<GitDiffBase> values = <GitDiffBase>[
+    GIT_DIFF_BASE_UNSPECIFIED,
+    GIT_DIFF_BASE_SESSION_START,
+    GIT_DIFF_BASE_HEAD_NO_BASE,
+    GIT_DIFF_BASE_HEAD_BASE_MISSING,
+    GIT_DIFF_BASE_EMPTY_TREE,
+  ];
+
+  static final $core.List<GitDiffBase?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
+  static GitDiffBase? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const GitDiffBase._(super.value, super.name);
+}
+
+class GitFileStatus extends $pb.ProtobufEnum {
+  static const GitFileStatus GIT_FILE_STATUS_UNSPECIFIED =
+      GitFileStatus._(0, _omitEnumNames ? '' : 'GIT_FILE_STATUS_UNSPECIFIED');
+  static const GitFileStatus GIT_FILE_STATUS_MODIFIED =
+      GitFileStatus._(1, _omitEnumNames ? '' : 'GIT_FILE_STATUS_MODIFIED');
+  static const GitFileStatus GIT_FILE_STATUS_ADDED =
+      GitFileStatus._(2, _omitEnumNames ? '' : 'GIT_FILE_STATUS_ADDED');
+  static const GitFileStatus GIT_FILE_STATUS_DELETED =
+      GitFileStatus._(3, _omitEnumNames ? '' : 'GIT_FILE_STATUS_DELETED');
+  static const GitFileStatus GIT_FILE_STATUS_RENAMED =
+      GitFileStatus._(4, _omitEnumNames ? '' : 'GIT_FILE_STATUS_RENAMED');
+  static const GitFileStatus GIT_FILE_STATUS_COPIED =
+      GitFileStatus._(5, _omitEnumNames ? '' : 'GIT_FILE_STATUS_COPIED');
+  static const GitFileStatus GIT_FILE_STATUS_TYPE_CHANGED =
+      GitFileStatus._(6, _omitEnumNames ? '' : 'GIT_FILE_STATUS_TYPE_CHANGED');
+  static const GitFileStatus GIT_FILE_STATUS_UNMERGED =
+      GitFileStatus._(7, _omitEnumNames ? '' : 'GIT_FILE_STATUS_UNMERGED');
+
+  static const $core.List<GitFileStatus> values = <GitFileStatus>[
+    GIT_FILE_STATUS_UNSPECIFIED,
+    GIT_FILE_STATUS_MODIFIED,
+    GIT_FILE_STATUS_ADDED,
+    GIT_FILE_STATUS_DELETED,
+    GIT_FILE_STATUS_RENAMED,
+    GIT_FILE_STATUS_COPIED,
+    GIT_FILE_STATUS_TYPE_CHANGED,
+    GIT_FILE_STATUS_UNMERGED,
+  ];
+
+  static final $core.List<GitFileStatus?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 7);
+  static GitFileStatus? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const GitFileStatus._(super.value, super.name);
+}
+
 /// SubagentKind is what a subagent may do.
 class SubagentKind extends $pb.ProtobufEnum {
   static const SubagentKind SUBAGENT_KIND_UNSPECIFIED =

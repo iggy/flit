@@ -49,6 +49,11 @@ On first run flit:
 - generates an API token, prints it once, and stores it in the data dir.
   Print it again with `flit token`.
 
+The config file isn't rewritten when flit gains settings. `flit config
+update` adds the new ones, with their comments, and leaves everything you
+wrote alone (the old file is kept as `config.yaml.bak`; `--dry-run` shows
+the change as a diff). `flit config defaults` prints the full default config.
+
 Every API call needs that token, even from localhost. The API is
 [Connect](https://connectrpc.com) (so plain HTTP/JSON, gRPC and gRPC-Web all
 work), served on `127.0.0.1:7433` by default:
@@ -144,6 +149,10 @@ memory_file: NOTES.md
 Review changes for correctness first, style second.
 ```
 
+flit ships four roles: `frontend-dev`, `backend-dev`, `pm` and `qa`. They set
+no model, so sessions use the configured one. A file in `roles/` with the
+same name (e.g. `roles/qa.md`) replaces the built-in role.
+
 Every model call reports context use, time to first token, and prompt and
 generation speed (llama.cpp's own timings when it sends them, otherwise
 measured by flit). The app shows these along with the model, effort and task
@@ -174,6 +183,29 @@ state, and the agent's todo list.
 
   Each session turns servers on or off at runtime; only enabled servers'
   tools are sent to the model.
+
+  Remote servers that need a browser sign-in (OAuth) work too: run
+  `flit mcp login NAME` on the machine flit runs on. It registers flit with
+  the server's authorization server, opens the sign-in page, and saves the
+  token (refreshed automatically) in `mcp-oauth.yaml` in the data dir. When
+  the browser is on another machine, paste the address it lands on into
+  the terminal. Servers that don't support dynamic client registration take
+  a client you registered by hand, with redirect URL
+  `http://127.0.0.1:7434/callback` (change the port with `--port`):
+
+  ```yaml
+    - name: tracker
+      url: https://mcp.example.com/mcp
+      oauth:
+        client_id: my-client-id
+        client_secret: ${TRACKER_SECRET}   # optional; ${VAR} from the environment
+        scopes: [read]                     # optional; replaces what the server asks for
+  ```
+
+  `flit mcp list` shows which servers are signed in and `flit mcp logout
+  NAME` forgets a sign-in. flit resumes dropped event streams, reconnects
+  when a server restarts or forgets the session, picks up a server's new
+  tools when it says they changed, and logs what servers log.
 - **Skills** in the [Agent Skills](https://agentskills.io) format come from
   the repo the session works in (`.agents/skills/`, and `.claude/skills/`
   for compatibility, at the working directory and the git root) and from
@@ -181,11 +213,18 @@ state, and the agent's todo list.
   global one with the same name. The model sees names and descriptions and
   loads a skill's instructions and files when needed. A message starting
   with `/<skill>` asks for that skill (the app's composer suggests them
-  when you type `/`). flit ships one: **/init** surveys the repo and writes
-  or updates its `AGENTS.md`, asking before it changes an existing one.
+  when you type `/`). flit ships two: **/init** surveys the repo and writes
+  or updates its `AGENTS.md`, asking before it changes an existing one;
+  **/grill-me** interviews you about a new project one question at a time
+  (goals, users, scope, non-goals, stack, constraints, risks, what "done"
+  means), pushes back on vague answers, and writes the agreed plan to
+  `PROJECT.md` once you confirm it.
 - **git** tools (status, diff, log, commit; nothing pushes), **web_fetch**,
   and **web_search** through a SearXNG instance (`web.search`); paid search
   APIs aren't supported.
+- **Changes view**: the app shows the session's branch and changed files,
+  with per-file diffs of everything since the session started; see
+  [docs/git.md](docs/git.md).
 - **Prompt appends** per provider (`providers[].prompt_append`) and per model
   (`agent.model_prompt_appends`).
 - **Ratings and a training corpus**: mark a reply or a model choice good or
@@ -195,6 +234,13 @@ state, and the agent's todo list.
   chat format, filterable by date, project, model and rating, with
   `--redact` for public datasets. Projects can opt out. See
   [docs/export.md](docs/export.md).
+- **Manual self-learning**: `flit learn <session>`, `/learn` in the chat or
+  "Learn from this session" in the app asks a model (`agent.tasks.learning`)
+  what a finished session taught: lessons for the user and project memory
+  files (plain Markdown, injected into every session's prompt within a byte
+  budget), the role's memory file, or a new skill. You accept, edit or
+  reject each proposal; nothing is written until you do. See
+  [docs/learning.md](docs/learning.md).
 
 ### Sessions and tools
 

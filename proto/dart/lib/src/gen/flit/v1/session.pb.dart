@@ -18,6 +18,7 @@ import 'package:protobuf/protobuf.dart' as $pb;
 import 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart'
     as $0;
 
+import 'cron.pbenum.dart' as $1;
 import 'session.pbenum.dart';
 
 export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
@@ -44,6 +45,9 @@ class Session extends $pb.GeneratedMessage {
     $core.Iterable<$core.String>? mcpServers,
     $core.bool? yolo,
     $core.String? branchId,
+    $core.String? baseCommit,
+    $core.String? cronJob,
+    $core.bool? archived,
   }) {
     final result = Session._();
     if (id != null) result.id = id;
@@ -64,6 +68,9 @@ class Session extends $pb.GeneratedMessage {
     if (mcpServers != null) result.mcpServers.addAll(mcpServers);
     if (yolo != null) result.yolo = yolo;
     if (branchId != null) result.branchId = branchId;
+    if (baseCommit != null) result.baseCommit = baseCommit;
+    if (cronJob != null) result.cronJob = cronJob;
+    if (archived != null) result.archived = archived;
     return result;
   }
 
@@ -101,6 +108,9 @@ class Session extends $pb.GeneratedMessage {
     ..pPS(16, _omitFieldNames ? '' : 'mcpServers')
     ..aOB(17, _omitFieldNames ? '' : 'yolo')
     ..aOS(18, _omitFieldNames ? '' : 'branchId')
+    ..aOS(19, _omitFieldNames ? '' : 'baseCommit')
+    ..aOS(20, _omitFieldNames ? '' : 'cronJob')
+    ..aOB(21, _omitFieldNames ? '' : 'archived')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -293,6 +303,39 @@ class Session extends $pb.GeneratedMessage {
   $core.bool hasBranchId() => $_has(17);
   @$pb.TagNumber(18)
   void clearBranchId() => $_clearField(18);
+
+  /// The git commit HEAD was on when the session was created; empty if the
+  /// working directory wasn't in a git repository with commits.
+  @$pb.TagNumber(19)
+  $core.String get baseCommit => $_getSZ(18);
+  @$pb.TagNumber(19)
+  set baseCommit($core.String value) => $_setString(18, value);
+  @$pb.TagNumber(19)
+  $core.bool hasBaseCommit() => $_has(18);
+  @$pb.TagNumber(19)
+  void clearBaseCommit() => $_clearField(19);
+
+  /// The cron job whose run this session is (see CronService); empty for
+  /// ordinary sessions.
+  @$pb.TagNumber(20)
+  $core.String get cronJob => $_getSZ(19);
+  @$pb.TagNumber(20)
+  set cronJob($core.String value) => $_setString(19, value);
+  @$pb.TagNumber(20)
+  $core.bool hasCronJob() => $_has(19);
+  @$pb.TagNumber(20)
+  void clearCronJob() => $_clearField(20);
+
+  /// Archived sessions are left out of ListSessions unless asked for (old
+  /// cron runs beyond the job's keep_runs). Nothing is deleted.
+  @$pb.TagNumber(21)
+  $core.bool get archived => $_getBF(20);
+  @$pb.TagNumber(21)
+  set archived($core.bool value) => $_setBool(20, value);
+  @$pb.TagNumber(21)
+  $core.bool hasArchived() => $_has(20);
+  @$pb.TagNumber(21)
+  void clearArchived() => $_clearField(21);
 }
 
 class CreateSessionRequest extends $pb.GeneratedMessage {
@@ -512,11 +555,13 @@ class ListSessionsRequest extends $pb.GeneratedMessage {
     $core.int? pageSize,
     $core.String? pageToken,
     $core.String? projectId,
+    $core.bool? includeArchived,
   }) {
     final result = ListSessionsRequest._();
     if (pageSize != null) result.pageSize = pageSize;
     if (pageToken != null) result.pageToken = pageToken;
     if (projectId != null) result.projectId = projectId;
+    if (includeArchived != null) result.includeArchived = includeArchived;
     return result;
   }
 
@@ -536,6 +581,7 @@ class ListSessionsRequest extends $pb.GeneratedMessage {
     ..aI(1, _omitFieldNames ? '' : 'pageSize')
     ..aOS(2, _omitFieldNames ? '' : 'pageToken')
     ..aOS(3, _omitFieldNames ? '' : 'projectId')
+    ..aOB(4, _omitFieldNames ? '' : 'includeArchived')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -590,6 +636,16 @@ class ListSessionsRequest extends $pb.GeneratedMessage {
   $core.bool hasProjectId() => $_has(2);
   @$pb.TagNumber(3)
   void clearProjectId() => $_clearField(3);
+
+  /// Include archived sessions.
+  @$pb.TagNumber(4)
+  $core.bool get includeArchived => $_getBF(3);
+  @$pb.TagNumber(4)
+  set includeArchived($core.bool value) => $_setBool(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasIncludeArchived() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearIncludeArchived() => $_clearField(4);
 }
 
 class ListSessionsResponse extends $pb.GeneratedMessage {
@@ -3654,6 +3710,7 @@ enum Event_Payload {
   compactionDone,
   branchCreated,
   branchSwitched,
+  cronRun,
   subagentStarted,
   subagentEvent,
   subagentDone,
@@ -3700,6 +3757,7 @@ class Event extends $pb.GeneratedMessage {
     CompactionDone? compactionDone,
     BranchCreated? branchCreated,
     BranchSwitched? branchSwitched,
+    CronRunStarted? cronRun,
     SubagentStarted? subagentStarted,
     SubagentEvent? subagentEvent,
     SubagentDone? subagentDone,
@@ -3746,6 +3804,7 @@ class Event extends $pb.GeneratedMessage {
     if (compactionDone != null) result.compactionDone = compactionDone;
     if (branchCreated != null) result.branchCreated = branchCreated;
     if (branchSwitched != null) result.branchSwitched = branchSwitched;
+    if (cronRun != null) result.cronRun = cronRun;
     if (subagentStarted != null) result.subagentStarted = subagentStarted;
     if (subagentEvent != null) result.subagentEvent = subagentEvent;
     if (subagentDone != null) result.subagentDone = subagentDone;
@@ -3795,9 +3854,10 @@ class Event extends $pb.GeneratedMessage {
     40: Event_Payload.compactionDone,
     41: Event_Payload.branchCreated,
     42: Event_Payload.branchSwitched,
-    43: Event_Payload.subagentStarted,
-    44: Event_Payload.subagentEvent,
-    45: Event_Payload.subagentDone,
+    43: Event_Payload.cronRun,
+    44: Event_Payload.subagentStarted,
+    45: Event_Payload.subagentEvent,
+    46: Event_Payload.subagentDone,
     0: Event_Payload.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
@@ -3840,7 +3900,8 @@ class Event extends $pb.GeneratedMessage {
       42,
       43,
       44,
-      45
+      45,
+      46
     ])
     ..aOS(1, _omitFieldNames ? '' : 'sessionId')
     ..aInt64(2, _omitFieldNames ? '' : 'seq')
@@ -3916,11 +3977,13 @@ class Event extends $pb.GeneratedMessage {
         subBuilder: BranchCreated.$_createMessage)
     ..aOM<BranchSwitched>(42, _omitFieldNames ? '' : 'branchSwitched',
         subBuilder: BranchSwitched.$_createMessage)
-    ..aOM<SubagentStarted>(43, _omitFieldNames ? '' : 'subagentStarted',
+    ..aOM<CronRunStarted>(43, _omitFieldNames ? '' : 'cronRun',
+        subBuilder: CronRunStarted.$_createMessage)
+    ..aOM<SubagentStarted>(44, _omitFieldNames ? '' : 'subagentStarted',
         subBuilder: SubagentStarted.$_createMessage)
-    ..aOM<SubagentEvent>(44, _omitFieldNames ? '' : 'subagentEvent',
+    ..aOM<SubagentEvent>(45, _omitFieldNames ? '' : 'subagentEvent',
         subBuilder: SubagentEvent.$_createMessage)
-    ..aOM<SubagentDone>(45, _omitFieldNames ? '' : 'subagentDone',
+    ..aOM<SubagentDone>(46, _omitFieldNames ? '' : 'subagentDone',
         subBuilder: SubagentDone.$_createMessage)
     ..hasRequiredFields = false;
 
@@ -3980,6 +4043,7 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(43)
   @$pb.TagNumber(44)
   @$pb.TagNumber(45)
+  @$pb.TagNumber(46)
   Event_Payload whichPayload() => _Event_PayloadByTag[$_whichOneof(0)]!;
   @$pb.TagNumber(10)
   @$pb.TagNumber(11)
@@ -4017,6 +4081,7 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(43)
   @$pb.TagNumber(44)
   @$pb.TagNumber(45)
+  @$pb.TagNumber(46)
   void clearPayload() => $_clearField($_whichOneof(0));
 
   @$pb.TagNumber(1)
@@ -4430,37 +4495,48 @@ class Event extends $pb.GeneratedMessage {
   BranchSwitched ensureBranchSwitched() => $_ensure(36);
 
   @$pb.TagNumber(43)
-  SubagentStarted get subagentStarted => $_getN(37);
+  CronRunStarted get cronRun => $_getN(37);
   @$pb.TagNumber(43)
-  set subagentStarted(SubagentStarted value) => $_setField(43, value);
+  set cronRun(CronRunStarted value) => $_setField(43, value);
   @$pb.TagNumber(43)
-  $core.bool hasSubagentStarted() => $_has(37);
+  $core.bool hasCronRun() => $_has(37);
   @$pb.TagNumber(43)
-  void clearSubagentStarted() => $_clearField(43);
+  void clearCronRun() => $_clearField(43);
   @$pb.TagNumber(43)
-  SubagentStarted ensureSubagentStarted() => $_ensure(37);
+  CronRunStarted ensureCronRun() => $_ensure(37);
 
   @$pb.TagNumber(44)
-  SubagentEvent get subagentEvent => $_getN(38);
+  SubagentStarted get subagentStarted => $_getN(38);
   @$pb.TagNumber(44)
-  set subagentEvent(SubagentEvent value) => $_setField(44, value);
+  set subagentStarted(SubagentStarted value) => $_setField(44, value);
   @$pb.TagNumber(44)
-  $core.bool hasSubagentEvent() => $_has(38);
+  $core.bool hasSubagentStarted() => $_has(38);
   @$pb.TagNumber(44)
-  void clearSubagentEvent() => $_clearField(44);
+  void clearSubagentStarted() => $_clearField(44);
   @$pb.TagNumber(44)
-  SubagentEvent ensureSubagentEvent() => $_ensure(38);
+  SubagentStarted ensureSubagentStarted() => $_ensure(38);
 
   @$pb.TagNumber(45)
-  SubagentDone get subagentDone => $_getN(39);
+  SubagentEvent get subagentEvent => $_getN(39);
   @$pb.TagNumber(45)
-  set subagentDone(SubagentDone value) => $_setField(45, value);
+  set subagentEvent(SubagentEvent value) => $_setField(45, value);
   @$pb.TagNumber(45)
-  $core.bool hasSubagentDone() => $_has(39);
+  $core.bool hasSubagentEvent() => $_has(39);
   @$pb.TagNumber(45)
-  void clearSubagentDone() => $_clearField(45);
+  void clearSubagentEvent() => $_clearField(45);
   @$pb.TagNumber(45)
-  SubagentDone ensureSubagentDone() => $_ensure(39);
+  SubagentEvent ensureSubagentEvent() => $_ensure(39);
+
+  @$pb.TagNumber(46)
+  SubagentDone get subagentDone => $_getN(40);
+  @$pb.TagNumber(46)
+  set subagentDone(SubagentDone value) => $_setField(46, value);
+  @$pb.TagNumber(46)
+  $core.bool hasSubagentDone() => $_has(40);
+  @$pb.TagNumber(46)
+  void clearSubagentDone() => $_clearField(46);
+  @$pb.TagNumber(46)
+  SubagentDone ensureSubagentDone() => $_ensure(40);
 }
 
 /// MessageStarted opens a message. Its text arrives as TextDelta events and
@@ -7973,6 +8049,839 @@ class BranchSwitched extends $pb.GeneratedMessage {
   void clearClient() => $_clearField(2);
 }
 
+class GitStatusRequest extends $pb.GeneratedMessage {
+  factory GitStatusRequest({
+    $core.String? sessionId,
+  }) {
+    final result = GitStatusRequest._();
+    if (sessionId != null) result.sessionId = sessionId;
+    return result;
+  }
+
+  GitStatusRequest._();
+
+  factory GitStatusRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GitStatusRequest()..mergeFromBuffer(data, registry);
+  factory GitStatusRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GitStatusRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GitStatusRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: GitStatusRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'sessionId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GitStatusRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GitStatusRequest copyWith(void Function(GitStatusRequest) updates) =>
+      super.copyWith((message) => updates(message as GitStatusRequest))
+          as GitStatusRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use GitStatusRequest() / GitStatusRequest.new instead')
+  static GitStatusRequest create() => GitStatusRequest._();
+  static $pb.GeneratedMessage $_createMessage() => GitStatusRequest._();
+  @$core.override
+  GitStatusRequest createEmptyInstance() => GitStatusRequest._();
+  @$core.pragma('dart2js:noInline')
+  static GitStatusRequest getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GitStatusRequest>(
+          GitStatusRequest.$_createMessage);
+  static GitStatusRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get sessionId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set sessionId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSessionId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSessionId() => $_clearField(1);
+}
+
+/// GitFileChange is a file changed since the diff base.
+class GitFileChange extends $pb.GeneratedMessage {
+  factory GitFileChange({
+    $core.String? path,
+    $core.String? oldPath,
+    GitFileStatus? status,
+    $core.int? additions,
+    $core.int? deletions,
+    $core.bool? binary,
+    $core.bool? staged,
+    $core.bool? unstaged,
+    $core.bool? untracked,
+  }) {
+    final result = GitFileChange._();
+    if (path != null) result.path = path;
+    if (oldPath != null) result.oldPath = oldPath;
+    if (status != null) result.status = status;
+    if (additions != null) result.additions = additions;
+    if (deletions != null) result.deletions = deletions;
+    if (binary != null) result.binary = binary;
+    if (staged != null) result.staged = staged;
+    if (unstaged != null) result.unstaged = unstaged;
+    if (untracked != null) result.untracked = untracked;
+    return result;
+  }
+
+  GitFileChange._();
+
+  factory GitFileChange.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GitFileChange()..mergeFromBuffer(data, registry);
+  factory GitFileChange.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GitFileChange()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GitFileChange',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: GitFileChange.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'path')
+    ..aOS(2, _omitFieldNames ? '' : 'oldPath')
+    ..aE<GitFileStatus>(3, _omitFieldNames ? '' : 'status',
+        enumValues: GitFileStatus.values)
+    ..aI(4, _omitFieldNames ? '' : 'additions')
+    ..aI(5, _omitFieldNames ? '' : 'deletions')
+    ..aOB(6, _omitFieldNames ? '' : 'binary')
+    ..aOB(7, _omitFieldNames ? '' : 'staged')
+    ..aOB(8, _omitFieldNames ? '' : 'unstaged')
+    ..aOB(9, _omitFieldNames ? '' : 'untracked')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GitFileChange clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GitFileChange copyWith(void Function(GitFileChange) updates) =>
+      super.copyWith((message) => updates(message as GitFileChange))
+          as GitFileChange;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use GitFileChange() / GitFileChange.new instead')
+  static GitFileChange create() => GitFileChange._();
+  static $pb.GeneratedMessage $_createMessage() => GitFileChange._();
+  @$core.override
+  GitFileChange createEmptyInstance() => GitFileChange._();
+  @$core.pragma('dart2js:noInline')
+  static GitFileChange getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GitFileChange>(
+          GitFileChange.$_createMessage);
+  static GitFileChange? _defaultInstance;
+
+  /// Relative to the repository root, slash-separated.
+  @$pb.TagNumber(1)
+  $core.String get path => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set path($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasPath() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearPath() => $_clearField(1);
+
+  /// The path before a rename or copy.
+  @$pb.TagNumber(2)
+  $core.String get oldPath => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set oldPath($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasOldPath() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearOldPath() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  GitFileStatus get status => $_getN(2);
+  @$pb.TagNumber(3)
+  set status(GitFileStatus value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasStatus() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearStatus() => $_clearField(3);
+
+  /// Changed lines; both 0 for a binary file.
+  @$pb.TagNumber(4)
+  $core.int get additions => $_getIZ(3);
+  @$pb.TagNumber(4)
+  set additions($core.int value) => $_setSignedInt32(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasAdditions() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearAdditions() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.int get deletions => $_getIZ(4);
+  @$pb.TagNumber(5)
+  set deletions($core.int value) => $_setSignedInt32(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasDeletions() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearDeletions() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.bool get binary => $_getBF(5);
+  @$pb.TagNumber(6)
+  set binary($core.bool value) => $_setBool(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasBinary() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearBinary() => $_clearField(6);
+
+  /// Where the change is relative to HEAD. A file committed since the base
+  /// and not touched since has none of these set.
+  @$pb.TagNumber(7)
+  $core.bool get staged => $_getBF(6);
+  @$pb.TagNumber(7)
+  set staged($core.bool value) => $_setBool(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasStaged() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearStaged() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.bool get unstaged => $_getBF(7);
+  @$pb.TagNumber(8)
+  set unstaged($core.bool value) => $_setBool(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasUnstaged() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearUnstaged() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $core.bool get untracked => $_getBF(8);
+  @$pb.TagNumber(9)
+  set untracked($core.bool value) => $_setBool(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasUntracked() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearUntracked() => $_clearField(9);
+}
+
+class GitStatusResponse extends $pb.GeneratedMessage {
+  factory GitStatusResponse({
+    $core.bool? isRepo,
+    $core.String? root,
+    $core.String? branch,
+    $core.String? head,
+    $core.bool? detached,
+    $core.String? upstream,
+    $core.int? ahead,
+    $core.int? behind,
+    $core.int? stagedCount,
+    $core.int? unstagedCount,
+    $core.int? untrackedCount,
+    $core.int? conflictedCount,
+    $core.String? baseCommit,
+    $core.String? diffBase,
+    GitDiffBase? diffBaseKind,
+    $core.Iterable<GitFileChange>? files,
+    $core.bool? filesTruncated,
+  }) {
+    final result = GitStatusResponse._();
+    if (isRepo != null) result.isRepo = isRepo;
+    if (root != null) result.root = root;
+    if (branch != null) result.branch = branch;
+    if (head != null) result.head = head;
+    if (detached != null) result.detached = detached;
+    if (upstream != null) result.upstream = upstream;
+    if (ahead != null) result.ahead = ahead;
+    if (behind != null) result.behind = behind;
+    if (stagedCount != null) result.stagedCount = stagedCount;
+    if (unstagedCount != null) result.unstagedCount = unstagedCount;
+    if (untrackedCount != null) result.untrackedCount = untrackedCount;
+    if (conflictedCount != null) result.conflictedCount = conflictedCount;
+    if (baseCommit != null) result.baseCommit = baseCommit;
+    if (diffBase != null) result.diffBase = diffBase;
+    if (diffBaseKind != null) result.diffBaseKind = diffBaseKind;
+    if (files != null) result.files.addAll(files);
+    if (filesTruncated != null) result.filesTruncated = filesTruncated;
+    return result;
+  }
+
+  GitStatusResponse._();
+
+  factory GitStatusResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GitStatusResponse()..mergeFromBuffer(data, registry);
+  factory GitStatusResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GitStatusResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GitStatusResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: GitStatusResponse.$_createMessage)
+    ..aOB(1, _omitFieldNames ? '' : 'isRepo')
+    ..aOS(2, _omitFieldNames ? '' : 'root')
+    ..aOS(3, _omitFieldNames ? '' : 'branch')
+    ..aOS(4, _omitFieldNames ? '' : 'head')
+    ..aOB(5, _omitFieldNames ? '' : 'detached')
+    ..aOS(6, _omitFieldNames ? '' : 'upstream')
+    ..aI(7, _omitFieldNames ? '' : 'ahead')
+    ..aI(8, _omitFieldNames ? '' : 'behind')
+    ..aI(9, _omitFieldNames ? '' : 'stagedCount')
+    ..aI(10, _omitFieldNames ? '' : 'unstagedCount')
+    ..aI(11, _omitFieldNames ? '' : 'untrackedCount')
+    ..aI(12, _omitFieldNames ? '' : 'conflictedCount')
+    ..aOS(13, _omitFieldNames ? '' : 'baseCommit')
+    ..aOS(14, _omitFieldNames ? '' : 'diffBase')
+    ..aE<GitDiffBase>(15, _omitFieldNames ? '' : 'diffBaseKind',
+        enumValues: GitDiffBase.values)
+    ..pPM<GitFileChange>(16, _omitFieldNames ? '' : 'files',
+        subBuilder: GitFileChange.$_createMessage)
+    ..aOB(17, _omitFieldNames ? '' : 'filesTruncated')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GitStatusResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GitStatusResponse copyWith(void Function(GitStatusResponse) updates) =>
+      super.copyWith((message) => updates(message as GitStatusResponse))
+          as GitStatusResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use GitStatusResponse() / GitStatusResponse.new instead')
+  static GitStatusResponse create() => GitStatusResponse._();
+  static $pb.GeneratedMessage $_createMessage() => GitStatusResponse._();
+  @$core.override
+  GitStatusResponse createEmptyInstance() => GitStatusResponse._();
+  @$core.pragma('dart2js:noInline')
+  static GitStatusResponse getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GitStatusResponse>(
+          GitStatusResponse.$_createMessage);
+  static GitStatusResponse? _defaultInstance;
+
+  /// False when the working directory isn't in a git work tree; nothing
+  /// else is set then.
+  @$pb.TagNumber(1)
+  $core.bool get isRepo => $_getBF(0);
+  @$pb.TagNumber(1)
+  set isRepo($core.bool value) => $_setBool(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasIsRepo() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearIsRepo() => $_clearField(1);
+
+  /// The work tree's top directory.
+  @$pb.TagNumber(2)
+  $core.String get root => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set root($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasRoot() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearRoot() => $_clearField(2);
+
+  /// The checked-out branch; empty when HEAD is detached.
+  @$pb.TagNumber(3)
+  $core.String get branch => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set branch($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasBranch() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearBranch() => $_clearField(3);
+
+  /// HEAD's commit; empty on a branch with no commits yet.
+  @$pb.TagNumber(4)
+  $core.String get head => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set head($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasHead() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearHead() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.bool get detached => $_getBF(4);
+  @$pb.TagNumber(5)
+  set detached($core.bool value) => $_setBool(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasDetached() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearDetached() => $_clearField(5);
+
+  /// The branch's upstream (e.g. origin/main); empty if none. ahead and
+  /// behind count commits relative to it.
+  @$pb.TagNumber(6)
+  $core.String get upstream => $_getSZ(5);
+  @$pb.TagNumber(6)
+  set upstream($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasUpstream() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearUpstream() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.int get ahead => $_getIZ(6);
+  @$pb.TagNumber(7)
+  set ahead($core.int value) => $_setSignedInt32(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasAhead() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearAhead() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.int get behind => $_getIZ(7);
+  @$pb.TagNumber(8)
+  set behind($core.int value) => $_setSignedInt32(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasBehind() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearBehind() => $_clearField(8);
+
+  /// Files with staged, unstaged, untracked and conflicted changes relative
+  /// to HEAD, as git status counts them.
+  @$pb.TagNumber(9)
+  $core.int get stagedCount => $_getIZ(8);
+  @$pb.TagNumber(9)
+  set stagedCount($core.int value) => $_setSignedInt32(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasStagedCount() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearStagedCount() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $core.int get unstagedCount => $_getIZ(9);
+  @$pb.TagNumber(10)
+  set unstagedCount($core.int value) => $_setSignedInt32(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasUnstagedCount() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearUnstagedCount() => $_clearField(10);
+
+  @$pb.TagNumber(11)
+  $core.int get untrackedCount => $_getIZ(10);
+  @$pb.TagNumber(11)
+  set untrackedCount($core.int value) => $_setSignedInt32(10, value);
+  @$pb.TagNumber(11)
+  $core.bool hasUntrackedCount() => $_has(10);
+  @$pb.TagNumber(11)
+  void clearUntrackedCount() => $_clearField(11);
+
+  @$pb.TagNumber(12)
+  $core.int get conflictedCount => $_getIZ(11);
+  @$pb.TagNumber(12)
+  set conflictedCount($core.int value) => $_setSignedInt32(11, value);
+  @$pb.TagNumber(12)
+  $core.bool hasConflictedCount() => $_has(11);
+  @$pb.TagNumber(12)
+  void clearConflictedCount() => $_clearField(12);
+
+  /// The session's base commit (Session.base_commit), and the commit (or
+  /// tree) actually diffed against, which differs when there is no usable
+  /// base.
+  @$pb.TagNumber(13)
+  $core.String get baseCommit => $_getSZ(12);
+  @$pb.TagNumber(13)
+  set baseCommit($core.String value) => $_setString(12, value);
+  @$pb.TagNumber(13)
+  $core.bool hasBaseCommit() => $_has(12);
+  @$pb.TagNumber(13)
+  void clearBaseCommit() => $_clearField(13);
+
+  @$pb.TagNumber(14)
+  $core.String get diffBase => $_getSZ(13);
+  @$pb.TagNumber(14)
+  set diffBase($core.String value) => $_setString(13, value);
+  @$pb.TagNumber(14)
+  $core.bool hasDiffBase() => $_has(13);
+  @$pb.TagNumber(14)
+  void clearDiffBase() => $_clearField(14);
+
+  @$pb.TagNumber(15)
+  GitDiffBase get diffBaseKind => $_getN(14);
+  @$pb.TagNumber(15)
+  set diffBaseKind(GitDiffBase value) => $_setField(15, value);
+  @$pb.TagNumber(15)
+  $core.bool hasDiffBaseKind() => $_has(14);
+  @$pb.TagNumber(15)
+  void clearDiffBaseKind() => $_clearField(15);
+
+  /// Files changed since diff_base. At most a server limit are listed;
+  /// files_truncated says some were left out.
+  @$pb.TagNumber(16)
+  $pb.PbList<GitFileChange> get files => $_getList(15);
+
+  @$pb.TagNumber(17)
+  $core.bool get filesTruncated => $_getBF(16);
+  @$pb.TagNumber(17)
+  set filesTruncated($core.bool value) => $_setBool(16, value);
+  @$pb.TagNumber(17)
+  $core.bool hasFilesTruncated() => $_has(16);
+  @$pb.TagNumber(17)
+  void clearFilesTruncated() => $_clearField(17);
+}
+
+class GitDiffRequest extends $pb.GeneratedMessage {
+  factory GitDiffRequest({
+    $core.String? sessionId,
+    $core.String? path,
+    $core.int? maxBytes,
+  }) {
+    final result = GitDiffRequest._();
+    if (sessionId != null) result.sessionId = sessionId;
+    if (path != null) result.path = path;
+    if (maxBytes != null) result.maxBytes = maxBytes;
+    return result;
+  }
+
+  GitDiffRequest._();
+
+  factory GitDiffRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GitDiffRequest()..mergeFromBuffer(data, registry);
+  factory GitDiffRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GitDiffRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GitDiffRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: GitDiffRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'sessionId')
+    ..aOS(2, _omitFieldNames ? '' : 'path')
+    ..aI(3, _omitFieldNames ? '' : 'maxBytes')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GitDiffRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GitDiffRequest copyWith(void Function(GitDiffRequest) updates) =>
+      super.copyWith((message) => updates(message as GitDiffRequest))
+          as GitDiffRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use GitDiffRequest() / GitDiffRequest.new instead')
+  static GitDiffRequest create() => GitDiffRequest._();
+  static $pb.GeneratedMessage $_createMessage() => GitDiffRequest._();
+  @$core.override
+  GitDiffRequest createEmptyInstance() => GitDiffRequest._();
+  @$core.pragma('dart2js:noInline')
+  static GitDiffRequest getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GitDiffRequest>(
+          GitDiffRequest.$_createMessage);
+  static GitDiffRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get sessionId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set sessionId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSessionId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSessionId() => $_clearField(1);
+
+  /// Only this file or directory, relative to the repository root; empty
+  /// means every change.
+  @$pb.TagNumber(2)
+  $core.String get path => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set path($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasPath() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearPath() => $_clearField(2);
+
+  /// Size limit in bytes; 0 means 1 MiB. The server caps it at 8 MiB.
+  @$pb.TagNumber(3)
+  $core.int get maxBytes => $_getIZ(2);
+  @$pb.TagNumber(3)
+  set maxBytes($core.int value) => $_setSignedInt32(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasMaxBytes() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearMaxBytes() => $_clearField(3);
+}
+
+class GitDiffResponse extends $pb.GeneratedMessage {
+  factory GitDiffResponse({
+    $core.bool? isRepo,
+    $core.String? diffBase,
+    GitDiffBase? diffBaseKind,
+    $core.String? diff,
+    $core.bool? truncated,
+  }) {
+    final result = GitDiffResponse._();
+    if (isRepo != null) result.isRepo = isRepo;
+    if (diffBase != null) result.diffBase = diffBase;
+    if (diffBaseKind != null) result.diffBaseKind = diffBaseKind;
+    if (diff != null) result.diff = diff;
+    if (truncated != null) result.truncated = truncated;
+    return result;
+  }
+
+  GitDiffResponse._();
+
+  factory GitDiffResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GitDiffResponse()..mergeFromBuffer(data, registry);
+  factory GitDiffResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      GitDiffResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GitDiffResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: GitDiffResponse.$_createMessage)
+    ..aOB(1, _omitFieldNames ? '' : 'isRepo')
+    ..aOS(2, _omitFieldNames ? '' : 'diffBase')
+    ..aE<GitDiffBase>(3, _omitFieldNames ? '' : 'diffBaseKind',
+        enumValues: GitDiffBase.values)
+    ..aOS(4, _omitFieldNames ? '' : 'diff')
+    ..aOB(5, _omitFieldNames ? '' : 'truncated')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GitDiffResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GitDiffResponse copyWith(void Function(GitDiffResponse) updates) =>
+      super.copyWith((message) => updates(message as GitDiffResponse))
+          as GitDiffResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use GitDiffResponse() / GitDiffResponse.new instead')
+  static GitDiffResponse create() => GitDiffResponse._();
+  static $pb.GeneratedMessage $_createMessage() => GitDiffResponse._();
+  @$core.override
+  GitDiffResponse createEmptyInstance() => GitDiffResponse._();
+  @$core.pragma('dart2js:noInline')
+  static GitDiffResponse getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GitDiffResponse>(
+          GitDiffResponse.$_createMessage);
+  static GitDiffResponse? _defaultInstance;
+
+  /// False when the working directory isn't in a git work tree.
+  @$pb.TagNumber(1)
+  $core.bool get isRepo => $_getBF(0);
+  @$pb.TagNumber(1)
+  set isRepo($core.bool value) => $_setBool(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasIsRepo() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearIsRepo() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get diffBase => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set diffBase($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasDiffBase() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearDiffBase() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  GitDiffBase get diffBaseKind => $_getN(2);
+  @$pb.TagNumber(3)
+  set diffBaseKind(GitDiffBase value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasDiffBaseKind() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearDiffBaseKind() => $_clearField(3);
+
+  /// The unified diff (git diff format).
+  @$pb.TagNumber(4)
+  $core.String get diff => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set diff($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasDiff() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearDiff() => $_clearField(4);
+
+  /// The diff was cut at the size limit, at the end of a line.
+  @$pb.TagNumber(5)
+  $core.bool get truncated => $_getBF(4);
+  @$pb.TagNumber(5)
+  set truncated($core.bool value) => $_setBool(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasTruncated() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearTruncated() => $_clearField(5);
+}
+
+/// CronRunStarted opens a cron run's session: which job started it, and
+/// why. It comes before the run's prompt (the first user message).
+class CronRunStarted extends $pb.GeneratedMessage {
+  factory CronRunStarted({
+    $core.String? job,
+    $core.String? schedule,
+    $core.String? scheduleText,
+    $1.CronTrigger? trigger,
+    $0.Timestamp? scheduledTime,
+    $core.String? runId,
+    $1.CronAsk? ask,
+    $fixnum.Int64? askTimeoutSeconds,
+    $core.bool? yolo,
+  }) {
+    final result = CronRunStarted._();
+    if (job != null) result.job = job;
+    if (schedule != null) result.schedule = schedule;
+    if (scheduleText != null) result.scheduleText = scheduleText;
+    if (trigger != null) result.trigger = trigger;
+    if (scheduledTime != null) result.scheduledTime = scheduledTime;
+    if (runId != null) result.runId = runId;
+    if (ask != null) result.ask = ask;
+    if (askTimeoutSeconds != null) result.askTimeoutSeconds = askTimeoutSeconds;
+    if (yolo != null) result.yolo = yolo;
+    return result;
+  }
+
+  CronRunStarted._();
+
+  factory CronRunStarted.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CronRunStarted()..mergeFromBuffer(data, registry);
+  factory CronRunStarted.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CronRunStarted()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CronRunStarted',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: CronRunStarted.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'job')
+    ..aOS(2, _omitFieldNames ? '' : 'schedule')
+    ..aOS(3, _omitFieldNames ? '' : 'scheduleText')
+    ..aE<$1.CronTrigger>(4, _omitFieldNames ? '' : 'trigger',
+        enumValues: $1.CronTrigger.values)
+    ..aOM<$0.Timestamp>(5, _omitFieldNames ? '' : 'scheduledTime',
+        subBuilder: $0.Timestamp.$_createMessage)
+    ..aOS(6, _omitFieldNames ? '' : 'runId')
+    ..aE<$1.CronAsk>(7, _omitFieldNames ? '' : 'ask',
+        enumValues: $1.CronAsk.values)
+    ..aInt64(8, _omitFieldNames ? '' : 'askTimeoutSeconds')
+    ..aOB(9, _omitFieldNames ? '' : 'yolo')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CronRunStarted clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CronRunStarted copyWith(void Function(CronRunStarted) updates) =>
+      super.copyWith((message) => updates(message as CronRunStarted))
+          as CronRunStarted;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use CronRunStarted() / CronRunStarted.new instead')
+  static CronRunStarted create() => CronRunStarted._();
+  static $pb.GeneratedMessage $_createMessage() => CronRunStarted._();
+  @$core.override
+  CronRunStarted createEmptyInstance() => CronRunStarted._();
+  @$core.pragma('dart2js:noInline')
+  static CronRunStarted getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CronRunStarted>(
+          CronRunStarted.$_createMessage);
+  static CronRunStarted? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get job => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set job($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasJob() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearJob() => $_clearField(1);
+
+  /// The schedule as written and in words.
+  @$pb.TagNumber(2)
+  $core.String get schedule => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set schedule($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasSchedule() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearSchedule() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get scheduleText => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set scheduleText($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasScheduleText() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearScheduleText() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $1.CronTrigger get trigger => $_getN(3);
+  @$pb.TagNumber(4)
+  set trigger($1.CronTrigger value) => $_setField(4, value);
+  @$pb.TagNumber(4)
+  $core.bool hasTrigger() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearTrigger() => $_clearField(4);
+
+  /// The slot it runs for.
+  @$pb.TagNumber(5)
+  $0.Timestamp get scheduledTime => $_getN(4);
+  @$pb.TagNumber(5)
+  set scheduledTime($0.Timestamp value) => $_setField(5, value);
+  @$pb.TagNumber(5)
+  $core.bool hasScheduledTime() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearScheduledTime() => $_clearField(5);
+  @$pb.TagNumber(5)
+  $0.Timestamp ensureScheduledTime() => $_ensure(4);
+
+  /// The run's id (CronRun.id).
+  @$pb.TagNumber(6)
+  $core.String get runId => $_getSZ(5);
+  @$pb.TagNumber(6)
+  set runId($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasRunId() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearRunId() => $_clearField(6);
+
+  /// How prompts nobody can answer are handled, and yolo mode.
+  @$pb.TagNumber(7)
+  $1.CronAsk get ask => $_getN(6);
+  @$pb.TagNumber(7)
+  set ask($1.CronAsk value) => $_setField(7, value);
+  @$pb.TagNumber(7)
+  $core.bool hasAsk() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearAsk() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $fixnum.Int64 get askTimeoutSeconds => $_getI64(7);
+  @$pb.TagNumber(8)
+  set askTimeoutSeconds($fixnum.Int64 value) => $_setInt64(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasAskTimeoutSeconds() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearAskTimeoutSeconds() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $core.bool get yolo => $_getBF(8);
+  @$pb.TagNumber(9)
+  set yolo($core.bool value) => $_setBool(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasYolo() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearYolo() => $_clearField(9);
+}
+
 /// SubagentStarted opens the run of a subagent for the agent tool call
 /// tool_call_id. Its own events follow as SubagentEvent and it ends with
 /// SubagentDone, before that tool call's ToolCallDone.
@@ -8484,6 +9393,24 @@ class SessionServiceApi {
           $pb.ClientContext? ctx, SwitchBranchRequest request) =>
       _client.invoke<SwitchBranchResponse>(ctx, 'SessionService',
           'SwitchBranch', request, SwitchBranchResponse());
+
+  /// GitStatus reports the git repository the session works in: branch,
+  /// upstream, counts like git status, and the files changed since the
+  /// session's base commit (Session.base_commit), committed or not. A
+  /// working directory outside git is not an error: is_repo is false.
+  /// Clients refresh it when a turn ends or a tool call finishes.
+  $async.Future<GitStatusResponse> gitStatus(
+          $pb.ClientContext? ctx, GitStatusRequest request) =>
+      _client.invoke<GitStatusResponse>(
+          ctx, 'SessionService', 'GitStatus', request, GitStatusResponse());
+
+  /// GitDiff returns the unified diff of the session's changes: the base
+  /// commit against the working tree, untracked files included as new
+  /// files. The repository's index is left untouched.
+  $async.Future<GitDiffResponse> gitDiff(
+          $pb.ClientContext? ctx, GitDiffRequest request) =>
+      _client.invoke<GitDiffResponse>(
+          ctx, 'SessionService', 'GitDiff', request, GitDiffResponse());
 }
 
 const $core.bool _omitFieldNames =

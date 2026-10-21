@@ -70,8 +70,10 @@ func (s *session) endTurn(e end) {
 	s.compactAsk = nil
 	if _, err := s.appendLocked(stateChanged(e.state, e.reason)); err != nil {
 		s.m.log.Error("could not record end of turn", "session", s.info.ID, "err", err)
+		s.finishUnattendedLocked(end{flitv1.TaskState_TASK_STATE_STUCK, "could not record the end of the turn"})
 		return
 	}
+	s.finishUnattendedLocked(e)
 	// An interrupted turn leaves queued messages for the next Send.
 	if e == endInterrupted || s.m.closing.Load() {
 		return
@@ -308,6 +310,7 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 			}
 		}
 		if len(res.ToolCalls) == 0 {
+			s.noteFinal(res.Text)
 			return endDone, nil
 		}
 
@@ -382,7 +385,7 @@ func (s *session) chatRequest(ctx context.Context, cfg config.Config, info store
 	}
 	set, extra, skillNames := s.toolSet(ctx, cfg, info)
 	cr.set, cr.skills = set, skillNames
-	cr.system = systemPrompt(info.WorkingDir, cr.role) + extra + promptAppends(cfg, info.Provider, info.Model)
+	cr.system = systemPrompt(info.WorkingDir, cr.role, s.m.memoryLayers(cfg, info.ProjectID)) + extra + promptAppends(cfg, info.Provider, info.Model)
 	cr.req = llm.Request{
 		Model:    info.Model,
 		Messages: cr.messages(history, cr.compaction),
@@ -582,6 +585,9 @@ func (s *session) toolSet(ctx context.Context, cfg config.Config, info store.Ses
 	}
 	if cfg.Agent.Subagents.IsEnabled() {
 		set = append(set, tools.AgentTool())
+	}
+	if s.m.Crons != nil {
+		set = append(set, s.m.cronTool(s.m.Crons))
 	}
 	if s.m.MCP != nil && len(info.MCPServers) > 0 {
 		mcpTools, err := s.m.MCP.Tools(ctx, info.MCPServers)

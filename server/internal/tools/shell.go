@@ -61,6 +61,9 @@ var shellTool = Tool{
 			ok, err := env.Approve(ctx, Approval{
 				Title: "Run shell command", Detail: detail, SessionPatterns: check.Patterns, Reason: assessed,
 			})
+			if errors.Is(err, ErrNotApproved) {
+				return errorf("%v", err)
+			}
 			if err != nil {
 				return errorf("approval failed: %v", err)
 			}

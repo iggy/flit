@@ -1,4 +1,7 @@
+import 'package:flit/domain/models/flit_cron.dart';
 import 'package:flit/domain/models/flit_event.dart';
+import 'package:flit/domain/models/flit_git.dart';
+import 'package:flit/domain/models/flit_learning.dart';
 import 'package:flit/domain/models/flit_session.dart';
 
 /// Operations on a flit server's sessions (flit.v1 `SessionService`).
@@ -164,4 +167,43 @@ abstract interface class FlitRepository {
     String server, {
     required bool enabled,
   });
+
+  /// The session's git repository and the files changed since its base
+  /// commit; [FlitGitStatus.none] outside git.
+  Future<FlitGitStatus> gitStatus(String sessionId);
+
+  /// The unified diff of the session's changes, optionally for one [path]
+  /// (relative to the repository root).
+  Future<FlitGitDiff> gitDiff(String sessionId, {String path = ''});
+
+  /// Cron jobs on the server, by name (flit.v1 `CronService`).
+  Future<List<FlitCronJob>> listCronJobs();
+
+  /// Start a run of cron job [name] now, whatever its schedule.
+  Future<FlitCronRun> runCronJob(String name);
+
+  /// Turn cron job [name]'s schedule on or off.
+  Future<FlitCronJob> setCronJobEnabled(String name, {required bool enabled});
+
+  /// Runs of cron job [name] (every job's when empty), newest first.
+  Future<List<FlitCronRun>> listCronRuns({String name = '', int limit = 50});
+
+  /// Runs the learning pass on a session (the server's learning model):
+  /// its proposals replace the session's earlier pending ones. Can take a
+  /// while with a local model. An empty list is a normal answer.
+  Future<FlitLearnResult> learn(String sessionId);
+
+  /// Pending proposals, the session's ('' = every session's); decided ones
+  /// too with [includeDecided].
+  Future<List<FlitLearnProposal>> listLearnProposals({
+    String sessionId = '',
+    bool includeDecided = false,
+  });
+
+  /// Writes a pending proposal, with [text] in place of its proposed text
+  /// when given.
+  Future<FlitLearnProposal> acceptLearnProposal(String id, {String? text});
+
+  /// Rejects a pending proposal; nothing is written.
+  Future<FlitLearnProposal> rejectLearnProposal(String id);
 }

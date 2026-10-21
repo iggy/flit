@@ -2,7 +2,10 @@
 /// looks at generated protobuf types.
 library;
 
+import 'package:flit/domain/models/flit_cron.dart';
 import 'package:flit/domain/models/flit_event.dart';
+import 'package:flit/domain/models/flit_git.dart';
+import 'package:flit/domain/models/flit_learning.dart';
 import 'package:flit/domain/models/flit_session.dart';
 import 'package:flit/domain/models/subagent.dart';
 import 'package:flit_api/flit_api.dart' as pb;
@@ -37,6 +40,138 @@ FlitSession sessionFromProto(pb.Session s) {
     contextLength: s.contextLength.toInt(),
     mcpServers: List<String>.unmodifiable(s.mcpServers),
     yolo: s.yolo,
+    cronJob: s.cronJob,
+  );
+}
+
+FlitCronRunState cronRunStateFromProto(pb.CronRunState s) => switch (s) {
+  pb.CronRunState.CRON_RUN_STATE_RUNNING => FlitCronRunState.running,
+  pb.CronRunState.CRON_RUN_STATE_OK => FlitCronRunState.ok,
+  pb.CronRunState.CRON_RUN_STATE_NEEDS_ATTENTION =>
+    FlitCronRunState.needsAttention,
+  pb.CronRunState.CRON_RUN_STATE_FAILED => FlitCronRunState.failed,
+  pb.CronRunState.CRON_RUN_STATE_SKIPPED => FlitCronRunState.skipped,
+  _ => FlitCronRunState.unknown,
+};
+
+FlitCronTrigger cronTriggerFromProto(pb.CronTrigger t) => switch (t) {
+  pb.CronTrigger.CRON_TRIGGER_SCHEDULE => FlitCronTrigger.schedule,
+  pb.CronTrigger.CRON_TRIGGER_CATCH_UP => FlitCronTrigger.catchUp,
+  pb.CronTrigger.CRON_TRIGGER_MANUAL => FlitCronTrigger.manual,
+  _ => FlitCronTrigger.unknown,
+};
+
+FlitCronRun cronRunFromProto(pb.CronRun r) {
+  return FlitCronRun(
+    id: r.id,
+    job: r.job,
+    sessionId: r.sessionId,
+    state: cronRunStateFromProto(r.state),
+    trigger: cronTriggerFromProto(r.trigger),
+    scheduledAt: r.hasScheduledTime() ? r.scheduledTime.toDateTime() : null,
+    startedAt: r.hasStartTime() ? r.startTime.toDateTime() : null,
+    finishedAt: r.hasFinishTime() ? r.finishTime.toDateTime() : null,
+    summary: r.summary,
+    refusedCommands: List<String>.unmodifiable(r.refusedCommands),
+    quiet: r.quiet,
+  );
+}
+
+FlitCronJob cronJobFromProto(pb.CronJob j) {
+  return FlitCronJob(
+    name: j.name,
+    schedule: j.schedule,
+    scheduleText: j.scheduleText,
+    oneShot: j.oneShot,
+    enabled: j.enabled,
+    projectId: j.projectId,
+    projectName: j.projectName,
+    dir: j.dir,
+    role: j.role,
+    provider: j.provider,
+    model: j.model,
+    askWait: j.ask == pb.CronAsk.CRON_ASK_WAIT,
+    yolo: j.yolo,
+    timezone: j.timezone,
+    prompt: j.prompt,
+    path: j.path,
+    nextRunAt: j.hasNextRunTime() ? j.nextRunTime.toDateTime() : null,
+    lastRun: j.hasLastRun() ? cronRunFromProto(j.lastRun) : null,
+    error: j.error,
+    runningSessionId: j.runningSessionId,
+  );
+}
+
+FlitDiffBase diffBaseFromProto(pb.GitDiffBase b) {
+  return switch (b) {
+    pb.GitDiffBase.GIT_DIFF_BASE_SESSION_START => FlitDiffBase.sessionStart,
+    pb.GitDiffBase.GIT_DIFF_BASE_HEAD_NO_BASE => FlitDiffBase.headNoBase,
+    pb.GitDiffBase.GIT_DIFF_BASE_HEAD_BASE_MISSING =>
+      FlitDiffBase.headBaseMissing,
+    pb.GitDiffBase.GIT_DIFF_BASE_EMPTY_TREE => FlitDiffBase.emptyTree,
+    _ => FlitDiffBase.unknown,
+  };
+}
+
+FlitFileStatus _fileStatus(pb.GitFileStatus s) {
+  return switch (s) {
+    pb.GitFileStatus.GIT_FILE_STATUS_MODIFIED => FlitFileStatus.modified,
+    pb.GitFileStatus.GIT_FILE_STATUS_ADDED => FlitFileStatus.added,
+    pb.GitFileStatus.GIT_FILE_STATUS_DELETED => FlitFileStatus.deleted,
+    pb.GitFileStatus.GIT_FILE_STATUS_RENAMED => FlitFileStatus.renamed,
+    pb.GitFileStatus.GIT_FILE_STATUS_COPIED => FlitFileStatus.copied,
+    pb.GitFileStatus.GIT_FILE_STATUS_TYPE_CHANGED => FlitFileStatus.typeChanged,
+    pb.GitFileStatus.GIT_FILE_STATUS_UNMERGED => FlitFileStatus.unmerged,
+    _ => FlitFileStatus.unknown,
+  };
+}
+
+FlitGitStatus gitStatusFromProto(pb.GitStatusResponse r) {
+  if (!r.isRepo) {
+    return FlitGitStatus.none;
+  }
+  return FlitGitStatus(
+    isRepo: true,
+    root: r.root,
+    branch: r.branch,
+    head: r.head,
+    detached: r.detached,
+    upstream: r.upstream,
+    ahead: r.ahead,
+    behind: r.behind,
+    stagedCount: r.stagedCount,
+    unstagedCount: r.unstagedCount,
+    untrackedCount: r.untrackedCount,
+    conflictedCount: r.conflictedCount,
+    baseCommit: r.baseCommit,
+    diffBase: r.diffBase,
+    diffBaseKind: diffBaseFromProto(r.diffBaseKind),
+    files: List<FlitGitFile>.unmodifiable(
+      r.files.map(
+        (f) => FlitGitFile(
+          path: f.path,
+          oldPath: f.oldPath,
+          status: _fileStatus(f.status),
+          additions: f.additions,
+          deletions: f.deletions,
+          binary: f.binary,
+          staged: f.staged,
+          unstaged: f.unstaged,
+          untracked: f.untracked,
+        ),
+      ),
+    ),
+    filesTruncated: r.filesTruncated,
+  );
+}
+
+FlitGitDiff gitDiffFromProto(pb.GitDiffResponse r) {
+  return FlitGitDiff(
+    isRepo: r.isRepo,
+    text: r.diff,
+    diffBase: r.diffBase,
+    diffBaseKind: diffBaseFromProto(r.diffBaseKind),
+    truncated: r.truncated,
   );
 }
 
@@ -93,6 +228,7 @@ FlitAgentRole roleFromProto(pb.AgentRole r) {
     model: r.model,
     effort: r.effort,
     error: r.error,
+    builtin: r.builtin,
   );
 }
 
@@ -535,7 +671,42 @@ FlitEvent eventFromProto(pb.Event e) {
         steps: a.steps,
       );
     case pb.Event_Payload.promptCache:
+    // Which cron job started the session; the app shows that from
+    // FlitSession.cronJob instead.
+    case pb.Event_Payload.cronRun:
     case pb.Event_Payload.notSet:
       return FlitUnknownEvent(seq: seq, time: time, branchId: branch);
   }
+}
+
+FlitLearnProposal learnProposalFromProto(pb.LearnProposal p) {
+  return FlitLearnProposal(
+    id: p.id,
+    sessionId: p.sessionId,
+    action: switch (p.action) {
+      pb.LearnAction.LEARN_ACTION_UPDATE => FlitLearnAction.update,
+      pb.LearnAction.LEARN_ACTION_REMOVE => FlitLearnAction.remove,
+      _ => FlitLearnAction.add,
+    },
+    target: switch (p.target) {
+      pb.LearnTarget.LEARN_TARGET_USER => FlitLearnTarget.user,
+      pb.LearnTarget.LEARN_TARGET_ROLE => FlitLearnTarget.role,
+      pb.LearnTarget.LEARN_TARGET_SKILL => FlitLearnTarget.skill,
+      _ => FlitLearnTarget.project,
+    },
+    status: switch (p.status) {
+      pb.LearnStatus.LEARN_STATUS_ACCEPTED => FlitLearnStatus.accepted,
+      pb.LearnStatus.LEARN_STATUS_REJECTED => FlitLearnStatus.rejected,
+      _ => FlitLearnStatus.pending,
+    },
+    skill: p.skill,
+    cue: p.cue,
+    lesson: p.lesson,
+    evidence: p.evidence,
+    oldText: p.oldText,
+    newText: p.newText,
+    path: p.path,
+    provider: p.provider,
+    model: p.model,
+  );
 }

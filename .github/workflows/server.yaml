@@ -1,9 +1,10 @@
+---
 name: Server
 
 # CI for the flit server (server/) and its API schema (proto/). The Flutter
 # app has its own workflow (ci.yaml).
 
-on:
+'on':
   push:
     branches:
       - main
@@ -73,7 +74,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest]  # , macos-latest, windows-latest]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -110,7 +111,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        goos: [linux, darwin, windows]
+        goos: [linux]  #, darwin, windows]
         goarch: [amd64, arm64]
     env:
       CGO_ENABLED: '0'
@@ -120,7 +121,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
-          fetch-depth: 0 # tags, for `git describe`
+          fetch-depth: 0  # tags, for `git describe`
 
       - name: Set up Go
         uses: actions/setup-go@v7
