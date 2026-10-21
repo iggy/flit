@@ -258,9 +258,11 @@ class _NewSessionDialogState extends ConsumerState<_NewSessionDialog> {
                   DropdownMenuItem<String>(
                     value: r.name,
                     child: Text(
-                      r.description.isEmpty
-                          ? r.name
-                          : '${r.name} — ${r.description}',
+                      <String>[
+                        r.name,
+                        if (r.builtin) '(built-in)',
+                        if (r.description.isNotEmpty) '— ${r.description}',
+                      ].join(' '),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),

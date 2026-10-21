@@ -49,6 +49,11 @@ On first run flit:
 - generates an API token, prints it once, and stores it in the data dir.
   Print it again with `flit token`.
 
+The config file isn't rewritten when flit gains settings. `flit config
+update` adds the new ones, with their comments, and leaves everything you
+wrote alone (the old file is kept as `config.yaml.bak`; `--dry-run` shows
+the change as a diff). `flit config defaults` prints the full default config.
+
 Every API call needs that token, even from localhost. The API is
 [Connect](https://connectrpc.com) (so plain HTTP/JSON, gRPC and gRPC-Web all
 work), served on `127.0.0.1:7433` by default:
@@ -144,6 +149,10 @@ memory_file: NOTES.md
 Review changes for correctness first, style second.
 ```
 
+flit ships four roles: `frontend-dev`, `backend-dev`, `pm` and `qa`. They set
+no model, so sessions use the configured one. A file in `roles/` with the
+same name (e.g. `roles/qa.md`) replaces the built-in role.
+
 Every model call reports context use, time to first token, and prompt and
 generation speed (llama.cpp's own timings when it sends them, otherwise
 measured by flit). The app shows these along with the model, effort and task
@@ -204,8 +213,12 @@ state, and the agent's todo list.
   global one with the same name. The model sees names and descriptions and
   loads a skill's instructions and files when needed. A message starting
   with `/<skill>` asks for that skill (the app's composer suggests them
-  when you type `/`). flit ships one: **/init** surveys the repo and writes
-  or updates its `AGENTS.md`, asking before it changes an existing one.
+  when you type `/`). flit ships two: **/init** surveys the repo and writes
+  or updates its `AGENTS.md`, asking before it changes an existing one;
+  **/grill-me** interviews you about a new project one question at a time
+  (goals, users, scope, non-goals, stack, constraints, risks, what "done"
+  means), pushes back on vague answers, and writes the agreed plan to
+  `PROJECT.md` once you confirm it.
 - **git** tools (status, diff, log, commit; nothing pushes), **web_fetch**,
   and **web_search** through a SearXNG instance (`web.search`); paid search
   APIs aren't supported.

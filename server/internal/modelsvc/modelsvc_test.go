@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -64,5 +65,23 @@ func TestFavoritesRecentsAndLoad(t *testing.T) {
 	}
 	if _, err := svc.LoadModel(ctx, connect.NewRequest(&flitv1.LoadModelRequest{Provider: "p", Model: "a"})); connect.CodeOf(err) != connect.CodeFailedPrecondition {
 		t.Fatalf("load on a non-router: %v", err)
+	}
+}
+
+func TestListRolesIncludesBuiltin(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "pm.md"), []byte("Mine."), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	res, err := (&Roles{Dir: func() string { return dir }}).ListRoles(context.Background(), connect.NewRequest(&flitv1.ListRolesRequest{}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := map[string]bool{}
+	for _, r := range res.Msg.Roles {
+		got[r.Name] = r.Builtin
+	}
+	if !got["qa"] || !got["frontend-dev"] || !got["backend-dev"] || got["pm"] {
+		t.Fatalf("roles = %v", got)
 	}
 }
