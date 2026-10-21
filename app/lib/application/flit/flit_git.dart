@@ -55,6 +55,11 @@ class FlitGitStatusNotifier extends AsyncNotifier<FlitGitStatus> {
   }
 
   void _schedule() {
+    // Failing (e.g. a server without the git RPCs, or no git on it): don't
+    // keep asking. A new connection builds the provider again.
+    if (state.hasError && !state.hasValue) {
+      return;
+    }
     _debounce?.cancel();
     _debounce = Timer(ref.read(flitGitRefreshDelayProvider), () {
       unawaited(refresh());
