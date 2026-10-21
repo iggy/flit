@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -27,7 +28,8 @@ const (
 	llamaSingle = `{"object":"list","data":[{"id":"model.gguf","object":"model","owned_by":"llamacpp","meta":{"n_ctx_train":131072,"n_params":7000000000}}]}`
 	openRouter  = `{"data":[
  {"id":"anthropic/x","name":"X","context_length":200000,"supported_parameters":["tools","reasoning","temperature"],"architecture":{"input_modalities":["text","image"]},"top_provider":{"context_length":200000}},
- {"id":"meta/y","name":"Y","context_length":8192,"supported_parameters":["temperature"],"architecture":{"input_modalities":["text"]}}
+ {"id":"meta/y","name":"Y","context_length":8192,"supported_parameters":["temperature"],"architecture":{"input_modalities":["text"]}},
+ {"id":"reflection/z","name":"Z","context_length":262144,"supported_parameters":["tools","reasoning"],"reasoning":{"mandatory":true,"supported_efforts":["max","xhigh","high","medium","low","none"],"default_effort":"max"}}
 ]}`
 	goModel = `{"object":"list","data":[
  {"id":"gpt-x","object":"model","owned_by":"openai","metadata":{"display_name":"GPT X","context_window":400000,"capabilities":{"function_calling":true,"reasoning":true,"vision":true}}},
@@ -70,6 +72,12 @@ func TestAdapters(t *testing.T) {
 	}
 	if y := m["meta/y"]; y.SupportsTools || y.SupportsReasoning || y.ContextLength != 8192 {
 		t.Errorf("openrouter y = %+v", y)
+	}
+	if x := m["anthropic/x"]; !slices.Equal(x.Efforts, defaultEfforts) {
+		t.Errorf("openrouter x efforts (none listed) = %v", x.Efforts)
+	}
+	if z := m["reflection/z"]; !slices.Equal(z.Efforts, []string{"low", "medium", "high", "xhigh", "max"}) {
+		t.Errorf("openrouter z efforts = %v", z.Efforts)
 	}
 
 	kind, ms, _ = parseModels("p", "http://gw/v1", "", []byte(goModel))

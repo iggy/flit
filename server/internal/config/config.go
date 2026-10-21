@@ -93,7 +93,8 @@ type Provider struct {
 	APIKeyEnv string `yaml:"api_key_env"`
 	// Kind says how to read the provider's /models response: auto (the
 	// default: guess from the URL and the response), openai, openrouter,
-	// llamacpp or gomodel.
+	// llamacpp or gomodel. openrouter also fits endpoints that copy
+	// OpenRouter's /models format, such as the Nous Portal.
 	Kind string `yaml:"kind"`
 	// PromptAppend is added to the system prompt for every model on this
 	// provider.
