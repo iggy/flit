@@ -4,7 +4,13 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - 'server/**'
+      - 'docs/**'
   pull_request:
+    paths-ignore:
+      - 'server/**'
+      - 'docs/**'
   workflow_dispatch:
 
 # All Flutter commands run in the app/ directory (the Flutter project is not
