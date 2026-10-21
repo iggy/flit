@@ -101,6 +101,9 @@ const (
 	SessionServiceGitStatusProcedure = "/flit.v1.SessionService/GitStatus"
 	// SessionServiceGitDiffProcedure is the fully-qualified name of the SessionService's GitDiff RPC.
 	SessionServiceGitDiffProcedure = "/flit.v1.SessionService/GitDiff"
+	// SessionServiceRemoveWorktreeProcedure is the fully-qualified name of the SessionService's
+	// RemoveWorktree RPC.
+	SessionServiceRemoveWorktreeProcedure = "/flit.v1.SessionService/RemoveWorktree"
 )
 
 // SessionServiceClient is a client for the flit.v1.SessionService service.
@@ -202,6 +205,14 @@ type SessionServiceClient interface {
 	// commit against the working tree, untracked files included as new
 	// files. The repository's index is left untouched.
 	GitDiff(context.Context, *connect.Request[v1.GitDiffRequest]) (*connect.Response[v1.GitDiffResponse], error)
+	// RemoveWorktree deletes the session's own git worktree (see
+	// ProjectService.SetProjectWorktrees) without losing history: its
+	// branch stays when it has commits no other branch, tag or remote has.
+	// FAILED_PRECONDITION if the worktree has uncommitted changes (commit or
+	// discard them first), while a turn is running, or if the session has no
+	// worktree. Afterwards the session can't run turns. The log gets
+	// WorktreeRemoved.
+	RemoveWorktree(context.Context, *connect.Request[v1.RemoveWorktreeRequest]) (*connect.Response[v1.RemoveWorktreeResponse], error)
 }
 
 // NewSessionServiceClient constructs a client for the flit.v1.SessionService service. By default,
@@ -371,6 +382,12 @@ func NewSessionServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 			connect.WithClientOptions(opts...),
 		),
+		removeWorktree: connect.NewClient[v1.RemoveWorktreeRequest, v1.RemoveWorktreeResponse](
+			httpClient,
+			baseURL+SessionServiceRemoveWorktreeProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("RemoveWorktree")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -401,6 +418,7 @@ type sessionServiceClient struct {
 	switchBranch        *connect.Client[v1.SwitchBranchRequest, v1.SwitchBranchResponse]
 	gitStatus           *connect.Client[v1.GitStatusRequest, v1.GitStatusResponse]
 	gitDiff             *connect.Client[v1.GitDiffRequest, v1.GitDiffResponse]
+	removeWorktree      *connect.Client[v1.RemoveWorktreeRequest, v1.RemoveWorktreeResponse]
 }
 
 // CreateSession calls flit.v1.SessionService.CreateSession.
@@ -528,6 +546,11 @@ func (c *sessionServiceClient) GitDiff(ctx context.Context, req *connect.Request
 	return c.gitDiff.CallUnary(ctx, req)
 }
 
+// RemoveWorktree calls flit.v1.SessionService.RemoveWorktree.
+func (c *sessionServiceClient) RemoveWorktree(ctx context.Context, req *connect.Request[v1.RemoveWorktreeRequest]) (*connect.Response[v1.RemoveWorktreeResponse], error) {
+	return c.removeWorktree.CallUnary(ctx, req)
+}
+
 // SessionServiceHandler is an implementation of the flit.v1.SessionService service.
 type SessionServiceHandler interface {
 	// CreateSession starts a new, idle session. Give working_dir, or a
@@ -627,6 +650,14 @@ type SessionServiceHandler interface {
 	// commit against the working tree, untracked files included as new
 	// files. The repository's index is left untouched.
 	GitDiff(context.Context, *connect.Request[v1.GitDiffRequest]) (*connect.Response[v1.GitDiffResponse], error)
+	// RemoveWorktree deletes the session's own git worktree (see
+	// ProjectService.SetProjectWorktrees) without losing history: its
+	// branch stays when it has commits no other branch, tag or remote has.
+	// FAILED_PRECONDITION if the worktree has uncommitted changes (commit or
+	// discard them first), while a turn is running, or if the session has no
+	// worktree. Afterwards the session can't run turns. The log gets
+	// WorktreeRemoved.
+	RemoveWorktree(context.Context, *connect.Request[v1.RemoveWorktreeRequest]) (*connect.Response[v1.RemoveWorktreeResponse], error)
 }
 
 // NewSessionServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -792,6 +823,12 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
 		connect.WithHandlerOptions(opts...),
 	)
+	sessionServiceRemoveWorktreeHandler := connect.NewUnaryHandler(
+		SessionServiceRemoveWorktreeProcedure,
+		svc.RemoveWorktree,
+		connect.WithSchema(sessionServiceMethods.ByName("RemoveWorktree")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/flit.v1.SessionService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case SessionServiceCreateSessionProcedure:
@@ -844,6 +881,8 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 			sessionServiceGitStatusHandler.ServeHTTP(w, r)
 		case SessionServiceGitDiffProcedure:
 			sessionServiceGitDiffHandler.ServeHTTP(w, r)
+		case SessionServiceRemoveWorktreeProcedure:
+			sessionServiceRemoveWorktreeHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -951,4 +990,8 @@ func (UnimplementedSessionServiceHandler) GitStatus(context.Context, *connect.Re
 
 func (UnimplementedSessionServiceHandler) GitDiff(context.Context, *connect.Request[v1.GitDiffRequest]) (*connect.Response[v1.GitDiffResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.GitDiff is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) RemoveWorktree(context.Context, *connect.Request[v1.RemoveWorktreeRequest]) (*connect.Response[v1.RemoveWorktreeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.RemoveWorktree is not implemented"))
 }

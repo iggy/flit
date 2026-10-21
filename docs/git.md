@@ -107,16 +107,30 @@ modified. It's off by default.
 - Sessions in projects without worktrees behave exactly as before.
 - flit never pushes the branch.
 
-### Cleanup
+### Cleanup, without losing history
 
-Sessions can't be deleted yet. When a session is **archived** (today:
-old runs of a cron job, see [cron.md](cron.md)), flit removes its
-worktree and branch, but only if nothing would be lost: no uncommitted
-changes (untracked files count, ignored ones don't) and no commits that
-aren't on a remote. Otherwise the worktree stays and the session log gets
-`WorktreeKept` with the reason; flit doesn't try again. When cleanup
-succeeds, the log gets `WorktreeRemoved`.
+Removing a worktree deletes its directory, never history:
 
-To finish a session's work, merge or push its branch from your checkout
-(`git merge flit/abcd1234`), or remove the worktree yourself with
-`git worktree remove <path>` and `git branch -D flit/abcd1234`.
+- A worktree with **uncommitted changes** (modified or untracked files;
+  ignored ones don't count) is never removed. Commit or discard them first.
+- The session's **branch** is deleted only when every commit on it is
+  also on another branch, a tag or a remote, so deleting it loses nothing.
+  Otherwise the branch stays and keeps the commits: merge it, push it or
+  delete it yourself whenever you like (`git merge flit/abcd1234`,
+  `git branch -D flit/abcd1234`).
+- After its worktree is removed a session can't run turns (sending fails),
+  but its conversation stays readable. The log gets `WorktreeRemoved`,
+  saying whether the branch was kept and with how many commits.
+
+Ways to remove one:
+
+- In the app: **Remove worktree** on the session's Changes screen.
+- On the server machine: `flit worktree remove <session id>`.
+- From a client: `SessionService.RemoveWorktree`.
+- Automatically when a session is archived (today: old runs of a cron job,
+  see [cron.md](cron.md)). If it can't go (uncommitted changes, a turn
+  running), it stays and the session log gets `WorktreeKept` with the
+  reason; flit doesn't try again.
+
+Sessions can't be deleted yet; when they can, deleting one will remove its
+worktree by the same rules.

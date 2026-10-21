@@ -36,11 +36,15 @@ import (
 
 // Errors returned by Manager. The API layer maps them to status codes.
 var (
-	ErrNotFound   = store.ErrNotFound
-	ErrBusy       = errors.New("a turn is already running in this session")
-	ErrPromptGone = errors.New("prompt is not pending (already answered, or the turn ended)")
-	ErrInvalid    = errors.New("invalid argument")
-	ErrSlowClient = errors.New("client fell too far behind")
+	ErrNotFound = store.ErrNotFound
+	ErrBusy     = errors.New("a turn is already running in this session")
+	// Worktree errors (see RemoveWorktree).
+	ErrNoWorktree    = errors.New("the session has no worktree of its own")
+	ErrWorktreeGone  = errors.New("the session's worktree has been removed")
+	ErrWorktreeDirty = errors.New("the worktree has uncommitted changes; commit or discard them first")
+	ErrPromptGone    = errors.New("prompt is not pending (already answered, or the turn ended)")
+	ErrInvalid       = errors.New("invalid argument")
+	ErrSlowClient    = errors.New("client fell too far behind")
 	// ErrNoCallToRetry: RetryModelCall with no model call waiting (none
 	// running, or the reply is already streaming).
 	ErrNoCallToRetry = errors.New("no model call is waiting for the model to answer")
@@ -282,7 +286,7 @@ func (m *Manager) Create(ctx context.Context, o CreateOptions) (store.Session, e
 	}
 	if err := m.store.CreateSession(ctx, &info); err != nil {
 		if info.WorktreePath != "" {
-			if err := gitx.RemoveWorktree(ctx, info.WorktreePath, info.WorktreeBranch); err != nil {
+			if err := gitx.RemoveWorktree(ctx, info.WorktreePath, info.WorktreeBranch, true); err != nil {
 				m.log.Warn("remove worktree of unsaved session", "path", info.WorktreePath, "err", err)
 			}
 		}
@@ -381,6 +385,9 @@ func (m *Manager) SendMessage(ctx context.Context, id, text, client string) (Sen
 	if m.closing.Load() {
 		return SendResult{}, errors.New("flit is shutting down")
 	}
+	if s.snapshot().WorktreeRemoved {
+		return SendResult{}, ErrWorktreeGone
+	}
 	return s.send(text, client)
 }
 
@@ -456,6 +463,9 @@ func (m *Manager) Compact(ctx context.Context, id, client, instructions string) 
 	}
 	if m.closing.Load() {
 		return false, errors.New("flit is shutting down")
+	}
+	if s.snapshot().WorktreeRemoved {
+		return false, ErrWorktreeGone
 	}
 	return s.requestCompact(client, strings.TrimSpace(instructions))
 }
@@ -582,6 +592,9 @@ func (m *Manager) fork(ctx context.Context, id, msgID, text, client string, edit
 	}
 	if m.closing.Load() {
 		return ForkResult{}, errors.New("flit is shutting down")
+	}
+	if s.snapshot().WorktreeRemoved {
+		return ForkResult{}, ErrWorktreeGone
 	}
 	return s.fork(ctx, msgID, text, client, edit)
 }

@@ -246,6 +246,7 @@ ALTER TABLE projects ADD COLUMN worktrees INTEGER;
 ALTER TABLE sessions ADD COLUMN source_dir TEXT NOT NULL DEFAULT '';
 ALTER TABLE sessions ADD COLUMN worktree_path TEXT NOT NULL DEFAULT '';
 ALTER TABLE sessions ADD COLUMN worktree_branch TEXT NOT NULL DEFAULT '';
+ALTER TABLE sessions ADD COLUMN worktree_removed INTEGER NOT NULL DEFAULT 0;
 `,
 }
 
@@ -319,9 +320,12 @@ type Session struct {
 	SourceDir      string
 	WorktreePath   string
 	WorktreeBranch string
+	// WorktreeRemoved says the worktree was deleted (WorktreeRemoved
+	// event); the session can't run turns any more.
+	WorktreeRemoved bool
 }
 
-const sessionCols = `id, team_id, project_id, title, working_dir, provider, model, state, last_seq, created_at, updated_at, effort, role, context_tokens, context_length, mcp_servers, yolo, branch_id, base_commit, cron_id, archived, source_dir, worktree_path, worktree_branch`
+const sessionCols = `id, team_id, project_id, title, working_dir, provider, model, state, last_seq, created_at, updated_at, effort, role, context_tokens, context_length, mcp_servers, yolo, branch_id, base_commit, cron_id, archived, source_dir, worktree_path, worktree_branch, worktree_removed`
 
 func joinNames(names []string) string { return strings.Join(names, "\n") }
 
@@ -337,7 +341,7 @@ func scanSession(row interface{ Scan(...any) error }) (Session, error) {
 	var created, updated int64
 	var mcp string
 	err := row.Scan(&s.ID, &s.TeamID, &s.ProjectID, &s.Title, &s.WorkingDir, &s.Provider, &s.Model,
-		&s.State, &s.LastSeq, &created, &updated, &s.Effort, &s.Role, &s.ContextTokens, &s.ContextLength, &mcp, &s.Yolo, &s.BranchID, &s.BaseCommit, &s.CronID, &s.Archived, &s.SourceDir, &s.WorktreePath, &s.WorktreeBranch)
+		&s.State, &s.LastSeq, &created, &updated, &s.Effort, &s.Role, &s.ContextTokens, &s.ContextLength, &mcp, &s.Yolo, &s.BranchID, &s.BaseCommit, &s.CronID, &s.Archived, &s.SourceDir, &s.WorktreePath, &s.WorktreeBranch, &s.WorktreeRemoved)
 	s.MCPServers = splitNames(mcp)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Session{}, ErrNotFound
@@ -350,10 +354,10 @@ func scanSession(row interface{ Scan(...any) error }) (Session, error) {
 func (s *Store) CreateSession(ctx context.Context, sess *Session) error {
 	now := time.Now()
 	sess.CreatedAt, sess.UpdatedAt = now, now
-	_, err := s.db.ExecContext(ctx, `INSERT INTO sessions (`+sessionCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	_, err := s.db.ExecContext(ctx, `INSERT INTO sessions (`+sessionCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		sess.ID, sess.TeamID, sess.ProjectID, sess.Title, sess.WorkingDir, sess.Provider, sess.Model,
 		sess.State, sess.LastSeq, now.UnixNano(), now.UnixNano(), sess.Effort, sess.Role, sess.ContextTokens, sess.ContextLength,
-		joinNames(sess.MCPServers), sess.Yolo, sess.BranchID, sess.BaseCommit, sess.CronID, sess.Archived, sess.SourceDir, sess.WorktreePath, sess.WorktreeBranch)
+		joinNames(sess.MCPServers), sess.Yolo, sess.BranchID, sess.BaseCommit, sess.CronID, sess.Archived, sess.SourceDir, sess.WorktreePath, sess.WorktreeBranch, sess.WorktreeRemoved)
 	return err
 }
 
@@ -584,6 +588,8 @@ func (s *Store) AppendEvent(ctx context.Context, sess Session, ev *flitv1.Event)
 	case ev.GetCompactionDone() != nil && ev.GetCompactionDone().Error == "":
 		q = `UPDATE sessions SET last_seq = ?, updated_at = ?, context_tokens = ? WHERE id = ? AND last_seq = ?`
 		args = []any{ev.Seq, at, ev.GetCompactionDone().TokensAfter, ev.SessionId, ev.Seq - 1}
+	case ev.GetWorktreeRemoved() != nil:
+		q = `UPDATE sessions SET last_seq = ?, updated_at = ?, worktree_removed = 1 WHERE id = ? AND last_seq = ?`
 	case ev.GetBranchSwitched() != nil:
 		q = `UPDATE sessions SET last_seq = ?, updated_at = ?, branch_id = ? WHERE id = ? AND last_seq = ?`
 		args = []any{ev.Seq, at, ev.GetBranchSwitched().BranchId, ev.SessionId, ev.Seq - 1}

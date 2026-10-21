@@ -46,7 +46,12 @@ final class FlitSession {
     this.sourceDir = '',
     this.worktreePath = '',
     this.worktreeBranch = '',
+    this.worktreeRemoved = false,
   });
+
+  /// The worktree was removed; the session can't run turns any more, and
+  /// [worktreeBranch] may still hold its commits.
+  final bool worktreeRemoved;
 
   /// With its own git worktree: the directory the session was started in,
   /// the worktree and its branch ([workingDir] is inside the worktree).
@@ -125,7 +130,8 @@ final class FlitSession {
         other.yolo == yolo &&
         other.worktreePath == worktreePath &&
         other.worktreeBranch == worktreeBranch &&
-        other.sourceDir == sourceDir;
+        other.sourceDir == sourceDir &&
+        other.worktreeRemoved == worktreeRemoved;
   }
 
   @override

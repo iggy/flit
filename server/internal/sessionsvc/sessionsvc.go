@@ -32,30 +32,31 @@ var _ flitv1connect.SessionServiceHandler = (*Service)(nil)
 
 func toProto(s store.Session) *flitv1.Session {
 	return &flitv1.Session{
-		Id:             s.ID,
-		TeamId:         s.TeamID,
-		ProjectId:      s.ProjectID,
-		Title:          s.Title,
-		WorkingDir:     s.WorkingDir,
-		Provider:       s.Provider,
-		Model:          s.Model,
-		State:          s.State,
-		LastSeq:        s.LastSeq,
-		CreateTime:     timestamppb.New(s.CreatedAt),
-		UpdateTime:     timestamppb.New(s.UpdatedAt),
-		Effort:         s.Effort,
-		Role:           s.Role,
-		ContextTokens:  s.ContextTokens,
-		ContextLength:  s.ContextLength,
-		McpServers:     s.MCPServers,
-		Yolo:           s.Yolo,
-		BranchId:       s.BranchID,
-		BaseCommit:     s.BaseCommit,
-		SourceDir:      s.SourceDir,
-		WorktreePath:   s.WorktreePath,
-		WorktreeBranch: s.WorktreeBranch,
-		CronJob:        s.CronID,
-		Archived:       s.Archived,
+		Id:              s.ID,
+		TeamId:          s.TeamID,
+		ProjectId:       s.ProjectID,
+		Title:           s.Title,
+		WorkingDir:      s.WorkingDir,
+		Provider:        s.Provider,
+		Model:           s.Model,
+		State:           s.State,
+		LastSeq:         s.LastSeq,
+		CreateTime:      timestamppb.New(s.CreatedAt),
+		UpdateTime:      timestamppb.New(s.UpdatedAt),
+		Effort:          s.Effort,
+		Role:            s.Role,
+		ContextTokens:   s.ContextTokens,
+		ContextLength:   s.ContextLength,
+		McpServers:      s.MCPServers,
+		Yolo:            s.Yolo,
+		BranchId:        s.BranchID,
+		BaseCommit:      s.BaseCommit,
+		SourceDir:       s.SourceDir,
+		WorktreePath:    s.WorktreePath,
+		WorktreeBranch:  s.WorktreeBranch,
+		WorktreeRemoved: s.WorktreeRemoved,
+		CronJob:         s.CronID,
+		Archived:        s.Archived,
 	}
 }
 
@@ -71,7 +72,8 @@ func connectErr(err error) error {
 	case errors.Is(err, agent.ErrInvalid):
 		code = connect.CodeInvalidArgument
 	case errors.Is(err, agent.ErrBusy), errors.Is(err, agent.ErrPromptGone), errors.Is(err, agent.ErrNoCallToRetry), errors.Is(err, agent.ErrQueueGone), errors.Is(err, agent.ErrCantEndReasoning),
-		errors.Is(err, agent.ErrQueued):
+		errors.Is(err, agent.ErrQueued), errors.Is(err, agent.ErrNoWorktree), errors.Is(err, agent.ErrWorktreeGone),
+		errors.Is(err, agent.ErrWorktreeDirty):
 		code = connect.CodeFailedPrecondition
 	case errors.Is(err, gitx.ErrNoGit):
 		code = connect.CodeFailedPrecondition
@@ -578,5 +580,19 @@ func (s *Service) GitDiff(ctx context.Context, req *connect.Request[flitv1.GitDi
 	return connect.NewResponse(&flitv1.GitDiffResponse{
 		IsRepo: d.IsRepo, DiffBase: d.Base.Rev, DiffBaseKind: diffBaseKinds[d.Base.Kind],
 		Diff: d.Text, Truncated: d.Truncated,
+	}), nil
+}
+
+// RemoveWorktree implements flitv1connect.SessionServiceHandler.
+func (s *Service) RemoveWorktree(ctx context.Context, req *connect.Request[flitv1.RemoveWorktreeRequest]) (*connect.Response[flitv1.RemoveWorktreeResponse], error) {
+	if err := required("session_id", req.Msg.SessionId); err != nil {
+		return nil, err
+	}
+	r, err := s.M.RemoveWorktree(ctx, req.Msg.SessionId)
+	if err != nil {
+		return nil, connectErr(err)
+	}
+	return connect.NewResponse(&flitv1.RemoveWorktreeResponse{
+		Session: toProto(r.Session), BranchKept: r.BranchKept, Commits: int32(r.Commits),
 	}), nil
 }

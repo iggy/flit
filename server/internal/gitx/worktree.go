@@ -178,39 +178,32 @@ func copyFile(src, dst string, mode fs.FileMode) error {
 	return out.Close()
 }
 
-// WorktreeDirty says why the worktree at dir must be kept: uncommitted
-// changes (untracked files included, ignored ones not), or commits that are
-// on no remote and weren't there at base. It returns "" when the worktree
-// can go.
-func WorktreeDirty(ctx context.Context, dir, base string) (string, error) {
+// Uncommitted says whether the work tree at dir has changes that aren't
+// committed: modified or untracked files (ignored ones don't count).
+func Uncommitted(ctx context.Context, dir string) (bool, error) {
 	out, err := read(ctx, dir, "status", "--porcelain", "-z", "--untracked-files=normal")
-	if err != nil {
-		return "", err
-	}
-	if out != "" {
-		return "it has uncommitted changes", nil
-	}
-	args := []string{"rev-list", "--count", "HEAD", "--not", "--remotes"}
+	return out != "", err
+}
+
+// OnlyOnBranch counts the commits on branch that no other branch, tag or
+// remote-tracking ref has and that weren't there at base: what deleting
+// the branch would lose.
+func OnlyOnBranch(ctx context.Context, dir, branch, base string) (int, error) {
+	args := []string{"rev-list", "--count", "refs/heads/" + branch, "--not",
+		"--exclude=" + branch, "--branches", "--tags", "--remotes"}
 	if base != "" {
 		args = append(args, base)
 	}
-	out, err = read(ctx, dir, args...)
+	out, err := read(ctx, dir, args...)
 	if err != nil {
-		return "", err
+		return 0, err
 	}
-	switch n, _ := strconv.Atoi(strings.TrimSpace(out)); n {
-	case 0:
-		return "", nil
-	case 1:
-		return "it has a commit that isn't pushed", nil
-	default:
-		return fmt.Sprintf("it has %d commits that aren't pushed", n), nil
-	}
+	return strconv.Atoi(strings.TrimSpace(out))
 }
 
-// RemoveWorktree removes the worktree at dir and deletes its branch. Call
-// WorktreeDirty first: this refuses only what git itself refuses.
-func RemoveWorktree(ctx context.Context, dir, branch string) error {
+// RemoveWorktree removes the worktree at dir; git refuses if it has
+// uncommitted changes. With deleteBranch it deletes branch as well.
+func RemoveWorktree(ctx context.Context, dir, branch string, deleteBranch bool) error {
 	common, err := read(ctx, dir, "rev-parse", "--path-format=absolute", "--git-common-dir")
 	if err != nil {
 		return err
@@ -218,7 +211,7 @@ func RemoveWorktree(ctx context.Context, dir, branch string) error {
 	if _, err := Run(ctx, dir, "worktree", "remove", dir); err != nil {
 		return err
 	}
-	if branch == "" {
+	if !deleteBranch || branch == "" {
 		return nil
 	}
 	_, err = Run(ctx, strings.TrimSpace(common), "branch", "-D", branch)

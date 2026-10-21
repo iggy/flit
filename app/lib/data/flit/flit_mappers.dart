@@ -44,6 +44,7 @@ FlitSession sessionFromProto(pb.Session s) {
     sourceDir: s.sourceDir,
     worktreePath: s.worktreePath,
     worktreeBranch: s.worktreeBranch,
+    worktreeRemoved: s.worktreeRemoved,
   );
 }
 

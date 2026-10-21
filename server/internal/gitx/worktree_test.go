@@ -197,47 +197,74 @@ func TestRemoveWorktree(t *testing.T) {
 		}
 		return dir, branch, base
 	}
-	dirty := func(dir, base string) string {
+	branchExists := func(branch string) bool {
+		_, err := Run(ctx, src, "show-ref", "--verify", "--quiet", "refs/heads/"+branch)
+		return err == nil
+	}
+	commit := func(dir, name string) {
 		t.Helper()
-		why, err := WorktreeDirty(ctx, dir, base)
-		if err != nil {
+		put(t, dir, name, name+"\n")
+		if _, err := Run(ctx, dir, "add", name); err != nil {
 			t.Fatal(err)
 		}
-		return why
+		if _, err := Run(ctx, dir, "commit", "-q", "-m", name); err != nil {
+			t.Fatal(err)
+		}
 	}
 
-	// Clean (ignored files don't count): removed, branch deleted.
+	// Clean, no new commits (ignored files don't count): nothing to keep.
 	dir, branch, base := newWorktree("clean")
-	if why := dirty(dir, base); why != "" {
-		t.Fatalf("clean worktree is dirty: %s", why)
+	if dirty, err := Uncommitted(ctx, dir); err != nil || dirty {
+		t.Fatalf("clean worktree: dirty %v, %v", dirty, err)
 	}
-	if err := RemoveWorktree(ctx, dir, branch); err != nil {
+	if n, err := OnlyOnBranch(ctx, dir, branch, base); err != nil || n != 0 {
+		t.Fatalf("clean worktree: %d new commits, %v", n, err)
+	}
+	if err := RemoveWorktree(ctx, dir, branch, true); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(dir); !os.IsNotExist(err) {
 		t.Errorf("worktree still there: %v", err)
 	}
-	if _, err := Run(ctx, src, "show-ref", "--verify", "--quiet", "refs/heads/"+branch); err == nil {
+	if branchExists(branch) {
 		t.Error("branch still there")
 	}
 
-	// Uncommitted or untracked changes keep it.
-	dir, _, base = newWorktree("edited")
+	// Untracked files are uncommitted changes, and git won't remove them.
+	dir, branch, _ = newWorktree("edited")
 	put(t, dir, "new.txt", "n\n")
-	if why := dirty(dir, base); !strings.Contains(why, "uncommitted") {
-		t.Errorf("untracked file: %q", why)
+	if dirty, err := Uncommitted(ctx, dir); err != nil || !dirty {
+		t.Errorf("untracked file: dirty %v, %v", dirty, err)
+	}
+	if err := RemoveWorktree(ctx, dir, branch, false); err == nil {
+		t.Error("removed a worktree with an untracked file")
 	}
 
-	// A commit that isn't on a remote keeps it.
-	dir, _, base = newWorktree("committed")
-	put(t, dir, "c.txt", "c\n")
-	if _, err := Run(ctx, dir, "add", "c.txt"); err != nil {
+	// Commits only on the branch: the worktree can go, the branch keeps
+	// them.
+	dir, branch, base = newWorktree("committed")
+	commit(dir, "c1.txt")
+	commit(dir, "c2.txt")
+	if n, err := OnlyOnBranch(ctx, dir, branch, base); err != nil || n != 2 {
+		t.Fatalf("committed: %d, %v", n, err)
+	}
+	if err := RemoveWorktree(ctx, dir, branch, false); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Run(ctx, dir, "commit", "-q", "-m", "work"); err != nil {
+	if !branchExists(branch) {
+		t.Fatal("the branch with the commits is gone")
+	}
+	if out, _ := Run(ctx, src, "log", "--format=%s", "refs/heads/"+branch); !strings.Contains(out, "c2.txt") {
+		t.Errorf("history lost: %q", out)
+	}
+
+	// Once another branch has the commits, deleting this one loses nothing.
+	dir, branch, base = newWorktree("merged")
+	commit(dir, "m.txt")
+	if _, err := Run(ctx, src, "branch", "keep", "refs/heads/"+branch); err != nil {
 		t.Fatal(err)
 	}
-	if why := dirty(dir, base); why != "it has a commit that isn't pushed" {
-		t.Errorf("unpushed commit: %q", why)
+	if n, err := OnlyOnBranch(ctx, dir, branch, base); err != nil || n != 0 {
+		t.Errorf("merged: %d, %v", n, err)
 	}
 }

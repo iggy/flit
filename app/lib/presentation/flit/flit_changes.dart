@@ -5,13 +5,20 @@ library;
 import 'dart:async';
 
 import 'package:flit/application/flit/flit_git.dart';
+import 'package:flit/application/flit/flit_providers.dart';
+import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/domain/models/flit_git.dart';
+import 'package:flit/domain/models/flit_session.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 /// The session header's git chip.
 const Key flitGitChipKey = Key('flit_git_chip');
+
+/// The Changes screen's "Remove worktree" button, and its confirm button.
+const Key flitRemoveWorktreeKey = Key('flit_remove_worktree');
+const Key flitRemoveWorktreeConfirmKey = Key('flit_remove_worktree_confirm');
 
 /// Width from which the Changes screen shows the list and a diff side by
 /// side.
@@ -95,6 +102,7 @@ class _FlitChangesScreenState extends ConsumerState<FlitChangesScreen> {
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(flitGitStatusProvider(widget.sessionId));
+    final session = ref.watch(flitSessionProvider(widget.sessionId)).value;
     final wide = MediaQuery.sizeOf(context).width >= flitChangesWideWidth;
     return Scaffold(
       appBar: AppBar(
@@ -109,10 +117,28 @@ class _FlitChangesScreenState extends ConsumerState<FlitChangesScreen> {
             ),
             icon: const Icon(Icons.refresh),
           ),
+          if (session != null &&
+              session.hasWorktree &&
+              !session.worktreeRemoved)
+            IconButton(
+              key: flitRemoveWorktreeKey,
+              tooltip: 'Remove worktree',
+              onPressed: () => unawaited(_removeWorktree(session)),
+              icon: const Icon(Icons.folder_delete_outlined),
+            ),
         ],
       ),
       body: SafeArea(
         child: switch (async) {
+          AsyncValue(:final value?)
+              when !value.isRepo && (session?.worktreeRemoved ?? false) =>
+            Center(
+              child: Text(
+                "This session's worktree was removed. Its commits are on "
+                'branch ${session?.worktreeBranch} if it had any of its own.',
+                textAlign: TextAlign.center,
+              ),
+            ),
           AsyncValue(:final value?) when !value.isRepo => const Center(
             child: Text("This session's directory isn't in a git repository."),
           ),
@@ -124,6 +150,55 @@ class _FlitChangesScreenState extends ConsumerState<FlitChangesScreen> {
         },
       ),
     );
+  }
+
+  Future<void> _removeWorktree(FlitSession session) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove the worktree?'),
+        content: Text(
+          'Deletes ${session.worktreePath}. No history is lost: the branch '
+          '${session.worktreeBranch} stays if it has commits found nowhere '
+          'else. flit refuses while there are uncommitted changes. The '
+          "session can't run turns afterwards.",
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            key: flitRemoveWorktreeConfirmKey,
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    final repository = ref.read(flitRepositoryProvider);
+    if (ok != true || repository == null) {
+      return;
+    }
+    String message;
+    try {
+      final r = await repository.removeWorktree(widget.sessionId);
+      message = r.branchKept
+          ? 'Worktree removed. Branch ${r.branch} keeps '
+                '${r.commits} ${r.commits == 1 ? 'commit' : 'commits'}.'
+          : 'Worktree and branch ${r.branch} removed; nothing was only there.';
+      ref.invalidate(flitSessionProvider(widget.sessionId));
+      await ref
+          .read(flitGitStatusProvider(widget.sessionId).notifier)
+          .refresh();
+    } on GatewayException catch (error) {
+      message = 'Could not remove it: ${error.message}';
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    }
   }
 
   Widget _body(FlitGitStatus status, {required bool wide}) {

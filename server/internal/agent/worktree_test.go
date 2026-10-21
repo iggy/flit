@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -227,27 +228,71 @@ func TestArchivedWorktreeCleanup(t *testing.T) {
 		evs := events(t, h, s.ID)
 		return evs[len(evs)-1]
 	}
-	if _, err := os.Stat(clean.WorktreePath); !os.IsNotExist(err) {
-		t.Errorf("clean worktree still there: %v", err)
+	gone := func(s store.Session) bool {
+		_, err := os.Stat(s.WorktreePath)
+		return os.IsNotExist(err)
 	}
-	if last(clean).GetWorktreeRemoved() == nil {
-		t.Errorf("clean: %v", last(clean))
+	hasBranch := func(s store.Session) bool {
+		return runGit(t, repo, "branch", "--list", s.WorktreeBranch) != ""
 	}
-	if out := runGit(t, repo, "branch", "--list", clean.WorktreeBranch); out != "" {
-		t.Errorf("clean branch still there: %q", out)
+
+	// Nothing of its own: worktree and branch go.
+	if r := last(clean).GetWorktreeRemoved(); r == nil || r.BranchKept || !gone(clean) || hasBranch(clean) {
+		t.Errorf("clean: %v, gone %v, branch %v", last(clean), gone(clean), hasBranch(clean))
 	}
-	for _, s := range []store.Session{dirty, committed} {
-		if _, err := os.Stat(s.WorktreePath); err != nil {
-			t.Errorf("%s removed: %v", s.WorkingDir, err)
-		}
-		if k := last(s).GetWorktreeKept(); k == nil || k.Reason == "" {
-			t.Errorf("kept: %v", last(s))
-		}
+	// A commit: the worktree goes, the branch keeps the history.
+	if r := last(committed).GetWorktreeRemoved(); r == nil || !r.BranchKept || r.Commits != 1 || !gone(committed) || !hasBranch(committed) {
+		t.Errorf("committed: %v, gone %v, branch %v", last(committed), gone(committed), hasBranch(committed))
 	}
-	if !strings.Contains(last(committed).GetWorktreeKept().GetReason(), "pushed") {
-		t.Errorf("committed reason: %v", last(committed))
+	if log := runGit(t, repo, "log", "--format=%s", committed.WorktreeBranch); !strings.Contains(log, "done") {
+		t.Errorf("history lost: %q", log)
 	}
-	if _, err := os.Stat(keep.WorktreePath); err != nil {
-		t.Errorf("newest run's worktree removed: %v", err)
+	// Uncommitted work: everything stays, and the log says why.
+	if k := last(dirty).GetWorktreeKept(); k == nil || !strings.Contains(k.Reason, "uncommitted") || gone(dirty) {
+		t.Errorf("dirty: %v", last(dirty))
+	}
+	if gone(keep) {
+		t.Error("newest run's worktree removed")
+	}
+	if got, _ := h.st.GetSession(ctx, committed.ID); !got.WorktreeRemoved {
+		t.Error("worktree_removed not stored")
+	}
+}
+
+func TestRemoveWorktree(t *testing.T) {
+	repo := gitRepo(t)
+	h, p := worktreeHarness(t, repo)
+	ctx := context.Background()
+	s, err := h.m.Create(ctx, CreateOptions{ProjectID: p.ID})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	writeFile(t, s.WorkingDir, "wip.txt", "w\n")
+	if _, err := h.m.RemoveWorktree(ctx, s.ID); !errors.Is(err, ErrWorktreeDirty) {
+		t.Fatalf("dirty: %v", err)
+	}
+	runGit(t, s.WorkingDir, "add", "wip.txt")
+	runGit(t, s.WorkingDir, "commit", "-q", "-m", "wip")
+	r, err := h.m.RemoveWorktree(ctx, s.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !r.BranchKept || r.Commits != 1 || !r.Session.WorktreeRemoved {
+		t.Fatalf("removal = %+v", r)
+	}
+	if _, err := h.m.RemoveWorktree(ctx, s.ID); !errors.Is(err, ErrWorktreeGone) {
+		t.Errorf("again: %v", err)
+	}
+	if _, err := h.m.SendMessage(ctx, s.ID, "hi", "test"); !errors.Is(err, ErrWorktreeGone) {
+		t.Errorf("send after removal: %v", err)
+	}
+
+	plain, err := h.m.Create(ctx, CreateOptions{WorkingDir: t.TempDir()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := h.m.RemoveWorktree(ctx, plain.ID); !errors.Is(err, ErrNoWorktree) {
+		t.Errorf("no worktree: %v", err)
 	}
 }

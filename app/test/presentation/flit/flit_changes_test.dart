@@ -48,6 +48,18 @@ final class _Repo extends Fake implements FlitRepository {
     ],
   );
   bool worktree = false;
+  bool removed = false;
+
+  @override
+  Future<FlitWorktreeRemoval> removeWorktree(String sessionId) async {
+    removed = true;
+    return const FlitWorktreeRemoval(
+      branch: 'flit/abcd1234',
+      branchKept: true,
+      commits: 2,
+    );
+  }
+
   int statusCalls = 0;
   final List<String> diffPaths = <String>[];
 
@@ -63,6 +75,7 @@ final class _Repo extends Fake implements FlitRepository {
     sourceDir: worktree ? '/src/app' : '',
     worktreePath: worktree ? '/data/worktrees/s1' : '',
     worktreeBranch: worktree ? 'flit/abcd1234' : '',
+    worktreeRemoved: removed,
   );
 
   @override
@@ -180,6 +193,32 @@ void main() {
       find.byTooltip('Own git worktree on flit/abcd1234, from /src/app'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('Changes removes the worktree, keeping the branch', (
+    tester,
+  ) async {
+    await _setSize(tester, const Size(400, 800));
+    final repo = _Repo()..worktree = true;
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: _container(repo),
+        child: const MaterialApp(home: FlitChangesScreen(sessionId: 's1')),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(flitRemoveWorktreeKey));
+    await tester.pumpAndSettle();
+    expect(find.text('Remove the worktree?'), findsOneWidget);
+    await tester.tap(find.byKey(flitRemoveWorktreeConfirmKey));
+    await tester.pumpAndSettle();
+    expect(repo.removed, isTrue);
+    expect(
+      find.text('Worktree removed. Branch flit/abcd1234 keeps 2 commits.'),
+      findsOneWidget,
+    );
+    // Once removed, the button goes.
+    expect(find.byKey(flitRemoveWorktreeKey), findsNothing);
   });
 
   testWidgets('no chip outside a repository', (tester) async {

@@ -92,40 +92,90 @@ func (m *Manager) addWorktree(ctx context.Context, info *store.Session) *flitv1.
 	return &flitv1.Event{Payload: &flitv1.Event_WorktreeCreated{WorktreeCreated: created}}
 }
 
-// removeWorktree deletes session id's worktree and branch if nothing in it
-// would be lost: no uncommitted changes and no commits that aren't on a
-// remote. Otherwise it leaves it and logs why (WorktreeKept). Sessions
-// without a worktree, or whose worktree is already gone, are left alone.
-func (m *Manager) removeWorktree(ctx context.Context, id string) error {
+// WorktreeRemoval is what RemoveWorktree did.
+type WorktreeRemoval struct {
+	Session store.Session
+	// BranchKept says the branch stayed because it holds Commits commits
+	// that no other ref has.
+	BranchKept bool
+	Commits    int
+}
+
+// RemoveWorktree deletes session id's worktree without losing history:
+// never while it has uncommitted changes (ErrWorktreeDirty), and its branch
+// only when every commit on it is also on another branch, a tag or a
+// remote. Afterwards the session can't run turns.
+func (m *Manager) RemoveWorktree(ctx context.Context, id string) (WorktreeRemoval, error) {
+	s, err := m.session(ctx, id)
+	if err != nil {
+		return WorktreeRemoval{}, err
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	info := s.info
+	switch {
+	case info.WorktreePath == "":
+		return WorktreeRemoval{}, ErrNoWorktree
+	case info.WorktreeRemoved:
+		return WorktreeRemoval{}, ErrWorktreeGone
+	case info.State == flitv1.TaskState_TASK_STATE_WORKING || info.State == flitv1.TaskState_TASK_STATE_WAITING:
+		return WorktreeRemoval{}, ErrBusy
+	}
+	r := WorktreeRemoval{}
+	if _, err := os.Stat(info.WorktreePath); err == nil {
+		dirty, err := gitx.Uncommitted(ctx, info.WorktreePath)
+		if err != nil {
+			return WorktreeRemoval{}, err
+		}
+		if dirty {
+			return WorktreeRemoval{}, ErrWorktreeDirty
+		}
+		if r.Commits, err = gitx.OnlyOnBranch(ctx, info.WorktreePath, info.WorktreeBranch, info.BaseCommit); err != nil {
+			return WorktreeRemoval{}, err
+		}
+		r.BranchKept = r.Commits > 0
+		if err := gitx.RemoveWorktree(ctx, info.WorktreePath, info.WorktreeBranch, !r.BranchKept); err != nil {
+			return WorktreeRemoval{}, err
+		}
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return WorktreeRemoval{}, err
+	} else {
+		// Deleted by hand: record it, and leave the branch alone.
+		r.BranchKept = true
+	}
+	if _, err := s.appendLocked(&flitv1.Event{Payload: &flitv1.Event_WorktreeRemoved{WorktreeRemoved: &flitv1.WorktreeRemoved{
+		Path: info.WorktreePath, Branch: info.WorktreeBranch, BranchKept: r.BranchKept, Commits: int32(r.Commits),
+	}}}); err != nil {
+		return WorktreeRemoval{}, err
+	}
+	r.Session = s.info
+	return r, nil
+}
+
+// cleanUpWorktree is RemoveWorktree for an archived session: a worktree
+// that can't go is left, and the log says why (WorktreeKept), once.
+func (m *Manager) cleanUpWorktree(ctx context.Context, id string) error {
+	_, err := m.RemoveWorktree(ctx, id)
+	switch {
+	case err == nil, errors.Is(err, ErrNoWorktree), errors.Is(err, ErrWorktreeGone):
+		return nil
+	case errors.Is(err, ErrWorktreeDirty):
+		return m.keptWorktree(ctx, id, "it has uncommitted changes")
+	case errors.Is(err, ErrBusy):
+		return m.keptWorktree(ctx, id, "a turn is running")
+	default:
+		return m.keptWorktree(ctx, id, fmt.Sprintf("removing it failed: %v", err))
+	}
+}
+
+func (m *Manager) keptWorktree(ctx context.Context, id, reason string) error {
 	s, err := m.session(ctx, id)
 	if err != nil {
 		return err
 	}
 	info := s.snapshot()
-	if info.WorktreePath == "" {
-		return nil
-	}
-	if _, err := os.Stat(info.WorktreePath); errors.Is(err, os.ErrNotExist) {
-		return nil
-	}
-	kept := func(reason string) error {
-		_, err := s.append(&flitv1.Event{Payload: &flitv1.Event_WorktreeKept{WorktreeKept: &flitv1.WorktreeKept{
-			Path: info.WorktreePath, Branch: info.WorktreeBranch, Reason: reason,
-		}}})
-		return err
-	}
-	why, err := gitx.WorktreeDirty(ctx, info.WorktreePath, info.BaseCommit)
-	if err != nil {
-		return kept(fmt.Sprintf("checking it failed: %v", err))
-	}
-	if why != "" {
-		return kept(why)
-	}
-	if err := gitx.RemoveWorktree(ctx, info.WorktreePath, info.WorktreeBranch); err != nil {
-		return kept(fmt.Sprintf("removing it failed: %v", err))
-	}
-	_, err = s.append(&flitv1.Event{Payload: &flitv1.Event_WorktreeRemoved{WorktreeRemoved: &flitv1.WorktreeRemoved{
-		Path: info.WorktreePath, Branch: info.WorktreeBranch,
+	_, err = s.append(&flitv1.Event{Payload: &flitv1.Event_WorktreeKept{WorktreeKept: &flitv1.WorktreeKept{
+		Path: info.WorktreePath, Branch: info.WorktreeBranch, Reason: reason,
 	}}})
 	return err
 }

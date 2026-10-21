@@ -329,6 +329,7 @@ const Session$json = {
     {'1': 'source_dir', '3': 22, '4': 1, '5': 9, '10': 'sourceDir'},
     {'1': 'worktree_path', '3': 23, '4': 1, '5': 9, '10': 'worktreePath'},
     {'1': 'worktree_branch', '3': 24, '4': 1, '5': 9, '10': 'worktreeBranch'},
+    {'1': 'worktree_removed', '3': 25, '4': 1, '5': 8, '10': 'worktreeRemoved'},
   ],
 };
 
@@ -348,7 +349,7 @@ final $typed_data.Uint8List sessionDescriptor = $convert.base64Decode(
     '1taXQSGQoIY3Jvbl9qb2IYFCABKAlSB2Nyb25Kb2ISGgoIYXJjaGl2ZWQYFSABKAhSCGFyY2hp'
     'dmVkEh0KCnNvdXJjZV9kaXIYFiABKAlSCXNvdXJjZURpchIjCg13b3JrdHJlZV9wYXRoGBcgAS'
     'gJUgx3b3JrdHJlZVBhdGgSJwoPd29ya3RyZWVfYnJhbmNoGBggASgJUg53b3JrdHJlZUJyYW5j'
-    'aA==');
+    'aBIpChB3b3JrdHJlZV9yZW1vdmVkGBkgASgIUg93b3JrdHJlZVJlbW92ZWQ=');
 
 @$core.Deprecated('Use createSessionRequestDescriptor instead')
 const CreateSessionRequest$json = {
@@ -2592,13 +2593,16 @@ const WorktreeRemoved$json = {
   '2': [
     {'1': 'path', '3': 1, '4': 1, '5': 9, '10': 'path'},
     {'1': 'branch', '3': 2, '4': 1, '5': 9, '10': 'branch'},
+    {'1': 'branch_kept', '3': 3, '4': 1, '5': 8, '10': 'branchKept'},
+    {'1': 'commits', '3': 4, '4': 1, '5': 5, '10': 'commits'},
   ],
 };
 
 /// Descriptor for `WorktreeRemoved`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List worktreeRemovedDescriptor = $convert.base64Decode(
     'Cg9Xb3JrdHJlZVJlbW92ZWQSEgoEcGF0aBgBIAEoCVIEcGF0aBIWCgZicmFuY2gYAiABKAlSBm'
-    'JyYW5jaA==');
+    'JyYW5jaBIfCgticmFuY2hfa2VwdBgDIAEoCFIKYnJhbmNoS2VwdBIYCgdjb21taXRzGAQgASgF'
+    'Ugdjb21taXRz');
 
 @$core.Deprecated('Use worktreeKeptDescriptor instead')
 const WorktreeKept$json = {
@@ -2614,6 +2618,41 @@ const WorktreeKept$json = {
 final $typed_data.Uint8List worktreeKeptDescriptor = $convert.base64Decode(
     'CgxXb3JrdHJlZUtlcHQSEgoEcGF0aBgBIAEoCVIEcGF0aBIWCgZicmFuY2gYAiABKAlSBmJyYW'
     '5jaBIWCgZyZWFzb24YAyABKAlSBnJlYXNvbg==');
+
+@$core.Deprecated('Use removeWorktreeRequestDescriptor instead')
+const RemoveWorktreeRequest$json = {
+  '1': 'RemoveWorktreeRequest',
+  '2': [
+    {'1': 'session_id', '3': 1, '4': 1, '5': 9, '10': 'sessionId'},
+  ],
+};
+
+/// Descriptor for `RemoveWorktreeRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List removeWorktreeRequestDescriptor = $convert.base64Decode(
+    'ChVSZW1vdmVXb3JrdHJlZVJlcXVlc3QSHQoKc2Vzc2lvbl9pZBgBIAEoCVIJc2Vzc2lvbklk');
+
+@$core.Deprecated('Use removeWorktreeResponseDescriptor instead')
+const RemoveWorktreeResponse$json = {
+  '1': 'RemoveWorktreeResponse',
+  '2': [
+    {
+      '1': 'session',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.Session',
+      '10': 'session'
+    },
+    {'1': 'branch_kept', '3': 2, '4': 1, '5': 8, '10': 'branchKept'},
+    {'1': 'commits', '3': 3, '4': 1, '5': 5, '10': 'commits'},
+  ],
+};
+
+/// Descriptor for `RemoveWorktreeResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List removeWorktreeResponseDescriptor = $convert.base64Decode(
+    'ChZSZW1vdmVXb3JrdHJlZVJlc3BvbnNlEioKB3Nlc3Npb24YASABKAsyEC5mbGl0LnYxLlNlc3'
+    'Npb25SB3Nlc3Npb24SHwoLYnJhbmNoX2tlcHQYAiABKAhSCmJyYW5jaEtlcHQSGAoHY29tbWl0'
+    'cxgDIAEoBVIHY29tbWl0cw==');
 
 const $core.Map<$core.String, $core.dynamic> SessionServiceBase$json = {
   '1': 'SessionService',
@@ -2742,6 +2781,11 @@ const $core.Map<$core.String, $core.dynamic> SessionServiceBase$json = {
       '3': '.flit.v1.GitDiffResponse',
       '4': {'34': 1},
     },
+    {
+      '1': 'RemoveWorktree',
+      '2': '.flit.v1.RemoveWorktreeRequest',
+      '3': '.flit.v1.RemoveWorktreeResponse'
+    },
   ],
 };
 
@@ -2847,6 +2891,8 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.flit.v1.GitFileChange': GitFileChange$json,
   '.flit.v1.GitDiffRequest': GitDiffRequest$json,
   '.flit.v1.GitDiffResponse': GitDiffResponse$json,
+  '.flit.v1.RemoveWorktreeRequest': RemoveWorktreeRequest$json,
+  '.flit.v1.RemoveWorktreeResponse': RemoveWorktreeResponse$json,
 };
 
 /// Descriptor for `SessionService`. Decode as a `google.protobuf.ServiceDescriptorProto`.
@@ -2884,4 +2930,6 @@ final $typed_data.Uint8List sessionServiceDescriptor = $convert.base64Decode(
     'Y2gSHC5mbGl0LnYxLlN3aXRjaEJyYW5jaFJlcXVlc3QaHS5mbGl0LnYxLlN3aXRjaEJyYW5jaF'
     'Jlc3BvbnNlEkcKCUdpdFN0YXR1cxIZLmZsaXQudjEuR2l0U3RhdHVzUmVxdWVzdBoaLmZsaXQu'
     'djEuR2l0U3RhdHVzUmVzcG9uc2UiA5ACARJBCgdHaXREaWZmEhcuZmxpdC52MS5HaXREaWZmUm'
-    'VxdWVzdBoYLmZsaXQudjEuR2l0RGlmZlJlc3BvbnNlIgOQAgE=');
+    'VxdWVzdBoYLmZsaXQudjEuR2l0RGlmZlJlc3BvbnNlIgOQAgESUQoOUmVtb3ZlV29ya3RyZWUS'
+    'Hi5mbGl0LnYxLlJlbW92ZVdvcmt0cmVlUmVxdWVzdBofLmZsaXQudjEuUmVtb3ZlV29ya3RyZW'
+    'VSZXNwb25zZQ==');

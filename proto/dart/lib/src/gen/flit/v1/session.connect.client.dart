@@ -508,4 +508,28 @@ extension type SessionServiceClient (connect.Transport _transport) {
       onTrailer: onTrailer,
     );
   }
+
+  /// RemoveWorktree deletes the session's own git worktree (see
+  /// ProjectService.SetProjectWorktrees) without losing history: its
+  /// branch stays when it has commits no other branch, tag or remote has.
+  /// FAILED_PRECONDITION if the worktree has uncommitted changes (commit or
+  /// discard them first), while a turn is running, or if the session has no
+  /// worktree. Afterwards the session can't run turns. The log gets
+  /// WorktreeRemoved.
+  Future<flitv1session.RemoveWorktreeResponse> removeWorktree(
+    flitv1session.RemoveWorktreeRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.SessionService.removeWorktree,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
 }

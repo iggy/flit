@@ -143,6 +143,15 @@ service SessionService {
   rpc GitDiff(GitDiffRequest) returns (GitDiffResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;
   }
+
+  // RemoveWorktree deletes the session's own git worktree (see
+  // ProjectService.SetProjectWorktrees) without losing history: its
+  // branch stays when it has commits no other branch, tag or remote has.
+  // FAILED_PRECONDITION if the worktree has uncommitted changes (commit or
+  // discard them first), while a turn is running, or if the session has no
+  // worktree. Afterwards the session can't run turns. The log gets
+  // WorktreeRemoved.
+  rpc RemoveWorktree(RemoveWorktreeRequest) returns (RemoveWorktreeResponse);
 }
 
 // TaskState is what a session's agent is doing.
@@ -206,6 +215,9 @@ message Session {
   string source_dir = 22;
   string worktree_path = 23;
   string worktree_branch = 24;
+  // The worktree was removed (RemoveWorktree, or archiving); its branch
+  // may still hold the session's commits.
+  bool worktree_removed = 25;
 }
 
 message CreateSessionRequest {
@@ -1237,10 +1249,14 @@ message WorktreeSkipped {
   string reason = 1;
 }
 
-// WorktreeRemoved says the session's worktree and branch were deleted.
+// WorktreeRemoved says the session's worktree directory was deleted. The
+// branch is deleted too unless it has commits nothing else has, so no
+// history is lost; branch_kept says it stayed, holding that many commits.
 message WorktreeRemoved {
   string path = 1;
   string branch = 2;
+  bool branch_kept = 3;
+  int32 commits = 4;
 }
 
 // WorktreeKept says the session's worktree was left in place when it
@@ -1250,4 +1266,15 @@ message WorktreeKept {
   string path = 1;
   string branch = 2;
   string reason = 3;
+}
+
+message RemoveWorktreeRequest {
+  string session_id = 1;
+}
+
+message RemoveWorktreeResponse {
+  Session session = 1;
+  // The branch stayed because it holds commits found nowhere else.
+  bool branch_kept = 2;
+  int32 commits = 3;
 }

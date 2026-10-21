@@ -553,11 +553,16 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
                       Padding(
                         padding: const EdgeInsets.only(right: 4),
                         child: Tooltip(
-                          message:
-                              'Own git worktree on ${session.worktreeBranch}, '
-                              'from ${session.sourceDir}',
+                          message: session.worktreeRemoved
+                              ? 'Worktree removed; its work is on branch '
+                                    '${session.worktreeBranch}'
+                              : 'Own git worktree on '
+                                    '${session.worktreeBranch}, '
+                                    'from ${session.sourceDir}',
                           child: Icon(
-                            Icons.account_tree_outlined,
+                            session.worktreeRemoved
+                                ? Icons.folder_off_outlined
+                                : Icons.account_tree_outlined,
                             size: 14,
                             color: Theme.of(context).colorScheme.outline,
                           ),
