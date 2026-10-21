@@ -245,10 +245,12 @@ type LSP struct {
 	// MaxLines caps the diagnostics shown per edit; the rest are counted.
 	// Default 10.
 	MaxLines int `yaml:"max_lines"`
-	// Servers add to or replace the built-in servers (gopls, rust-analyzer,
-	// basedpyright, pyright, typescript-language-server, clangd), matched
-	// by name. Each file goes to the first server, these before the
-	// built-ins, that handles its extension and whose command is on PATH.
+	// Servers add to or change the built-in servers (see
+	// BuiltinLSPServers). An entry named like a built-in one is merged
+	// into it: the fields it sets win (env and init_options key by key),
+	// the rest come from the built-in. Each file goes to the first server,
+	// these before the built-ins, that handles its extension and whose
+	// command is on PATH.
 	Servers []LSPServer `yaml:"servers"`
 }
 
@@ -278,6 +280,98 @@ func (l LSP) IsEnabled() bool { return l.Enabled == nil || *l.Enabled }
 
 // IsEnabled reports whether the server may be used.
 func (s LSPServer) IsEnabled() bool { return s.Enabled == nil || *s.Enabled }
+
+// BuiltinLSPServers are the servers used when their command is on PATH,
+// unless the config turns them off. For Python, basedpyright is tried
+// before pyright.
+func BuiltinLSPServers() []LSPServer {
+	python := map[string][]string{"python": {".py", ".pyi"}}
+	pyRoots := []string{"pyproject.toml", "pyrightconfig.json", "setup.py", "setup.cfg", "requirements.txt"}
+	return []LSPServer{
+		{Name: "gopls", Command: "gopls", Languages: map[string][]string{"go": {".go"}},
+			RootMarkers: []string{"go.mod", "go.work"}},
+		{Name: "rust-analyzer", Command: "rust-analyzer", Languages: map[string][]string{"rust": {".rs"}},
+			RootMarkers: []string{"Cargo.toml"}},
+		{Name: "basedpyright", Command: "basedpyright-langserver", Args: []string{"--stdio"}, Languages: python,
+			RootMarkers: pyRoots},
+		{Name: "pyright", Command: "pyright-langserver", Args: []string{"--stdio"}, Languages: python,
+			RootMarkers: pyRoots},
+		{Name: "typescript-language-server", Command: "typescript-language-server", Args: []string{"--stdio"},
+			Languages: map[string][]string{
+				"typescript":      {".ts", ".mts", ".cts"},
+				"typescriptreact": {".tsx"},
+				"javascript":      {".js", ".mjs", ".cjs"},
+				"javascriptreact": {".jsx"},
+			},
+			RootMarkers: []string{"tsconfig.json", "jsconfig.json", "package.json"}},
+		{Name: "clangd", Command: "clangd", Languages: map[string][]string{
+			"c":   {".c", ".h"},
+			"cpp": {".cc", ".cpp", ".cxx", ".hh", ".hpp", ".hxx"},
+		},
+			RootMarkers: []string{"compile_commands.json", "compile_flags.txt", ".clangd"}},
+	}
+}
+
+// Resolved returns the servers in the order files try them: the
+// configured ones, merged into the built-in of the same name if any, then
+// the built-ins nothing names. Servers turned off are left out.
+func (l LSP) Resolved() []LSPServer {
+	builtin := map[string]LSPServer{}
+	for _, b := range BuiltinLSPServers() {
+		builtin[b.Name] = b
+	}
+	var out []LSPServer
+	for _, s := range l.Servers {
+		if b, ok := builtin[s.Name]; ok {
+			s = s.over(b)
+			delete(builtin, s.Name)
+		}
+		if s.IsEnabled() {
+			out = append(out, s)
+		}
+	}
+	for _, b := range BuiltinLSPServers() {
+		if _, ok := builtin[b.Name]; ok {
+			out = append(out, b)
+		}
+	}
+	return out
+}
+
+// over returns s with the fields it leaves unset taken from base. A list
+// set to [] counts as set; env and init_options merge key by key.
+func (s LSPServer) over(base LSPServer) LSPServer {
+	if s.Command == "" {
+		s.Command = base.Command
+	}
+	if s.Args == nil {
+		s.Args = base.Args
+	}
+	if s.Languages == nil {
+		s.Languages = base.Languages
+	}
+	if s.RootMarkers == nil {
+		s.RootMarkers = base.RootMarkers
+	}
+	s.Env = mergeMaps(base.Env, s.Env)
+	s.InitOptions = mergeMaps(base.InitOptions, s.InitOptions)
+	return s
+}
+
+// mergeMaps returns base with over's keys set on top; nil if both are.
+func mergeMaps[V any](base, over map[string]V) map[string]V {
+	if base == nil && over == nil {
+		return nil
+	}
+	out := make(map[string]V, len(base)+len(over))
+	for k, v := range base {
+		out[k] = v
+	}
+	for k, v := range over {
+		out[k] = v
+	}
+	return out
+}
 
 // LSPSeverities are the accepted LSP.Severity values, most severe first.
 var LSPSeverities = []string{"error", "warning", "info", "hint"}
@@ -729,7 +823,14 @@ func (l LSP) validate() error {
 		return fmt.Errorf("lsp.severity %q: want one of %s", l.Severity, strings.Join(LSPSeverities, ", "))
 	}
 	seen := map[string]bool{}
+	builtin := map[string]LSPServer{}
+	for _, b := range BuiltinLSPServers() {
+		builtin[b.Name] = b
+	}
 	for i, s := range l.Servers {
+		if b, ok := builtin[s.Name]; ok {
+			s = s.over(b)
+		}
 		switch {
 		case s.Name == "":
 			return fmt.Errorf("lsp.servers[%d]: name is required", i)
@@ -889,8 +990,9 @@ lsp:
   severity: warning
   # Most diagnostics shown per edit; the rest are counted.
   max_lines: 10
-  # Add servers, or replace or turn off (enabled: false) built-in ones by
-  # name. These are tried before the built-ins.
+  # Add servers, or change built-in ones by naming them: what you set wins
+  # (env and init_options key by key), the rest is kept. enabled: false
+  # turns one off. These are tried before the built-ins.
   servers: []
   #  - name: zls
   #    command: zls
@@ -898,6 +1000,8 @@ lsp:
   #    languages: {zig: [.zig]}
   #    root_markers: [build.zig]
   #    init_options: {}
+  #  - name: gopls
+  #    init_options: {staticcheck: true}
   #  - name: clangd
   #    enabled: false
 

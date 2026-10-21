@@ -296,3 +296,39 @@ func TestLSPSettings(t *testing.T) {
 		}
 	}
 }
+
+func TestLSPServerMergesIntoBuiltin(t *testing.T) {
+	cfg, err := Parse([]byte("lsp:\n  servers:\n" +
+		"    - name: gopls\n      init_options: {staticcheck: true}\n      env: {GOFLAGS: -mod=mod}\n" +
+		"    - name: pyright\n      args: []\n" +
+		"    - {name: clangd, enabled: false}\n" +
+		"    - {name: zls, command: zls, languages: {zig: [.zig]}}\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := map[string]LSPServer{}
+	var order []string
+	for _, s := range cfg.LSP.Resolved() {
+		got[s.Name] = s
+		order = append(order, s.Name)
+	}
+	if want := "gopls pyright zls rust-analyzer basedpyright typescript-language-server"; strings.Join(order, " ") != want {
+		t.Fatalf("order %v, want %s", order, want)
+	}
+	g := got["gopls"]
+	if g.Command != "gopls" || len(g.Languages["go"]) != 1 || g.RootMarkers[0] != "go.mod" ||
+		g.InitOptions["staticcheck"] != true || g.Env["GOFLAGS"] != "-mod=mod" {
+		t.Fatalf("gopls = %+v", g)
+	}
+	if p := got["pyright"]; p.Command != "pyright-langserver" || p.Args == nil || len(p.Args) != 0 {
+		t.Fatalf("pyright = %+v", p)
+	}
+	// Builtins keep their own values when nothing names them.
+	if r := got["rust-analyzer"]; r.Command != "rust-analyzer" {
+		t.Fatalf("rust-analyzer = %+v", r)
+	}
+	// Merging can't make a built-in invalid; a bad extension still fails.
+	if _, err := Parse([]byte("lsp: {servers: [{name: gopls, languages: {go: [go]}}]}")); err == nil {
+		t.Fatal("bad extension in a built-in override: no error")
+	}
+}

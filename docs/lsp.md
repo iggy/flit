@@ -68,11 +68,10 @@ lsp:
       languages: {zig: [.zig, .zon]}   # LSP language id -> extensions
       root_markers: [build.zig]
       init_options: {}                 # sent as initializationOptions
-    # Replace a built-in one by name (the whole entry is replaced).
+    # Change a built-in one by naming it: what you set wins (env and
+    # init_options key by key, an explicit [] clears a list), the rest is
+    # kept from the built-in.
     - name: gopls
-      command: gopls
-      languages: {go: [.go]}
-      root_markers: [go.work, go.mod]
       init_options: {staticcheck: true}
     # Turn a built-in one off.
     - name: clangd
