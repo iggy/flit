@@ -161,6 +161,18 @@ abstract interface class FlitRepository {
     required bool enabled,
   });
 
+  /// Whether new sessions in the project get their own git worktree; null
+  /// goes back to the server's default.
+  Future<FlitProject> setProjectWorktrees(
+    String projectId, {
+    required bool? enabled,
+  });
+
+  /// Remove the session's own git worktree without losing history: its
+  /// branch stays if it has commits found nowhere else. Fails while the
+  /// worktree has uncommitted changes.
+  Future<FlitWorktreeRemoval> removeWorktree(String sessionId);
+
   /// Turn an MCP server on or off for the session.
   Future<FlitSession> setMcpServer(
     String sessionId,

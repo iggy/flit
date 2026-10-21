@@ -20,6 +20,12 @@ service ProjectService {
   // SetProjectExport includes or excludes a project's sessions from
   // "flit export". Projects are included by default.
   rpc SetProjectExport(SetProjectExportRequest) returns (SetProjectExportResponse);
+
+  // SetProjectWorktrees sets whether new sessions in the project get their
+  // own git worktree and branch (when its directory is in a repository).
+  // Unset goes back to the config's git.worktrees.default. Existing
+  // sessions keep what they have.
+  rpc SetProjectWorktrees(SetProjectWorktreesRequest) returns (SetProjectWorktreesResponse);
 }
 
 message Project {
@@ -32,6 +38,10 @@ message Project {
   google.protobuf.Timestamp create_time = 6;
   // Whether "flit export" includes this project's sessions.
   bool export_enabled = 7;
+  // The project's choice of per-session worktrees; unset means the
+  // config's default. worktrees_enabled is the result.
+  optional bool worktrees = 8;
+  bool worktrees_enabled = 9;
 }
 
 message ListProjectsRequest {}
@@ -58,5 +68,14 @@ message SetProjectExportRequest {
 }
 
 message SetProjectExportResponse {
+  Project project = 1;
+}
+
+message SetProjectWorktreesRequest {
+  string project_id = 1;
+  optional bool enabled = 2;
+}
+
+message SetProjectWorktreesResponse {
   Project project = 1;
 }

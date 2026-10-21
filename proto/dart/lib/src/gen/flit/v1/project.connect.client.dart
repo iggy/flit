@@ -64,4 +64,25 @@ extension type ProjectServiceClient (connect.Transport _transport) {
       onTrailer: onTrailer,
     );
   }
+
+  /// SetProjectWorktrees sets whether new sessions in the project get their
+  /// own git worktree and branch (when its directory is in a repository).
+  /// Unset goes back to the config's git.worktrees.default. Existing
+  /// sessions keep what they have.
+  Future<flitv1project.SetProjectWorktreesResponse> setProjectWorktrees(
+    flitv1project.SetProjectWorktreesRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.ProjectService.setProjectWorktrees,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
 }

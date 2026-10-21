@@ -28,6 +28,8 @@ class Project extends $pb.GeneratedMessage {
     $core.int? sessionCount,
     $0.Timestamp? createTime,
     $core.bool? exportEnabled,
+    $core.bool? worktrees,
+    $core.bool? worktreesEnabled,
   }) {
     final result = Project._();
     if (id != null) result.id = id;
@@ -37,6 +39,8 @@ class Project extends $pb.GeneratedMessage {
     if (sessionCount != null) result.sessionCount = sessionCount;
     if (createTime != null) result.createTime = createTime;
     if (exportEnabled != null) result.exportEnabled = exportEnabled;
+    if (worktrees != null) result.worktrees = worktrees;
+    if (worktreesEnabled != null) result.worktreesEnabled = worktreesEnabled;
     return result;
   }
 
@@ -61,6 +65,8 @@ class Project extends $pb.GeneratedMessage {
     ..aOM<$0.Timestamp>(6, _omitFieldNames ? '' : 'createTime',
         subBuilder: $0.Timestamp.$_createMessage)
     ..aOB(7, _omitFieldNames ? '' : 'exportEnabled')
+    ..aOB(8, _omitFieldNames ? '' : 'worktrees')
+    ..aOB(9, _omitFieldNames ? '' : 'worktreesEnabled')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -149,6 +155,26 @@ class Project extends $pb.GeneratedMessage {
   $core.bool hasExportEnabled() => $_has(6);
   @$pb.TagNumber(7)
   void clearExportEnabled() => $_clearField(7);
+
+  /// The project's choice of per-session worktrees; unset means the
+  /// config's default. worktrees_enabled is the result.
+  @$pb.TagNumber(8)
+  $core.bool get worktrees => $_getBF(7);
+  @$pb.TagNumber(8)
+  set worktrees($core.bool value) => $_setBool(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasWorktrees() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearWorktrees() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $core.bool get worktreesEnabled => $_getBF(8);
+  @$pb.TagNumber(9)
+  set worktreesEnabled($core.bool value) => $_setBool(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasWorktreesEnabled() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearWorktreesEnabled() => $_clearField(9);
 }
 
 class ListProjectsRequest extends $pb.GeneratedMessage {
@@ -515,6 +541,146 @@ class SetProjectExportResponse extends $pb.GeneratedMessage {
   Project ensureProject() => $_ensure(0);
 }
 
+class SetProjectWorktreesRequest extends $pb.GeneratedMessage {
+  factory SetProjectWorktreesRequest({
+    $core.String? projectId,
+    $core.bool? enabled,
+  }) {
+    final result = SetProjectWorktreesRequest._();
+    if (projectId != null) result.projectId = projectId;
+    if (enabled != null) result.enabled = enabled;
+    return result;
+  }
+
+  SetProjectWorktreesRequest._();
+
+  factory SetProjectWorktreesRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetProjectWorktreesRequest()..mergeFromBuffer(data, registry);
+  factory SetProjectWorktreesRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetProjectWorktreesRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SetProjectWorktreesRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: SetProjectWorktreesRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'projectId')
+    ..aOB(2, _omitFieldNames ? '' : 'enabled')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetProjectWorktreesRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetProjectWorktreesRequest copyWith(
+          void Function(SetProjectWorktreesRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as SetProjectWorktreesRequest))
+          as SetProjectWorktreesRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use SetProjectWorktreesRequest() / SetProjectWorktreesRequest.new instead')
+  static SetProjectWorktreesRequest create() => SetProjectWorktreesRequest._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      SetProjectWorktreesRequest._();
+  @$core.override
+  SetProjectWorktreesRequest createEmptyInstance() =>
+      SetProjectWorktreesRequest._();
+  @$core.pragma('dart2js:noInline')
+  static SetProjectWorktreesRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SetProjectWorktreesRequest>(
+          SetProjectWorktreesRequest.$_createMessage);
+  static SetProjectWorktreesRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get projectId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set projectId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasProjectId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearProjectId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.bool get enabled => $_getBF(1);
+  @$pb.TagNumber(2)
+  set enabled($core.bool value) => $_setBool(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasEnabled() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearEnabled() => $_clearField(2);
+}
+
+class SetProjectWorktreesResponse extends $pb.GeneratedMessage {
+  factory SetProjectWorktreesResponse({
+    Project? project,
+  }) {
+    final result = SetProjectWorktreesResponse._();
+    if (project != null) result.project = project;
+    return result;
+  }
+
+  SetProjectWorktreesResponse._();
+
+  factory SetProjectWorktreesResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetProjectWorktreesResponse()..mergeFromBuffer(data, registry);
+  factory SetProjectWorktreesResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetProjectWorktreesResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SetProjectWorktreesResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: SetProjectWorktreesResponse.$_createMessage)
+    ..aOM<Project>(1, _omitFieldNames ? '' : 'project',
+        subBuilder: Project.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetProjectWorktreesResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetProjectWorktreesResponse copyWith(
+          void Function(SetProjectWorktreesResponse) updates) =>
+      super.copyWith(
+              (message) => updates(message as SetProjectWorktreesResponse))
+          as SetProjectWorktreesResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use SetProjectWorktreesResponse() / SetProjectWorktreesResponse.new instead')
+  static SetProjectWorktreesResponse create() =>
+      SetProjectWorktreesResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      SetProjectWorktreesResponse._();
+  @$core.override
+  SetProjectWorktreesResponse createEmptyInstance() =>
+      SetProjectWorktreesResponse._();
+  @$core.pragma('dart2js:noInline')
+  static SetProjectWorktreesResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<SetProjectWorktreesResponse>(
+          SetProjectWorktreesResponse.$_createMessage);
+  static SetProjectWorktreesResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  Project get project => $_getN(0);
+  @$pb.TagNumber(1)
+  set project(Project value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasProject() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearProject() => $_clearField(1);
+  @$pb.TagNumber(1)
+  Project ensureProject() => $_ensure(0);
+}
+
 /// ProjectService manages projects. A project groups sessions and usually
 /// points at a directory on the server, which new sessions in it work in.
 /// Every team starts with a project called "Scratch" that has no directory.
@@ -540,6 +706,15 @@ class ProjectServiceApi {
           $pb.ClientContext? ctx, SetProjectExportRequest request) =>
       _client.invoke<SetProjectExportResponse>(ctx, 'ProjectService',
           'SetProjectExport', request, SetProjectExportResponse());
+
+  /// SetProjectWorktrees sets whether new sessions in the project get their
+  /// own git worktree and branch (when its directory is in a repository).
+  /// Unset goes back to the config's git.worktrees.default. Existing
+  /// sessions keep what they have.
+  $async.Future<SetProjectWorktreesResponse> setProjectWorktrees(
+          $pb.ClientContext? ctx, SetProjectWorktreesRequest request) =>
+      _client.invoke<SetProjectWorktreesResponse>(ctx, 'ProjectService',
+          'SetProjectWorktrees', request, SetProjectWorktreesResponse());
 }
 
 const $core.bool _omitFieldNames =

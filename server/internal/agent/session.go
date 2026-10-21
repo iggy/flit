@@ -152,6 +152,8 @@ func (s *session) appendLocked(ev *flitv1.Event) (*flitv1.Event, error) {
 		s.info.ContextLength = ev.GetModelChanged().ContextLength
 	case ev.GetCompactionDone() != nil && ev.GetCompactionDone().Error == "":
 		s.info.ContextTokens = ev.GetCompactionDone().TokensAfter
+	case ev.GetWorktreeRemoved() != nil:
+		s.info.WorktreeRemoved = true
 	case ev.GetBranchCreated() != nil:
 		s.tree.Add(ev)
 	case ev.GetBranchSwitched() != nil:

@@ -47,18 +47,35 @@ final class _Repo extends Fake implements FlitRepository {
       ),
     ],
   );
+  bool worktree = false;
+  bool removed = false;
+
+  @override
+  Future<FlitWorktreeRemoval> removeWorktree(String sessionId) async {
+    removed = true;
+    return const FlitWorktreeRemoval(
+      branch: 'flit/abcd1234',
+      branchKept: true,
+      commits: 2,
+    );
+  }
+
   int statusCalls = 0;
   final List<String> diffPaths = <String>[];
 
   @override
-  Future<FlitSession> getSession(String id) async => const FlitSession(
+  Future<FlitSession> getSession(String id) async => FlitSession(
     id: 's1',
     title: 'Session',
-    workingDir: '/src/app',
+    workingDir: worktree ? '/data/worktrees/s1' : '/src/app',
     provider: 'local',
     model: 'qwen',
     state: FlitTaskState.idle,
     lastSeq: 0,
+    sourceDir: worktree ? '/src/app' : '',
+    worktreePath: worktree ? '/data/worktrees/s1' : '',
+    worktreeBranch: worktree ? 'flit/abcd1234' : '',
+    worktreeRemoved: removed,
   );
 
   @override
@@ -159,6 +176,49 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 10));
     expect(repo.statusCalls, 3);
+  });
+
+  testWidgets('a session in its own worktree says so', (tester) async {
+    final repo = _Repo()..worktree = true;
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: _container(repo),
+        child: const MaterialApp(home: FlitChatScreen(sessionId: 's1')),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('/data/worktrees/s1'), findsOneWidget);
+    expect(
+      find.byTooltip('Own git worktree on flit/abcd1234, from /src/app'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('Changes removes the worktree, keeping the branch', (
+    tester,
+  ) async {
+    await _setSize(tester, const Size(400, 800));
+    final repo = _Repo()..worktree = true;
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: _container(repo),
+        child: const MaterialApp(home: FlitChangesScreen(sessionId: 's1')),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(flitRemoveWorktreeKey));
+    await tester.pumpAndSettle();
+    expect(find.text('Remove the worktree?'), findsOneWidget);
+    await tester.tap(find.byKey(flitRemoveWorktreeConfirmKey));
+    await tester.pumpAndSettle();
+    expect(repo.removed, isTrue);
+    expect(
+      find.text('Worktree removed. Branch flit/abcd1234 keeps 2 commits.'),
+      findsOneWidget,
+    );
+    // Once removed, the button goes.
+    expect(find.byKey(flitRemoveWorktreeKey), findsNothing);
   });
 
   testWidgets('no chip outside a repository', (tester) async {

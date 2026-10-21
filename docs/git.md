@@ -59,3 +59,78 @@ The Changes view says which one applies.
 `proto/flit/v1/session.proto`). Both work on the repository containing
 the session's working directory (the whole work tree, even when the
 session started in a subdirectory); paths are relative to its root.
+
+## Worktrees
+
+A project can give each new session its **own git worktree**, so the
+agent works on a branch of its own and your checkout is never switched or
+modified. It's off by default.
+
+- Turn it on for a project from the project menu in the app ("A git
+  worktree per session"), or with `ProjectService.SetProjectWorktrees`.
+  Projects that haven't chosen follow the config:
+
+  ```yaml
+  git:
+    worktrees:
+      default: false
+      copy_ignored: [node_modules, .venv, venv, target, build, dist, .dart_tool, .gradle, Pods, .next]
+  ```
+
+- When a session starts in such a project and its directory is in a git
+  repository with commits, flit runs `git worktree add` to create
+  `<data dir>/worktrees/<session id>` on a new branch `flit/<8 characters
+  of the session id>` (with `-2`, `-3`, ... if that name is taken),
+  starting at the commit your checkout's HEAD is on. Your uncommitted
+  changes stay in your checkout and aren't carried over.
+- The session works in the same place inside the worktree: a session
+  started in `repo/server` works in `<worktree>/server`. The session keeps
+  the directory it was started in as `source_dir` and the worktree as
+  `worktree_path` / `worktree_branch`. The app shows a worktree icon by the
+  working directory, with the branch and source in its tooltip.
+- The worktree's starting commit is the session's base commit, so the
+  Changes view shows exactly what the session did on its branch.
+- **Ignored directories** named in `copy_ignored` (dependencies, build
+  output; matched by name anywhere in the tree) are copied from your
+  checkout into the worktree, so builds and tests don't start from
+  nothing. flit uses a reflink copy (copy-on-write: `cp --reflink=always`
+  on Linux, `cp -c` on macOS) and falls back to a plain copy where the
+  filesystem can't reflink (e.g. ext4) or on Windows. Directories that
+  don't exist are skipped. A directory that is itself a symlink is
+  skipped, and symlinks inside are copied as symlinks, so nothing outside
+  the repository is read. `copy_ignored: []` copies nothing.
+- The session log starts with `WorktreeCreated`: the path, branch, base
+  commit and each copied directory with the method used (`reflink` or
+  `copy`). If no worktree could be made (not a git repository, no commits
+  yet, git failed), the log starts with `WorktreeSkipped` and the reason,
+  and the session works in its directory as before.
+- Sessions in projects without worktrees behave exactly as before.
+- flit never pushes the branch.
+
+### Cleanup, without losing history
+
+Removing a worktree deletes its directory, never history:
+
+- A worktree with **uncommitted changes** (modified or untracked files;
+  ignored ones don't count) is never removed. Commit or discard them first.
+- The session's **branch** is deleted only when every commit on it is
+  also on another branch, a tag or a remote, so deleting it loses nothing.
+  Otherwise the branch stays and keeps the commits: merge it, push it or
+  delete it yourself whenever you like (`git merge flit/abcd1234`,
+  `git branch -D flit/abcd1234`).
+- After its worktree is removed a session can't run turns (sending fails),
+  but its conversation stays readable. The log gets `WorktreeRemoved`,
+  saying whether the branch was kept and with how many commits.
+
+Ways to remove one:
+
+- In the app: **Remove worktree** on the session's Changes screen.
+- On the server machine: `flit worktree remove <session id>`.
+- From a client: `SessionService.RemoveWorktree`.
+- Automatically when a session is archived (today: old runs of a cron job,
+  see [cron.md](cron.md)). If it can't go (uncommitted changes, a turn
+  running), it stays and the session log gets `WorktreeKept` with the
+  reason; flit doesn't try again.
+
+Sessions can't be deleted yet; when they can, deleting one will remove its
+worktree by the same rules.

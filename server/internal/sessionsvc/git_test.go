@@ -114,6 +114,10 @@ func TestGitStatusNotARepo(t *testing.T) {
 	if st.Msg.IsRepo || len(st.Msg.Files) != 0 {
 		t.Fatalf("status = %v", st.Msg)
 	}
+	_, err = c.RemoveWorktree(ctx, connect.NewRequest(&flitv1.RemoveWorktreeRequest{SessionId: created.Msg.Session.Id}))
+	if connect.CodeOf(err) != connect.CodeFailedPrecondition {
+		t.Fatalf("RemoveWorktree without a worktree: %v", err)
+	}
 	if _, err := c.GitStatus(ctx, connect.NewRequest(&flitv1.GitStatusRequest{SessionId: "ses_nope"})); connect.CodeOf(err) != connect.CodeNotFound {
 		t.Fatalf("unknown session: %v", err)
 	}

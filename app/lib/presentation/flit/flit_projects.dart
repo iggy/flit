@@ -248,16 +248,24 @@ class FlitProjectExportToggle extends ConsumerWidget {
       return const SizedBox.shrink();
     }
     final p = project;
-    return PopupMenuButton<bool>(
+    return PopupMenuButton<_ProjectOption>(
       tooltip: 'Project options',
       icon: const Icon(Icons.more_vert),
-      onSelected: (enabled) async {
+      onSelected: (option) async {
         final repository = ref.read(flitRepositoryProvider);
         if (repository == null) {
           return;
         }
         try {
-          await repository.setProjectExport(p.id, enabled: enabled);
+          switch (option) {
+            case _ProjectOption.export:
+              await repository.setProjectExport(
+                p.id,
+                enabled: !p.exportEnabled,
+              );
+            case _ProjectOption.worktrees:
+              await repository.setProjectWorktrees(p.id, enabled: !p.worktrees);
+          }
           ref.invalidate(flitProjectsProvider);
         } on GatewayException catch (error) {
           if (context.mounted) {
@@ -267,13 +275,21 @@ class FlitProjectExportToggle extends ConsumerWidget {
           }
         }
       },
-      itemBuilder: (_) => <PopupMenuEntry<bool>>[
-        CheckedPopupMenuItem<bool>(
-          value: !p.exportEnabled,
+      itemBuilder: (_) => <PopupMenuEntry<_ProjectOption>>[
+        CheckedPopupMenuItem<_ProjectOption>(
+          value: _ProjectOption.export,
           checked: p.exportEnabled,
           child: const Text('Include in exports'),
         ),
+        if (p.directory.isNotEmpty)
+          CheckedPopupMenuItem<_ProjectOption>(
+            value: _ProjectOption.worktrees,
+            checked: p.worktrees,
+            child: const Text('A git worktree per session'),
+          ),
       ],
     );
   }
 }
+
+enum _ProjectOption { export, worktrees }

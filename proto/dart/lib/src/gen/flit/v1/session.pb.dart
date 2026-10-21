@@ -48,6 +48,10 @@ class Session extends $pb.GeneratedMessage {
     $core.String? baseCommit,
     $core.String? cronJob,
     $core.bool? archived,
+    $core.String? sourceDir,
+    $core.String? worktreePath,
+    $core.String? worktreeBranch,
+    $core.bool? worktreeRemoved,
   }) {
     final result = Session._();
     if (id != null) result.id = id;
@@ -71,6 +75,10 @@ class Session extends $pb.GeneratedMessage {
     if (baseCommit != null) result.baseCommit = baseCommit;
     if (cronJob != null) result.cronJob = cronJob;
     if (archived != null) result.archived = archived;
+    if (sourceDir != null) result.sourceDir = sourceDir;
+    if (worktreePath != null) result.worktreePath = worktreePath;
+    if (worktreeBranch != null) result.worktreeBranch = worktreeBranch;
+    if (worktreeRemoved != null) result.worktreeRemoved = worktreeRemoved;
     return result;
   }
 
@@ -111,6 +119,10 @@ class Session extends $pb.GeneratedMessage {
     ..aOS(19, _omitFieldNames ? '' : 'baseCommit')
     ..aOS(20, _omitFieldNames ? '' : 'cronJob')
     ..aOB(21, _omitFieldNames ? '' : 'archived')
+    ..aOS(22, _omitFieldNames ? '' : 'sourceDir')
+    ..aOS(23, _omitFieldNames ? '' : 'worktreePath')
+    ..aOS(24, _omitFieldNames ? '' : 'worktreeBranch')
+    ..aOB(25, _omitFieldNames ? '' : 'worktreeRemoved')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -336,6 +348,48 @@ class Session extends $pb.GeneratedMessage {
   $core.bool hasArchived() => $_has(20);
   @$pb.TagNumber(21)
   void clearArchived() => $_clearField(21);
+
+  /// With a per-session worktree (see ProjectService.SetProjectWorktrees):
+  /// the directory the session was asked to work in, the worktree's root
+  /// and its branch. working_dir is then the same place inside the
+  /// worktree. All empty without a worktree.
+  @$pb.TagNumber(22)
+  $core.String get sourceDir => $_getSZ(21);
+  @$pb.TagNumber(22)
+  set sourceDir($core.String value) => $_setString(21, value);
+  @$pb.TagNumber(22)
+  $core.bool hasSourceDir() => $_has(21);
+  @$pb.TagNumber(22)
+  void clearSourceDir() => $_clearField(22);
+
+  @$pb.TagNumber(23)
+  $core.String get worktreePath => $_getSZ(22);
+  @$pb.TagNumber(23)
+  set worktreePath($core.String value) => $_setString(22, value);
+  @$pb.TagNumber(23)
+  $core.bool hasWorktreePath() => $_has(22);
+  @$pb.TagNumber(23)
+  void clearWorktreePath() => $_clearField(23);
+
+  @$pb.TagNumber(24)
+  $core.String get worktreeBranch => $_getSZ(23);
+  @$pb.TagNumber(24)
+  set worktreeBranch($core.String value) => $_setString(23, value);
+  @$pb.TagNumber(24)
+  $core.bool hasWorktreeBranch() => $_has(23);
+  @$pb.TagNumber(24)
+  void clearWorktreeBranch() => $_clearField(24);
+
+  /// The worktree was removed (RemoveWorktree, or archiving); its branch
+  /// may still hold the session's commits.
+  @$pb.TagNumber(25)
+  $core.bool get worktreeRemoved => $_getBF(24);
+  @$pb.TagNumber(25)
+  set worktreeRemoved($core.bool value) => $_setBool(24, value);
+  @$pb.TagNumber(25)
+  $core.bool hasWorktreeRemoved() => $_has(24);
+  @$pb.TagNumber(25)
+  void clearWorktreeRemoved() => $_clearField(25);
 }
 
 class CreateSessionRequest extends $pb.GeneratedMessage {
@@ -3714,6 +3768,10 @@ enum Event_Payload {
   subagentStarted,
   subagentEvent,
   subagentDone,
+  worktreeCreated,
+  worktreeSkipped,
+  worktreeRemoved,
+  worktreeKept,
   notSet
 }
 
@@ -3761,6 +3819,10 @@ class Event extends $pb.GeneratedMessage {
     SubagentStarted? subagentStarted,
     SubagentEvent? subagentEvent,
     SubagentDone? subagentDone,
+    WorktreeCreated? worktreeCreated,
+    WorktreeSkipped? worktreeSkipped,
+    WorktreeRemoved? worktreeRemoved,
+    WorktreeKept? worktreeKept,
   }) {
     final result = Event._();
     if (sessionId != null) result.sessionId = sessionId;
@@ -3808,6 +3870,10 @@ class Event extends $pb.GeneratedMessage {
     if (subagentStarted != null) result.subagentStarted = subagentStarted;
     if (subagentEvent != null) result.subagentEvent = subagentEvent;
     if (subagentDone != null) result.subagentDone = subagentDone;
+    if (worktreeCreated != null) result.worktreeCreated = worktreeCreated;
+    if (worktreeSkipped != null) result.worktreeSkipped = worktreeSkipped;
+    if (worktreeRemoved != null) result.worktreeRemoved = worktreeRemoved;
+    if (worktreeKept != null) result.worktreeKept = worktreeKept;
     return result;
   }
 
@@ -3858,6 +3924,10 @@ class Event extends $pb.GeneratedMessage {
     44: Event_Payload.subagentStarted,
     45: Event_Payload.subagentEvent,
     46: Event_Payload.subagentDone,
+    47: Event_Payload.worktreeCreated,
+    48: Event_Payload.worktreeSkipped,
+    49: Event_Payload.worktreeRemoved,
+    50: Event_Payload.worktreeKept,
     0: Event_Payload.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
@@ -3901,7 +3971,11 @@ class Event extends $pb.GeneratedMessage {
       43,
       44,
       45,
-      46
+      46,
+      47,
+      48,
+      49,
+      50
     ])
     ..aOS(1, _omitFieldNames ? '' : 'sessionId')
     ..aInt64(2, _omitFieldNames ? '' : 'seq')
@@ -3985,6 +4059,14 @@ class Event extends $pb.GeneratedMessage {
         subBuilder: SubagentEvent.$_createMessage)
     ..aOM<SubagentDone>(46, _omitFieldNames ? '' : 'subagentDone',
         subBuilder: SubagentDone.$_createMessage)
+    ..aOM<WorktreeCreated>(47, _omitFieldNames ? '' : 'worktreeCreated',
+        subBuilder: WorktreeCreated.$_createMessage)
+    ..aOM<WorktreeSkipped>(48, _omitFieldNames ? '' : 'worktreeSkipped',
+        subBuilder: WorktreeSkipped.$_createMessage)
+    ..aOM<WorktreeRemoved>(49, _omitFieldNames ? '' : 'worktreeRemoved',
+        subBuilder: WorktreeRemoved.$_createMessage)
+    ..aOM<WorktreeKept>(50, _omitFieldNames ? '' : 'worktreeKept',
+        subBuilder: WorktreeKept.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -4044,6 +4126,10 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(44)
   @$pb.TagNumber(45)
   @$pb.TagNumber(46)
+  @$pb.TagNumber(47)
+  @$pb.TagNumber(48)
+  @$pb.TagNumber(49)
+  @$pb.TagNumber(50)
   Event_Payload whichPayload() => _Event_PayloadByTag[$_whichOneof(0)]!;
   @$pb.TagNumber(10)
   @$pb.TagNumber(11)
@@ -4082,6 +4168,10 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(44)
   @$pb.TagNumber(45)
   @$pb.TagNumber(46)
+  @$pb.TagNumber(47)
+  @$pb.TagNumber(48)
+  @$pb.TagNumber(49)
+  @$pb.TagNumber(50)
   void clearPayload() => $_clearField($_whichOneof(0));
 
   @$pb.TagNumber(1)
@@ -4537,6 +4627,50 @@ class Event extends $pb.GeneratedMessage {
   void clearSubagentDone() => $_clearField(46);
   @$pb.TagNumber(46)
   SubagentDone ensureSubagentDone() => $_ensure(40);
+
+  @$pb.TagNumber(47)
+  WorktreeCreated get worktreeCreated => $_getN(41);
+  @$pb.TagNumber(47)
+  set worktreeCreated(WorktreeCreated value) => $_setField(47, value);
+  @$pb.TagNumber(47)
+  $core.bool hasWorktreeCreated() => $_has(41);
+  @$pb.TagNumber(47)
+  void clearWorktreeCreated() => $_clearField(47);
+  @$pb.TagNumber(47)
+  WorktreeCreated ensureWorktreeCreated() => $_ensure(41);
+
+  @$pb.TagNumber(48)
+  WorktreeSkipped get worktreeSkipped => $_getN(42);
+  @$pb.TagNumber(48)
+  set worktreeSkipped(WorktreeSkipped value) => $_setField(48, value);
+  @$pb.TagNumber(48)
+  $core.bool hasWorktreeSkipped() => $_has(42);
+  @$pb.TagNumber(48)
+  void clearWorktreeSkipped() => $_clearField(48);
+  @$pb.TagNumber(48)
+  WorktreeSkipped ensureWorktreeSkipped() => $_ensure(42);
+
+  @$pb.TagNumber(49)
+  WorktreeRemoved get worktreeRemoved => $_getN(43);
+  @$pb.TagNumber(49)
+  set worktreeRemoved(WorktreeRemoved value) => $_setField(49, value);
+  @$pb.TagNumber(49)
+  $core.bool hasWorktreeRemoved() => $_has(43);
+  @$pb.TagNumber(49)
+  void clearWorktreeRemoved() => $_clearField(49);
+  @$pb.TagNumber(49)
+  WorktreeRemoved ensureWorktreeRemoved() => $_ensure(43);
+
+  @$pb.TagNumber(50)
+  WorktreeKept get worktreeKept => $_getN(44);
+  @$pb.TagNumber(50)
+  set worktreeKept(WorktreeKept value) => $_setField(50, value);
+  @$pb.TagNumber(50)
+  $core.bool hasWorktreeKept() => $_has(44);
+  @$pb.TagNumber(50)
+  void clearWorktreeKept() => $_clearField(50);
+  @$pb.TagNumber(50)
+  WorktreeKept ensureWorktreeKept() => $_ensure(44);
 }
 
 /// MessageStarted opens a message. Its text arrives as TextDelta events and
@@ -9208,6 +9342,580 @@ class SubagentDone extends $pb.GeneratedMessage {
   void clearSteps() => $_clearField(5);
 }
 
+/// WorktreeCreated opens a session that got its own git worktree.
+class WorktreeCreated extends $pb.GeneratedMessage {
+  factory WorktreeCreated({
+    $core.String? path,
+    $core.String? branch,
+    $core.String? baseCommit,
+    $core.String? sourceRoot,
+    $core.Iterable<WorktreeCopy>? copies,
+  }) {
+    final result = WorktreeCreated._();
+    if (path != null) result.path = path;
+    if (branch != null) result.branch = branch;
+    if (baseCommit != null) result.baseCommit = baseCommit;
+    if (sourceRoot != null) result.sourceRoot = sourceRoot;
+    if (copies != null) result.copies.addAll(copies);
+    return result;
+  }
+
+  WorktreeCreated._();
+
+  factory WorktreeCreated.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      WorktreeCreated()..mergeFromBuffer(data, registry);
+  factory WorktreeCreated.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      WorktreeCreated()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'WorktreeCreated',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: WorktreeCreated.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'path')
+    ..aOS(2, _omitFieldNames ? '' : 'branch')
+    ..aOS(3, _omitFieldNames ? '' : 'baseCommit')
+    ..aOS(4, _omitFieldNames ? '' : 'sourceRoot')
+    ..pPM<WorktreeCopy>(5, _omitFieldNames ? '' : 'copies',
+        subBuilder: WorktreeCopy.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  WorktreeCreated clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  WorktreeCreated copyWith(void Function(WorktreeCreated) updates) =>
+      super.copyWith((message) => updates(message as WorktreeCreated))
+          as WorktreeCreated;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use WorktreeCreated() / WorktreeCreated.new instead')
+  static WorktreeCreated create() => WorktreeCreated._();
+  static $pb.GeneratedMessage $_createMessage() => WorktreeCreated._();
+  @$core.override
+  WorktreeCreated createEmptyInstance() => WorktreeCreated._();
+  @$core.pragma('dart2js:noInline')
+  static WorktreeCreated getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<WorktreeCreated>(
+          WorktreeCreated.$_createMessage);
+  static WorktreeCreated? _defaultInstance;
+
+  /// The worktree's root and branch, the commit it started at (the
+  /// session's base_commit) and the checkout it came from.
+  @$pb.TagNumber(1)
+  $core.String get path => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set path($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasPath() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearPath() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get branch => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set branch($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasBranch() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearBranch() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get baseCommit => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set baseCommit($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasBaseCommit() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearBaseCommit() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get sourceRoot => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set sourceRoot($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasSourceRoot() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearSourceRoot() => $_clearField(4);
+
+  /// Ignored directories copied in from the checkout.
+  @$pb.TagNumber(5)
+  $pb.PbList<WorktreeCopy> get copies => $_getList(4);
+}
+
+class WorktreeCopy extends $pb.GeneratedMessage {
+  factory WorktreeCopy({
+    $core.String? path,
+    $core.String? method,
+    $core.String? error,
+  }) {
+    final result = WorktreeCopy._();
+    if (path != null) result.path = path;
+    if (method != null) result.method = method;
+    if (error != null) result.error = error;
+    return result;
+  }
+
+  WorktreeCopy._();
+
+  factory WorktreeCopy.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      WorktreeCopy()..mergeFromBuffer(data, registry);
+  factory WorktreeCopy.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      WorktreeCopy()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'WorktreeCopy',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: WorktreeCopy.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'path')
+    ..aOS(2, _omitFieldNames ? '' : 'method')
+    ..aOS(3, _omitFieldNames ? '' : 'error')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  WorktreeCopy clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  WorktreeCopy copyWith(void Function(WorktreeCopy) updates) =>
+      super.copyWith((message) => updates(message as WorktreeCopy))
+          as WorktreeCopy;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use WorktreeCopy() / WorktreeCopy.new instead')
+  static WorktreeCopy create() => WorktreeCopy._();
+  static $pb.GeneratedMessage $_createMessage() => WorktreeCopy._();
+  @$core.override
+  WorktreeCopy createEmptyInstance() => WorktreeCopy._();
+  @$core.pragma('dart2js:noInline')
+  static WorktreeCopy getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<WorktreeCopy>(
+          WorktreeCopy.$_createMessage);
+  static WorktreeCopy? _defaultInstance;
+
+  /// Relative to the repository root.
+  @$pb.TagNumber(1)
+  $core.String get path => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set path($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasPath() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearPath() => $_clearField(1);
+
+  /// "reflink" (copy on write) or "copy" (the filesystem can't reflink).
+  @$pb.TagNumber(2)
+  $core.String get method => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set method($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasMethod() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearMethod() => $_clearField(2);
+
+  /// Why the copy failed; empty if it didn't.
+  @$pb.TagNumber(3)
+  $core.String get error => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set error($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasError() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearError() => $_clearField(3);
+}
+
+/// WorktreeSkipped says a session in a project that uses worktrees works
+/// in its directory directly, and why (not a git repository, no commits
+/// yet, git failed).
+class WorktreeSkipped extends $pb.GeneratedMessage {
+  factory WorktreeSkipped({
+    $core.String? reason,
+  }) {
+    final result = WorktreeSkipped._();
+    if (reason != null) result.reason = reason;
+    return result;
+  }
+
+  WorktreeSkipped._();
+
+  factory WorktreeSkipped.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      WorktreeSkipped()..mergeFromBuffer(data, registry);
+  factory WorktreeSkipped.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      WorktreeSkipped()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'WorktreeSkipped',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: WorktreeSkipped.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'reason')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  WorktreeSkipped clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  WorktreeSkipped copyWith(void Function(WorktreeSkipped) updates) =>
+      super.copyWith((message) => updates(message as WorktreeSkipped))
+          as WorktreeSkipped;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use WorktreeSkipped() / WorktreeSkipped.new instead')
+  static WorktreeSkipped create() => WorktreeSkipped._();
+  static $pb.GeneratedMessage $_createMessage() => WorktreeSkipped._();
+  @$core.override
+  WorktreeSkipped createEmptyInstance() => WorktreeSkipped._();
+  @$core.pragma('dart2js:noInline')
+  static WorktreeSkipped getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<WorktreeSkipped>(
+          WorktreeSkipped.$_createMessage);
+  static WorktreeSkipped? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get reason => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set reason($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasReason() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearReason() => $_clearField(1);
+}
+
+/// WorktreeRemoved says the session's worktree directory was deleted. The
+/// branch is deleted too unless it has commits nothing else has, so no
+/// history is lost; branch_kept says it stayed, holding that many commits.
+class WorktreeRemoved extends $pb.GeneratedMessage {
+  factory WorktreeRemoved({
+    $core.String? path,
+    $core.String? branch,
+    $core.bool? branchKept,
+    $core.int? commits,
+  }) {
+    final result = WorktreeRemoved._();
+    if (path != null) result.path = path;
+    if (branch != null) result.branch = branch;
+    if (branchKept != null) result.branchKept = branchKept;
+    if (commits != null) result.commits = commits;
+    return result;
+  }
+
+  WorktreeRemoved._();
+
+  factory WorktreeRemoved.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      WorktreeRemoved()..mergeFromBuffer(data, registry);
+  factory WorktreeRemoved.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      WorktreeRemoved()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'WorktreeRemoved',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: WorktreeRemoved.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'path')
+    ..aOS(2, _omitFieldNames ? '' : 'branch')
+    ..aOB(3, _omitFieldNames ? '' : 'branchKept')
+    ..aI(4, _omitFieldNames ? '' : 'commits')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  WorktreeRemoved clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  WorktreeRemoved copyWith(void Function(WorktreeRemoved) updates) =>
+      super.copyWith((message) => updates(message as WorktreeRemoved))
+          as WorktreeRemoved;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use WorktreeRemoved() / WorktreeRemoved.new instead')
+  static WorktreeRemoved create() => WorktreeRemoved._();
+  static $pb.GeneratedMessage $_createMessage() => WorktreeRemoved._();
+  @$core.override
+  WorktreeRemoved createEmptyInstance() => WorktreeRemoved._();
+  @$core.pragma('dart2js:noInline')
+  static WorktreeRemoved getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<WorktreeRemoved>(
+          WorktreeRemoved.$_createMessage);
+  static WorktreeRemoved? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get path => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set path($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasPath() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearPath() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get branch => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set branch($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasBranch() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearBranch() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.bool get branchKept => $_getBF(2);
+  @$pb.TagNumber(3)
+  set branchKept($core.bool value) => $_setBool(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasBranchKept() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearBranchKept() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.int get commits => $_getIZ(3);
+  @$pb.TagNumber(4)
+  set commits($core.int value) => $_setSignedInt32(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasCommits() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearCommits() => $_clearField(4);
+}
+
+/// WorktreeKept says the session's worktree was left in place when it
+/// would have been removed, and why (uncommitted changes, unpushed
+/// commits).
+class WorktreeKept extends $pb.GeneratedMessage {
+  factory WorktreeKept({
+    $core.String? path,
+    $core.String? branch,
+    $core.String? reason,
+  }) {
+    final result = WorktreeKept._();
+    if (path != null) result.path = path;
+    if (branch != null) result.branch = branch;
+    if (reason != null) result.reason = reason;
+    return result;
+  }
+
+  WorktreeKept._();
+
+  factory WorktreeKept.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      WorktreeKept()..mergeFromBuffer(data, registry);
+  factory WorktreeKept.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      WorktreeKept()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'WorktreeKept',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: WorktreeKept.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'path')
+    ..aOS(2, _omitFieldNames ? '' : 'branch')
+    ..aOS(3, _omitFieldNames ? '' : 'reason')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  WorktreeKept clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  WorktreeKept copyWith(void Function(WorktreeKept) updates) =>
+      super.copyWith((message) => updates(message as WorktreeKept))
+          as WorktreeKept;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use WorktreeKept() / WorktreeKept.new instead')
+  static WorktreeKept create() => WorktreeKept._();
+  static $pb.GeneratedMessage $_createMessage() => WorktreeKept._();
+  @$core.override
+  WorktreeKept createEmptyInstance() => WorktreeKept._();
+  @$core.pragma('dart2js:noInline')
+  static WorktreeKept getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<WorktreeKept>(
+          WorktreeKept.$_createMessage);
+  static WorktreeKept? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get path => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set path($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasPath() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearPath() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get branch => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set branch($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasBranch() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearBranch() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get reason => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set reason($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasReason() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearReason() => $_clearField(3);
+}
+
+class RemoveWorktreeRequest extends $pb.GeneratedMessage {
+  factory RemoveWorktreeRequest({
+    $core.String? sessionId,
+  }) {
+    final result = RemoveWorktreeRequest._();
+    if (sessionId != null) result.sessionId = sessionId;
+    return result;
+  }
+
+  RemoveWorktreeRequest._();
+
+  factory RemoveWorktreeRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RemoveWorktreeRequest()..mergeFromBuffer(data, registry);
+  factory RemoveWorktreeRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RemoveWorktreeRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RemoveWorktreeRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: RemoveWorktreeRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'sessionId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemoveWorktreeRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemoveWorktreeRequest copyWith(
+          void Function(RemoveWorktreeRequest) updates) =>
+      super.copyWith((message) => updates(message as RemoveWorktreeRequest))
+          as RemoveWorktreeRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use RemoveWorktreeRequest() / RemoveWorktreeRequest.new instead')
+  static RemoveWorktreeRequest create() => RemoveWorktreeRequest._();
+  static $pb.GeneratedMessage $_createMessage() => RemoveWorktreeRequest._();
+  @$core.override
+  RemoveWorktreeRequest createEmptyInstance() => RemoveWorktreeRequest._();
+  @$core.pragma('dart2js:noInline')
+  static RemoveWorktreeRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RemoveWorktreeRequest>(
+          RemoveWorktreeRequest.$_createMessage);
+  static RemoveWorktreeRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get sessionId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set sessionId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSessionId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSessionId() => $_clearField(1);
+}
+
+class RemoveWorktreeResponse extends $pb.GeneratedMessage {
+  factory RemoveWorktreeResponse({
+    Session? session,
+    $core.bool? branchKept,
+    $core.int? commits,
+  }) {
+    final result = RemoveWorktreeResponse._();
+    if (session != null) result.session = session;
+    if (branchKept != null) result.branchKept = branchKept;
+    if (commits != null) result.commits = commits;
+    return result;
+  }
+
+  RemoveWorktreeResponse._();
+
+  factory RemoveWorktreeResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RemoveWorktreeResponse()..mergeFromBuffer(data, registry);
+  factory RemoveWorktreeResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RemoveWorktreeResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RemoveWorktreeResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: RemoveWorktreeResponse.$_createMessage)
+    ..aOM<Session>(1, _omitFieldNames ? '' : 'session',
+        subBuilder: Session.$_createMessage)
+    ..aOB(2, _omitFieldNames ? '' : 'branchKept')
+    ..aI(3, _omitFieldNames ? '' : 'commits')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemoveWorktreeResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RemoveWorktreeResponse copyWith(
+          void Function(RemoveWorktreeResponse) updates) =>
+      super.copyWith((message) => updates(message as RemoveWorktreeResponse))
+          as RemoveWorktreeResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use RemoveWorktreeResponse() / RemoveWorktreeResponse.new instead')
+  static RemoveWorktreeResponse create() => RemoveWorktreeResponse._();
+  static $pb.GeneratedMessage $_createMessage() => RemoveWorktreeResponse._();
+  @$core.override
+  RemoveWorktreeResponse createEmptyInstance() => RemoveWorktreeResponse._();
+  @$core.pragma('dart2js:noInline')
+  static RemoveWorktreeResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<RemoveWorktreeResponse>(
+          RemoveWorktreeResponse.$_createMessage);
+  static RemoveWorktreeResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  Session get session => $_getN(0);
+  @$pb.TagNumber(1)
+  set session(Session value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSession() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSession() => $_clearField(1);
+  @$pb.TagNumber(1)
+  Session ensureSession() => $_ensure(0);
+
+  /// The branch stayed because it holds commits found nowhere else.
+  @$pb.TagNumber(2)
+  $core.bool get branchKept => $_getBF(1);
+  @$pb.TagNumber(2)
+  set branchKept($core.bool value) => $_setBool(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasBranchKept() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearBranchKept() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.int get commits => $_getIZ(2);
+  @$pb.TagNumber(3)
+  set commits($core.int value) => $_setSignedInt32(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasCommits() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearCommits() => $_clearField(3);
+}
+
 /// SessionService runs agent sessions. A session is a conversation with the
 /// agent in a working directory. Everything that happens in it is recorded as
 /// an append-only, numbered event log, so a client can attach at any point,
@@ -9411,6 +10119,18 @@ class SessionServiceApi {
           $pb.ClientContext? ctx, GitDiffRequest request) =>
       _client.invoke<GitDiffResponse>(
           ctx, 'SessionService', 'GitDiff', request, GitDiffResponse());
+
+  /// RemoveWorktree deletes the session's own git worktree (see
+  /// ProjectService.SetProjectWorktrees) without losing history: its
+  /// branch stays when it has commits no other branch, tag or remote has.
+  /// FAILED_PRECONDITION if the worktree has uncommitted changes (commit or
+  /// discard them first), while a turn is running, or if the session has no
+  /// worktree. Afterwards the session can't run turns. The log gets
+  /// WorktreeRemoved.
+  $async.Future<RemoveWorktreeResponse> removeWorktree(
+          $pb.ClientContext? ctx, RemoveWorktreeRequest request) =>
+      _client.invoke<RemoveWorktreeResponse>(ctx, 'SessionService',
+          'RemoveWorktree', request, RemoveWorktreeResponse());
 }
 
 const $core.bool _omitFieldNames =

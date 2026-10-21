@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/iggy/flit/server/internal/gitx"
 )
@@ -292,5 +293,33 @@ func TestFileLimit(t *testing.T) {
 	}
 	if len(st.Files) != 2 || !st.FilesTruncated || st.Untracked != 3 {
 		t.Fatalf("status = %+v", st)
+	}
+}
+
+func TestSameSizeEditInTheSameSecondIsSeen(t *testing.T) {
+	dir := repo(t)
+	// A same-size edit whose mtime equals the index's: only git's "racy"
+	// recheck notices it, which needs the scratch index to keep the
+	// index's mtime.
+	at := time.Now().Add(-time.Hour).Truncate(time.Second)
+	touch := func(p string) {
+		t.Helper()
+		if err := os.Chtimes(p, at, at); err != nil {
+			t.Fatal(err)
+		}
+	}
+	a, index := filepath.Join(dir, "a.txt"), filepath.Join(dir, ".git", "index")
+	write(t, dir, "a.txt", "uno\ndos\n")
+	touch(a)
+	run(t, dir, "add", "a.txt") // the index caches a.txt's size and mtime
+	run(t, dir, "commit", "-q", "-m", "uno")
+	touch(index)
+	write(t, dir, "a.txt", "ONE\nTWO\n")
+	touch(a) // same size, same mtime as cached
+	if st := status(t, dir, ""); len(st.Files) != 1 || st.Files[0].Path != "a.txt" {
+		t.Fatalf("files = %+v", st.Files)
+	}
+	if d := diff(t, dir, "", "", 1<<20); !strings.Contains(d.Text, "+ONE") {
+		t.Fatalf("diff:\n%s", d.Text)
 	}
 }

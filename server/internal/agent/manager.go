@@ -36,11 +36,15 @@ import (
 
 // Errors returned by Manager. The API layer maps them to status codes.
 var (
-	ErrNotFound   = store.ErrNotFound
-	ErrBusy       = errors.New("a turn is already running in this session")
-	ErrPromptGone = errors.New("prompt is not pending (already answered, or the turn ended)")
-	ErrInvalid    = errors.New("invalid argument")
-	ErrSlowClient = errors.New("client fell too far behind")
+	ErrNotFound = store.ErrNotFound
+	ErrBusy     = errors.New("a turn is already running in this session")
+	// Worktree errors (see RemoveWorktree).
+	ErrNoWorktree    = errors.New("the session has no worktree of its own")
+	ErrWorktreeGone  = errors.New("the session's worktree has been removed")
+	ErrWorktreeDirty = errors.New("the worktree has uncommitted changes; commit or discard them first")
+	ErrPromptGone    = errors.New("prompt is not pending (already answered, or the turn ended)")
+	ErrInvalid       = errors.New("invalid argument")
+	ErrSlowClient    = errors.New("client fell too far behind")
 	// ErrNoCallToRetry: RetryModelCall with no model call waiting (none
 	// running, or the reply is already streaming).
 	ErrNoCallToRetry = errors.New("no model call is waiting for the model to answer")
@@ -275,10 +279,30 @@ func (m *Manager) Create(ctx context.Context, o CreateOptions) (store.Session, e
 	} else {
 		m.log.Debug("no base commit", "dir", dir, "err", err)
 	}
+	var worktree *flitv1.Event
+	if m.worktreesFor(project) {
+		// Sets the worktree's starting commit as the base commit.
+		worktree = m.addWorktree(ctx, &info)
+	}
 	if err := m.store.CreateSession(ctx, &info); err != nil {
+		if info.WorktreePath != "" {
+			if err := gitx.RemoveWorktree(ctx, info.WorktreePath, info.WorktreeBranch, true); err != nil {
+				m.log.Warn("remove worktree of unsaved session", "path", info.WorktreePath, "err", err)
+			}
+		}
 		return store.Session{}, err
 	}
-	return info, nil
+	if worktree == nil {
+		return info, nil
+	}
+	s, err := m.session(ctx, info.ID)
+	if err != nil {
+		return store.Session{}, err
+	}
+	if _, err := s.append(worktree); err != nil {
+		return store.Session{}, err
+	}
+	return s.snapshot(), nil
 }
 
 // resolveModel fills in config defaults and checks the provider exists.
@@ -361,6 +385,9 @@ func (m *Manager) SendMessage(ctx context.Context, id, text, client string) (Sen
 	if m.closing.Load() {
 		return SendResult{}, errors.New("flit is shutting down")
 	}
+	if s.snapshot().WorktreeRemoved {
+		return SendResult{}, ErrWorktreeGone
+	}
 	return s.send(text, client)
 }
 
@@ -436,6 +463,9 @@ func (m *Manager) Compact(ctx context.Context, id, client, instructions string) 
 	}
 	if m.closing.Load() {
 		return false, errors.New("flit is shutting down")
+	}
+	if s.snapshot().WorktreeRemoved {
+		return false, ErrWorktreeGone
 	}
 	return s.requestCompact(client, strings.TrimSpace(instructions))
 }
@@ -563,6 +593,9 @@ func (m *Manager) fork(ctx context.Context, id, msgID, text, client string, edit
 	if m.closing.Load() {
 		return ForkResult{}, errors.New("flit is shutting down")
 	}
+	if s.snapshot().WorktreeRemoved {
+		return ForkResult{}, ErrWorktreeGone
+	}
 	return s.fork(ctx, msgID, text, client, edit)
 }
 
@@ -635,6 +668,15 @@ func (m *Manager) SetMCPServer(ctx context.Context, id, server string, enabled b
 		return store.Session{}, err
 	}
 	return s.setMCPServer(ctx, server, enabled)
+}
+
+// SetProjectWorktrees sets whether new sessions in a project get their own
+// worktree; nil means the config's default.
+func (m *Manager) SetProjectWorktrees(ctx context.Context, id string, enabled *bool) (store.Project, error) {
+	if err := m.store.SetProjectWorktrees(ctx, id, enabled); err != nil {
+		return store.Project{}, err
+	}
+	return m.store.GetProject(ctx, id)
 }
 
 // SetProjectExport includes or excludes a project from export.

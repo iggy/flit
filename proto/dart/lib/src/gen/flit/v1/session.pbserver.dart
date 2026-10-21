@@ -71,6 +71,8 @@ abstract class SessionServiceBase extends $pb.GeneratedService {
       $pb.ServerContext ctx, $2.GitStatusRequest request);
   $async.Future<$2.GitDiffResponse> gitDiff(
       $pb.ServerContext ctx, $2.GitDiffRequest request);
+  $async.Future<$2.RemoveWorktreeResponse> removeWorktree(
+      $pb.ServerContext ctx, $2.RemoveWorktreeRequest request);
 
   $pb.GeneratedMessage createRequest($core.String methodName) {
     switch (methodName) {
@@ -124,6 +126,8 @@ abstract class SessionServiceBase extends $pb.GeneratedService {
         return $2.GitStatusRequest();
       case 'GitDiff':
         return $2.GitDiffRequest();
+      case 'RemoveWorktree':
+        return $2.RemoveWorktreeRequest();
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }
@@ -183,6 +187,8 @@ abstract class SessionServiceBase extends $pb.GeneratedService {
         return gitStatus(ctx, request as $2.GitStatusRequest);
       case 'GitDiff':
         return gitDiff(ctx, request as $2.GitDiffRequest);
+      case 'RemoveWorktree':
+        return removeWorktree(ctx, request as $2.RemoveWorktreeRequest);
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }

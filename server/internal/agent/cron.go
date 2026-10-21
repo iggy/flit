@@ -153,6 +153,12 @@ func (m *Manager) ArchiveCronSessions(ctx context.Context, job string, keep int)
 		}
 	}
 	m.mu.Unlock()
+	// An archived session's worktree goes too, unless work would be lost.
+	for _, id := range ids {
+		if err := m.cleanUpWorktree(ctx, id); err != nil {
+			m.log.Warn("remove worktree", "session", id, "err", err)
+		}
+	}
 	return len(ids), err
 }
 

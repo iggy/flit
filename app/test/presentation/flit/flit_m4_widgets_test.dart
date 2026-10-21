@@ -21,6 +21,7 @@ final class _Repo extends Fake implements FlitRepository {
       directory: '/src/app',
       sessionCount: 1,
       exportEnabled: exportOn,
+      worktrees: worktreesOn,
     ),
   ];
 
@@ -54,6 +55,17 @@ final class _Repo extends Fake implements FlitRepository {
       ];
 
   bool exportOn = true;
+  bool worktreesOn = false;
+
+  @override
+  Future<FlitProject> setProjectWorktrees(
+    String projectId, {
+    required bool? enabled,
+  }) async {
+    calls.add('worktrees:$projectId:$enabled');
+    worktreesOn = enabled ?? false;
+    return const FlitProject(id: 'p1', name: 'app');
+  }
 
   @override
   Future<FlitProject> setProjectExport(
@@ -201,6 +213,12 @@ void main() {
     await tester.tap(find.text('Include in exports'));
     await tester.pumpAndSettle();
     expect(repo.calls, contains('export:p1:false'));
+
+    await tester.tap(find.byTooltip('Project options'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('A git worktree per session'));
+    await tester.pumpAndSettle();
+    expect(repo.calls, contains('worktrees:p1:true'));
   });
 
   testWidgets('rating buttons', (tester) async {

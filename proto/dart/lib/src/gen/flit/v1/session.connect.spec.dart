@@ -266,4 +266,18 @@ abstract final class SessionService {
     flitv1session.GitDiffResponse.new,
     idempotency: connect.Idempotency.noSideEffects,
   );
+
+  /// RemoveWorktree deletes the session's own git worktree (see
+  /// ProjectService.SetProjectWorktrees) without losing history: its
+  /// branch stays when it has commits no other branch, tag or remote has.
+  /// FAILED_PRECONDITION if the worktree has uncommitted changes (commit or
+  /// discard them first), while a turn is running, or if the session has no
+  /// worktree. Afterwards the session can't run turns. The log gets
+  /// WorktreeRemoved.
+  static const removeWorktree = connect.Spec(
+    '/$name/RemoveWorktree',
+    connect.StreamType.unary,
+    flitv1session.RemoveWorktreeRequest.new,
+    flitv1session.RemoveWorktreeResponse.new,
+  );
 }

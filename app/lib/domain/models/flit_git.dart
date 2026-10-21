@@ -284,3 +284,18 @@ List<FlitDiffLine> parseUnifiedDiff(String diff) {
   }
   return out;
 }
+
+/// What removing a session's worktree did.
+final class FlitWorktreeRemoval {
+  const FlitWorktreeRemoval({
+    required this.branch,
+    required this.branchKept,
+    this.commits = 0,
+  });
+
+  final String branch;
+
+  /// The branch stayed, holding [commits] commits found nowhere else.
+  final bool branchKept;
+  final int commits;
+}

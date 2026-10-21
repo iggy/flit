@@ -216,6 +216,8 @@ type Git struct {
 	// Enabled offers git_status, git_diff, git_log and git_commit. Default
 	// true. Nothing ever pushes.
 	Enabled *bool `yaml:"enabled"`
+	// Worktrees gives each new session its own git worktree.
+	Worktrees Worktrees `yaml:"worktrees"`
 }
 
 // IsEnabled reports whether the git tools are offered.
@@ -375,6 +377,34 @@ func mergeMaps[V any](base, over map[string]V) map[string]V {
 
 // LSPSeverities are the accepted LSP.Severity values, most severe first.
 var LSPSeverities = []string{"error", "warning", "info", "hint"}
+
+// Worktrees configures per-session git worktrees: a session in a project
+// that uses them works on its own branch in <data dir>/worktrees/<session
+// id>, so the user's checkout is never touched.
+type Worktrees struct {
+	// Default is whether projects that haven't chosen use worktrees.
+	// Default false.
+	Default bool `yaml:"default"`
+	// CopyIgnored names ignored directories (anywhere in the tree) copied
+	// from the checkout into a new worktree, by reflink where the
+	// filesystem can. Unset means DefaultCopyIgnored; [] copies nothing.
+	CopyIgnored []string `yaml:"copy_ignored"`
+}
+
+// DefaultCopyIgnored are the directories copied into a new worktree when
+// git.worktrees.copy_ignored is unset: dependencies and build output that
+// are slow to recreate.
+var DefaultCopyIgnored = []string{
+	"node_modules", ".venv", "venv", "target", "build", "dist", ".dart_tool", ".gradle", "Pods", ".next",
+}
+
+// CopyIgnoredDirs is CopyIgnored with the default applied.
+func (w Worktrees) CopyIgnoredDirs() []string {
+	if w.CopyIgnored == nil {
+		return DefaultCopyIgnored
+	}
+	return w.CopyIgnored
+}
 
 // ProviderKinds are the accepted Provider.Kind values.
 var ProviderKinds = []string{"auto", "openai", "openrouter", "llamacpp", "gomodel"}
@@ -558,7 +588,7 @@ func Default() Config {
 		MCPServers:         []MCPServer{},
 		SkillsDirs:         []string{"skills"},
 		Web:                Web{Fetch: ptr(true)},
-		Git:                Git{Enabled: ptr(true)},
+		Git:                Git{Enabled: ptr(true), Worktrees: Worktrees{CopyIgnored: slices.Clone(DefaultCopyIgnored)}},
 		LlamaCpp:           LlamaCpp{KVCache: ptr(true), KVCacheFiles: 4},
 		Learning:           Learning{MemoryMaxBytes: 6000},
 		LSP: LSP{
@@ -698,6 +728,11 @@ func Load(path string) (Config, error) {
 
 // Validate reports the first problem with c, if any.
 func (c Config) Validate() error {
+	for _, d := range c.Git.Worktrees.CopyIgnored {
+		if d == "" || d == "." || d == ".." || strings.ContainsAny(d, `/\`) {
+			return fmt.Errorf("git.worktrees.copy_ignored: %q must be a directory name, not a path", d)
+		}
+	}
 	if _, _, err := net.SplitHostPort(c.Listen); err != nil {
 		return fmt.Errorf("listen %q: %w", c.Listen, err)
 	}
@@ -982,6 +1017,16 @@ git:
   # git_status, git_diff, git_log and git_commit on the session's repo.
   # Nothing pushes.
   enabled: true
+  worktrees:
+    # Give each new session in a git repo its own worktree and branch
+    # (flit/<id>) under <data dir>/worktrees, so your checkout is never
+    # touched. This is the default for projects; each project can turn it
+    # on or off for itself.
+    default: false
+    # Ignored directories (by name, anywhere in the tree) copied into a new
+    # worktree, by reflink where the filesystem supports it. [] copies
+    # nothing.
+    copy_ignored: [node_modules, .venv, venv, target, build, dist, .dart_tool, .gradle, Pods, .next]
 
 llamacpp:
   # Keep each session's prompt cache on llama.cpp servers started with

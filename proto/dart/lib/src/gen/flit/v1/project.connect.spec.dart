@@ -37,4 +37,15 @@ abstract final class ProjectService {
     flitv1project.SetProjectExportRequest.new,
     flitv1project.SetProjectExportResponse.new,
   );
+
+  /// SetProjectWorktrees sets whether new sessions in the project get their
+  /// own git worktree and branch (when its directory is in a repository).
+  /// Unset goes back to the config's git.worktrees.default. Existing
+  /// sessions keep what they have.
+  static const setProjectWorktrees = connect.Spec(
+    '/$name/SetProjectWorktrees',
+    connect.StreamType.unary,
+    flitv1project.SetProjectWorktreesRequest.new,
+    flitv1project.SetProjectWorktreesResponse.new,
+  );
 }

@@ -503,6 +503,35 @@ final class FlitRepositoryImpl implements FlitRepository {
   }
 
   @override
+  Future<FlitProject> setProjectWorktrees(
+    String projectId, {
+    required bool? enabled,
+  }) {
+    return flitCall(() async {
+      final req = pb.SetProjectWorktreesRequest(projectId: projectId);
+      if (enabled != null) {
+        req.enabled = enabled;
+      }
+      final res = await _projects.setProjectWorktrees(req);
+      return projectFromProto(res.project);
+    });
+  }
+
+  @override
+  Future<FlitWorktreeRemoval> removeWorktree(String sessionId) {
+    return flitCall(() async {
+      final res = await _sessions.removeWorktree(
+        pb.RemoveWorktreeRequest(sessionId: sessionId),
+      );
+      return FlitWorktreeRemoval(
+        branch: res.session.worktreeBranch,
+        branchKept: res.branchKept,
+        commits: res.commits,
+      );
+    });
+  }
+
+  @override
   Future<FlitGitStatus> gitStatus(String sessionId) {
     return flitCall(() async {
       final res = await _sessions.gitStatus(

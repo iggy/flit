@@ -235,9 +235,18 @@ func withIntentIndex(ctx context.Context, root string, fn func(env []string) err
 	if err != nil {
 		return err
 	}
-	if data, err := os.ReadFile(strings.TrimSpace(real)); err == nil {
+	realIndex := strings.TrimSpace(real)
+	if data, err := os.ReadFile(realIndex); err == nil {
 		if err := os.WriteFile(index, data, 0o600); err != nil {
 			return err
+		}
+		// git rechecks the content of files modified no earlier than the
+		// index itself ("racy git"): the copy keeps the index's mtime, or
+		// a same-size edit made in the same second would go unseen.
+		if fi, err := os.Stat(realIndex); err == nil {
+			if err := os.Chtimes(index, fi.ModTime(), fi.ModTime()); err != nil {
+				return err
+			}
 		}
 	}
 	env := append([]string{"GIT_INDEX_FILE=" + index}, readEnv...)
