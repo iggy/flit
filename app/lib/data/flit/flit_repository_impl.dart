@@ -4,6 +4,7 @@ import 'package:connectrpc/connect.dart' as connect;
 import 'package:fixnum/fixnum.dart';
 import 'package:flit/data/flit/flit_errors.dart';
 import 'package:flit/data/flit/flit_mappers.dart';
+import 'package:flit/domain/models/flit_cron.dart';
 import 'package:flit/domain/models/flit_event.dart';
 import 'package:flit/domain/models/flit_git.dart';
 import 'package:flit/domain/models/flit_session.dart';
@@ -16,8 +17,10 @@ final class FlitRepositoryImpl implements FlitRepository {
     : _sessions = pb.SessionServiceClient(transport),
       _models = pb.ModelServiceClient(transport),
       _roles = pb.RoleServiceClient(transport),
-      _projects = pb.ProjectServiceClient(transport);
+      _projects = pb.ProjectServiceClient(transport),
+      _crons = pb.CronServiceClient(transport);
 
+  final pb.CronServiceClient _crons;
   final pb.SessionServiceClient _sessions;
   final pb.ModelServiceClient _models;
   final pb.RoleServiceClient _roles;
@@ -507,12 +510,48 @@ final class FlitRepositoryImpl implements FlitRepository {
   }
 
   @override
+  Future<List<FlitCronJob>> listCronJobs() {
+    return flitCall(() async {
+      final res = await _crons.listCronJobs(pb.ListCronJobsRequest());
+      return res.jobs.map(cronJobFromProto).toList(growable: false);
+    });
+  }
+
+  @override
   Future<FlitGitDiff> gitDiff(String sessionId, {String path = ''}) {
     return flitCall(() async {
       final res = await _sessions.gitDiff(
         pb.GitDiffRequest(sessionId: sessionId, path: path),
       );
       return gitDiffFromProto(res);
+    });
+  }
+
+  @override
+  Future<FlitCronRun> runCronJob(String name) {
+    return flitCall(() async {
+      final res = await _crons.runCronJob(pb.RunCronJobRequest(name: name));
+      return cronRunFromProto(res.run);
+    });
+  }
+
+  @override
+  Future<FlitCronJob> setCronJobEnabled(String name, {required bool enabled}) {
+    return flitCall(() async {
+      final res = await _crons.setCronJobEnabled(
+        pb.SetCronJobEnabledRequest(name: name, enabled: enabled),
+      );
+      return cronJobFromProto(res.job);
+    });
+  }
+
+  @override
+  Future<List<FlitCronRun>> listCronRuns({String name = '', int limit = 50}) {
+    return flitCall(() async {
+      final res = await _crons.listCronRuns(
+        pb.ListCronRunsRequest(name: name, pageSize: limit),
+      );
+      return res.runs.map(cronRunFromProto).toList(growable: false);
     });
   }
 }

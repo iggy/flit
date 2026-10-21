@@ -42,7 +42,14 @@ final class FlitSession {
     this.contextLength = 0,
     this.mcpServers = const <String>[],
     this.yolo = false,
+    this.cronJob = '',
   });
+
+  /// The cron job this session is a run of; empty for ordinary sessions.
+  final String cronJob;
+
+  /// Whether this session is a cron job's run.
+  bool get isCronRun => cronJob.isNotEmpty;
 
   /// MCP servers enabled for the session.
   final List<String> mcpServers;

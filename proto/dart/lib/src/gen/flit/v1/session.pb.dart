@@ -18,6 +18,7 @@ import 'package:protobuf/protobuf.dart' as $pb;
 import 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart'
     as $0;
 
+import 'cron.pbenum.dart' as $1;
 import 'session.pbenum.dart';
 
 export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
@@ -45,6 +46,8 @@ class Session extends $pb.GeneratedMessage {
     $core.bool? yolo,
     $core.String? branchId,
     $core.String? baseCommit,
+    $core.String? cronJob,
+    $core.bool? archived,
   }) {
     final result = Session._();
     if (id != null) result.id = id;
@@ -66,6 +69,8 @@ class Session extends $pb.GeneratedMessage {
     if (yolo != null) result.yolo = yolo;
     if (branchId != null) result.branchId = branchId;
     if (baseCommit != null) result.baseCommit = baseCommit;
+    if (cronJob != null) result.cronJob = cronJob;
+    if (archived != null) result.archived = archived;
     return result;
   }
 
@@ -104,6 +109,8 @@ class Session extends $pb.GeneratedMessage {
     ..aOB(17, _omitFieldNames ? '' : 'yolo')
     ..aOS(18, _omitFieldNames ? '' : 'branchId')
     ..aOS(19, _omitFieldNames ? '' : 'baseCommit')
+    ..aOS(20, _omitFieldNames ? '' : 'cronJob')
+    ..aOB(21, _omitFieldNames ? '' : 'archived')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -307,6 +314,28 @@ class Session extends $pb.GeneratedMessage {
   $core.bool hasBaseCommit() => $_has(18);
   @$pb.TagNumber(19)
   void clearBaseCommit() => $_clearField(19);
+
+  /// The cron job whose run this session is (see CronService); empty for
+  /// ordinary sessions.
+  @$pb.TagNumber(20)
+  $core.String get cronJob => $_getSZ(19);
+  @$pb.TagNumber(20)
+  set cronJob($core.String value) => $_setString(19, value);
+  @$pb.TagNumber(20)
+  $core.bool hasCronJob() => $_has(19);
+  @$pb.TagNumber(20)
+  void clearCronJob() => $_clearField(20);
+
+  /// Archived sessions are left out of ListSessions unless asked for (old
+  /// cron runs beyond the job's keep_runs). Nothing is deleted.
+  @$pb.TagNumber(21)
+  $core.bool get archived => $_getBF(20);
+  @$pb.TagNumber(21)
+  set archived($core.bool value) => $_setBool(20, value);
+  @$pb.TagNumber(21)
+  $core.bool hasArchived() => $_has(20);
+  @$pb.TagNumber(21)
+  void clearArchived() => $_clearField(21);
 }
 
 class CreateSessionRequest extends $pb.GeneratedMessage {
@@ -526,11 +555,13 @@ class ListSessionsRequest extends $pb.GeneratedMessage {
     $core.int? pageSize,
     $core.String? pageToken,
     $core.String? projectId,
+    $core.bool? includeArchived,
   }) {
     final result = ListSessionsRequest._();
     if (pageSize != null) result.pageSize = pageSize;
     if (pageToken != null) result.pageToken = pageToken;
     if (projectId != null) result.projectId = projectId;
+    if (includeArchived != null) result.includeArchived = includeArchived;
     return result;
   }
 
@@ -550,6 +581,7 @@ class ListSessionsRequest extends $pb.GeneratedMessage {
     ..aI(1, _omitFieldNames ? '' : 'pageSize')
     ..aOS(2, _omitFieldNames ? '' : 'pageToken')
     ..aOS(3, _omitFieldNames ? '' : 'projectId')
+    ..aOB(4, _omitFieldNames ? '' : 'includeArchived')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -604,6 +636,16 @@ class ListSessionsRequest extends $pb.GeneratedMessage {
   $core.bool hasProjectId() => $_has(2);
   @$pb.TagNumber(3)
   void clearProjectId() => $_clearField(3);
+
+  /// Include archived sessions.
+  @$pb.TagNumber(4)
+  $core.bool get includeArchived => $_getBF(3);
+  @$pb.TagNumber(4)
+  set includeArchived($core.bool value) => $_setBool(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasIncludeArchived() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearIncludeArchived() => $_clearField(4);
 }
 
 class ListSessionsResponse extends $pb.GeneratedMessage {
@@ -3668,6 +3710,7 @@ enum Event_Payload {
   compactionDone,
   branchCreated,
   branchSwitched,
+  cronRun,
   notSet
 }
 
@@ -3711,6 +3754,7 @@ class Event extends $pb.GeneratedMessage {
     CompactionDone? compactionDone,
     BranchCreated? branchCreated,
     BranchSwitched? branchSwitched,
+    CronRunStarted? cronRun,
   }) {
     final result = Event._();
     if (sessionId != null) result.sessionId = sessionId;
@@ -3754,6 +3798,7 @@ class Event extends $pb.GeneratedMessage {
     if (compactionDone != null) result.compactionDone = compactionDone;
     if (branchCreated != null) result.branchCreated = branchCreated;
     if (branchSwitched != null) result.branchSwitched = branchSwitched;
+    if (cronRun != null) result.cronRun = cronRun;
     return result;
   }
 
@@ -3800,6 +3845,7 @@ class Event extends $pb.GeneratedMessage {
     40: Event_Payload.compactionDone,
     41: Event_Payload.branchCreated,
     42: Event_Payload.branchSwitched,
+    43: Event_Payload.cronRun,
     0: Event_Payload.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
@@ -3839,7 +3885,8 @@ class Event extends $pb.GeneratedMessage {
       39,
       40,
       41,
-      42
+      42,
+      43
     ])
     ..aOS(1, _omitFieldNames ? '' : 'sessionId')
     ..aInt64(2, _omitFieldNames ? '' : 'seq')
@@ -3915,6 +3962,8 @@ class Event extends $pb.GeneratedMessage {
         subBuilder: BranchCreated.$_createMessage)
     ..aOM<BranchSwitched>(42, _omitFieldNames ? '' : 'branchSwitched',
         subBuilder: BranchSwitched.$_createMessage)
+    ..aOM<CronRunStarted>(43, _omitFieldNames ? '' : 'cronRun',
+        subBuilder: CronRunStarted.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -3970,6 +4019,7 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(40)
   @$pb.TagNumber(41)
   @$pb.TagNumber(42)
+  @$pb.TagNumber(43)
   Event_Payload whichPayload() => _Event_PayloadByTag[$_whichOneof(0)]!;
   @$pb.TagNumber(10)
   @$pb.TagNumber(11)
@@ -4004,6 +4054,7 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(40)
   @$pb.TagNumber(41)
   @$pb.TagNumber(42)
+  @$pb.TagNumber(43)
   void clearPayload() => $_clearField($_whichOneof(0));
 
   @$pb.TagNumber(1)
@@ -4415,6 +4466,17 @@ class Event extends $pb.GeneratedMessage {
   void clearBranchSwitched() => $_clearField(42);
   @$pb.TagNumber(42)
   BranchSwitched ensureBranchSwitched() => $_ensure(36);
+
+  @$pb.TagNumber(43)
+  CronRunStarted get cronRun => $_getN(37);
+  @$pb.TagNumber(43)
+  set cronRun(CronRunStarted value) => $_setField(43, value);
+  @$pb.TagNumber(43)
+  $core.bool hasCronRun() => $_has(37);
+  @$pb.TagNumber(43)
+  void clearCronRun() => $_clearField(43);
+  @$pb.TagNumber(43)
+  CronRunStarted ensureCronRun() => $_ensure(37);
 }
 
 /// MessageStarted opens a message. Its text arrives as TextDelta events and
@@ -8594,6 +8656,170 @@ class GitDiffResponse extends $pb.GeneratedMessage {
   $core.bool hasTruncated() => $_has(4);
   @$pb.TagNumber(5)
   void clearTruncated() => $_clearField(5);
+}
+
+/// CronRunStarted opens a cron run's session: which job started it, and
+/// why. It comes before the run's prompt (the first user message).
+class CronRunStarted extends $pb.GeneratedMessage {
+  factory CronRunStarted({
+    $core.String? job,
+    $core.String? schedule,
+    $core.String? scheduleText,
+    $1.CronTrigger? trigger,
+    $0.Timestamp? scheduledTime,
+    $core.String? runId,
+    $1.CronAsk? ask,
+    $fixnum.Int64? askTimeoutSeconds,
+    $core.bool? yolo,
+  }) {
+    final result = CronRunStarted._();
+    if (job != null) result.job = job;
+    if (schedule != null) result.schedule = schedule;
+    if (scheduleText != null) result.scheduleText = scheduleText;
+    if (trigger != null) result.trigger = trigger;
+    if (scheduledTime != null) result.scheduledTime = scheduledTime;
+    if (runId != null) result.runId = runId;
+    if (ask != null) result.ask = ask;
+    if (askTimeoutSeconds != null) result.askTimeoutSeconds = askTimeoutSeconds;
+    if (yolo != null) result.yolo = yolo;
+    return result;
+  }
+
+  CronRunStarted._();
+
+  factory CronRunStarted.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CronRunStarted()..mergeFromBuffer(data, registry);
+  factory CronRunStarted.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CronRunStarted()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CronRunStarted',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: CronRunStarted.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'job')
+    ..aOS(2, _omitFieldNames ? '' : 'schedule')
+    ..aOS(3, _omitFieldNames ? '' : 'scheduleText')
+    ..aE<$1.CronTrigger>(4, _omitFieldNames ? '' : 'trigger',
+        enumValues: $1.CronTrigger.values)
+    ..aOM<$0.Timestamp>(5, _omitFieldNames ? '' : 'scheduledTime',
+        subBuilder: $0.Timestamp.$_createMessage)
+    ..aOS(6, _omitFieldNames ? '' : 'runId')
+    ..aE<$1.CronAsk>(7, _omitFieldNames ? '' : 'ask',
+        enumValues: $1.CronAsk.values)
+    ..aInt64(8, _omitFieldNames ? '' : 'askTimeoutSeconds')
+    ..aOB(9, _omitFieldNames ? '' : 'yolo')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CronRunStarted clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CronRunStarted copyWith(void Function(CronRunStarted) updates) =>
+      super.copyWith((message) => updates(message as CronRunStarted))
+          as CronRunStarted;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use CronRunStarted() / CronRunStarted.new instead')
+  static CronRunStarted create() => CronRunStarted._();
+  static $pb.GeneratedMessage $_createMessage() => CronRunStarted._();
+  @$core.override
+  CronRunStarted createEmptyInstance() => CronRunStarted._();
+  @$core.pragma('dart2js:noInline')
+  static CronRunStarted getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CronRunStarted>(
+          CronRunStarted.$_createMessage);
+  static CronRunStarted? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get job => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set job($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasJob() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearJob() => $_clearField(1);
+
+  /// The schedule as written and in words.
+  @$pb.TagNumber(2)
+  $core.String get schedule => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set schedule($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasSchedule() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearSchedule() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get scheduleText => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set scheduleText($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasScheduleText() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearScheduleText() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $1.CronTrigger get trigger => $_getN(3);
+  @$pb.TagNumber(4)
+  set trigger($1.CronTrigger value) => $_setField(4, value);
+  @$pb.TagNumber(4)
+  $core.bool hasTrigger() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearTrigger() => $_clearField(4);
+
+  /// The slot it runs for.
+  @$pb.TagNumber(5)
+  $0.Timestamp get scheduledTime => $_getN(4);
+  @$pb.TagNumber(5)
+  set scheduledTime($0.Timestamp value) => $_setField(5, value);
+  @$pb.TagNumber(5)
+  $core.bool hasScheduledTime() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearScheduledTime() => $_clearField(5);
+  @$pb.TagNumber(5)
+  $0.Timestamp ensureScheduledTime() => $_ensure(4);
+
+  /// The run's id (CronRun.id).
+  @$pb.TagNumber(6)
+  $core.String get runId => $_getSZ(5);
+  @$pb.TagNumber(6)
+  set runId($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasRunId() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearRunId() => $_clearField(6);
+
+  /// How prompts nobody can answer are handled, and yolo mode.
+  @$pb.TagNumber(7)
+  $1.CronAsk get ask => $_getN(6);
+  @$pb.TagNumber(7)
+  set ask($1.CronAsk value) => $_setField(7, value);
+  @$pb.TagNumber(7)
+  $core.bool hasAsk() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearAsk() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $fixnum.Int64 get askTimeoutSeconds => $_getI64(7);
+  @$pb.TagNumber(8)
+  set askTimeoutSeconds($fixnum.Int64 value) => $_setInt64(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasAskTimeoutSeconds() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearAskTimeoutSeconds() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $core.bool get yolo => $_getBF(8);
+  @$pb.TagNumber(9)
+  set yolo($core.bool value) => $_setBool(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasYolo() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearYolo() => $_clearField(9);
 }
 
 /// SessionService runs agent sessions. A session is a conversation with the

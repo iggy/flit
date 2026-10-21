@@ -11,6 +11,7 @@ import 'package:flit/presentation/common/not_found_screen.dart';
 import 'package:flit/presentation/connect/connect_screen.dart';
 import 'package:flit/presentation/flit/flit_changes.dart';
 import 'package:flit/presentation/flit/flit_chat_screen.dart';
+import 'package:flit/presentation/flit/flit_crons.dart';
 import 'package:flit/presentation/flit/flit_nav.dart';
 import 'package:flit/presentation/flit/flit_sessions_screen.dart';
 import 'package:flit/presentation/plugins/kanban/kanban_board_screen.dart';
@@ -87,6 +88,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     name: 'flit-session-changes',
                     builder: (context, state) => FlitChangesScreen(
                       sessionId: state.pathParameters['id'] ?? '',
+                    ),
+                  ),
+                ],
+              ),
+              GoRoute(
+                path: 'crons',
+                name: 'flit-crons',
+                builder: (context, state) => const FlitCronsScreen(),
+                routes: <RouteBase>[
+                  GoRoute(
+                    path: ':name',
+                    name: 'flit-cron-job',
+                    builder: (context, state) => FlitCronJobScreen(
+                      key: ValueKey<String?>(state.pathParameters['name']),
+                      name: state.pathParameters['name'] ?? '',
                     ),
                   ),
                 ],

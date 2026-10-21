@@ -290,6 +290,8 @@ const Session$json = {
     {'1': 'yolo', '3': 17, '4': 1, '5': 8, '10': 'yolo'},
     {'1': 'branch_id', '3': 18, '4': 1, '5': 9, '10': 'branchId'},
     {'1': 'base_commit', '3': 19, '4': 1, '5': 9, '10': 'baseCommit'},
+    {'1': 'cron_job', '3': 20, '4': 1, '5': 9, '10': 'cronJob'},
+    {'1': 'archived', '3': 21, '4': 1, '5': 8, '10': 'archived'},
   ],
 };
 
@@ -306,7 +308,8 @@ final $typed_data.Uint8List sessionDescriptor = $convert.base64Decode(
     'A1INY29udGV4dFRva2VucxIlCg5jb250ZXh0X2xlbmd0aBgPIAEoA1INY29udGV4dExlbmd0aB'
     'IfCgttY3Bfc2VydmVycxgQIAMoCVIKbWNwU2VydmVycxISCgR5b2xvGBEgASgIUgR5b2xvEhsK'
     'CWJyYW5jaF9pZBgSIAEoCVIIYnJhbmNoSWQSHwoLYmFzZV9jb21taXQYEyABKAlSCmJhc2VDb2'
-    '1taXQ=');
+    '1taXQSGQoIY3Jvbl9qb2IYFCABKAlSB2Nyb25Kb2ISGgoIYXJjaGl2ZWQYFSABKAhSCGFyY2hp'
+    'dmVk');
 
 @$core.Deprecated('Use createSessionRequestDescriptor instead')
 const CreateSessionRequest$json = {
@@ -361,6 +364,7 @@ const ListSessionsRequest$json = {
     {'1': 'page_size', '3': 1, '4': 1, '5': 5, '10': 'pageSize'},
     {'1': 'page_token', '3': 2, '4': 1, '5': 9, '10': 'pageToken'},
     {'1': 'project_id', '3': 3, '4': 1, '5': 9, '10': 'projectId'},
+    {'1': 'include_archived', '3': 4, '4': 1, '5': 8, '10': 'includeArchived'},
   ],
 };
 
@@ -368,7 +372,7 @@ const ListSessionsRequest$json = {
 final $typed_data.Uint8List listSessionsRequestDescriptor = $convert.base64Decode(
     'ChNMaXN0U2Vzc2lvbnNSZXF1ZXN0EhsKCXBhZ2Vfc2l6ZRgBIAEoBVIIcGFnZVNpemUSHQoKcG'
     'FnZV90b2tlbhgCIAEoCVIJcGFnZVRva2VuEh0KCnByb2plY3RfaWQYAyABKAlSCXByb2plY3RJ'
-    'ZA==');
+    'ZBIpChBpbmNsdWRlX2FyY2hpdmVkGAQgASgIUg9pbmNsdWRlQXJjaGl2ZWQ=');
 
 @$core.Deprecated('Use listSessionsResponseDescriptor instead')
 const ListSessionsResponse$json = {
@@ -1382,6 +1386,15 @@ const Event$json = {
       '9': 0,
       '10': 'branchSwitched'
     },
+    {
+      '1': 'cron_run',
+      '3': 43,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.CronRunStarted',
+      '9': 0,
+      '10': 'cronRun'
+    },
   ],
   '8': [
     {'1': 'payload'},
@@ -1432,7 +1445,8 @@ final $typed_data.Uint8List eventDescriptor = $convert.base64Decode(
     '9uX2RvbmUYKCABKAsyFy5mbGl0LnYxLkNvbXBhY3Rpb25Eb25lSABSDmNvbXBhY3Rpb25Eb25l'
     'Ej8KDmJyYW5jaF9jcmVhdGVkGCkgASgLMhYuZmxpdC52MS5CcmFuY2hDcmVhdGVkSABSDWJyYW'
     '5jaENyZWF0ZWQSQgoPYnJhbmNoX3N3aXRjaGVkGCogASgLMhcuZmxpdC52MS5CcmFuY2hTd2l0'
-    'Y2hlZEgAUg5icmFuY2hTd2l0Y2hlZEIJCgdwYXlsb2Fk');
+    'Y2hlZEgAUg5icmFuY2hTd2l0Y2hlZBI0Cghjcm9uX3J1bhgrIAEoCzIXLmZsaXQudjEuQ3Jvbl'
+    'J1blN0YXJ0ZWRIAFIHY3JvblJ1bkIJCgdwYXlsb2Fk');
 
 @$core.Deprecated('Use messageStartedDescriptor instead')
 const MessageStarted$json = {
@@ -2287,6 +2301,52 @@ final $typed_data.Uint8List gitDiffResponseDescriptor = $convert.base64Decode(
     'ZmZCYXNlUgxkaWZmQmFzZUtpbmQSEgoEZGlmZhgEIAEoCVIEZGlmZhIcCgl0cnVuY2F0ZWQYBS'
     'ABKAhSCXRydW5jYXRlZA==');
 
+@$core.Deprecated('Use cronRunStartedDescriptor instead')
+const CronRunStarted$json = {
+  '1': 'CronRunStarted',
+  '2': [
+    {'1': 'job', '3': 1, '4': 1, '5': 9, '10': 'job'},
+    {'1': 'schedule', '3': 2, '4': 1, '5': 9, '10': 'schedule'},
+    {'1': 'schedule_text', '3': 3, '4': 1, '5': 9, '10': 'scheduleText'},
+    {
+      '1': 'trigger',
+      '3': 4,
+      '4': 1,
+      '5': 14,
+      '6': '.flit.v1.CronTrigger',
+      '10': 'trigger'
+    },
+    {
+      '1': 'scheduled_time',
+      '3': 5,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'scheduledTime'
+    },
+    {'1': 'run_id', '3': 6, '4': 1, '5': 9, '10': 'runId'},
+    {'1': 'ask', '3': 7, '4': 1, '5': 14, '6': '.flit.v1.CronAsk', '10': 'ask'},
+    {
+      '1': 'ask_timeout_seconds',
+      '3': 8,
+      '4': 1,
+      '5': 3,
+      '10': 'askTimeoutSeconds'
+    },
+    {'1': 'yolo', '3': 9, '4': 1, '5': 8, '10': 'yolo'},
+  ],
+};
+
+/// Descriptor for `CronRunStarted`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List cronRunStartedDescriptor = $convert.base64Decode(
+    'Cg5Dcm9uUnVuU3RhcnRlZBIQCgNqb2IYASABKAlSA2pvYhIaCghzY2hlZHVsZRgCIAEoCVIIc2'
+    'NoZWR1bGUSIwoNc2NoZWR1bGVfdGV4dBgDIAEoCVIMc2NoZWR1bGVUZXh0Ei4KB3RyaWdnZXIY'
+    'BCABKA4yFC5mbGl0LnYxLkNyb25UcmlnZ2VyUgd0cmlnZ2VyEkEKDnNjaGVkdWxlZF90aW1lGA'
+    'UgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFINc2NoZWR1bGVkVGltZRIVCgZydW5f'
+    'aWQYBiABKAlSBXJ1bklkEiIKA2FzaxgHIAEoDjIQLmZsaXQudjEuQ3JvbkFza1IDYXNrEi4KE2'
+    'Fza190aW1lb3V0X3NlY29uZHMYCCABKANSEWFza1RpbWVvdXRTZWNvbmRzEhIKBHlvbG8YCSAB'
+    'KAhSBHlvbG8=');
+
 const $core.Map<$core.String, $core.dynamic> SessionServiceBase$json = {
   '1': 'SessionService',
   '2': [
@@ -2465,6 +2525,7 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.flit.v1.CompactionDone': CompactionDone$json,
   '.flit.v1.BranchCreated': BranchCreated$json,
   '.flit.v1.BranchSwitched': BranchSwitched$json,
+  '.flit.v1.CronRunStarted': CronRunStarted$json,
   '.flit.v1.SendRequest': SendRequest$json,
   '.flit.v1.SendResponse': SendResponse$json,
   '.flit.v1.EditQueuedMessageRequest': EditQueuedMessageRequest$json,

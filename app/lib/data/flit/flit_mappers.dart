@@ -2,6 +2,7 @@
 /// looks at generated protobuf types.
 library;
 
+import 'package:flit/domain/models/flit_cron.dart';
 import 'package:flit/domain/models/flit_event.dart';
 import 'package:flit/domain/models/flit_git.dart';
 import 'package:flit/domain/models/flit_session.dart';
@@ -37,6 +38,65 @@ FlitSession sessionFromProto(pb.Session s) {
     contextLength: s.contextLength.toInt(),
     mcpServers: List<String>.unmodifiable(s.mcpServers),
     yolo: s.yolo,
+    cronJob: s.cronJob,
+  );
+}
+
+FlitCronRunState cronRunStateFromProto(pb.CronRunState s) => switch (s) {
+  pb.CronRunState.CRON_RUN_STATE_RUNNING => FlitCronRunState.running,
+  pb.CronRunState.CRON_RUN_STATE_OK => FlitCronRunState.ok,
+  pb.CronRunState.CRON_RUN_STATE_NEEDS_ATTENTION =>
+    FlitCronRunState.needsAttention,
+  pb.CronRunState.CRON_RUN_STATE_FAILED => FlitCronRunState.failed,
+  pb.CronRunState.CRON_RUN_STATE_SKIPPED => FlitCronRunState.skipped,
+  _ => FlitCronRunState.unknown,
+};
+
+FlitCronTrigger cronTriggerFromProto(pb.CronTrigger t) => switch (t) {
+  pb.CronTrigger.CRON_TRIGGER_SCHEDULE => FlitCronTrigger.schedule,
+  pb.CronTrigger.CRON_TRIGGER_CATCH_UP => FlitCronTrigger.catchUp,
+  pb.CronTrigger.CRON_TRIGGER_MANUAL => FlitCronTrigger.manual,
+  _ => FlitCronTrigger.unknown,
+};
+
+FlitCronRun cronRunFromProto(pb.CronRun r) {
+  return FlitCronRun(
+    id: r.id,
+    job: r.job,
+    sessionId: r.sessionId,
+    state: cronRunStateFromProto(r.state),
+    trigger: cronTriggerFromProto(r.trigger),
+    scheduledAt: r.hasScheduledTime() ? r.scheduledTime.toDateTime() : null,
+    startedAt: r.hasStartTime() ? r.startTime.toDateTime() : null,
+    finishedAt: r.hasFinishTime() ? r.finishTime.toDateTime() : null,
+    summary: r.summary,
+    refusedCommands: List<String>.unmodifiable(r.refusedCommands),
+    quiet: r.quiet,
+  );
+}
+
+FlitCronJob cronJobFromProto(pb.CronJob j) {
+  return FlitCronJob(
+    name: j.name,
+    schedule: j.schedule,
+    scheduleText: j.scheduleText,
+    oneShot: j.oneShot,
+    enabled: j.enabled,
+    projectId: j.projectId,
+    projectName: j.projectName,
+    dir: j.dir,
+    role: j.role,
+    provider: j.provider,
+    model: j.model,
+    askWait: j.ask == pb.CronAsk.CRON_ASK_WAIT,
+    yolo: j.yolo,
+    timezone: j.timezone,
+    prompt: j.prompt,
+    path: j.path,
+    nextRunAt: j.hasNextRunTime() ? j.nextRunTime.toDateTime() : null,
+    lastRun: j.hasLastRun() ? cronRunFromProto(j.lastRun) : null,
+    error: j.error,
+    runningSessionId: j.runningSessionId,
   );
 }
 
@@ -557,6 +617,9 @@ FlitEvent eventFromProto(pb.Event e) {
         client: b.client,
       );
     case pb.Event_Payload.promptCache:
+    // Which cron job started the session; the app shows that from
+    // FlitSession.cronJob instead.
+    case pb.Event_Payload.cronRun:
     case pb.Event_Payload.notSet:
       return FlitUnknownEvent(seq: seq, time: time, branchId: branch);
   }
