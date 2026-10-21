@@ -266,3 +266,33 @@ func TestCompactionSettings(t *testing.T) {
 		t.Fatal("empty compaction task counts as set")
 	}
 }
+
+func TestLSPSettings(t *testing.T) {
+	cfg, err := Parse([]byte("lsp:\n  wait_timeout: 5s\n  severity: error\n  servers:\n" +
+		"    - name: zls\n      command: zls\n      languages: {zig: [.zig, .zon]}\n      root_markers: [build.zig]\n      init_options: {enable_snippets: false}\n" +
+		"    - {name: clangd, enabled: false}\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	l := cfg.LSP
+	if !l.IsEnabled() || l.WaitTimeout != 5*time.Second || l.IdleTimeout != 10*time.Minute || l.Severity != "error" || l.MaxLines != 10 {
+		t.Fatalf("lsp = %+v", l)
+	}
+	if len(l.Servers) != 2 || l.Servers[0].Languages["zig"][1] != ".zon" || l.Servers[0].InitOptions["enable_snippets"] != false || l.Servers[1].IsEnabled() {
+		t.Fatalf("servers = %+v", l.Servers)
+	}
+	for _, bad := range []string{
+		"lsp: {severity: loud}",
+		"lsp: {wait_timeout: -1s}",
+		"lsp: {servers: [{command: x, languages: {x: [.x]}}]}",
+		"lsp: {servers: [{name: x, languages: {x: [.x]}}]}",
+		"lsp: {servers: [{name: x, command: x}]}",
+		"lsp: {servers: [{name: x, command: x, languages: {x: [x]}}]}",
+		"lsp: {servers: [{name: x, command: x, languages: {x: [.x]}}, {name: x, command: y, languages: {y: [.y]}}]}",
+		"lsp: {servers: [{name: x, command: x, languages: {x: [.x]}, extensions: [.x]}]}",
+	} {
+		if _, err := Parse([]byte(bad)); err == nil {
+			t.Errorf("%q: no error", bad)
+		}
+	}
+}
