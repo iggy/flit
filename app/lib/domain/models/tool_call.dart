@@ -6,6 +6,8 @@
 /// (05-conventions.md).
 library;
 
+import 'package:flit/domain/models/subagent.dart';
+
 /// Lifecycle of a tool call, folded from `tool.start`/`tool.complete`.
 enum ToolCallStatus {
   /// `tool.start` seen, no `tool.complete` yet.
@@ -73,6 +75,7 @@ final class ToolCall {
     this.inlineDiff,
     this.durationS,
     this.tasks = const <ToolTask>[],
+    this.subagent,
   });
 
   /// Wire `tool_id` — correlates `tool.complete` to `tool.start`.
@@ -103,6 +106,9 @@ final class ToolCall {
   /// Task items from the gateway (tool.todos).
   final List<ToolTask> tasks;
 
+  /// The subagent this call (flit's agent tool) runs, once it started.
+  final Subagent? subagent;
+
   /// The event fold mutates via copy (ticket P1-01).
   ToolCall copyWith({
     String? id,
@@ -114,6 +120,7 @@ final class ToolCall {
     String? inlineDiff,
     double? durationS,
     List<ToolTask>? tasks,
+    Subagent? subagent,
   }) {
     return ToolCall(
       id: id ?? this.id,
@@ -125,6 +132,7 @@ final class ToolCall {
       inlineDiff: inlineDiff ?? this.inlineDiff,
       durationS: durationS ?? this.durationS,
       tasks: tasks ?? this.tasks,
+      subagent: subagent ?? this.subagent,
     );
   }
 
@@ -139,6 +147,7 @@ final class ToolCall {
         other.summary == summary &&
         other.inlineDiff == inlineDiff &&
         other.durationS == durationS &&
+        other.subagent == subagent &&
         _tasksEquals(other.tasks, tasks);
   }
 
@@ -161,6 +170,7 @@ final class ToolCall {
     inlineDiff,
     durationS,
     Object.hashAll(tasks),
+    subagent,
   );
 
   @override

@@ -4,6 +4,7 @@
 library;
 
 import 'package:flit/domain/models/flit_session.dart';
+import 'package:flit/domain/models/subagent.dart';
 
 /// One entry in a session's event log.
 sealed class FlitEvent {
@@ -693,3 +694,60 @@ bool flitSessionWide(FlitEvent e) => switch (e) {
   FlitBranchSwitched() => true,
   _ => false,
 };
+
+/// The agent tool call [toolCallId] started a subagent.
+final class FlitSubagentStarted extends FlitEvent {
+  const FlitSubagentStarted({
+    required super.seq,
+    required this.toolCallId,
+    required this.kind,
+    this.provider = '',
+    this.model = '',
+    this.task = '',
+    this.maxSteps = 0,
+    super.time,
+    super.branchId,
+  });
+
+  final String toolCallId;
+  final SubagentKind kind;
+  final String provider;
+  final String model;
+  final String task;
+  final int maxSteps;
+}
+
+/// One event of the subagent run by [toolCallId]: [event] is from its own
+/// conversation (it has this event's seq, time and branch).
+final class FlitSubagentEvent extends FlitEvent {
+  const FlitSubagentEvent({
+    required super.seq,
+    required this.toolCallId,
+    required this.event,
+    super.time,
+    super.branchId,
+  });
+
+  final String toolCallId;
+  final FlitEvent event;
+}
+
+/// The subagent run by [toolCallId] ended; [report] is what the agent got.
+final class FlitSubagentDone extends FlitEvent {
+  const FlitSubagentDone({
+    required super.seq,
+    required this.toolCallId,
+    required this.status,
+    this.report = '',
+    this.error = '',
+    this.steps = 0,
+    super.time,
+    super.branchId,
+  });
+
+  final String toolCallId;
+  final SubagentStatus status;
+  final String report;
+  final String error;
+  final int steps;
+}

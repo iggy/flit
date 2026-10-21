@@ -19,6 +19,7 @@ import 'package:flit/domain/models/chat_message.dart';
 import 'package:flit/domain/models/deep_equals.dart';
 import 'package:flit/domain/models/flit_event.dart';
 import 'package:flit/domain/models/flit_session.dart';
+import 'package:flit/domain/models/subagent.dart';
 import 'package:flit/domain/models/tool_call.dart';
 import 'package:flit/domain/models/usage.dart';
 
@@ -395,7 +396,12 @@ final class FlitFoldState {
     this.pathLimits = const <String, int>{'': 1 << 53},
     this.kept = const <FlitEvent>[],
     this.keptCount = 0,
+    this.subagents = const <String, FlitFoldState>{},
   });
+
+  /// agent tool call id → the fold of its subagent's own conversation
+  /// (shown as that tool call's [Subagent.transcript]).
+  final Map<String, FlitFoldState> subagents;
 
   /// The seq of the event that started each entry of [messages].
   final List<int> messageSeqs;
@@ -555,6 +561,7 @@ final class FlitFoldState {
     Map<String, int>? pathLimits,
     List<FlitEvent>? kept,
     int? keptCount,
+    Map<String, FlitFoldState>? subagents,
   }) {
     return FlitFoldState(
       compacting: clearCompacting ? null : (compacting ?? this.compacting),
@@ -592,6 +599,7 @@ final class FlitFoldState {
       pathLimits: pathLimits ?? this.pathLimits,
       kept: kept ?? this.kept,
       keptCount: keptCount ?? this.keptCount,
+      subagents: subagents ?? this.subagents,
     );
   }
 
@@ -715,16 +723,7 @@ FlitFoldState _track(FlitFoldState s, FlitEvent e) {
       branch: <int>[...?branchMessages[branch], e.seq],
     };
   }
-  final skip = switch (e) {
-    FlitTextDelta() ||
-    FlitReasoningDelta() ||
-    FlitToolOutput() ||
-    FlitPromptProgress() ||
-    FlitModelCallWaiting() ||
-    FlitUnknownEvent() => true,
-    _ => false,
-  };
-  final (kept, keptCount) = skip ? (s.kept, s.keptCount) : _keep(s, e);
+  final (kept, keptCount) = _transient(e) ? (s.kept, s.keptCount) : _keep(s, e);
   return s.copyWith(
     branchMessages: branchMessages,
     branchLastSeq: s.branchLastSeq[branch] == e.seq
@@ -734,6 +733,19 @@ FlitFoldState _track(FlitFoldState s, FlitEvent e) {
     keptCount: keptCount,
   );
 }
+
+/// Whether [e] only matters while it streams: deltas and live output a
+/// finished message or tool doesn't need, for the agent or a subagent.
+bool _transient(FlitEvent e) => switch (e) {
+  FlitTextDelta() ||
+  FlitReasoningDelta() ||
+  FlitToolOutput() ||
+  FlitPromptProgress() ||
+  FlitModelCallWaiting() ||
+  FlitUnknownEvent() => true,
+  FlitSubagentEvent() => _transient(e.event),
+  _ => false,
+};
 
 /// Appends [e] to the kept events. States share one list: appending in
 /// place is safe while this state's count is its end; otherwise (an older
@@ -902,6 +914,38 @@ FlitFoldState _apply(FlitFoldState state, FlitEvent event) {
         status: event.isError ? ToolCallStatus.error : ToolCallStatus.done,
         result: event.result,
         summary: _toolSummary(s.safety[event.toolCallId], event.truncated),
+        subagent: t.subagent,
+      ),
+    ),
+    FlitSubagentStarted() => _updateTool(
+      s.copyWith(
+        subagents: <String, FlitFoldState>{
+          ...s.subagents,
+          event.toolCallId: const FlitFoldState(),
+        },
+      ),
+      event.toolCallId,
+      (t) => t.copyWith(
+        subagent: Subagent(
+          kind: event.kind,
+          provider: event.provider,
+          model: event.model,
+          task: event.task,
+          maxSteps: event.maxSteps,
+        ),
+      ),
+    ),
+    FlitSubagentEvent() => _subagentEvent(s, event.toolCallId, event.event),
+    FlitSubagentDone() => _updateTool(
+      s,
+      event.toolCallId,
+      (t) => t.copyWith(
+        subagent: t.subagent?.copyWith(
+          status: event.status,
+          report: event.report,
+          error: event.error,
+          steps: event.steps,
+        ),
       ),
     ),
     FlitPromptRequested() => s.copyWith(
@@ -997,7 +1041,27 @@ FlitFoldState _callOutput(
   );
 }
 
+/// Folds [e] into the conversation of the subagent run by [toolCallId]
+/// and shows the result on that tool call.
+FlitFoldState _subagentEvent(FlitFoldState s, String toolCallId, FlitEvent e) {
+  final child = _apply(s.subagents[toolCallId] ?? const FlitFoldState(), e);
+  return _updateTool(
+    s.copyWith(
+      subagents: <String, FlitFoldState>{...s.subagents, toolCallId: child},
+    ),
+    toolCallId,
+    (t) =>
+        t.copyWith(subagent: t.subagent?.copyWith(transcript: child.messages)),
+  );
+}
+
 FlitFoldState _permissionCheck(FlitFoldState s, FlitPermissionCheck e) {
+  // A subagent's command: its safety check shows on its own card.
+  for (final MapEntry(key: id, value: child) in s.subagents.entries) {
+    if (child.toolMessage.containsKey(e.toolCallId)) {
+      return _subagentEvent(s, id, e);
+    }
+  }
   final text = e.reason.isEmpty
       ? 'safety check: ${e.verdict.name}'
       : 'safety check: ${e.verdict.name}, ${e.reason}';
@@ -1222,6 +1286,7 @@ String? toolContext(String name, String arguments) {
     'shell' => str('command'),
     'grep' => [str('pattern'), str('path')].whereType<String>().join(' in '),
     'list' => str('path') ?? '.',
+    'agent' => str('task'),
     _ => str('path'),
   };
 }
