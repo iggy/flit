@@ -73,7 +73,7 @@ dependencies:
   # proto/dart/pubspec.yaml — bump them together.
   flit_api:
     path: ../proto/dart
-  connectrpc: 2.0.0
+  connectrpc: 2.0.1
   protobuf: 6.1.0
   fixnum: 1.1.1
   # QR scanning for flit pairing (Android/iOS only).
