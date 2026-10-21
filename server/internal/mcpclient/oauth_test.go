@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -178,7 +179,8 @@ func TestOAuthLoginAndRefresh(t *testing.T) {
 	if !strings.Contains(out.String(), f.URL+"/authorize?") {
 		t.Fatalf("login output lacks the URL:\n%s", out.String())
 	}
-	if fi, err := os.Stat(tokens.path); err != nil || fi.Mode().Perm() != 0o600 {
+	// Windows has no Unix permission bits, so only check the mode elsewhere.
+	if fi, err := os.Stat(tokens.path); err != nil || (runtime.GOOS != "windows" && fi.Mode().Perm() != 0o600) {
 		t.Fatalf("token file: %v, %v", fi, err)
 	}
 	if !tokens.SignedIn("remote", f.URL+"/mcp") || tokens.SignedIn("remote", "https://elsewhere/mcp") {
