@@ -1,0 +1,176 @@
+syntax = "proto3";
+
+package flit.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/iggy/flit/server/gen/flit/v1;flitv1";
+
+// CronService lists and runs cron jobs. A cron job is a prompt flit runs
+// on a schedule, unattended, each run as a new session in the job's
+// project. Jobs are Markdown files with YAML frontmatter in the server's
+// crons directory (see docs/cron.md); edit them there or ask an agent (the
+// cron tool).
+service CronService {
+  rpc ListCronJobs(ListCronJobsRequest) returns (ListCronJobsResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+
+  rpc GetCronJob(GetCronJobRequest) returns (GetCronJobResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+
+  // RunCronJob starts a run now, whatever the schedule and even if the job
+  // is disabled. Fails with FAILED_PRECONDITION while a run of the job is
+  // going.
+  rpc RunCronJob(RunCronJobRequest) returns (RunCronJobResponse);
+
+  // SetCronJobEnabled turns a job's schedule on or off (it rewrites
+  // enabled: in the job file).
+  rpc SetCronJobEnabled(SetCronJobEnabledRequest) returns (SetCronJobEnabledResponse);
+
+  // ListCronRuns lists a job's runs, newest first.
+  rpc ListCronRuns(ListCronRunsRequest) returns (ListCronRunsResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+}
+
+enum CronAsk {
+  CRON_ASK_UNSPECIFIED = 0;
+  // A command that would ask is refused at once.
+  CRON_ASK_DENY = 1;
+  // The prompt is held for ask_timeout, then refused.
+  CRON_ASK_WAIT = 2;
+}
+
+message CronJob {
+  // The job file's name without .md.
+  string name = 1;
+  // The schedule as written, e.g. "weekdays at 8:30" or "0 8 * * 1-5".
+  string schedule = 2;
+  // The schedule in words, e.g. "weekdays at 08:30".
+  string schedule_text = 3;
+  // Whether it runs once (in ..., at ...).
+  bool one_shot = 4;
+  bool enabled = 5;
+  // The project runs go to, as resolved; empty if it can't be.
+  string project_id = 6;
+  string project_name = 7;
+  // The working directory runs use; empty means the project's.
+  string dir = 8;
+  string role = 9;
+  // The job's own model; empty means the role's, agent.tasks.cron or the
+  // chat default.
+  string provider = 10;
+  string model = 11;
+  string effort = 12;
+  CronAsk ask = 13;
+  int64 ask_timeout_seconds = 14;
+  bool yolo = 15;
+  // IANA zone the schedule is read in.
+  string timezone = 16;
+  // The prompt (the file's body).
+  string prompt = 17;
+  // The job file on the server.
+  string path = 18;
+  // When it runs next; unset when disabled, broken or done.
+  google.protobuf.Timestamp next_run_time = 19;
+  // The latest run, if any.
+  CronRun last_run = 20;
+  // Why the file can't be used, if it can't; such a job never runs.
+  string error = 21;
+  // Set while a run is going: its session.
+  string running_session_id = 22;
+}
+
+enum CronRunState {
+  CRON_RUN_STATE_UNSPECIFIED = 0;
+  CRON_RUN_STATE_RUNNING = 1;
+  // Finished; the summary is the report's first line.
+  CRON_RUN_STATE_OK = 2;
+  // Finished, but something it wanted to do was refused (see
+  // refused_commands) or needs a look.
+  CRON_RUN_STATE_NEEDS_ATTENTION = 3;
+  // The run could not start or its turn ended in an error.
+  CRON_RUN_STATE_FAILED = 4;
+  // Not run: the previous run was still going.
+  CRON_RUN_STATE_SKIPPED = 5;
+}
+
+enum CronTrigger {
+  CRON_TRIGGER_UNSPECIFIED = 0;
+  CRON_TRIGGER_SCHEDULE = 1;
+  // A slot missed while flit was down, run late at startup.
+  CRON_TRIGGER_CATCH_UP = 2;
+  // RunCronJob, "flit cron run" or the cron tool.
+  CRON_TRIGGER_MANUAL = 3;
+}
+
+message CronRun {
+  string id = 1;
+  string job = 2;
+  // The run's session; empty for skipped runs and runs that failed to
+  // start.
+  string session_id = 3;
+  CronRunState state = 4;
+  CronTrigger trigger = 5;
+  // The slot it ran for (the request time for manual runs).
+  google.protobuf.Timestamp scheduled_time = 6;
+  google.protobuf.Timestamp start_time = 7;
+  // Unset while running.
+  google.protobuf.Timestamp finish_time = 8;
+  // The first line of the final reply, or why it failed or was skipped.
+  string summary = 9;
+  // Commands that were refused because nobody could approve them.
+  repeated string refused_commands = 10;
+  // Whether the report was "nothing to report".
+  bool quiet = 11;
+}
+
+message ListCronJobsRequest {}
+
+message ListCronJobsResponse {
+  // By name.
+  repeated CronJob jobs = 1;
+  // The crons directory on the server.
+  string dir = 2;
+}
+
+message GetCronJobRequest {
+  string name = 1;
+}
+
+message GetCronJobResponse {
+  CronJob job = 1;
+}
+
+message RunCronJobRequest {
+  string name = 1;
+}
+
+message RunCronJobResponse {
+  CronRun run = 1;
+}
+
+message SetCronJobEnabledRequest {
+  string name = 1;
+  bool enabled = 2;
+}
+
+message SetCronJobEnabledResponse {
+  CronJob job = 1;
+}
+
+message ListCronRunsRequest {
+  // Empty lists every job's runs.
+  string name = 1;
+  // Default 50, at most 200.
+  int32 page_size = 2;
+  // From a previous response's next_page_token.
+  string page_token = 3;
+}
+
+message ListCronRunsResponse {
+  repeated CronRun runs = 1;
+  string next_page_token = 2;
+}

@@ -51,6 +51,8 @@ func toProto(s store.Session) *flitv1.Session {
 		Yolo:          s.Yolo,
 		BranchId:      s.BranchID,
 		BaseCommit:    s.BaseCommit,
+		CronJob:       s.CronID,
+		Archived:      s.Archived,
 	}
 }
 
@@ -114,7 +116,7 @@ func (s *Service) ListSessions(ctx context.Context, req *connect.Request[flitv1.
 		}
 		offset = n
 	}
-	list, err := s.M.List(ctx, req.Msg.ProjectId, size+1, offset)
+	list, err := s.M.List(ctx, req.Msg.ProjectId, req.Msg.IncludeArchived, size+1, offset)
 	if err != nil {
 		return nil, connectErr(err)
 	}

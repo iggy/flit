@@ -4,8 +4,10 @@
 /// the session's app bar, whose project part goes back to that project.
 library;
 
+import 'package:flit/application/flit/flit_cron.dart';
 import 'package:flit/application/flit/flit_providers.dart';
 import 'package:flit/domain/models/flit_session.dart';
+import 'package:flit/presentation/flit/flit_crons.dart';
 import 'package:flit/presentation/flit/flit_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -90,7 +92,8 @@ class FlitNavPane extends ConsumerWidget {
                 tooltip: 'Refresh',
                 onPressed: () => ref
                   ..invalidate(flitProjectsProvider)
-                  ..invalidate(flitAllSessionsProvider),
+                  ..invalidate(flitAllSessionsProvider)
+                  ..invalidate(flitCronJobsProvider),
                 icon: const Icon(Icons.refresh),
               ),
             ),
@@ -130,9 +133,15 @@ class FlitNavPane extends ConsumerWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      trailing: FlitTaskStateChip(
-                        state: s.state,
-                        compact: true,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          if (s.isCronRun) ...<Widget>[
+                            FlitCronBadge(job: s.cronJob),
+                            const SizedBox(width: 4),
+                          ],
+                          FlitTaskStateChip(state: s.state, compact: true),
+                        ],
                       ),
                       onTap: () => context.go('/flit/session/${s.id}'),
                     ),
@@ -144,6 +153,7 @@ class FlitNavPane extends ConsumerWidget {
                     ),
                 ],
               ),
+            const FlitCronSection(),
           ],
         ),
       ),

@@ -6,6 +6,7 @@ import 'package:flit/application/flit/flit_pair_controller.dart';
 import 'package:flit/application/flit/flit_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/domain/models/flit_session.dart';
+import 'package:flit/presentation/flit/flit_crons.dart';
 import 'package:flit/presentation/flit/flit_projects.dart';
 import 'package:flit/presentation/flit/flit_widgets.dart';
 import 'package:flutter/material.dart';
@@ -111,6 +112,11 @@ class FlitSessionsScreen extends ConsumerWidget {
               ..invalidate(flitProjectsProvider),
             icon: const Icon(Icons.refresh),
           ),
+          IconButton(
+            tooltip: 'Cron jobs',
+            onPressed: () => context.push('/flit/crons'),
+            icon: const Icon(Icons.schedule),
+          ),
           const FlitProjectExportToggle(),
           IconButton(
             tooltip: 'Disconnect',
@@ -172,6 +178,10 @@ class FlitSessionsScreen extends ConsumerWidget {
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: <Widget>[
+                          if (s.isCronRun) ...<Widget>[
+                            FlitCronBadge(job: s.cronJob),
+                            const SizedBox(width: 4),
+                          ],
                           FlitTaskStateChip(state: s.state),
                           PopupMenuButton<String>(
                             tooltip: 'Session actions',

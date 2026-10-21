@@ -8,6 +8,7 @@
 //	flit devices [--all] | flit devices revoke ID
 //	flit debug session [ID]
 //	flit mcp list | flit mcp login NAME | flit mcp logout NAME
+//	flit cron list | flit cron run NAME
 //	flit version
 package main
 
@@ -25,6 +26,7 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+	_ "time/tzdata" // cron jobs' timezone: works without the OS's zone files
 
 	"github.com/iggy/flit/server/internal/agent"
 	"github.com/iggy/flit/server/internal/auth"
@@ -33,7 +35,9 @@ import (
 	"github.com/iggy/flit/server/internal/devices"
 	"github.com/iggy/flit/server/internal/mcpclient"
 	"github.com/iggy/flit/server/internal/models"
+	"github.com/iggy/flit/server/internal/notify"
 	"github.com/iggy/flit/server/internal/paths"
+	"github.com/iggy/flit/server/internal/scheduler"
 	"github.com/iggy/flit/server/internal/server"
 	"github.com/iggy/flit/server/internal/store"
 )
@@ -53,6 +57,8 @@ Usage:
   flit mcp logout NAME        forget an MCP server's sign-in
   flit config defaults        print the default config
   flit config update          add new default settings to the config (--dry-run shows a diff)
+  flit cron list              list cron jobs (see docs/cron.md)
+  flit cron run NAME          run a cron job now and wait for its result
   flit version                print version information
 
 Flags for serve, token, pair and devices:
@@ -123,6 +129,8 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		return mcpCmd(ctx, os.Stdin, stdout, stderr, args, defaultConfig)
 	case "config":
 		return configCmd(stdout, stderr, args, defaultConfig)
+	case "cron":
+		return cronCmd(ctx, stdout, stderr, args, defaultConfig)
 	case "help", "-h", "--help":
 		fmt.Fprintf(stdout, usage, defaultConfig)
 		return nil
@@ -263,9 +271,23 @@ func serve(ctx context.Context, stderr io.Writer, configPath, dataDirFlag string
 		log.Warn("no providers configured; add one under providers in the config to run sessions", "config", configPath)
 	}
 
-	srv := server.New(server.NewHandler(token, server.Deps{Sessions: sessions, Devices: devices.New(st), Config: current, Catalog: catalog, RolesDir: rolesDir, Store: st}), log)
+	ntfy := &notify.Ntfy{Config: current, Log: log}
+	crons := &scheduler.Scheduler{
+		M: sessions, Store: st, CronsDir: func() string { return relToConfig(current().CronsDir) }, DataDir: dataDir, Log: log,
+		Notify: func(ctx context.Context, m notify.Message) { _ = ntfy.Send(ctx, m) },
+	}
+	sessions.Crons = crons
+
+	srv := server.New(server.NewHandler(token, server.Deps{Sessions: sessions, Devices: devices.New(st), Config: current, Catalog: catalog, RolesDir: rolesDir, Store: st, Crons: crons}), log)
 	if err := srv.Apply(cfg); err != nil {
 		return err
+	}
+	// Only once the address is ours: another flit on the same data dir
+	// would otherwise have its running cron runs marked failed.
+	cronCtx, stopCrons := context.WithCancel(ctx)
+	defer stopCrons()
+	if err := crons.Start(cronCtx); err != nil {
+		return fmt.Errorf("start cron jobs: %w", err)
 	}
 
 	watchErr := make(chan error, 1)
@@ -298,5 +320,11 @@ func serve(ctx context.Context, stderr io.Writer, configPath, dataDirFlag string
 	log.Info("shutting down")
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	return srv.Shutdown(shutdownCtx)
+	err = srv.Shutdown(shutdownCtx)
+	// Stop the turns, then let cron runs record how they ended before the
+	// database closes.
+	stopCrons()
+	sessions.Close()
+	crons.Wait()
+	return err
 }
