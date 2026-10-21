@@ -1,15 +1,13 @@
 package tools
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
-	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/iggy/flit/server/internal/gitx"
 )
 
 // gitTimeout bounds one git command (a commit can run hooks).
@@ -22,19 +20,11 @@ func GitTools() []Tool {
 	return []Tool{gitStatusTool, gitDiffTool, gitLogTool, gitCommitTool}
 }
 
-// git runs git in dir without prompts or a pager.
+// git runs git in dir without prompts or a pager and returns everything it
+// printed, stderr included.
 func git(ctx context.Context, dir string, args ...string) (string, error) {
-	ctx, cancel := context.WithTimeout(ctx, gitTimeout)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, "git", append([]string{"-C", dir, "--no-pager"}, args...)...)
-	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0", "GIT_EDITOR=true", "GIT_PAGER=cat")
-	var out bytes.Buffer
-	cmd.Stdout, cmd.Stderr = &out, &out
-	err := cmd.Run()
-	if err != nil {
-		return out.String(), fmt.Errorf("git %s: %v\n%s", args[0], err, strings.TrimSpace(out.String()))
-	}
-	return out.String(), nil
+	out, err := gitx.RunOpts(ctx, dir, gitx.Options{Timeout: gitTimeout, Combined: true}, args...)
+	return out.Text, err
 }
 
 func gitResult(out string, err error) Result {

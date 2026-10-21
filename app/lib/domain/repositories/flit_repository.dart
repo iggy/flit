@@ -1,4 +1,5 @@
 import 'package:flit/domain/models/flit_event.dart';
+import 'package:flit/domain/models/flit_git.dart';
 import 'package:flit/domain/models/flit_learning.dart';
 import 'package:flit/domain/models/flit_session.dart';
 
@@ -165,6 +166,14 @@ abstract interface class FlitRepository {
     String server, {
     required bool enabled,
   });
+
+  /// The session's git repository and the files changed since its base
+  /// commit; [FlitGitStatus.none] outside git.
+  Future<FlitGitStatus> gitStatus(String sessionId);
+
+  /// The unified diff of the session's changes, optionally for one [path]
+  /// (relative to the repository root).
+  Future<FlitGitDiff> gitDiff(String sessionId, {String path = ''});
 
   /// Runs the learning pass on a session (the server's learning model):
   /// its proposals replace the session's earlier pending ones. Can take a

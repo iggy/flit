@@ -466,4 +466,46 @@ extension type SessionServiceClient (connect.Transport _transport) {
       onTrailer: onTrailer,
     );
   }
+
+  /// GitStatus reports the git repository the session works in: branch,
+  /// upstream, counts like git status, and the files changed since the
+  /// session's base commit (Session.base_commit), committed or not. A
+  /// working directory outside git is not an error: is_repo is false.
+  /// Clients refresh it when a turn ends or a tool call finishes.
+  Future<flitv1session.GitStatusResponse> gitStatus(
+    flitv1session.GitStatusRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.SessionService.gitStatus,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
+
+  /// GitDiff returns the unified diff of the session's changes: the base
+  /// commit against the working tree, untracked files included as new
+  /// files. The repository's index is left untouched.
+  Future<flitv1session.GitDiffResponse> gitDiff(
+    flitv1session.GitDiffRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.SessionService.gitDiff,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
 }

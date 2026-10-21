@@ -204,6 +204,48 @@ final $typed_data.Uint8List branchKindDescriptor = $convert.base64Decode(
     'CgpCcmFuY2hLaW5kEhsKF0JSQU5DSF9LSU5EX1VOU1BFQ0lGSUVEEAASFQoRQlJBTkNIX0tJTk'
     'RfUkVUUlkQARIUChBCUkFOQ0hfS0lORF9FRElUEAI=');
 
+@$core.Deprecated('Use gitDiffBaseDescriptor instead')
+const GitDiffBase$json = {
+  '1': 'GitDiffBase',
+  '2': [
+    {'1': 'GIT_DIFF_BASE_UNSPECIFIED', '2': 0},
+    {'1': 'GIT_DIFF_BASE_SESSION_START', '2': 1},
+    {'1': 'GIT_DIFF_BASE_HEAD_NO_BASE', '2': 2},
+    {'1': 'GIT_DIFF_BASE_HEAD_BASE_MISSING', '2': 3},
+    {'1': 'GIT_DIFF_BASE_EMPTY_TREE', '2': 4},
+  ],
+};
+
+/// Descriptor for `GitDiffBase`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List gitDiffBaseDescriptor = $convert.base64Decode(
+    'CgtHaXREaWZmQmFzZRIdChlHSVRfRElGRl9CQVNFX1VOU1BFQ0lGSUVEEAASHwobR0lUX0RJRk'
+    'ZfQkFTRV9TRVNTSU9OX1NUQVJUEAESHgoaR0lUX0RJRkZfQkFTRV9IRUFEX05PX0JBU0UQAhIj'
+    'Ch9HSVRfRElGRl9CQVNFX0hFQURfQkFTRV9NSVNTSU5HEAMSHAoYR0lUX0RJRkZfQkFTRV9FTV'
+    'BUWV9UUkVFEAQ=');
+
+@$core.Deprecated('Use gitFileStatusDescriptor instead')
+const GitFileStatus$json = {
+  '1': 'GitFileStatus',
+  '2': [
+    {'1': 'GIT_FILE_STATUS_UNSPECIFIED', '2': 0},
+    {'1': 'GIT_FILE_STATUS_MODIFIED', '2': 1},
+    {'1': 'GIT_FILE_STATUS_ADDED', '2': 2},
+    {'1': 'GIT_FILE_STATUS_DELETED', '2': 3},
+    {'1': 'GIT_FILE_STATUS_RENAMED', '2': 4},
+    {'1': 'GIT_FILE_STATUS_COPIED', '2': 5},
+    {'1': 'GIT_FILE_STATUS_TYPE_CHANGED', '2': 6},
+    {'1': 'GIT_FILE_STATUS_UNMERGED', '2': 7},
+  ],
+};
+
+/// Descriptor for `GitFileStatus`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List gitFileStatusDescriptor = $convert.base64Decode(
+    'Cg1HaXRGaWxlU3RhdHVzEh8KG0dJVF9GSUxFX1NUQVRVU19VTlNQRUNJRklFRBAAEhwKGEdJVF'
+    '9GSUxFX1NUQVRVU19NT0RJRklFRBABEhkKFUdJVF9GSUxFX1NUQVRVU19BRERFRBACEhsKF0dJ'
+    'VF9GSUxFX1NUQVRVU19ERUxFVEVEEAMSGwoXR0lUX0ZJTEVfU1RBVFVTX1JFTkFNRUQQBBIaCh'
+    'ZHSVRfRklMRV9TVEFUVVNfQ09QSUVEEAUSIAocR0lUX0ZJTEVfU1RBVFVTX1RZUEVfQ0hBTkdF'
+    'RBAGEhwKGEdJVF9GSUxFX1NUQVRVU19VTk1FUkdFRBAH');
+
 @$core.Deprecated('Use sessionDescriptor instead')
 const Session$json = {
   '1': 'Session',
@@ -247,6 +289,7 @@ const Session$json = {
     {'1': 'mcp_servers', '3': 16, '4': 3, '5': 9, '10': 'mcpServers'},
     {'1': 'yolo', '3': 17, '4': 1, '5': 8, '10': 'yolo'},
     {'1': 'branch_id', '3': 18, '4': 1, '5': 9, '10': 'branchId'},
+    {'1': 'base_commit', '3': 19, '4': 1, '5': 9, '10': 'baseCommit'},
   ],
 };
 
@@ -262,7 +305,8 @@ final $typed_data.Uint8List sessionDescriptor = $convert.base64Decode(
     'wgASgJUgZlZmZvcnQSEgoEcm9sZRgNIAEoCVIEcm9sZRIlCg5jb250ZXh0X3Rva2VucxgOIAEo'
     'A1INY29udGV4dFRva2VucxIlCg5jb250ZXh0X2xlbmd0aBgPIAEoA1INY29udGV4dExlbmd0aB'
     'IfCgttY3Bfc2VydmVycxgQIAMoCVIKbWNwU2VydmVycxISCgR5b2xvGBEgASgIUgR5b2xvEhsK'
-    'CWJyYW5jaF9pZBgSIAEoCVIIYnJhbmNoSWQ=');
+    'CWJyYW5jaF9pZBgSIAEoCVIIYnJhbmNoSWQSHwoLYmFzZV9jb21taXQYEyABKAlSCmJhc2VDb2'
+    '1taXQ=');
 
 @$core.Deprecated('Use createSessionRequestDescriptor instead')
 const CreateSessionRequest$json = {
@@ -2107,6 +2151,142 @@ final $typed_data.Uint8List branchSwitchedDescriptor = $convert.base64Decode(
     'Cg5CcmFuY2hTd2l0Y2hlZBIbCglicmFuY2hfaWQYASABKAlSCGJyYW5jaElkEhYKBmNsaWVudB'
     'gCIAEoCVIGY2xpZW50');
 
+@$core.Deprecated('Use gitStatusRequestDescriptor instead')
+const GitStatusRequest$json = {
+  '1': 'GitStatusRequest',
+  '2': [
+    {'1': 'session_id', '3': 1, '4': 1, '5': 9, '10': 'sessionId'},
+  ],
+};
+
+/// Descriptor for `GitStatusRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List gitStatusRequestDescriptor = $convert.base64Decode(
+    'ChBHaXRTdGF0dXNSZXF1ZXN0Eh0KCnNlc3Npb25faWQYASABKAlSCXNlc3Npb25JZA==');
+
+@$core.Deprecated('Use gitFileChangeDescriptor instead')
+const GitFileChange$json = {
+  '1': 'GitFileChange',
+  '2': [
+    {'1': 'path', '3': 1, '4': 1, '5': 9, '10': 'path'},
+    {'1': 'old_path', '3': 2, '4': 1, '5': 9, '10': 'oldPath'},
+    {
+      '1': 'status',
+      '3': 3,
+      '4': 1,
+      '5': 14,
+      '6': '.flit.v1.GitFileStatus',
+      '10': 'status'
+    },
+    {'1': 'additions', '3': 4, '4': 1, '5': 5, '10': 'additions'},
+    {'1': 'deletions', '3': 5, '4': 1, '5': 5, '10': 'deletions'},
+    {'1': 'binary', '3': 6, '4': 1, '5': 8, '10': 'binary'},
+    {'1': 'staged', '3': 7, '4': 1, '5': 8, '10': 'staged'},
+    {'1': 'unstaged', '3': 8, '4': 1, '5': 8, '10': 'unstaged'},
+    {'1': 'untracked', '3': 9, '4': 1, '5': 8, '10': 'untracked'},
+  ],
+};
+
+/// Descriptor for `GitFileChange`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List gitFileChangeDescriptor = $convert.base64Decode(
+    'Cg1HaXRGaWxlQ2hhbmdlEhIKBHBhdGgYASABKAlSBHBhdGgSGQoIb2xkX3BhdGgYAiABKAlSB2'
+    '9sZFBhdGgSLgoGc3RhdHVzGAMgASgOMhYuZmxpdC52MS5HaXRGaWxlU3RhdHVzUgZzdGF0dXMS'
+    'HAoJYWRkaXRpb25zGAQgASgFUglhZGRpdGlvbnMSHAoJZGVsZXRpb25zGAUgASgFUglkZWxldG'
+    'lvbnMSFgoGYmluYXJ5GAYgASgIUgZiaW5hcnkSFgoGc3RhZ2VkGAcgASgIUgZzdGFnZWQSGgoI'
+    'dW5zdGFnZWQYCCABKAhSCHVuc3RhZ2VkEhwKCXVudHJhY2tlZBgJIAEoCFIJdW50cmFja2Vk');
+
+@$core.Deprecated('Use gitStatusResponseDescriptor instead')
+const GitStatusResponse$json = {
+  '1': 'GitStatusResponse',
+  '2': [
+    {'1': 'is_repo', '3': 1, '4': 1, '5': 8, '10': 'isRepo'},
+    {'1': 'root', '3': 2, '4': 1, '5': 9, '10': 'root'},
+    {'1': 'branch', '3': 3, '4': 1, '5': 9, '10': 'branch'},
+    {'1': 'head', '3': 4, '4': 1, '5': 9, '10': 'head'},
+    {'1': 'detached', '3': 5, '4': 1, '5': 8, '10': 'detached'},
+    {'1': 'upstream', '3': 6, '4': 1, '5': 9, '10': 'upstream'},
+    {'1': 'ahead', '3': 7, '4': 1, '5': 5, '10': 'ahead'},
+    {'1': 'behind', '3': 8, '4': 1, '5': 5, '10': 'behind'},
+    {'1': 'staged_count', '3': 9, '4': 1, '5': 5, '10': 'stagedCount'},
+    {'1': 'unstaged_count', '3': 10, '4': 1, '5': 5, '10': 'unstagedCount'},
+    {'1': 'untracked_count', '3': 11, '4': 1, '5': 5, '10': 'untrackedCount'},
+    {'1': 'conflicted_count', '3': 12, '4': 1, '5': 5, '10': 'conflictedCount'},
+    {'1': 'base_commit', '3': 13, '4': 1, '5': 9, '10': 'baseCommit'},
+    {'1': 'diff_base', '3': 14, '4': 1, '5': 9, '10': 'diffBase'},
+    {
+      '1': 'diff_base_kind',
+      '3': 15,
+      '4': 1,
+      '5': 14,
+      '6': '.flit.v1.GitDiffBase',
+      '10': 'diffBaseKind'
+    },
+    {
+      '1': 'files',
+      '3': 16,
+      '4': 3,
+      '5': 11,
+      '6': '.flit.v1.GitFileChange',
+      '10': 'files'
+    },
+    {'1': 'files_truncated', '3': 17, '4': 1, '5': 8, '10': 'filesTruncated'},
+  ],
+};
+
+/// Descriptor for `GitStatusResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List gitStatusResponseDescriptor = $convert.base64Decode(
+    'ChFHaXRTdGF0dXNSZXNwb25zZRIXCgdpc19yZXBvGAEgASgIUgZpc1JlcG8SEgoEcm9vdBgCIA'
+    'EoCVIEcm9vdBIWCgZicmFuY2gYAyABKAlSBmJyYW5jaBISCgRoZWFkGAQgASgJUgRoZWFkEhoK'
+    'CGRldGFjaGVkGAUgASgIUghkZXRhY2hlZBIaCgh1cHN0cmVhbRgGIAEoCVIIdXBzdHJlYW0SFA'
+    'oFYWhlYWQYByABKAVSBWFoZWFkEhYKBmJlaGluZBgIIAEoBVIGYmVoaW5kEiEKDHN0YWdlZF9j'
+    'b3VudBgJIAEoBVILc3RhZ2VkQ291bnQSJQoOdW5zdGFnZWRfY291bnQYCiABKAVSDXVuc3RhZ2'
+    'VkQ291bnQSJwoPdW50cmFja2VkX2NvdW50GAsgASgFUg51bnRyYWNrZWRDb3VudBIpChBjb25m'
+    'bGljdGVkX2NvdW50GAwgASgFUg9jb25mbGljdGVkQ291bnQSHwoLYmFzZV9jb21taXQYDSABKA'
+    'lSCmJhc2VDb21taXQSGwoJZGlmZl9iYXNlGA4gASgJUghkaWZmQmFzZRI6Cg5kaWZmX2Jhc2Vf'
+    'a2luZBgPIAEoDjIULmZsaXQudjEuR2l0RGlmZkJhc2VSDGRpZmZCYXNlS2luZBIsCgVmaWxlcx'
+    'gQIAMoCzIWLmZsaXQudjEuR2l0RmlsZUNoYW5nZVIFZmlsZXMSJwoPZmlsZXNfdHJ1bmNhdGVk'
+    'GBEgASgIUg5maWxlc1RydW5jYXRlZA==');
+
+@$core.Deprecated('Use gitDiffRequestDescriptor instead')
+const GitDiffRequest$json = {
+  '1': 'GitDiffRequest',
+  '2': [
+    {'1': 'session_id', '3': 1, '4': 1, '5': 9, '10': 'sessionId'},
+    {'1': 'path', '3': 2, '4': 1, '5': 9, '10': 'path'},
+    {'1': 'max_bytes', '3': 3, '4': 1, '5': 5, '10': 'maxBytes'},
+  ],
+};
+
+/// Descriptor for `GitDiffRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List gitDiffRequestDescriptor = $convert.base64Decode(
+    'Cg5HaXREaWZmUmVxdWVzdBIdCgpzZXNzaW9uX2lkGAEgASgJUglzZXNzaW9uSWQSEgoEcGF0aB'
+    'gCIAEoCVIEcGF0aBIbCgltYXhfYnl0ZXMYAyABKAVSCG1heEJ5dGVz');
+
+@$core.Deprecated('Use gitDiffResponseDescriptor instead')
+const GitDiffResponse$json = {
+  '1': 'GitDiffResponse',
+  '2': [
+    {'1': 'is_repo', '3': 1, '4': 1, '5': 8, '10': 'isRepo'},
+    {'1': 'diff_base', '3': 2, '4': 1, '5': 9, '10': 'diffBase'},
+    {
+      '1': 'diff_base_kind',
+      '3': 3,
+      '4': 1,
+      '5': 14,
+      '6': '.flit.v1.GitDiffBase',
+      '10': 'diffBaseKind'
+    },
+    {'1': 'diff', '3': 4, '4': 1, '5': 9, '10': 'diff'},
+    {'1': 'truncated', '3': 5, '4': 1, '5': 8, '10': 'truncated'},
+  ],
+};
+
+/// Descriptor for `GitDiffResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List gitDiffResponseDescriptor = $convert.base64Decode(
+    'Cg9HaXREaWZmUmVzcG9uc2USFwoHaXNfcmVwbxgBIAEoCFIGaXNSZXBvEhsKCWRpZmZfYmFzZR'
+    'gCIAEoCVIIZGlmZkJhc2USOgoOZGlmZl9iYXNlX2tpbmQYAyABKA4yFC5mbGl0LnYxLkdpdERp'
+    'ZmZCYXNlUgxkaWZmQmFzZUtpbmQSEgoEZGlmZhgEIAEoCVIEZGlmZhIcCgl0cnVuY2F0ZWQYBS'
+    'ABKAhSCXRydW5jYXRlZA==');
+
 const $core.Map<$core.String, $core.dynamic> SessionServiceBase$json = {
   '1': 'SessionService',
   '2': [
@@ -2222,6 +2402,18 @@ const $core.Map<$core.String, $core.dynamic> SessionServiceBase$json = {
       '2': '.flit.v1.SwitchBranchRequest',
       '3': '.flit.v1.SwitchBranchResponse'
     },
+    {
+      '1': 'GitStatus',
+      '2': '.flit.v1.GitStatusRequest',
+      '3': '.flit.v1.GitStatusResponse',
+      '4': {'34': 1},
+    },
+    {
+      '1': 'GitDiff',
+      '2': '.flit.v1.GitDiffRequest',
+      '3': '.flit.v1.GitDiffResponse',
+      '4': {'34': 1},
+    },
   ],
 };
 
@@ -2313,6 +2505,11 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.flit.v1.EditMessageResponse': EditMessageResponse$json,
   '.flit.v1.SwitchBranchRequest': SwitchBranchRequest$json,
   '.flit.v1.SwitchBranchResponse': SwitchBranchResponse$json,
+  '.flit.v1.GitStatusRequest': GitStatusRequest$json,
+  '.flit.v1.GitStatusResponse': GitStatusResponse$json,
+  '.flit.v1.GitFileChange': GitFileChange$json,
+  '.flit.v1.GitDiffRequest': GitDiffRequest$json,
+  '.flit.v1.GitDiffResponse': GitDiffResponse$json,
 };
 
 /// Descriptor for `SessionService`. Decode as a `google.protobuf.ServiceDescriptorProto`.
@@ -2348,4 +2545,6 @@ final $typed_data.Uint8List sessionServiceDescriptor = $convert.base64Decode(
     'ZXRyeUZyb21NZXNzYWdlUmVzcG9uc2USSAoLRWRpdE1lc3NhZ2USGy5mbGl0LnYxLkVkaXRNZX'
     'NzYWdlUmVxdWVzdBocLmZsaXQudjEuRWRpdE1lc3NhZ2VSZXNwb25zZRJLCgxTd2l0Y2hCcmFu'
     'Y2gSHC5mbGl0LnYxLlN3aXRjaEJyYW5jaFJlcXVlc3QaHS5mbGl0LnYxLlN3aXRjaEJyYW5jaF'
-    'Jlc3BvbnNl');
+    'Jlc3BvbnNlEkcKCUdpdFN0YXR1cxIZLmZsaXQudjEuR2l0U3RhdHVzUmVxdWVzdBoaLmZsaXQu'
+    'djEuR2l0U3RhdHVzUmVzcG9uc2UiA5ACARJBCgdHaXREaWZmEhcuZmxpdC52MS5HaXREaWZmUm'
+    'VxdWVzdBoYLmZsaXQudjEuR2l0RGlmZlJlc3BvbnNlIgOQAgE=');

@@ -3,6 +3,7 @@
 library;
 
 import 'package:flit/domain/models/flit_event.dart';
+import 'package:flit/domain/models/flit_git.dart';
 import 'package:flit/domain/models/flit_learning.dart';
 import 'package:flit/domain/models/flit_session.dart';
 import 'package:flit_api/flit_api.dart' as pb;
@@ -37,6 +38,79 @@ FlitSession sessionFromProto(pb.Session s) {
     contextLength: s.contextLength.toInt(),
     mcpServers: List<String>.unmodifiable(s.mcpServers),
     yolo: s.yolo,
+  );
+}
+
+FlitDiffBase diffBaseFromProto(pb.GitDiffBase b) {
+  return switch (b) {
+    pb.GitDiffBase.GIT_DIFF_BASE_SESSION_START => FlitDiffBase.sessionStart,
+    pb.GitDiffBase.GIT_DIFF_BASE_HEAD_NO_BASE => FlitDiffBase.headNoBase,
+    pb.GitDiffBase.GIT_DIFF_BASE_HEAD_BASE_MISSING =>
+      FlitDiffBase.headBaseMissing,
+    pb.GitDiffBase.GIT_DIFF_BASE_EMPTY_TREE => FlitDiffBase.emptyTree,
+    _ => FlitDiffBase.unknown,
+  };
+}
+
+FlitFileStatus _fileStatus(pb.GitFileStatus s) {
+  return switch (s) {
+    pb.GitFileStatus.GIT_FILE_STATUS_MODIFIED => FlitFileStatus.modified,
+    pb.GitFileStatus.GIT_FILE_STATUS_ADDED => FlitFileStatus.added,
+    pb.GitFileStatus.GIT_FILE_STATUS_DELETED => FlitFileStatus.deleted,
+    pb.GitFileStatus.GIT_FILE_STATUS_RENAMED => FlitFileStatus.renamed,
+    pb.GitFileStatus.GIT_FILE_STATUS_COPIED => FlitFileStatus.copied,
+    pb.GitFileStatus.GIT_FILE_STATUS_TYPE_CHANGED => FlitFileStatus.typeChanged,
+    pb.GitFileStatus.GIT_FILE_STATUS_UNMERGED => FlitFileStatus.unmerged,
+    _ => FlitFileStatus.unknown,
+  };
+}
+
+FlitGitStatus gitStatusFromProto(pb.GitStatusResponse r) {
+  if (!r.isRepo) {
+    return FlitGitStatus.none;
+  }
+  return FlitGitStatus(
+    isRepo: true,
+    root: r.root,
+    branch: r.branch,
+    head: r.head,
+    detached: r.detached,
+    upstream: r.upstream,
+    ahead: r.ahead,
+    behind: r.behind,
+    stagedCount: r.stagedCount,
+    unstagedCount: r.unstagedCount,
+    untrackedCount: r.untrackedCount,
+    conflictedCount: r.conflictedCount,
+    baseCommit: r.baseCommit,
+    diffBase: r.diffBase,
+    diffBaseKind: diffBaseFromProto(r.diffBaseKind),
+    files: List<FlitGitFile>.unmodifiable(
+      r.files.map(
+        (f) => FlitGitFile(
+          path: f.path,
+          oldPath: f.oldPath,
+          status: _fileStatus(f.status),
+          additions: f.additions,
+          deletions: f.deletions,
+          binary: f.binary,
+          staged: f.staged,
+          unstaged: f.unstaged,
+          untracked: f.untracked,
+        ),
+      ),
+    ),
+    filesTruncated: r.filesTruncated,
+  );
+}
+
+FlitGitDiff gitDiffFromProto(pb.GitDiffResponse r) {
+  return FlitGitDiff(
+    isRepo: r.isRepo,
+    text: r.diff,
+    diffBase: r.diffBase,
+    diffBaseKind: diffBaseFromProto(r.diffBaseKind),
+    truncated: r.truncated,
   );
 }
 

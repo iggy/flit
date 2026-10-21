@@ -25,6 +25,7 @@ import (
 
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
 	"github.com/iggy/flit/server/internal/config"
+	"github.com/iggy/flit/server/internal/gitx"
 	"github.com/iggy/flit/server/internal/mcpclient"
 	"github.com/iggy/flit/server/internal/models"
 	"github.com/iggy/flit/server/internal/roles"
@@ -259,6 +260,13 @@ func (m *Manager) Create(ctx context.Context, o CreateOptions) (store.Session, e
 		}
 	}
 	info.ContextLength = m.contextLength(provider, model)
+	// The base commit is what the Changes view diffs against. A directory
+	// outside git (or git not installed) just has none.
+	if base, err := gitx.Head(ctx, dir); err == nil {
+		info.BaseCommit = base
+	} else {
+		m.log.Debug("no base commit", "dir", dir, "err", err)
+	}
 	if err := m.store.CreateSession(ctx, &info); err != nil {
 		return store.Session{}, err
 	}
@@ -642,4 +650,33 @@ func (m *Manager) Skills(ctx context.Context, id string) ([]skills.Skill, error)
 	}
 	list, _ := skills.Load(skills.SessionDirs(s.snapshot().WorkingDir, global))
 	return skills.WithBuiltin(list), nil
+}
+
+// maxGitFiles caps the changed files GitStatus lists.
+const maxGitFiles = 2000
+
+// GitStatus reports the git repository a session works in, with the files
+// changed since the session's base commit.
+func (m *Manager) GitStatus(ctx context.Context, id string) (*gitx.Status, error) {
+	s, err := m.session(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	info := s.snapshot()
+	return gitx.GetStatus(ctx, info.WorkingDir, info.BaseCommit, maxGitFiles)
+}
+
+// GitDiff returns the unified diff of a session's changes since its base
+// commit, optionally for one path relative to the repository root, cut at
+// maxBytes.
+func (m *Manager) GitDiff(ctx context.Context, id, path string, maxBytes int) (*gitx.Diff, error) {
+	if path != "" && (strings.HasPrefix(path, "-") || !filepath.IsLocal(path)) {
+		return nil, invalid("path must be relative to the repository root")
+	}
+	s, err := m.session(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	info := s.snapshot()
+	return gitx.GetDiff(ctx, info.WorkingDir, info.BaseCommit, path, maxBytes)
 }

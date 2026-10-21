@@ -222,6 +222,9 @@ state, and the agent's todo list.
 - **git** tools (status, diff, log, commit; nothing pushes), **web_fetch**,
   and **web_search** through a SearXNG instance (`web.search`); paid search
   APIs aren't supported.
+- **Changes view**: the app shows the session's branch and changed files,
+  with per-file diffs of everything since the session started; see
+  [docs/git.md](docs/git.md).
 - **Prompt appends** per provider (`providers[].prompt_append`) and per model
   (`agent.model_prompt_appends`).
 - **Ratings and a training corpus**: mark a reply or a model choice good or

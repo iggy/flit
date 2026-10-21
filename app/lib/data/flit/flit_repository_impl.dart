@@ -5,6 +5,7 @@ import 'package:fixnum/fixnum.dart';
 import 'package:flit/data/flit/flit_errors.dart';
 import 'package:flit/data/flit/flit_mappers.dart';
 import 'package:flit/domain/models/flit_event.dart';
+import 'package:flit/domain/models/flit_git.dart';
 import 'package:flit/domain/models/flit_learning.dart';
 import 'package:flit/domain/models/flit_session.dart';
 import 'package:flit/domain/repositories/flit_repository.dart';
@@ -495,6 +496,26 @@ final class FlitRepositoryImpl implements FlitRepository {
         pb.SetProjectExportRequest(projectId: projectId, enabled: enabled),
       );
       return projectFromProto(res.project);
+    });
+  }
+
+  @override
+  Future<FlitGitStatus> gitStatus(String sessionId) {
+    return flitCall(() async {
+      final res = await _sessions.gitStatus(
+        pb.GitStatusRequest(sessionId: sessionId),
+      );
+      return gitStatusFromProto(res);
+    });
+  }
+
+  @override
+  Future<FlitGitDiff> gitDiff(String sessionId, {String path = ''}) {
+    return flitCall(() async {
+      final res = await _sessions.gitDiff(
+        pb.GitDiffRequest(sessionId: sessionId, path: path),
+      );
+      return gitDiffFromProto(res);
     });
   }
 
