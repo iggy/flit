@@ -192,6 +192,9 @@ ALTER TABLE sessions ADD COLUMN branch_id TEXT NOT NULL DEFAULT '';
 ALTER TABLE model_calls ADD COLUMN branch_id TEXT NOT NULL DEFAULT '';
 ALTER TABLE ratings ADD COLUMN branch_id TEXT NOT NULL DEFAULT '';
 `,
+	`
+ALTER TABLE sessions ADD COLUMN base_commit TEXT NOT NULL DEFAULT '';
+`,
 }
 
 func (s *Store) migrate(ctx context.Context) error {
@@ -251,9 +254,12 @@ type Session struct {
 	// BranchID is the active branch (see package branches); empty is the
 	// root.
 	BranchID string
+	// BaseCommit is the commit HEAD was on when the session was created;
+	// empty if its directory wasn't in a git repository with commits.
+	BaseCommit string
 }
 
-const sessionCols = `id, team_id, project_id, title, working_dir, provider, model, state, last_seq, created_at, updated_at, effort, role, context_tokens, context_length, mcp_servers, yolo, branch_id`
+const sessionCols = `id, team_id, project_id, title, working_dir, provider, model, state, last_seq, created_at, updated_at, effort, role, context_tokens, context_length, mcp_servers, yolo, branch_id, base_commit`
 
 func joinNames(names []string) string { return strings.Join(names, "\n") }
 
@@ -269,7 +275,7 @@ func scanSession(row interface{ Scan(...any) error }) (Session, error) {
 	var created, updated int64
 	var mcp string
 	err := row.Scan(&s.ID, &s.TeamID, &s.ProjectID, &s.Title, &s.WorkingDir, &s.Provider, &s.Model,
-		&s.State, &s.LastSeq, &created, &updated, &s.Effort, &s.Role, &s.ContextTokens, &s.ContextLength, &mcp, &s.Yolo, &s.BranchID)
+		&s.State, &s.LastSeq, &created, &updated, &s.Effort, &s.Role, &s.ContextTokens, &s.ContextLength, &mcp, &s.Yolo, &s.BranchID, &s.BaseCommit)
 	s.MCPServers = splitNames(mcp)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Session{}, ErrNotFound
@@ -282,10 +288,10 @@ func scanSession(row interface{ Scan(...any) error }) (Session, error) {
 func (s *Store) CreateSession(ctx context.Context, sess *Session) error {
 	now := time.Now()
 	sess.CreatedAt, sess.UpdatedAt = now, now
-	_, err := s.db.ExecContext(ctx, `INSERT INTO sessions (`+sessionCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	_, err := s.db.ExecContext(ctx, `INSERT INTO sessions (`+sessionCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		sess.ID, sess.TeamID, sess.ProjectID, sess.Title, sess.WorkingDir, sess.Provider, sess.Model,
 		sess.State, sess.LastSeq, now.UnixNano(), now.UnixNano(), sess.Effort, sess.Role, sess.ContextTokens, sess.ContextLength,
-		joinNames(sess.MCPServers), sess.Yolo, sess.BranchID)
+		joinNames(sess.MCPServers), sess.Yolo, sess.BranchID, sess.BaseCommit)
 	return err
 }
 

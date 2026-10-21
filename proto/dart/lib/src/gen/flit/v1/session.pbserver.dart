@@ -67,6 +67,10 @@ abstract class SessionServiceBase extends $pb.GeneratedService {
       $pb.ServerContext ctx, $1.EditMessageRequest request);
   $async.Future<$1.SwitchBranchResponse> switchBranch(
       $pb.ServerContext ctx, $1.SwitchBranchRequest request);
+  $async.Future<$1.GitStatusResponse> gitStatus(
+      $pb.ServerContext ctx, $1.GitStatusRequest request);
+  $async.Future<$1.GitDiffResponse> gitDiff(
+      $pb.ServerContext ctx, $1.GitDiffRequest request);
 
   $pb.GeneratedMessage createRequest($core.String methodName) {
     switch (methodName) {
@@ -116,6 +120,10 @@ abstract class SessionServiceBase extends $pb.GeneratedService {
         return $1.EditMessageRequest();
       case 'SwitchBranch':
         return $1.SwitchBranchRequest();
+      case 'GitStatus':
+        return $1.GitStatusRequest();
+      case 'GitDiff':
+        return $1.GitDiffRequest();
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }
@@ -171,6 +179,10 @@ abstract class SessionServiceBase extends $pb.GeneratedService {
         return editMessage(ctx, request as $1.EditMessageRequest);
       case 'SwitchBranch':
         return switchBranch(ctx, request as $1.SwitchBranchRequest);
+      case 'GitStatus':
+        return gitStatus(ctx, request as $1.GitStatusRequest);
+      case 'GitDiff':
+        return gitDiff(ctx, request as $1.GitDiffRequest);
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }

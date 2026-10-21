@@ -12,6 +12,7 @@ import 'package:flit/domain/models/flit_session.dart';
 import 'package:flit/presentation/chat/message_bubble.dart';
 import 'package:flit/presentation/flit/flit_branch_controls.dart';
 import 'package:flit/presentation/flit/flit_call_status.dart';
+import 'package:flit/presentation/flit/flit_changes.dart';
 import 'package:flit/presentation/flit/flit_compaction.dart';
 import 'package:flit/presentation/flit/flit_mcp_sheet.dart';
 import 'package:flit/presentation/flit/flit_model_picker.dart';
@@ -540,15 +541,21 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
               ),
             if (session != null)
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    session.workingDir,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.outline,
+                padding: const EdgeInsets.fromLTRB(16, 4, 10, 0),
+                child: Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        session.workingDir,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                      ),
                     ),
-                  ),
+                    Flexible(child: FlitGitChip(sessionId: widget.sessionId)),
+                  ],
                 ),
               ),
             Expanded(

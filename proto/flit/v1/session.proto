@@ -126,6 +126,22 @@ service SessionService {
   // continues it and the model sees its history. FAILED_PRECONDITION while
   // a turn is running.
   rpc SwitchBranch(SwitchBranchRequest) returns (SwitchBranchResponse);
+
+  // GitStatus reports the git repository the session works in: branch,
+  // upstream, counts like git status, and the files changed since the
+  // session's base commit (Session.base_commit), committed or not. A
+  // working directory outside git is not an error: is_repo is false.
+  // Clients refresh it when a turn ends or a tool call finishes.
+  rpc GitStatus(GitStatusRequest) returns (GitStatusResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+
+  // GitDiff returns the unified diff of the session's changes: the base
+  // commit against the working tree, untracked files included as new
+  // files. The repository's index is left untouched.
+  rpc GitDiff(GitDiffRequest) returns (GitDiffResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
 }
 
 // TaskState is what a session's agent is doing.
@@ -173,6 +189,9 @@ message Session {
   bool yolo = 17;
   // The active branch (see Event.branch_id); empty is the root branch.
   string branch_id = 18;
+  // The git commit HEAD was on when the session was created; empty if the
+  // working directory wasn't in a git repository with commits.
+  string base_commit = 19;
 }
 
 message CreateSessionRequest {
@@ -982,4 +1001,105 @@ message BranchCreated {
 message BranchSwitched {
   string branch_id = 1;
   string client = 2;
+}
+
+message GitStatusRequest {
+  string session_id = 1;
+}
+
+// GitDiffBase says what a session's changes are compared against.
+enum GitDiffBase {
+  GIT_DIFF_BASE_UNSPECIFIED = 0;
+  // The session's base commit.
+  GIT_DIFF_BASE_SESSION_START = 1;
+  // HEAD, because the session has no base commit.
+  GIT_DIFF_BASE_HEAD_NO_BASE = 2;
+  // HEAD, because the base commit no longer exists in the repository.
+  GIT_DIFF_BASE_HEAD_BASE_MISSING = 3;
+  // The empty tree: there is no base and no HEAD commit, so every file is
+  // new.
+  GIT_DIFF_BASE_EMPTY_TREE = 4;
+}
+
+enum GitFileStatus {
+  GIT_FILE_STATUS_UNSPECIFIED = 0;
+  GIT_FILE_STATUS_MODIFIED = 1;
+  GIT_FILE_STATUS_ADDED = 2;
+  GIT_FILE_STATUS_DELETED = 3;
+  GIT_FILE_STATUS_RENAMED = 4;
+  GIT_FILE_STATUS_COPIED = 5;
+  GIT_FILE_STATUS_TYPE_CHANGED = 6;
+  GIT_FILE_STATUS_UNMERGED = 7;
+}
+
+// GitFileChange is a file changed since the diff base.
+message GitFileChange {
+  // Relative to the repository root, slash-separated.
+  string path = 1;
+  // The path before a rename or copy.
+  string old_path = 2;
+  GitFileStatus status = 3;
+  // Changed lines; both 0 for a binary file.
+  int32 additions = 4;
+  int32 deletions = 5;
+  bool binary = 6;
+  // Where the change is relative to HEAD. A file committed since the base
+  // and not touched since has none of these set.
+  bool staged = 7;
+  bool unstaged = 8;
+  bool untracked = 9;
+}
+
+message GitStatusResponse {
+  // False when the working directory isn't in a git work tree; nothing
+  // else is set then.
+  bool is_repo = 1;
+  // The work tree's top directory.
+  string root = 2;
+  // The checked-out branch; empty when HEAD is detached.
+  string branch = 3;
+  // HEAD's commit; empty on a branch with no commits yet.
+  string head = 4;
+  bool detached = 5;
+  // The branch's upstream (e.g. origin/main); empty if none. ahead and
+  // behind count commits relative to it.
+  string upstream = 6;
+  int32 ahead = 7;
+  int32 behind = 8;
+  // Files with staged, unstaged, untracked and conflicted changes relative
+  // to HEAD, as git status counts them.
+  int32 staged_count = 9;
+  int32 unstaged_count = 10;
+  int32 untracked_count = 11;
+  int32 conflicted_count = 12;
+  // The session's base commit (Session.base_commit), and the commit (or
+  // tree) actually diffed against, which differs when there is no usable
+  // base.
+  string base_commit = 13;
+  string diff_base = 14;
+  GitDiffBase diff_base_kind = 15;
+  // Files changed since diff_base. At most a server limit are listed;
+  // files_truncated says some were left out.
+  repeated GitFileChange files = 16;
+  bool files_truncated = 17;
+}
+
+message GitDiffRequest {
+  string session_id = 1;
+  // Only this file or directory, relative to the repository root; empty
+  // means every change.
+  string path = 2;
+  // Size limit in bytes; 0 means 1 MiB. The server caps it at 8 MiB.
+  int32 max_bytes = 3;
+}
+
+message GitDiffResponse {
+  // False when the working directory isn't in a git work tree.
+  bool is_repo = 1;
+  string diff_base = 2;
+  GitDiffBase diff_base_kind = 3;
+  // The unified diff (git diff format).
+  string diff = 4;
+  // The diff was cut at the size limit, at the end of a line.
+  bool truncated = 5;
 }

@@ -96,6 +96,11 @@ const (
 	// SessionServiceSwitchBranchProcedure is the fully-qualified name of the SessionService's
 	// SwitchBranch RPC.
 	SessionServiceSwitchBranchProcedure = "/flit.v1.SessionService/SwitchBranch"
+	// SessionServiceGitStatusProcedure is the fully-qualified name of the SessionService's GitStatus
+	// RPC.
+	SessionServiceGitStatusProcedure = "/flit.v1.SessionService/GitStatus"
+	// SessionServiceGitDiffProcedure is the fully-qualified name of the SessionService's GitDiff RPC.
+	SessionServiceGitDiffProcedure = "/flit.v1.SessionService/GitDiff"
 )
 
 // SessionServiceClient is a client for the flit.v1.SessionService service.
@@ -187,6 +192,16 @@ type SessionServiceClient interface {
 	// continues it and the model sees its history. FAILED_PRECONDITION while
 	// a turn is running.
 	SwitchBranch(context.Context, *connect.Request[v1.SwitchBranchRequest]) (*connect.Response[v1.SwitchBranchResponse], error)
+	// GitStatus reports the git repository the session works in: branch,
+	// upstream, counts like git status, and the files changed since the
+	// session's base commit (Session.base_commit), committed or not. A
+	// working directory outside git is not an error: is_repo is false.
+	// Clients refresh it when a turn ends or a tool call finishes.
+	GitStatus(context.Context, *connect.Request[v1.GitStatusRequest]) (*connect.Response[v1.GitStatusResponse], error)
+	// GitDiff returns the unified diff of the session's changes: the base
+	// commit against the working tree, untracked files included as new
+	// files. The repository's index is left untouched.
+	GitDiff(context.Context, *connect.Request[v1.GitDiffRequest]) (*connect.Response[v1.GitDiffResponse], error)
 }
 
 // NewSessionServiceClient constructs a client for the flit.v1.SessionService service. By default,
@@ -342,6 +357,20 @@ func NewSessionServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(sessionServiceMethods.ByName("SwitchBranch")),
 			connect.WithClientOptions(opts...),
 		),
+		gitStatus: connect.NewClient[v1.GitStatusRequest, v1.GitStatusResponse](
+			httpClient,
+			baseURL+SessionServiceGitStatusProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("GitStatus")),
+			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+			connect.WithClientOptions(opts...),
+		),
+		gitDiff: connect.NewClient[v1.GitDiffRequest, v1.GitDiffResponse](
+			httpClient,
+			baseURL+SessionServiceGitDiffProcedure,
+			connect.WithSchema(sessionServiceMethods.ByName("GitDiff")),
+			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -370,6 +399,8 @@ type sessionServiceClient struct {
 	retryFromMessage    *connect.Client[v1.RetryFromMessageRequest, v1.RetryFromMessageResponse]
 	editMessage         *connect.Client[v1.EditMessageRequest, v1.EditMessageResponse]
 	switchBranch        *connect.Client[v1.SwitchBranchRequest, v1.SwitchBranchResponse]
+	gitStatus           *connect.Client[v1.GitStatusRequest, v1.GitStatusResponse]
+	gitDiff             *connect.Client[v1.GitDiffRequest, v1.GitDiffResponse]
 }
 
 // CreateSession calls flit.v1.SessionService.CreateSession.
@@ -487,6 +518,16 @@ func (c *sessionServiceClient) SwitchBranch(ctx context.Context, req *connect.Re
 	return c.switchBranch.CallUnary(ctx, req)
 }
 
+// GitStatus calls flit.v1.SessionService.GitStatus.
+func (c *sessionServiceClient) GitStatus(ctx context.Context, req *connect.Request[v1.GitStatusRequest]) (*connect.Response[v1.GitStatusResponse], error) {
+	return c.gitStatus.CallUnary(ctx, req)
+}
+
+// GitDiff calls flit.v1.SessionService.GitDiff.
+func (c *sessionServiceClient) GitDiff(ctx context.Context, req *connect.Request[v1.GitDiffRequest]) (*connect.Response[v1.GitDiffResponse], error) {
+	return c.gitDiff.CallUnary(ctx, req)
+}
+
 // SessionServiceHandler is an implementation of the flit.v1.SessionService service.
 type SessionServiceHandler interface {
 	// CreateSession starts a new, idle session. Give working_dir, or a
@@ -576,6 +617,16 @@ type SessionServiceHandler interface {
 	// continues it and the model sees its history. FAILED_PRECONDITION while
 	// a turn is running.
 	SwitchBranch(context.Context, *connect.Request[v1.SwitchBranchRequest]) (*connect.Response[v1.SwitchBranchResponse], error)
+	// GitStatus reports the git repository the session works in: branch,
+	// upstream, counts like git status, and the files changed since the
+	// session's base commit (Session.base_commit), committed or not. A
+	// working directory outside git is not an error: is_repo is false.
+	// Clients refresh it when a turn ends or a tool call finishes.
+	GitStatus(context.Context, *connect.Request[v1.GitStatusRequest]) (*connect.Response[v1.GitStatusResponse], error)
+	// GitDiff returns the unified diff of the session's changes: the base
+	// commit against the working tree, untracked files included as new
+	// files. The repository's index is left untouched.
+	GitDiff(context.Context, *connect.Request[v1.GitDiffRequest]) (*connect.Response[v1.GitDiffResponse], error)
 }
 
 // NewSessionServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -727,6 +778,20 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 		connect.WithSchema(sessionServiceMethods.ByName("SwitchBranch")),
 		connect.WithHandlerOptions(opts...),
 	)
+	sessionServiceGitStatusHandler := connect.NewUnaryHandler(
+		SessionServiceGitStatusProcedure,
+		svc.GitStatus,
+		connect.WithSchema(sessionServiceMethods.ByName("GitStatus")),
+		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+		connect.WithHandlerOptions(opts...),
+	)
+	sessionServiceGitDiffHandler := connect.NewUnaryHandler(
+		SessionServiceGitDiffProcedure,
+		svc.GitDiff,
+		connect.WithSchema(sessionServiceMethods.ByName("GitDiff")),
+		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/flit.v1.SessionService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case SessionServiceCreateSessionProcedure:
@@ -775,6 +840,10 @@ func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.Handler
 			sessionServiceEditMessageHandler.ServeHTTP(w, r)
 		case SessionServiceSwitchBranchProcedure:
 			sessionServiceSwitchBranchHandler.ServeHTTP(w, r)
+		case SessionServiceGitStatusProcedure:
+			sessionServiceGitStatusHandler.ServeHTTP(w, r)
+		case SessionServiceGitDiffProcedure:
+			sessionServiceGitDiffHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -874,4 +943,12 @@ func (UnimplementedSessionServiceHandler) EditMessage(context.Context, *connect.
 
 func (UnimplementedSessionServiceHandler) SwitchBranch(context.Context, *connect.Request[v1.SwitchBranchRequest]) (*connect.Response[v1.SwitchBranchResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.SwitchBranch is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) GitStatus(context.Context, *connect.Request[v1.GitStatusRequest]) (*connect.Response[v1.GitStatusResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.GitStatus is not implemented"))
+}
+
+func (UnimplementedSessionServiceHandler) GitDiff(context.Context, *connect.Request[v1.GitDiffRequest]) (*connect.Response[v1.GitDiffResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.GitDiff is not implemented"))
 }
