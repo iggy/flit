@@ -241,6 +241,12 @@ CREATE TABLE learn_proposals (
 CREATE INDEX learn_proposals_by_session ON learn_proposals (session_id, created_at);
 CREATE INDEX learn_proposals_by_status ON learn_proposals (status, created_at);
 `,
+	`
+ALTER TABLE projects ADD COLUMN worktrees INTEGER;
+ALTER TABLE sessions ADD COLUMN source_dir TEXT NOT NULL DEFAULT '';
+ALTER TABLE sessions ADD COLUMN worktree_path TEXT NOT NULL DEFAULT '';
+ALTER TABLE sessions ADD COLUMN worktree_branch TEXT NOT NULL DEFAULT '';
+`,
 }
 
 func (s *Store) migrate(ctx context.Context) error {
@@ -307,9 +313,15 @@ type Session struct {
 	CronID string
 	// Archived sessions are left out of ListSessions.
 	Archived bool
+	// SourceDir is the directory the session was asked to work in. With a
+	// worktree, WorkingDir is the same place inside WorktreePath (on branch
+	// WorktreeBranch); otherwise SourceDir is empty.
+	SourceDir      string
+	WorktreePath   string
+	WorktreeBranch string
 }
 
-const sessionCols = `id, team_id, project_id, title, working_dir, provider, model, state, last_seq, created_at, updated_at, effort, role, context_tokens, context_length, mcp_servers, yolo, branch_id, base_commit, cron_id, archived`
+const sessionCols = `id, team_id, project_id, title, working_dir, provider, model, state, last_seq, created_at, updated_at, effort, role, context_tokens, context_length, mcp_servers, yolo, branch_id, base_commit, cron_id, archived, source_dir, worktree_path, worktree_branch`
 
 func joinNames(names []string) string { return strings.Join(names, "\n") }
 
@@ -325,7 +337,7 @@ func scanSession(row interface{ Scan(...any) error }) (Session, error) {
 	var created, updated int64
 	var mcp string
 	err := row.Scan(&s.ID, &s.TeamID, &s.ProjectID, &s.Title, &s.WorkingDir, &s.Provider, &s.Model,
-		&s.State, &s.LastSeq, &created, &updated, &s.Effort, &s.Role, &s.ContextTokens, &s.ContextLength, &mcp, &s.Yolo, &s.BranchID, &s.BaseCommit, &s.CronID, &s.Archived)
+		&s.State, &s.LastSeq, &created, &updated, &s.Effort, &s.Role, &s.ContextTokens, &s.ContextLength, &mcp, &s.Yolo, &s.BranchID, &s.BaseCommit, &s.CronID, &s.Archived, &s.SourceDir, &s.WorktreePath, &s.WorktreeBranch)
 	s.MCPServers = splitNames(mcp)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Session{}, ErrNotFound
@@ -338,10 +350,10 @@ func scanSession(row interface{ Scan(...any) error }) (Session, error) {
 func (s *Store) CreateSession(ctx context.Context, sess *Session) error {
 	now := time.Now()
 	sess.CreatedAt, sess.UpdatedAt = now, now
-	_, err := s.db.ExecContext(ctx, `INSERT INTO sessions (`+sessionCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	_, err := s.db.ExecContext(ctx, `INSERT INTO sessions (`+sessionCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		sess.ID, sess.TeamID, sess.ProjectID, sess.Title, sess.WorkingDir, sess.Provider, sess.Model,
 		sess.State, sess.LastSeq, now.UnixNano(), now.UnixNano(), sess.Effort, sess.Role, sess.ContextTokens, sess.ContextLength,
-		joinNames(sess.MCPServers), sess.Yolo, sess.BranchID, sess.BaseCommit, sess.CronID, sess.Archived)
+		joinNames(sess.MCPServers), sess.Yolo, sess.BranchID, sess.BaseCommit, sess.CronID, sess.Archived, sess.SourceDir, sess.WorktreePath, sess.WorktreeBranch)
 	return err
 }
 
@@ -423,6 +435,9 @@ type Project struct {
 	CreatedAt     time.Time
 	SessionCount  int
 	ExportEnabled bool
+	// Worktrees is the project's choice of per-session git worktrees; nil
+	// means the config's git.worktrees.default.
+	Worktrees *bool
 }
 
 // ErrExists is returned when creating something that already exists.
@@ -441,12 +456,12 @@ func (s *Store) CreateProject(ctx context.Context, p *Project) error {
 }
 
 const projectQuery = `SELECT p.id, p.team_id, p.name, p.directory, p.created_at,
-	(SELECT count(*) FROM sessions s WHERE s.project_id = p.id AND NOT s.archived), p.export_enabled FROM projects p`
+	(SELECT count(*) FROM sessions s WHERE s.project_id = p.id AND NOT s.archived), p.export_enabled, p.worktrees FROM projects p`
 
 func scanProject(row interface{ Scan(...any) error }) (Project, error) {
 	var p Project
 	var created int64
-	err := row.Scan(&p.ID, &p.TeamID, &p.Name, &p.Directory, &created, &p.SessionCount, &p.ExportEnabled)
+	err := row.Scan(&p.ID, &p.TeamID, &p.Name, &p.Directory, &created, &p.SessionCount, &p.ExportEnabled, &p.Worktrees)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Project{}, ErrNotFound
 	}

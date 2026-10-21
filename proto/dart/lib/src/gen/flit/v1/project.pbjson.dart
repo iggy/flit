@@ -36,6 +36,25 @@ const Project$json = {
       '10': 'createTime'
     },
     {'1': 'export_enabled', '3': 7, '4': 1, '5': 8, '10': 'exportEnabled'},
+    {
+      '1': 'worktrees',
+      '3': 8,
+      '4': 1,
+      '5': 8,
+      '9': 0,
+      '10': 'worktrees',
+      '17': true
+    },
+    {
+      '1': 'worktrees_enabled',
+      '3': 9,
+      '4': 1,
+      '5': 8,
+      '10': 'worktreesEnabled'
+    },
+  ],
+  '8': [
+    {'1': '_worktrees'},
   ],
 };
 
@@ -45,7 +64,8 @@ final $typed_data.Uint8List projectDescriptor = $convert.base64Decode(
     'FtZRgDIAEoCVIEbmFtZRIcCglkaXJlY3RvcnkYBCABKAlSCWRpcmVjdG9yeRIjCg1zZXNzaW9u'
     'X2NvdW50GAUgASgFUgxzZXNzaW9uQ291bnQSOwoLY3JlYXRlX3RpbWUYBiABKAsyGi5nb29nbG'
     'UucHJvdG9idWYuVGltZXN0YW1wUgpjcmVhdGVUaW1lEiUKDmV4cG9ydF9lbmFibGVkGAcgASgI'
-    'Ug1leHBvcnRFbmFibGVk');
+    'Ug1leHBvcnRFbmFibGVkEiEKCXdvcmt0cmVlcxgIIAEoCEgAUgl3b3JrdHJlZXOIAQESKwoRd2'
+    '9ya3RyZWVzX2VuYWJsZWQYCSABKAhSEHdvcmt0cmVlc0VuYWJsZWRCDAoKX3dvcmt0cmVlcw==');
 
 @$core.Deprecated('Use listProjectsRequestDescriptor instead')
 const ListProjectsRequest$json = {
@@ -146,6 +166,53 @@ final $typed_data.Uint8List setProjectExportResponseDescriptor =
         'ChhTZXRQcm9qZWN0RXhwb3J0UmVzcG9uc2USKgoHcHJvamVjdBgBIAEoCzIQLmZsaXQudjEuUH'
         'JvamVjdFIHcHJvamVjdA==');
 
+@$core.Deprecated('Use setProjectWorktreesRequestDescriptor instead')
+const SetProjectWorktreesRequest$json = {
+  '1': 'SetProjectWorktreesRequest',
+  '2': [
+    {'1': 'project_id', '3': 1, '4': 1, '5': 9, '10': 'projectId'},
+    {
+      '1': 'enabled',
+      '3': 2,
+      '4': 1,
+      '5': 8,
+      '9': 0,
+      '10': 'enabled',
+      '17': true
+    },
+  ],
+  '8': [
+    {'1': '_enabled'},
+  ],
+};
+
+/// Descriptor for `SetProjectWorktreesRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List setProjectWorktreesRequestDescriptor =
+    $convert.base64Decode(
+        'ChpTZXRQcm9qZWN0V29ya3RyZWVzUmVxdWVzdBIdCgpwcm9qZWN0X2lkGAEgASgJUglwcm9qZW'
+        'N0SWQSHQoHZW5hYmxlZBgCIAEoCEgAUgdlbmFibGVkiAEBQgoKCF9lbmFibGVk');
+
+@$core.Deprecated('Use setProjectWorktreesResponseDescriptor instead')
+const SetProjectWorktreesResponse$json = {
+  '1': 'SetProjectWorktreesResponse',
+  '2': [
+    {
+      '1': 'project',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.Project',
+      '10': 'project'
+    },
+  ],
+};
+
+/// Descriptor for `SetProjectWorktreesResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List setProjectWorktreesResponseDescriptor =
+    $convert.base64Decode(
+        'ChtTZXRQcm9qZWN0V29ya3RyZWVzUmVzcG9uc2USKgoHcHJvamVjdBgBIAEoCzIQLmZsaXQudj'
+        'EuUHJvamVjdFIHcHJvamVjdA==');
+
 const $core.Map<$core.String, $core.dynamic> ProjectServiceBase$json = {
   '1': 'ProjectService',
   '2': [
@@ -165,6 +232,11 @@ const $core.Map<$core.String, $core.dynamic> ProjectServiceBase$json = {
       '2': '.flit.v1.SetProjectExportRequest',
       '3': '.flit.v1.SetProjectExportResponse'
     },
+    {
+      '1': 'SetProjectWorktrees',
+      '2': '.flit.v1.SetProjectWorktreesRequest',
+      '3': '.flit.v1.SetProjectWorktreesResponse'
+    },
   ],
 };
 
@@ -179,6 +251,8 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.flit.v1.CreateProjectResponse': CreateProjectResponse$json,
   '.flit.v1.SetProjectExportRequest': SetProjectExportRequest$json,
   '.flit.v1.SetProjectExportResponse': SetProjectExportResponse$json,
+  '.flit.v1.SetProjectWorktreesRequest': SetProjectWorktreesRequest$json,
+  '.flit.v1.SetProjectWorktreesResponse': SetProjectWorktreesResponse$json,
 };
 
 /// Descriptor for `ProjectService`. Decode as a `google.protobuf.ServiceDescriptorProto`.
@@ -187,4 +261,6 @@ final $typed_data.Uint8List projectServiceDescriptor = $convert.base64Decode(
     'JlcXVlc3QaHS5mbGl0LnYxLkxpc3RQcm9qZWN0c1Jlc3BvbnNlIgOQAgESTgoNQ3JlYXRlUHJv'
     'amVjdBIdLmZsaXQudjEuQ3JlYXRlUHJvamVjdFJlcXVlc3QaHi5mbGl0LnYxLkNyZWF0ZVByb2'
     'plY3RSZXNwb25zZRJXChBTZXRQcm9qZWN0RXhwb3J0EiAuZmxpdC52MS5TZXRQcm9qZWN0RXhw'
-    'b3J0UmVxdWVzdBohLmZsaXQudjEuU2V0UHJvamVjdEV4cG9ydFJlc3BvbnNl');
+    'b3J0UmVxdWVzdBohLmZsaXQudjEuU2V0UHJvamVjdEV4cG9ydFJlc3BvbnNlEmAKE1NldFByb2'
+    'plY3RXb3JrdHJlZXMSIy5mbGl0LnYxLlNldFByb2plY3RXb3JrdHJlZXNSZXF1ZXN0GiQuZmxp'
+    'dC52MS5TZXRQcm9qZWN0V29ya3RyZWVzUmVzcG9uc2U=');

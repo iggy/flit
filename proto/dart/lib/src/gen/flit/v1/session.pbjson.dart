@@ -326,6 +326,9 @@ const Session$json = {
     {'1': 'base_commit', '3': 19, '4': 1, '5': 9, '10': 'baseCommit'},
     {'1': 'cron_job', '3': 20, '4': 1, '5': 9, '10': 'cronJob'},
     {'1': 'archived', '3': 21, '4': 1, '5': 8, '10': 'archived'},
+    {'1': 'source_dir', '3': 22, '4': 1, '5': 9, '10': 'sourceDir'},
+    {'1': 'worktree_path', '3': 23, '4': 1, '5': 9, '10': 'worktreePath'},
+    {'1': 'worktree_branch', '3': 24, '4': 1, '5': 9, '10': 'worktreeBranch'},
   ],
 };
 
@@ -343,7 +346,9 @@ final $typed_data.Uint8List sessionDescriptor = $convert.base64Decode(
     'IfCgttY3Bfc2VydmVycxgQIAMoCVIKbWNwU2VydmVycxISCgR5b2xvGBEgASgIUgR5b2xvEhsK'
     'CWJyYW5jaF9pZBgSIAEoCVIIYnJhbmNoSWQSHwoLYmFzZV9jb21taXQYEyABKAlSCmJhc2VDb2'
     '1taXQSGQoIY3Jvbl9qb2IYFCABKAlSB2Nyb25Kb2ISGgoIYXJjaGl2ZWQYFSABKAhSCGFyY2hp'
-    'dmVk');
+    'dmVkEh0KCnNvdXJjZV9kaXIYFiABKAlSCXNvdXJjZURpchIjCg13b3JrdHJlZV9wYXRoGBcgAS'
+    'gJUgx3b3JrdHJlZVBhdGgSJwoPd29ya3RyZWVfYnJhbmNoGBggASgJUg53b3JrdHJlZUJyYW5j'
+    'aA==');
 
 @$core.Deprecated('Use createSessionRequestDescriptor instead')
 const CreateSessionRequest$json = {
@@ -1456,6 +1461,42 @@ const Event$json = {
       '9': 0,
       '10': 'subagentDone'
     },
+    {
+      '1': 'worktree_created',
+      '3': 47,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.WorktreeCreated',
+      '9': 0,
+      '10': 'worktreeCreated'
+    },
+    {
+      '1': 'worktree_skipped',
+      '3': 48,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.WorktreeSkipped',
+      '9': 0,
+      '10': 'worktreeSkipped'
+    },
+    {
+      '1': 'worktree_removed',
+      '3': 49,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.WorktreeRemoved',
+      '9': 0,
+      '10': 'worktreeRemoved'
+    },
+    {
+      '1': 'worktree_kept',
+      '3': 50,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.WorktreeKept',
+      '9': 0,
+      '10': 'worktreeKept'
+    },
   ],
   '8': [
     {'1': 'payload'},
@@ -1510,8 +1551,13 @@ final $typed_data.Uint8List eventDescriptor = $convert.base64Decode(
     'J1blN0YXJ0ZWRIAFIHY3JvblJ1bhJFChBzdWJhZ2VudF9zdGFydGVkGCwgASgLMhguZmxpdC52'
     'MS5TdWJhZ2VudFN0YXJ0ZWRIAFIPc3ViYWdlbnRTdGFydGVkEj8KDnN1YmFnZW50X2V2ZW50GC'
     '0gASgLMhYuZmxpdC52MS5TdWJhZ2VudEV2ZW50SABSDXN1YmFnZW50RXZlbnQSPAoNc3ViYWdl'
-    'bnRfZG9uZRguIAEoCzIVLmZsaXQudjEuU3ViYWdlbnREb25lSABSDHN1YmFnZW50RG9uZUIJCg'
-    'dwYXlsb2Fk');
+    'bnRfZG9uZRguIAEoCzIVLmZsaXQudjEuU3ViYWdlbnREb25lSABSDHN1YmFnZW50RG9uZRJFCh'
+    'B3b3JrdHJlZV9jcmVhdGVkGC8gASgLMhguZmxpdC52MS5Xb3JrdHJlZUNyZWF0ZWRIAFIPd29y'
+    'a3RyZWVDcmVhdGVkEkUKEHdvcmt0cmVlX3NraXBwZWQYMCABKAsyGC5mbGl0LnYxLldvcmt0cm'
+    'VlU2tpcHBlZEgAUg93b3JrdHJlZVNraXBwZWQSRQoQd29ya3RyZWVfcmVtb3ZlZBgxIAEoCzIY'
+    'LmZsaXQudjEuV29ya3RyZWVSZW1vdmVkSABSD3dvcmt0cmVlUmVtb3ZlZBI8Cg13b3JrdHJlZV'
+    '9rZXB0GDIgASgLMhUuZmxpdC52MS5Xb3JrdHJlZUtlcHRIAFIMd29ya3RyZWVLZXB0QgkKB3Bh'
+    'eWxvYWQ=');
 
 @$core.Deprecated('Use messageStartedDescriptor instead')
 const MessageStarted$json = {
@@ -2487,6 +2533,88 @@ final $typed_data.Uint8List subagentDoneDescriptor = $convert.base64Decode(
     'AyABKAlSBnJlcG9ydBIUCgVlcnJvchgEIAEoCVIFZXJyb3ISFAoFc3RlcHMYBSABKAVSBXN0ZX'
     'Bz');
 
+@$core.Deprecated('Use worktreeCreatedDescriptor instead')
+const WorktreeCreated$json = {
+  '1': 'WorktreeCreated',
+  '2': [
+    {'1': 'path', '3': 1, '4': 1, '5': 9, '10': 'path'},
+    {'1': 'branch', '3': 2, '4': 1, '5': 9, '10': 'branch'},
+    {'1': 'base_commit', '3': 3, '4': 1, '5': 9, '10': 'baseCommit'},
+    {'1': 'source_root', '3': 4, '4': 1, '5': 9, '10': 'sourceRoot'},
+    {
+      '1': 'copies',
+      '3': 5,
+      '4': 3,
+      '5': 11,
+      '6': '.flit.v1.WorktreeCopy',
+      '10': 'copies'
+    },
+  ],
+};
+
+/// Descriptor for `WorktreeCreated`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List worktreeCreatedDescriptor = $convert.base64Decode(
+    'Cg9Xb3JrdHJlZUNyZWF0ZWQSEgoEcGF0aBgBIAEoCVIEcGF0aBIWCgZicmFuY2gYAiABKAlSBm'
+    'JyYW5jaBIfCgtiYXNlX2NvbW1pdBgDIAEoCVIKYmFzZUNvbW1pdBIfCgtzb3VyY2Vfcm9vdBgE'
+    'IAEoCVIKc291cmNlUm9vdBItCgZjb3BpZXMYBSADKAsyFS5mbGl0LnYxLldvcmt0cmVlQ29weV'
+    'IGY29waWVz');
+
+@$core.Deprecated('Use worktreeCopyDescriptor instead')
+const WorktreeCopy$json = {
+  '1': 'WorktreeCopy',
+  '2': [
+    {'1': 'path', '3': 1, '4': 1, '5': 9, '10': 'path'},
+    {'1': 'method', '3': 2, '4': 1, '5': 9, '10': 'method'},
+    {'1': 'error', '3': 3, '4': 1, '5': 9, '10': 'error'},
+  ],
+};
+
+/// Descriptor for `WorktreeCopy`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List worktreeCopyDescriptor = $convert.base64Decode(
+    'CgxXb3JrdHJlZUNvcHkSEgoEcGF0aBgBIAEoCVIEcGF0aBIWCgZtZXRob2QYAiABKAlSBm1ldG'
+    'hvZBIUCgVlcnJvchgDIAEoCVIFZXJyb3I=');
+
+@$core.Deprecated('Use worktreeSkippedDescriptor instead')
+const WorktreeSkipped$json = {
+  '1': 'WorktreeSkipped',
+  '2': [
+    {'1': 'reason', '3': 1, '4': 1, '5': 9, '10': 'reason'},
+  ],
+};
+
+/// Descriptor for `WorktreeSkipped`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List worktreeSkippedDescriptor = $convert
+    .base64Decode('Cg9Xb3JrdHJlZVNraXBwZWQSFgoGcmVhc29uGAEgASgJUgZyZWFzb24=');
+
+@$core.Deprecated('Use worktreeRemovedDescriptor instead')
+const WorktreeRemoved$json = {
+  '1': 'WorktreeRemoved',
+  '2': [
+    {'1': 'path', '3': 1, '4': 1, '5': 9, '10': 'path'},
+    {'1': 'branch', '3': 2, '4': 1, '5': 9, '10': 'branch'},
+  ],
+};
+
+/// Descriptor for `WorktreeRemoved`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List worktreeRemovedDescriptor = $convert.base64Decode(
+    'Cg9Xb3JrdHJlZVJlbW92ZWQSEgoEcGF0aBgBIAEoCVIEcGF0aBIWCgZicmFuY2gYAiABKAlSBm'
+    'JyYW5jaA==');
+
+@$core.Deprecated('Use worktreeKeptDescriptor instead')
+const WorktreeKept$json = {
+  '1': 'WorktreeKept',
+  '2': [
+    {'1': 'path', '3': 1, '4': 1, '5': 9, '10': 'path'},
+    {'1': 'branch', '3': 2, '4': 1, '5': 9, '10': 'branch'},
+    {'1': 'reason', '3': 3, '4': 1, '5': 9, '10': 'reason'},
+  ],
+};
+
+/// Descriptor for `WorktreeKept`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List worktreeKeptDescriptor = $convert.base64Decode(
+    'CgxXb3JrdHJlZUtlcHQSEgoEcGF0aBgBIAEoCVIEcGF0aBIWCgZicmFuY2gYAiABKAlSBmJyYW'
+    '5jaBIWCgZyZWFzb24YAyABKAlSBnJlYXNvbg==');
+
 const $core.Map<$core.String, $core.dynamic> SessionServiceBase$json = {
   '1': 'SessionService',
   '2': [
@@ -2669,6 +2797,11 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.flit.v1.SubagentStarted': SubagentStarted$json,
   '.flit.v1.SubagentEvent': SubagentEvent$json,
   '.flit.v1.SubagentDone': SubagentDone$json,
+  '.flit.v1.WorktreeCreated': WorktreeCreated$json,
+  '.flit.v1.WorktreeCopy': WorktreeCopy$json,
+  '.flit.v1.WorktreeSkipped': WorktreeSkipped$json,
+  '.flit.v1.WorktreeRemoved': WorktreeRemoved$json,
+  '.flit.v1.WorktreeKept': WorktreeKept$json,
   '.flit.v1.SendRequest': SendRequest$json,
   '.flit.v1.SendResponse': SendResponse$json,
   '.flit.v1.EditQueuedMessageRequest': EditQueuedMessageRequest$json,

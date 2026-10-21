@@ -211,6 +211,19 @@ func (s *Store) SetProjectExport(ctx context.Context, id string, enabled bool) e
 	return nil
 }
 
+// SetProjectWorktrees sets a project's choice of per-session worktrees; nil
+// goes back to the config's default.
+func (s *Store) SetProjectWorktrees(ctx context.Context, id string, enabled *bool) error {
+	res, err := s.db.ExecContext(ctx, `UPDATE projects SET worktrees = ? WHERE id = ?`, enabled, id)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 // ExportFilter narrows ExportModelCalls.
 type ExportFilter struct {
 	Since, Until time.Time

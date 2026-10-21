@@ -42,6 +42,9 @@ const (
 	// ProjectServiceSetProjectExportProcedure is the fully-qualified name of the ProjectService's
 	// SetProjectExport RPC.
 	ProjectServiceSetProjectExportProcedure = "/flit.v1.ProjectService/SetProjectExport"
+	// ProjectServiceSetProjectWorktreesProcedure is the fully-qualified name of the ProjectService's
+	// SetProjectWorktrees RPC.
+	ProjectServiceSetProjectWorktreesProcedure = "/flit.v1.ProjectService/SetProjectWorktrees"
 )
 
 // ProjectServiceClient is a client for the flit.v1.ProjectService service.
@@ -52,6 +55,11 @@ type ProjectServiceClient interface {
 	// SetProjectExport includes or excludes a project's sessions from
 	// "flit export". Projects are included by default.
 	SetProjectExport(context.Context, *connect.Request[v1.SetProjectExportRequest]) (*connect.Response[v1.SetProjectExportResponse], error)
+	// SetProjectWorktrees sets whether new sessions in the project get their
+	// own git worktree and branch (when its directory is in a repository).
+	// Unset goes back to the config's git.worktrees.default. Existing
+	// sessions keep what they have.
+	SetProjectWorktrees(context.Context, *connect.Request[v1.SetProjectWorktreesRequest]) (*connect.Response[v1.SetProjectWorktreesResponse], error)
 }
 
 // NewProjectServiceClient constructs a client for the flit.v1.ProjectService service. By default,
@@ -84,14 +92,21 @@ func NewProjectServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(projectServiceMethods.ByName("SetProjectExport")),
 			connect.WithClientOptions(opts...),
 		),
+		setProjectWorktrees: connect.NewClient[v1.SetProjectWorktreesRequest, v1.SetProjectWorktreesResponse](
+			httpClient,
+			baseURL+ProjectServiceSetProjectWorktreesProcedure,
+			connect.WithSchema(projectServiceMethods.ByName("SetProjectWorktrees")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // projectServiceClient implements ProjectServiceClient.
 type projectServiceClient struct {
-	listProjects     *connect.Client[v1.ListProjectsRequest, v1.ListProjectsResponse]
-	createProject    *connect.Client[v1.CreateProjectRequest, v1.CreateProjectResponse]
-	setProjectExport *connect.Client[v1.SetProjectExportRequest, v1.SetProjectExportResponse]
+	listProjects        *connect.Client[v1.ListProjectsRequest, v1.ListProjectsResponse]
+	createProject       *connect.Client[v1.CreateProjectRequest, v1.CreateProjectResponse]
+	setProjectExport    *connect.Client[v1.SetProjectExportRequest, v1.SetProjectExportResponse]
+	setProjectWorktrees *connect.Client[v1.SetProjectWorktreesRequest, v1.SetProjectWorktreesResponse]
 }
 
 // ListProjects calls flit.v1.ProjectService.ListProjects.
@@ -109,6 +124,11 @@ func (c *projectServiceClient) SetProjectExport(ctx context.Context, req *connec
 	return c.setProjectExport.CallUnary(ctx, req)
 }
 
+// SetProjectWorktrees calls flit.v1.ProjectService.SetProjectWorktrees.
+func (c *projectServiceClient) SetProjectWorktrees(ctx context.Context, req *connect.Request[v1.SetProjectWorktreesRequest]) (*connect.Response[v1.SetProjectWorktreesResponse], error) {
+	return c.setProjectWorktrees.CallUnary(ctx, req)
+}
+
 // ProjectServiceHandler is an implementation of the flit.v1.ProjectService service.
 type ProjectServiceHandler interface {
 	ListProjects(context.Context, *connect.Request[v1.ListProjectsRequest]) (*connect.Response[v1.ListProjectsResponse], error)
@@ -117,6 +137,11 @@ type ProjectServiceHandler interface {
 	// SetProjectExport includes or excludes a project's sessions from
 	// "flit export". Projects are included by default.
 	SetProjectExport(context.Context, *connect.Request[v1.SetProjectExportRequest]) (*connect.Response[v1.SetProjectExportResponse], error)
+	// SetProjectWorktrees sets whether new sessions in the project get their
+	// own git worktree and branch (when its directory is in a repository).
+	// Unset goes back to the config's git.worktrees.default. Existing
+	// sessions keep what they have.
+	SetProjectWorktrees(context.Context, *connect.Request[v1.SetProjectWorktreesRequest]) (*connect.Response[v1.SetProjectWorktreesResponse], error)
 }
 
 // NewProjectServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -145,6 +170,12 @@ func NewProjectServiceHandler(svc ProjectServiceHandler, opts ...connect.Handler
 		connect.WithSchema(projectServiceMethods.ByName("SetProjectExport")),
 		connect.WithHandlerOptions(opts...),
 	)
+	projectServiceSetProjectWorktreesHandler := connect.NewUnaryHandler(
+		ProjectServiceSetProjectWorktreesProcedure,
+		svc.SetProjectWorktrees,
+		connect.WithSchema(projectServiceMethods.ByName("SetProjectWorktrees")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/flit.v1.ProjectService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ProjectServiceListProjectsProcedure:
@@ -153,6 +184,8 @@ func NewProjectServiceHandler(svc ProjectServiceHandler, opts ...connect.Handler
 			projectServiceCreateProjectHandler.ServeHTTP(w, r)
 		case ProjectServiceSetProjectExportProcedure:
 			projectServiceSetProjectExportHandler.ServeHTTP(w, r)
+		case ProjectServiceSetProjectWorktreesProcedure:
+			projectServiceSetProjectWorktreesHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -172,4 +205,8 @@ func (UnimplementedProjectServiceHandler) CreateProject(context.Context, *connec
 
 func (UnimplementedProjectServiceHandler) SetProjectExport(context.Context, *connect.Request[v1.SetProjectExportRequest]) (*connect.Response[v1.SetProjectExportResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.ProjectService.SetProjectExport is not implemented"))
+}
+
+func (UnimplementedProjectServiceHandler) SetProjectWorktrees(context.Context, *connect.Request[v1.SetProjectWorktreesRequest]) (*connect.Response[v1.SetProjectWorktreesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.ProjectService.SetProjectWorktrees is not implemented"))
 }

@@ -33,8 +33,12 @@ type Project struct {
 	CreateTime   *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
 	// Whether "flit export" includes this project's sessions.
 	ExportEnabled bool `protobuf:"varint,7,opt,name=export_enabled,json=exportEnabled,proto3" json:"export_enabled,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// The project's choice of per-session worktrees; unset means the
+	// config's default. worktrees_enabled is the result.
+	Worktrees        *bool `protobuf:"varint,8,opt,name=worktrees,proto3,oneof" json:"worktrees,omitempty"`
+	WorktreesEnabled bool  `protobuf:"varint,9,opt,name=worktrees_enabled,json=worktreesEnabled,proto3" json:"worktrees_enabled,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *Project) Reset() {
@@ -112,6 +116,20 @@ func (x *Project) GetCreateTime() *timestamppb.Timestamp {
 func (x *Project) GetExportEnabled() bool {
 	if x != nil {
 		return x.ExportEnabled
+	}
+	return false
+}
+
+func (x *Project) GetWorktrees() bool {
+	if x != nil && x.Worktrees != nil {
+		return *x.Worktrees
+	}
+	return false
+}
+
+func (x *Project) GetWorktreesEnabled() bool {
+	if x != nil {
+		return x.WorktreesEnabled
 	}
 	return false
 }
@@ -391,11 +409,107 @@ func (x *SetProjectExportResponse) GetProject() *Project {
 	return nil
 }
 
+type SetProjectWorktreesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ProjectId     string                 `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	Enabled       *bool                  `protobuf:"varint,2,opt,name=enabled,proto3,oneof" json:"enabled,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetProjectWorktreesRequest) Reset() {
+	*x = SetProjectWorktreesRequest{}
+	mi := &file_flit_v1_project_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetProjectWorktreesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetProjectWorktreesRequest) ProtoMessage() {}
+
+func (x *SetProjectWorktreesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_project_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetProjectWorktreesRequest.ProtoReflect.Descriptor instead.
+func (*SetProjectWorktreesRequest) Descriptor() ([]byte, []int) {
+	return file_flit_v1_project_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *SetProjectWorktreesRequest) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+func (x *SetProjectWorktreesRequest) GetEnabled() bool {
+	if x != nil && x.Enabled != nil {
+		return *x.Enabled
+	}
+	return false
+}
+
+type SetProjectWorktreesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Project       *Project               `protobuf:"bytes,1,opt,name=project,proto3" json:"project,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetProjectWorktreesResponse) Reset() {
+	*x = SetProjectWorktreesResponse{}
+	mi := &file_flit_v1_project_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetProjectWorktreesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetProjectWorktreesResponse) ProtoMessage() {}
+
+func (x *SetProjectWorktreesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_project_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetProjectWorktreesResponse.ProtoReflect.Descriptor instead.
+func (*SetProjectWorktreesResponse) Descriptor() ([]byte, []int) {
+	return file_flit_v1_project_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *SetProjectWorktreesResponse) GetProject() *Project {
+	if x != nil {
+		return x.Project
+	}
+	return nil
+}
+
 var File_flit_v1_project_proto protoreflect.FileDescriptor
 
 const file_flit_v1_project_proto_rawDesc = "" +
 	"\n" +
-	"\x15flit/v1/project.proto\x12\aflit.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xed\x01\n" +
+	"\x15flit/v1/project.proto\x12\aflit.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xcb\x02\n" +
 	"\aProject\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
 	"\ateam_id\x18\x02 \x01(\tR\x06teamId\x12\x12\n" +
@@ -404,7 +518,11 @@ const file_flit_v1_project_proto_rawDesc = "" +
 	"\rsession_count\x18\x05 \x01(\x05R\fsessionCount\x12;\n" +
 	"\vcreate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"createTime\x12%\n" +
-	"\x0eexport_enabled\x18\a \x01(\bR\rexportEnabled\"\x15\n" +
+	"\x0eexport_enabled\x18\a \x01(\bR\rexportEnabled\x12!\n" +
+	"\tworktrees\x18\b \x01(\bH\x00R\tworktrees\x88\x01\x01\x12+\n" +
+	"\x11worktrees_enabled\x18\t \x01(\bR\x10worktreesEnabledB\f\n" +
+	"\n" +
+	"_worktrees\"\x15\n" +
 	"\x13ListProjectsRequest\"D\n" +
 	"\x14ListProjectsResponse\x12,\n" +
 	"\bprojects\x18\x01 \x03(\v2\x10.flit.v1.ProjectR\bprojects\"H\n" +
@@ -418,11 +536,20 @@ const file_flit_v1_project_proto_rawDesc = "" +
 	"project_id\x18\x01 \x01(\tR\tprojectId\x12\x18\n" +
 	"\aenabled\x18\x02 \x01(\bR\aenabled\"F\n" +
 	"\x18SetProjectExportResponse\x12*\n" +
-	"\aproject\x18\x01 \x01(\v2\x10.flit.v1.ProjectR\aproject2\x8b\x02\n" +
+	"\aproject\x18\x01 \x01(\v2\x10.flit.v1.ProjectR\aproject\"f\n" +
+	"\x1aSetProjectWorktreesRequest\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x01 \x01(\tR\tprojectId\x12\x1d\n" +
+	"\aenabled\x18\x02 \x01(\bH\x00R\aenabled\x88\x01\x01B\n" +
+	"\n" +
+	"\b_enabled\"I\n" +
+	"\x1bSetProjectWorktreesResponse\x12*\n" +
+	"\aproject\x18\x01 \x01(\v2\x10.flit.v1.ProjectR\aproject2\xed\x02\n" +
 	"\x0eProjectService\x12P\n" +
 	"\fListProjects\x12\x1c.flit.v1.ListProjectsRequest\x1a\x1d.flit.v1.ListProjectsResponse\"\x03\x90\x02\x01\x12N\n" +
 	"\rCreateProject\x12\x1d.flit.v1.CreateProjectRequest\x1a\x1e.flit.v1.CreateProjectResponse\x12W\n" +
-	"\x10SetProjectExport\x12 .flit.v1.SetProjectExportRequest\x1a!.flit.v1.SetProjectExportResponseB0Z.github.com/iggy/flit/server/gen/flit/v1;flitv1b\x06proto3"
+	"\x10SetProjectExport\x12 .flit.v1.SetProjectExportRequest\x1a!.flit.v1.SetProjectExportResponse\x12`\n" +
+	"\x13SetProjectWorktrees\x12#.flit.v1.SetProjectWorktreesRequest\x1a$.flit.v1.SetProjectWorktreesResponseB0Z.github.com/iggy/flit/server/gen/flit/v1;flitv1b\x06proto3"
 
 var (
 	file_flit_v1_project_proto_rawDescOnce sync.Once
@@ -436,33 +563,38 @@ func file_flit_v1_project_proto_rawDescGZIP() []byte {
 	return file_flit_v1_project_proto_rawDescData
 }
 
-var file_flit_v1_project_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_flit_v1_project_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_flit_v1_project_proto_goTypes = []any{
-	(*Project)(nil),                  // 0: flit.v1.Project
-	(*ListProjectsRequest)(nil),      // 1: flit.v1.ListProjectsRequest
-	(*ListProjectsResponse)(nil),     // 2: flit.v1.ListProjectsResponse
-	(*CreateProjectRequest)(nil),     // 3: flit.v1.CreateProjectRequest
-	(*CreateProjectResponse)(nil),    // 4: flit.v1.CreateProjectResponse
-	(*SetProjectExportRequest)(nil),  // 5: flit.v1.SetProjectExportRequest
-	(*SetProjectExportResponse)(nil), // 6: flit.v1.SetProjectExportResponse
-	(*timestamppb.Timestamp)(nil),    // 7: google.protobuf.Timestamp
+	(*Project)(nil),                     // 0: flit.v1.Project
+	(*ListProjectsRequest)(nil),         // 1: flit.v1.ListProjectsRequest
+	(*ListProjectsResponse)(nil),        // 2: flit.v1.ListProjectsResponse
+	(*CreateProjectRequest)(nil),        // 3: flit.v1.CreateProjectRequest
+	(*CreateProjectResponse)(nil),       // 4: flit.v1.CreateProjectResponse
+	(*SetProjectExportRequest)(nil),     // 5: flit.v1.SetProjectExportRequest
+	(*SetProjectExportResponse)(nil),    // 6: flit.v1.SetProjectExportResponse
+	(*SetProjectWorktreesRequest)(nil),  // 7: flit.v1.SetProjectWorktreesRequest
+	(*SetProjectWorktreesResponse)(nil), // 8: flit.v1.SetProjectWorktreesResponse
+	(*timestamppb.Timestamp)(nil),       // 9: google.protobuf.Timestamp
 }
 var file_flit_v1_project_proto_depIdxs = []int32{
-	7, // 0: flit.v1.Project.create_time:type_name -> google.protobuf.Timestamp
+	9, // 0: flit.v1.Project.create_time:type_name -> google.protobuf.Timestamp
 	0, // 1: flit.v1.ListProjectsResponse.projects:type_name -> flit.v1.Project
 	0, // 2: flit.v1.CreateProjectResponse.project:type_name -> flit.v1.Project
 	0, // 3: flit.v1.SetProjectExportResponse.project:type_name -> flit.v1.Project
-	1, // 4: flit.v1.ProjectService.ListProjects:input_type -> flit.v1.ListProjectsRequest
-	3, // 5: flit.v1.ProjectService.CreateProject:input_type -> flit.v1.CreateProjectRequest
-	5, // 6: flit.v1.ProjectService.SetProjectExport:input_type -> flit.v1.SetProjectExportRequest
-	2, // 7: flit.v1.ProjectService.ListProjects:output_type -> flit.v1.ListProjectsResponse
-	4, // 8: flit.v1.ProjectService.CreateProject:output_type -> flit.v1.CreateProjectResponse
-	6, // 9: flit.v1.ProjectService.SetProjectExport:output_type -> flit.v1.SetProjectExportResponse
-	7, // [7:10] is the sub-list for method output_type
-	4, // [4:7] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	0, // 4: flit.v1.SetProjectWorktreesResponse.project:type_name -> flit.v1.Project
+	1, // 5: flit.v1.ProjectService.ListProjects:input_type -> flit.v1.ListProjectsRequest
+	3, // 6: flit.v1.ProjectService.CreateProject:input_type -> flit.v1.CreateProjectRequest
+	5, // 7: flit.v1.ProjectService.SetProjectExport:input_type -> flit.v1.SetProjectExportRequest
+	7, // 8: flit.v1.ProjectService.SetProjectWorktrees:input_type -> flit.v1.SetProjectWorktreesRequest
+	2, // 9: flit.v1.ProjectService.ListProjects:output_type -> flit.v1.ListProjectsResponse
+	4, // 10: flit.v1.ProjectService.CreateProject:output_type -> flit.v1.CreateProjectResponse
+	6, // 11: flit.v1.ProjectService.SetProjectExport:output_type -> flit.v1.SetProjectExportResponse
+	8, // 12: flit.v1.ProjectService.SetProjectWorktrees:output_type -> flit.v1.SetProjectWorktreesResponse
+	9, // [9:13] is the sub-list for method output_type
+	5, // [5:9] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_flit_v1_project_proto_init() }
@@ -470,13 +602,15 @@ func file_flit_v1_project_proto_init() {
 	if File_flit_v1_project_proto != nil {
 		return
 	}
+	file_flit_v1_project_proto_msgTypes[0].OneofWrappers = []any{}
+	file_flit_v1_project_proto_msgTypes[7].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_flit_v1_project_proto_rawDesc), len(file_flit_v1_project_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

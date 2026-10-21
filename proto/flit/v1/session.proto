@@ -199,6 +199,13 @@ message Session {
   // Archived sessions are left out of ListSessions unless asked for (old
   // cron runs beyond the job's keep_runs). Nothing is deleted.
   bool archived = 21;
+  // With a per-session worktree (see ProjectService.SetProjectWorktrees):
+  // the directory the session was asked to work in, the worktree's root
+  // and its branch. working_dir is then the same place inside the
+  // worktree. All empty without a worktree.
+  string source_dir = 22;
+  string worktree_path = 23;
+  string worktree_branch = 24;
 }
 
 message CreateSessionRequest {
@@ -539,6 +546,10 @@ message Event {
     SubagentStarted subagent_started = 44;
     SubagentEvent subagent_event = 45;
     SubagentDone subagent_done = 46;
+    WorktreeCreated worktree_created = 47;
+    WorktreeSkipped worktree_skipped = 48;
+    WorktreeRemoved worktree_removed = 49;
+    WorktreeKept worktree_kept = 50;
   }
 }
 
@@ -1196,4 +1207,47 @@ message SubagentDone {
   string error = 4;
   // Model calls it made.
   int32 steps = 5;
+}
+
+// WorktreeCreated opens a session that got its own git worktree.
+message WorktreeCreated {
+  // The worktree's root and branch, the commit it started at (the
+  // session's base_commit) and the checkout it came from.
+  string path = 1;
+  string branch = 2;
+  string base_commit = 3;
+  string source_root = 4;
+  // Ignored directories copied in from the checkout.
+  repeated WorktreeCopy copies = 5;
+}
+
+message WorktreeCopy {
+  // Relative to the repository root.
+  string path = 1;
+  // "reflink" (copy on write) or "copy" (the filesystem can't reflink).
+  string method = 2;
+  // Why the copy failed; empty if it didn't.
+  string error = 3;
+}
+
+// WorktreeSkipped says a session in a project that uses worktrees works
+// in its directory directly, and why (not a git repository, no commits
+// yet, git failed).
+message WorktreeSkipped {
+  string reason = 1;
+}
+
+// WorktreeRemoved says the session's worktree and branch were deleted.
+message WorktreeRemoved {
+  string path = 1;
+  string branch = 2;
+}
+
+// WorktreeKept says the session's worktree was left in place when it
+// would have been removed, and why (uncommitted changes, unpushed
+// commits).
+message WorktreeKept {
+  string path = 1;
+  string branch = 2;
+  string reason = 3;
 }

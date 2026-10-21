@@ -275,10 +275,30 @@ func (m *Manager) Create(ctx context.Context, o CreateOptions) (store.Session, e
 	} else {
 		m.log.Debug("no base commit", "dir", dir, "err", err)
 	}
+	var worktree *flitv1.Event
+	if m.worktreesFor(project) {
+		// Sets the worktree's starting commit as the base commit.
+		worktree = m.addWorktree(ctx, &info)
+	}
 	if err := m.store.CreateSession(ctx, &info); err != nil {
+		if info.WorktreePath != "" {
+			if err := gitx.RemoveWorktree(ctx, info.WorktreePath, info.WorktreeBranch); err != nil {
+				m.log.Warn("remove worktree of unsaved session", "path", info.WorktreePath, "err", err)
+			}
+		}
 		return store.Session{}, err
 	}
-	return info, nil
+	if worktree == nil {
+		return info, nil
+	}
+	s, err := m.session(ctx, info.ID)
+	if err != nil {
+		return store.Session{}, err
+	}
+	if _, err := s.append(worktree); err != nil {
+		return store.Session{}, err
+	}
+	return s.snapshot(), nil
 }
 
 // resolveModel fills in config defaults and checks the provider exists.
@@ -635,6 +655,15 @@ func (m *Manager) SetMCPServer(ctx context.Context, id, server string, enabled b
 		return store.Session{}, err
 	}
 	return s.setMCPServer(ctx, server, enabled)
+}
+
+// SetProjectWorktrees sets whether new sessions in a project get their own
+// worktree; nil means the config's default.
+func (m *Manager) SetProjectWorktrees(ctx context.Context, id string, enabled *bool) (store.Project, error) {
+	if err := m.store.SetProjectWorktrees(ctx, id, enabled); err != nil {
+		return store.Project{}, err
+	}
+	return m.store.GetProject(ctx, id)
 }
 
 // SetProjectExport includes or excludes a project from export.
