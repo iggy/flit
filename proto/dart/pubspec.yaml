@@ -9,6 +9,6 @@ environment:
 # Exact pins, matching the app's convention. Keep these in step with the
 # remote plugin versions in ../buf.gen.yaml.
 dependencies:
-  connectrpc: 2.0.0
+  connectrpc: 2.0.1
   fixnum: 1.1.1
   protobuf: 6.1.0
