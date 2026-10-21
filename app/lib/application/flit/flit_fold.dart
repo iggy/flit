@@ -395,7 +395,12 @@ final class FlitFoldState {
     this.pathLimits = const <String, int>{'': 1 << 53},
     this.kept = const <FlitEvent>[],
     this.keptCount = 0,
+    this.fileToolsDone = 0,
   });
+
+  /// How many finished tool calls may have changed files ([flitFileTools]);
+  /// the Changes view refreshes when it moves.
+  final int fileToolsDone;
 
   /// The seq of the event that started each entry of [messages].
   final List<int> messageSeqs;
@@ -555,8 +560,10 @@ final class FlitFoldState {
     Map<String, int>? pathLimits,
     List<FlitEvent>? kept,
     int? keptCount,
+    int? fileToolsDone,
   }) {
     return FlitFoldState(
+      fileToolsDone: fileToolsDone ?? this.fileToolsDone,
       compacting: clearCompacting ? null : (compacting ?? this.compacting),
       compactions: compactions ?? this.compactions,
       keptIndex: clearKept ? null : (keptIndex ?? this.keptIndex),
@@ -629,6 +636,7 @@ final class FlitFoldState {
         deepListEquals(other.compactions, compactions) &&
         other.keptIndex == keptIndex &&
         other.activeBranch == activeBranch &&
+        other.fileToolsDone == fileToolsDone &&
         shallowMapEquals(other.branches, branches) &&
         shallowMapEquals(other.branchChoices, branchChoices);
   }
@@ -893,7 +901,7 @@ FlitFoldState _apply(FlitFoldState state, FlitEvent event) {
       );
     }),
     FlitToolCallDone() => _updateTool(
-      s,
+      _countFileTool(s, event.toolCallId),
       event.toolCallId,
       (t) => ToolCall(
         id: t.id,
@@ -1181,6 +1189,26 @@ FlitFoldState _updateMessage(
   final messages = <ChatMessage>[...s.messages];
   messages[index] = update(messages[index]);
   return s.copyWith(messages: messages);
+}
+
+/// Tools that may change files in the working tree. MCP tools could too,
+/// but a turn's end refreshes after those.
+const Set<String> flitFileTools = <String>{
+  'write',
+  'patch',
+  'shell',
+  'git_commit',
+};
+
+FlitFoldState _countFileTool(FlitFoldState s, String toolCallId) {
+  final index = s.toolMessage[toolCallId];
+  if (index == null) {
+    return s;
+  }
+  final isFileTool = s.messages[index].toolCalls.any(
+    (t) => t.id == toolCallId && flitFileTools.contains(t.name),
+  );
+  return isFileTool ? s.copyWith(fileToolsDone: s.fileToolsDone + 1) : s;
 }
 
 FlitFoldState _updateTool(
