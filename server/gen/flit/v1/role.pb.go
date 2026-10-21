@@ -34,7 +34,10 @@ type AgentRole struct {
 	// relative to the session's working directory unless absolute.
 	MemoryFile string `protobuf:"bytes,6,opt,name=memory_file,json=memoryFile,proto3" json:"memory_file,omitempty"`
 	// Problems reading the file, if any; such roles can't be picked.
-	Error         string `protobuf:"bytes,7,opt,name=error,proto3" json:"error,omitempty"`
+	Error string `protobuf:"bytes,7,opt,name=error,proto3" json:"error,omitempty"`
+	// Set for roles that ship with flit. A file in the roles directory with
+	// the same name replaces one.
+	Builtin       bool `protobuf:"varint,8,opt,name=builtin,proto3" json:"builtin,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -116,6 +119,13 @@ func (x *AgentRole) GetError() string {
 		return x.Error
 	}
 	return ""
+}
+
+func (x *AgentRole) GetBuiltin() bool {
+	if x != nil {
+		return x.Builtin
+	}
+	return false
 }
 
 type ListRolesRequest struct {
@@ -202,7 +212,7 @@ var File_flit_v1_role_proto protoreflect.FileDescriptor
 
 const file_flit_v1_role_proto_rawDesc = "" +
 	"\n" +
-	"\x12flit/v1/role.proto\x12\aflit.v1\"\xc2\x01\n" +
+	"\x12flit/v1/role.proto\x12\aflit.v1\"\xdc\x01\n" +
 	"\tAgentRole\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x1a\n" +
@@ -211,7 +221,8 @@ const file_flit_v1_role_proto_rawDesc = "" +
 	"\x06effort\x18\x05 \x01(\tR\x06effort\x12\x1f\n" +
 	"\vmemory_file\x18\x06 \x01(\tR\n" +
 	"memoryFile\x12\x14\n" +
-	"\x05error\x18\a \x01(\tR\x05error\"\x12\n" +
+	"\x05error\x18\a \x01(\tR\x05error\x12\x18\n" +
+	"\abuiltin\x18\b \x01(\bR\abuiltin\"\x12\n" +
 	"\x10ListRolesRequest\"=\n" +
 	"\x11ListRolesResponse\x12(\n" +
 	"\x05roles\x18\x01 \x03(\v2\x12.flit.v1.AgentRoleR\x05roles2V\n" +

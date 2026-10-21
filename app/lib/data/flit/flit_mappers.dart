@@ -92,6 +92,7 @@ FlitAgentRole roleFromProto(pb.AgentRole r) {
     model: r.model,
     effort: r.effort,
     error: r.error,
+    builtin: r.builtin,
   );
 }
 

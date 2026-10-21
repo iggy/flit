@@ -65,12 +65,15 @@ jobs:
             runner: ubuntu-latest
           - target: android-apk
             runner: ubuntu-latest
-          - target: macos
-            runner: macos-latest
-          - target: ios
-            runner: macos-latest
-          - target: windows
-            runner: windows-latest
+          # macOS, iOS and Windows builds are off for now (slow, costly
+          # runners). Uncomment to bring them back; their steps below are
+          # still in place. release.yaml still builds them.
+          # - target: macos
+          #   runner: macos-latest
+          # - target: ios
+          #   runner: macos-latest
+          # - target: windows
+          #   runner: windows-latest
 
     steps:
       - name: Checkout repository

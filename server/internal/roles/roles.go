@@ -14,10 +14,14 @@
 //
 // The body is added to the system prompt. Roles are read when used, so
 // edits apply to the next turn.
+//
+// Some roles ship with flit (see builtin/); a file in the roles directory
+// with the same name replaces one.
 package roles
 
 import (
 	"bytes"
+	"embed"
 	"errors"
 	"fmt"
 	"io"
@@ -50,11 +54,62 @@ type Role struct {
 	Path string `yaml:"-"`
 	// Err is set when the file couldn't be read; such a role can't be used.
 	Err error `yaml:"-"`
+	// Builtin is set for roles that ship with flit; they have no Path.
+	Builtin bool `yaml:"-"`
 }
 
-// List reads every *.md file in dir, sorted by name. A missing dir means no
-// roles. Unreadable files are returned with Err set.
+// builtinFS holds the roles that ship with flit.
+//
+//go:embed builtin/*.md
+var builtinFS embed.FS
+
+// Builtin returns the roles that ship with flit, sorted by name.
+func Builtin() []Role {
+	entries, _ := builtinFS.ReadDir("builtin")
+	var out []Role
+	for _, e := range entries {
+		data, err := builtinFS.ReadFile("builtin/" + e.Name())
+		if err != nil {
+			panic(err)
+		}
+		r, err := Parse(data)
+		if err != nil {
+			panic(fmt.Errorf("built-in role %s: %w", e.Name(), err)) // tested
+		}
+		if r.Name == "" {
+			r.Name = strings.TrimSuffix(e.Name(), ".md")
+		}
+		r.Builtin = true
+		out = append(out, r)
+	}
+	return out
+}
+
+// List returns the built-in roles plus every *.md file in dir, sorted by
+// name; a file replaces a built-in role with the same name. A missing dir
+// means only the built-in roles. Unreadable files are returned with Err
+// set.
 func List(dir string) ([]Role, error) {
+	files, err := listDir(dir)
+	if err != nil {
+		return nil, err
+	}
+	seen := map[string]bool{}
+	for _, r := range files {
+		seen[r.Name] = true
+	}
+	out := files
+	for _, r := range Builtin() {
+		if !seen[r.Name] {
+			out = append(out, r)
+		}
+	}
+	slices.SortFunc(out, func(a, b Role) int { return strings.Compare(a.Name, b.Name) })
+	return out, nil
+}
+
+// listDir reads every *.md file in dir.
+func listDir(dir string) ([]Role, error) {
 	entries, err := os.ReadDir(dir)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil, nil
@@ -73,7 +128,6 @@ func List(dir string) ([]Role, error) {
 		}
 		out = append(out, r)
 	}
-	slices.SortFunc(out, func(a, b Role) int { return strings.Compare(a.Name, b.Name) })
 	return out, nil
 }
 

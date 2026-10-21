@@ -194,7 +194,7 @@ func (s *Roles) ListRoles(context.Context, *connect.Request[flitv1.ListRolesRequ
 	for _, r := range list {
 		ar := &flitv1.AgentRole{
 			Name: r.Name, Description: r.Description, Provider: r.Provider,
-			Model: r.Model, Effort: r.Effort, MemoryFile: r.MemoryFile,
+			Model: r.Model, Effort: r.Effort, MemoryFile: r.MemoryFile, Builtin: r.Builtin,
 		}
 		if r.Err != nil {
 			ar.Error = r.Err.Error()

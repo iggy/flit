@@ -27,6 +27,9 @@ message AgentRole {
   string memory_file = 6;
   // Problems reading the file, if any; such roles can't be picked.
   string error = 7;
+  // Set for roles that ship with flit. A file in the roles directory with
+  // the same name replaces one.
+  bool builtin = 8;
 }
 
 message ListRolesRequest {}
