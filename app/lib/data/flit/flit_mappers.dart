@@ -41,6 +41,9 @@ FlitSession sessionFromProto(pb.Session s) {
     mcpServers: List<String>.unmodifiable(s.mcpServers),
     yolo: s.yolo,
     cronJob: s.cronJob,
+    sourceDir: s.sourceDir,
+    worktreePath: s.worktreePath,
+    worktreeBranch: s.worktreeBranch,
   );
 }
 
@@ -182,6 +185,7 @@ FlitProject projectFromProto(pb.Project p) {
     directory: p.directory,
     sessionCount: p.sessionCount,
     exportEnabled: p.exportEnabled,
+    worktrees: p.worktreesEnabled,
   );
 }
 
@@ -674,6 +678,11 @@ FlitEvent eventFromProto(pb.Event e) {
     // Which cron job started the session; the app shows that from
     // FlitSession.cronJob instead.
     case pb.Event_Payload.cronRun:
+    // The session's worktree; the app shows it from FlitSession.
+    case pb.Event_Payload.worktreeCreated:
+    case pb.Event_Payload.worktreeSkipped:
+    case pb.Event_Payload.worktreeRemoved:
+    case pb.Event_Payload.worktreeKept:
     case pb.Event_Payload.notSet:
       return FlitUnknownEvent(seq: seq, time: time, branchId: branch);
   }

@@ -549,6 +549,20 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
                 padding: const EdgeInsets.fromLTRB(16, 4, 10, 0),
                 child: Row(
                   children: <Widget>[
+                    if (session.hasWorktree)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 4),
+                        child: Tooltip(
+                          message:
+                              'Own git worktree on ${session.worktreeBranch}, '
+                              'from ${session.sourceDir}',
+                          child: Icon(
+                            Icons.account_tree_outlined,
+                            size: 14,
+                            color: Theme.of(context).colorScheme.outline,
+                          ),
+                        ),
+                      ),
                     Expanded(
                       child: Text(
                         session.workingDir,

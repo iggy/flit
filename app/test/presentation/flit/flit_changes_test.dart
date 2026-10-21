@@ -47,18 +47,22 @@ final class _Repo extends Fake implements FlitRepository {
       ),
     ],
   );
+  bool worktree = false;
   int statusCalls = 0;
   final List<String> diffPaths = <String>[];
 
   @override
-  Future<FlitSession> getSession(String id) async => const FlitSession(
+  Future<FlitSession> getSession(String id) async => FlitSession(
     id: 's1',
     title: 'Session',
-    workingDir: '/src/app',
+    workingDir: worktree ? '/data/worktrees/s1' : '/src/app',
     provider: 'local',
     model: 'qwen',
     state: FlitTaskState.idle,
     lastSeq: 0,
+    sourceDir: worktree ? '/src/app' : '',
+    worktreePath: worktree ? '/data/worktrees/s1' : '',
+    worktreeBranch: worktree ? 'flit/abcd1234' : '',
   );
 
   @override
@@ -159,6 +163,23 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 10));
     expect(repo.statusCalls, 3);
+  });
+
+  testWidgets('a session in its own worktree says so', (tester) async {
+    final repo = _Repo()..worktree = true;
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: _container(repo),
+        child: const MaterialApp(home: FlitChatScreen(sessionId: 's1')),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('/data/worktrees/s1'), findsOneWidget);
+    expect(
+      find.byTooltip('Own git worktree on flit/abcd1234, from /src/app'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('no chip outside a repository', (tester) async {

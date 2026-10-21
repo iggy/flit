@@ -43,7 +43,20 @@ final class FlitSession {
     this.mcpServers = const <String>[],
     this.yolo = false,
     this.cronJob = '',
+    this.sourceDir = '',
+    this.worktreePath = '',
+    this.worktreeBranch = '',
   });
+
+  /// With its own git worktree: the directory the session was started in,
+  /// the worktree and its branch ([workingDir] is inside the worktree).
+  /// All empty otherwise.
+  final String sourceDir;
+  final String worktreePath;
+  final String worktreeBranch;
+
+  /// Whether the session works in its own git worktree.
+  bool get hasWorktree => worktreePath.isNotEmpty;
 
   /// The cron job this session is a run of; empty for ordinary sessions.
   final String cronJob;
@@ -109,7 +122,10 @@ final class FlitSession {
         other.role == role &&
         other.contextTokens == contextTokens &&
         other.contextLength == contextLength &&
-        other.yolo == yolo;
+        other.yolo == yolo &&
+        other.worktreePath == worktreePath &&
+        other.worktreeBranch == worktreeBranch &&
+        other.sourceDir == sourceDir;
   }
 
   @override
@@ -130,6 +146,8 @@ final class FlitSession {
     contextTokens,
     contextLength,
     yolo,
+    worktreePath,
+    worktreeBranch,
   );
 
   @override
@@ -244,10 +262,15 @@ final class FlitProject {
     this.directory = '',
     this.sessionCount = 0,
     this.exportEnabled = true,
+    this.worktrees = false,
   });
 
   /// Whether `flit export` includes this project's sessions.
   final bool exportEnabled;
+
+  /// Whether new sessions get their own git worktree (the project's choice,
+  /// or the server's default).
+  final bool worktrees;
 
   final String id;
   final String name;
@@ -263,11 +286,12 @@ final class FlitProject {
       other.name == name &&
       other.directory == directory &&
       other.sessionCount == sessionCount &&
-      other.exportEnabled == exportEnabled;
+      other.exportEnabled == exportEnabled &&
+      other.worktrees == worktrees;
 
   @override
   int get hashCode =>
-      Object.hash(id, name, directory, sessionCount, exportEnabled);
+      Object.hash(id, name, directory, sessionCount, exportEnabled, worktrees);
 
   @override
   String toString() => 'FlitProject($id, $name)';

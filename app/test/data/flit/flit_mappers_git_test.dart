@@ -69,4 +69,25 @@ void main() {
     expect(d.diffBaseKind, FlitDiffBase.headBaseMissing);
     expect(d.truncated, isTrue);
   });
+
+  test('sessions and projects carry worktree fields', () {
+    final s = sessionFromProto(
+      pb.Session(
+        id: 's',
+        workingDir: '/data/worktrees/s/sub',
+        sourceDir: '/src/app/sub',
+        worktreePath: '/data/worktrees/s',
+        worktreeBranch: 'flit/abcd1234',
+      ),
+    );
+    expect(s.hasWorktree, isTrue);
+    expect(s.worktreeBranch, 'flit/abcd1234');
+    expect(s.sourceDir, '/src/app/sub');
+    expect(sessionFromProto(pb.Session(id: 't')).hasWorktree, isFalse);
+
+    expect(
+      projectFromProto(pb.Project(id: 'p', worktreesEnabled: true)).worktrees,
+      isTrue,
+    );
+  });
 }
