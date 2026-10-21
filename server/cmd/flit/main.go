@@ -51,6 +51,8 @@ Usage:
   flit mcp list               list MCP servers and which are signed in
   flit mcp login NAME         sign in to a remote MCP server that needs OAuth
   flit mcp logout NAME        forget an MCP server's sign-in
+  flit config defaults        print the default config
+  flit config update          add new default settings to the config (--dry-run shows a diff)
   flit version                print version information
 
 Flags for serve, token, pair and devices:
@@ -119,6 +121,8 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		return debugCmd(ctx, stdout, stderr, args, defaultConfig)
 	case "mcp":
 		return mcpCmd(ctx, os.Stdin, stdout, stderr, args, defaultConfig)
+	case "config":
+		return configCmd(stdout, stderr, args, defaultConfig)
 	case "help", "-h", "--help":
 		fmt.Fprintf(stdout, usage, defaultConfig)
 		return nil
