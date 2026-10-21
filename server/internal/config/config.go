@@ -59,7 +59,22 @@ type Config struct {
 	Web        Web      `yaml:"web"`
 	Git        Git      `yaml:"git"`
 	LlamaCpp   LlamaCpp `yaml:"llamacpp"`
-	Learning   Learning `yaml:"learning"`
+	// CronsDir holds cron job files (*.md with YAML frontmatter; see
+	// docs/cron.md). Relative paths are relative to the config file.
+	CronsDir string   `yaml:"crons_dir"`
+	Notify   Notify   `yaml:"notify"`
+	Learning Learning `yaml:"learning"`
+}
+
+// Notify configures notifications flit sends itself (the app shows its
+// own while it's connected).
+type Notify struct {
+	// Ntfy is an ntfy topic URL (e.g. https://ntfy.sh/my-topic) that cron
+	// run results are posted to. Empty means none.
+	Ntfy string `yaml:"ntfy"`
+	// NtfyHeaders are sent with each post, e.g. Authorization. ${VAR} in a
+	// value is replaced with that environment variable.
+	NtfyHeaders map[string]string `yaml:"ntfy_headers"`
 }
 
 // Learning configures memory and the learning pass (see docs/learning.md).
@@ -248,7 +263,8 @@ type Agent struct {
 	// sessions' default model and permission rates shell commands before
 	// flit asks the user (see docs/shell.md); compaction summarizes long
 	// conversations (see Compaction; without it the session's own model
-	// does); planning, cron and search are for those features as they
+	// does); cron runs cron jobs that pick no model of their own (see
+	// docs/cron.md); planning and search are for those features as they
 	// arrive.
 	Tasks map[string]TaskModel `yaml:"tasks"`
 	// ModelPromptAppends adds text to the system prompt for specific
@@ -363,6 +379,8 @@ func Default() Config {
 		Providers:          []Provider{},
 		ModelOverridesFile: "models.yaml",
 		RolesDir:           "roles",
+		CronsDir:           "crons",
+		Notify:             Notify{NtfyHeaders: map[string]string{}},
 		MCPServers:         []MCPServer{},
 		SkillsDirs:         []string{"skills"},
 		Web:                Web{Fetch: ptr(true)},
@@ -457,6 +475,9 @@ func (c *Config) fillDefaults() {
 	}
 	if c.RolesDir == "" {
 		c.RolesDir = d.RolesDir
+	}
+	if c.CronsDir == "" {
+		c.CronsDir = d.CronsDir
 	}
 }
 
@@ -593,6 +614,16 @@ func (c Config) Validate() error {
 	default:
 		return fmt.Errorf("shell.default %q: want ask, allow or deny", c.Shell.Default)
 	}
+	if c.Notify.Ntfy != "" {
+		if u, err := url.Parse(c.Notify.Ntfy); err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			return fmt.Errorf("notify.ntfy %q must be an http(s) URL", c.Notify.Ntfy)
+		}
+	}
+	for k := range c.Notify.NtfyHeaders {
+		if !headerName.MatchString(k) {
+			return fmt.Errorf("notify.ntfy_headers: %q is not a valid header name", k)
+		}
+	}
 	for _, pat := range append(append([]string{}, c.Shell.Allow...), c.Shell.Deny...) {
 		if strings.TrimSpace(pat) == "" {
 			return errors.New("shell: empty pattern in allow/deny")
@@ -648,6 +679,20 @@ model_overrides_file: models.yaml
 
 # Role files (*.md with YAML frontmatter), relative to this file.
 roles_dir: roles
+
+# Cron jobs: one Markdown file per job (YAML frontmatter with the schedule,
+# the body is the prompt), relative to this file. flit runs each job
+# unattended on its schedule as a new session. See docs/cron.md.
+crons_dir: crons
+
+# Notifications flit sends itself, for when the app isn't open. ntfy posts
+# cron run results (a report, needs attention, failed) to an ntfy topic,
+# e.g. https://ntfy.sh/<a-long-random-topic> or your own server; runs with
+# nothing to report stay quiet. Empty means off.
+notify:
+  ntfy: ""
+  ntfy_headers: {}
+  #  Authorization: Bearer ${NTFY_TOKEN}   # ${VAR} is read from the environment
 
 # Skills in the Agent Skills format (a directory per skill with SKILL.md),
 # relative to this file. The agent sees names and descriptions and loads a
@@ -713,12 +758,15 @@ agent:
   # search, learning. chat overrides the defaults above. permission rates shell
   # commands (safe, ask or block) before flit asks you; without it, flit
   # just asks. compaction writes the summary when a long conversation is
-  # compacted; without it, the session's own model does. learning reads a
-  # finished session and proposes lessons to remember ("flit learn", or
-  # "Learn from this session" in the app); without it, the chat model
-  # does. planning, cron and search aren't used yet.
+  # compacted; without it, the session's own model does. cron runs cron
+  # jobs that don't pick a model (or get one from their role); without it,
+  # they use the chat model. learning reads a finished session and
+  # proposes lessons to remember ("flit learn", or "Learn from this
+  # session" in the app); without it, the chat model does. planning and
+  # search aren't used yet.
   tasks: {}
   #   chat:       {provider: local, model: qwen3-coder, effort: medium}
+  #   cron:       {provider: local, model: qwen3-4b, effort: off}
   #   permission: {provider: local, model: qwen3-4b, effort: off}
   #   compaction: {provider: local, model: qwen3-4b, effort: off}
   #   learning:   {provider: local, model: qwen3-coder, effort: off}

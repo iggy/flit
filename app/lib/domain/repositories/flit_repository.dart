@@ -1,3 +1,4 @@
+import 'package:flit/domain/models/flit_cron.dart';
 import 'package:flit/domain/models/flit_event.dart';
 import 'package:flit/domain/models/flit_git.dart';
 import 'package:flit/domain/models/flit_learning.dart';
@@ -174,6 +175,18 @@ abstract interface class FlitRepository {
   /// The unified diff of the session's changes, optionally for one [path]
   /// (relative to the repository root).
   Future<FlitGitDiff> gitDiff(String sessionId, {String path = ''});
+
+  /// Cron jobs on the server, by name (flit.v1 `CronService`).
+  Future<List<FlitCronJob>> listCronJobs();
+
+  /// Start a run of cron job [name] now, whatever its schedule.
+  Future<FlitCronRun> runCronJob(String name);
+
+  /// Turn cron job [name]'s schedule on or off.
+  Future<FlitCronJob> setCronJobEnabled(String name, {required bool enabled});
+
+  /// Runs of cron job [name] (every job's when empty), newest first.
+  Future<List<FlitCronRun>> listCronRuns({String name = '', int limit = 50});
 
   /// Runs the learning pass on a session (the server's learning model):
   /// its proposals replace the session's earlier pending ones. Can take a

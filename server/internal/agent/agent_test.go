@@ -800,7 +800,7 @@ func TestProjectsMoveAndRate(t *testing.T) {
 		t.Fatalf("move = %+v, %v", moved, err)
 	}
 	w.waitFor("moved", func(ev *flitv1.Event) bool { return ev.GetSessionMoved().GetProjectId() == p.ID })
-	if list, _ := h.m.List(ctx, p.ID, 10, 0); len(list) != 2 {
+	if list, _ := h.m.List(ctx, p.ID, false, 10, 0); len(list) != 2 {
 		t.Fatalf("project sessions = %d", len(list))
 	}
 	if list, _ := h.m.Projects(ctx); len(list) != 2 || list[1].SessionCount != 2 {

@@ -67,6 +67,8 @@ type Manager struct {
 	MCP *mcpclient.Manager
 	// SkillsDirs, if set, returns the skills directories. Set before use.
 	SkillsDirs func() []string
+	// Crons, if set, gives sessions the cron tool. Set before use.
+	Crons CronControl
 	// DataDir, if set, holds the user and project memory files (see
 	// package memory). Set before use.
 	DataDir string
@@ -160,6 +162,8 @@ type CreateOptions struct {
 	ProjectID string
 	// Yolo turns yolo mode on or off; nil means the config's shell.yolo.
 	Yolo *bool
+	// CronID marks the session as a run of that cron job.
+	CronID string
 }
 
 // contextLength is the model's context window, if the catalog knows it.
@@ -250,6 +254,7 @@ func (m *Manager) Create(ctx context.Context, o CreateOptions) (store.Session, e
 		Effort:     effort,
 		Role:       o.Role,
 		Yolo:       m.cfg().Shell.Yolo,
+		CronID:     o.CronID,
 	}
 	if o.Yolo != nil {
 		info.Yolo = *o.Yolo
@@ -304,9 +309,9 @@ func (m *Manager) Get(ctx context.Context, id string) (store.Session, error) {
 }
 
 // List returns sessions, most recently updated first, optionally only one
-// project's.
-func (m *Manager) List(ctx context.Context, projectID string, limit, offset int) ([]store.Session, error) {
-	list, err := m.store.ListSessions(ctx, projectID, limit, offset)
+// project's. Archived sessions are left out unless archived is set.
+func (m *Manager) List(ctx context.Context, projectID string, archived bool, limit, offset int) ([]store.Session, error) {
+	list, err := m.store.ListSessionsArchived(ctx, projectID, archived, limit, offset)
 	if err != nil {
 		return nil, err
 	}

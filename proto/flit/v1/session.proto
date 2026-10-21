@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package flit.v1;
 
+import "flit/v1/cron.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/iggy/flit/server/gen/flit/v1;flitv1";
@@ -192,6 +193,12 @@ message Session {
   // The git commit HEAD was on when the session was created; empty if the
   // working directory wasn't in a git repository with commits.
   string base_commit = 19;
+  // The cron job whose run this session is (see CronService); empty for
+  // ordinary sessions.
+  string cron_job = 20;
+  // Archived sessions are left out of ListSessions unless asked for (old
+  // cron runs beyond the job's keep_runs). Nothing is deleted.
+  bool archived = 21;
 }
 
 message CreateSessionRequest {
@@ -224,6 +231,8 @@ message ListSessionsRequest {
   string page_token = 2;
   // Only sessions in this project; empty means all.
   string project_id = 3;
+  // Include archived sessions.
+  bool include_archived = 4;
 }
 
 message ListSessionsResponse {
@@ -526,6 +535,7 @@ message Event {
     CompactionDone compaction_done = 40;
     BranchCreated branch_created = 41;
     BranchSwitched branch_switched = 42;
+    CronRunStarted cron_run = 43;
   }
 }
 
@@ -1102,4 +1112,22 @@ message GitDiffResponse {
   string diff = 4;
   // The diff was cut at the size limit, at the end of a line.
   bool truncated = 5;
+}
+
+// CronRunStarted opens a cron run's session: which job started it, and
+// why. It comes before the run's prompt (the first user message).
+message CronRunStarted {
+  string job = 1;
+  // The schedule as written and in words.
+  string schedule = 2;
+  string schedule_text = 3;
+  CronTrigger trigger = 4;
+  // The slot it runs for.
+  google.protobuf.Timestamp scheduled_time = 5;
+  // The run's id (CronRun.id).
+  string run_id = 6;
+  // How prompts nobody can answer are handled, and yolo mode.
+  CronAsk ask = 7;
+  int64 ask_timeout_seconds = 8;
+  bool yolo = 9;
 }

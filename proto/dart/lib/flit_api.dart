@@ -3,6 +3,8 @@
 /// Regenerate with `buf generate` from `proto/`.
 library;
 
+export 'package:flit_api/src/gen/flit/v1/cron.connect.client.dart';
+export 'package:flit_api/src/gen/flit/v1/cron.pb.dart';
 export 'package:flit_api/src/gen/flit/v1/learning.connect.client.dart';
 export 'package:flit_api/src/gen/flit/v1/learning.pb.dart';
 export 'package:flit_api/src/gen/flit/v1/model.connect.client.dart';

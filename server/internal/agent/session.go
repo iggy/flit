@@ -57,6 +57,8 @@ type session struct {
 	// tree is the session's conversation branches; info.BranchID is the
 	// active one (see branch.go).
 	tree *branches.Tree
+	// unattended is set while a cron run's turn runs (see cron.go).
+	unattended *unattended
 }
 
 type pendingPrompt struct {
@@ -404,8 +406,21 @@ func (s *session) answer(promptID string, a Answer) error {
 }
 
 // approve raises a prompt and waits for a client to answer it or for the
-// turn to be interrupted.
+// turn to be interrupted. In an unattended run (a cron job) it may refuse
+// at once or give up after a while instead (see approveUnattended).
 func (s *session) approve(ctx context.Context, toolCallID string, a tools.Approval) (bool, error) {
+	if ok, handled, err := s.approveUnattended(ctx, toolCallID, a); handled {
+		return ok, err
+	}
+	ok, _, err := s.approveWith(ctx, toolCallID, a, "")
+	return ok, err
+}
+
+// approveWith raises a prompt and waits for an answer or for ctx to end.
+// When ctx ends with errAskTimeout as its cause, the prompt is resolved as
+// denied with timeoutReason and errAskTimeout is returned; otherwise an
+// ended ctx is an interrupt.
+func (s *session) approveWith(ctx context.Context, toolCallID string, a tools.Approval, timeoutReason string) (bool, string, error) {
 	title, patterns := a.Title, a.SessionPatterns
 	promptID := newID("prm")
 	ch := make(chan promptAnswer, 1)
@@ -417,10 +432,10 @@ func (s *session) approve(ctx context.Context, toolCallID string, a tools.Approv
 		PromptId: promptID, ToolCallId: toolCallID, Title: title, Detail: a.Detail, SessionPatterns: patterns,
 		SafetyReason: a.Reason,
 	}}}); err != nil {
-		return false, err
+		return false, promptID, err
 	}
 	if _, err := s.append(stateChanged(flitv1.TaskState_TASK_STATE_WAITING, title)); err != nil {
-		return false, err
+		return false, promptID, err
 	}
 
 	resolved := &flitv1.PromptResolved{PromptId: promptID}
@@ -450,17 +465,20 @@ func (s *session) approve(ctx context.Context, toolCallID string, a tools.Approv
 		resolved.Decision = flitv1.PromptDecision_PROMPT_DECISION_DENY
 		resolved.Reason = "interrupted"
 		answerErr = errInterrupted
+		if errors.Is(context.Cause(ctx), errAskTimeout) {
+			resolved.Reason, answerErr = timeoutReason, errAskTimeout
+		}
 	}
 	if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_PromptResolved{PromptResolved: resolved}}); err != nil {
-		return false, err
+		return false, promptID, err
 	}
-	if answerErr != nil {
-		return false, answerErr
+	if answerErr != nil && answerErr != errAskTimeout {
+		return false, promptID, answerErr
 	}
 	if _, err := s.append(stateChanged(flitv1.TaskState_TASK_STATE_WORKING, "")); err != nil {
-		return false, err
+		return false, promptID, err
 	}
-	return resolved.Decision != flitv1.PromptDecision_PROMPT_DECISION_DENY, nil
+	return resolved.Decision != flitv1.PromptDecision_PROMPT_DECISION_DENY, promptID, answerErr
 }
 
 func (s *session) setModel(ctx context.Context, provider, model string) (store.Session, error) {
