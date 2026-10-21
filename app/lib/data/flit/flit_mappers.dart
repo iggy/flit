@@ -3,6 +3,7 @@
 library;
 
 import 'package:flit/domain/models/flit_event.dart';
+import 'package:flit/domain/models/flit_learning.dart';
 import 'package:flit/domain/models/flit_session.dart';
 import 'package:flit_api/flit_api.dart' as pb;
 
@@ -486,4 +487,36 @@ FlitEvent eventFromProto(pb.Event e) {
     case pb.Event_Payload.notSet:
       return FlitUnknownEvent(seq: seq, time: time, branchId: branch);
   }
+}
+
+FlitLearnProposal learnProposalFromProto(pb.LearnProposal p) {
+  return FlitLearnProposal(
+    id: p.id,
+    sessionId: p.sessionId,
+    action: switch (p.action) {
+      pb.LearnAction.LEARN_ACTION_UPDATE => FlitLearnAction.update,
+      pb.LearnAction.LEARN_ACTION_REMOVE => FlitLearnAction.remove,
+      _ => FlitLearnAction.add,
+    },
+    target: switch (p.target) {
+      pb.LearnTarget.LEARN_TARGET_USER => FlitLearnTarget.user,
+      pb.LearnTarget.LEARN_TARGET_ROLE => FlitLearnTarget.role,
+      pb.LearnTarget.LEARN_TARGET_SKILL => FlitLearnTarget.skill,
+      _ => FlitLearnTarget.project,
+    },
+    status: switch (p.status) {
+      pb.LearnStatus.LEARN_STATUS_ACCEPTED => FlitLearnStatus.accepted,
+      pb.LearnStatus.LEARN_STATUS_REJECTED => FlitLearnStatus.rejected,
+      _ => FlitLearnStatus.pending,
+    },
+    skill: p.skill,
+    cue: p.cue,
+    lesson: p.lesson,
+    evidence: p.evidence,
+    oldText: p.oldText,
+    newText: p.newText,
+    path: p.path,
+    provider: p.provider,
+    model: p.model,
+  );
 }

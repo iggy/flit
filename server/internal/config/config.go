@@ -59,6 +59,18 @@ type Config struct {
 	Web        Web      `yaml:"web"`
 	Git        Git      `yaml:"git"`
 	LlamaCpp   LlamaCpp `yaml:"llamacpp"`
+	Learning   Learning `yaml:"learning"`
+}
+
+// Learning configures memory and the learning pass (see docs/learning.md).
+type Learning struct {
+	// MemoryMaxBytes caps each memory layer (user, project) in the system
+	// prompt; the rest is cut with a marker. 0 means no cap.
+	MemoryMaxBytes int `yaml:"memory_max_bytes"`
+	// TranscriptMaxBytes caps the session transcript sent to the learning
+	// model. 0 means from the model's context window (24000 when that is
+	// unknown).
+	TranscriptMaxBytes int `yaml:"transcript_max_bytes"`
 }
 
 // MCPServer returns the MCP server named name.
@@ -197,7 +209,7 @@ func (g Git) IsEnabled() bool { return g.Enabled == nil || *g.Enabled }
 var ProviderKinds = []string{"auto", "openai", "openrouter", "llamacpp", "gomodel"}
 
 // Tasks are the kinds of work that can have their own model.
-var Tasks = []string{"chat", "planning", "cron", "compaction", "search", "permission"}
+var Tasks = []string{"chat", "planning", "cron", "compaction", "search", "permission", "learning"}
 
 // TaskModel picks a model for one kind of work.
 type TaskModel struct {
@@ -356,6 +368,7 @@ func Default() Config {
 		Web:                Web{Fetch: ptr(true)},
 		Git:                Git{Enabled: ptr(true)},
 		LlamaCpp:           LlamaCpp{KVCache: ptr(true), KVCacheFiles: 4},
+		Learning:           Learning{MemoryMaxBytes: 6000},
 		Agent: Agent{
 			Tasks:              map[string]TaskModel{},
 			ModelPromptAppends: map[string]string{},
@@ -566,6 +579,9 @@ func (c Config) Validate() error {
 	if cp := c.Agent.Compaction; cp.KeepTurns < 1 || cp.KeepTurns > 50 {
 		return errors.New("agent.compaction.keep_turns must be between 1 and 50")
 	}
+	if c.Learning.MemoryMaxBytes < 0 || c.Learning.TranscriptMaxBytes < 0 {
+		return errors.New("learning: limits must not be negative")
+	}
 	if c.Agent.Compaction.MaxSummaryTokens < 0 {
 		return errors.New("agent.compaction.max_summary_tokens must not be negative")
 	}
@@ -694,15 +710,18 @@ agent:
   # off to turn thinking off on llama.cpp. Empty means the model's default.
   effort: ""
   # A model per kind of work: chat, permission, planning, cron, compaction,
-  # search. chat overrides the defaults above. permission rates shell
+  # search, learning. chat overrides the defaults above. permission rates shell
   # commands (safe, ask or block) before flit asks you; without it, flit
   # just asks. compaction writes the summary when a long conversation is
-  # compacted; without it, the session's own model does. planning, cron
-  # and search aren't used yet.
+  # compacted; without it, the session's own model does. learning reads a
+  # finished session and proposes lessons to remember ("flit learn", or
+  # "Learn from this session" in the app); without it, the chat model
+  # does. planning, cron and search aren't used yet.
   tasks: {}
   #   chat:       {provider: local, model: qwen3-coder, effort: medium}
   #   permission: {provider: local, model: qwen3-4b, effort: off}
   #   compaction: {provider: local, model: qwen3-4b, effort: off}
+  #   learning:   {provider: local, model: qwen3-coder, effort: off}
   # Extra system prompt text for specific models ("provider/model"); a
   # provider's prompt_append applies to all its models.
   model_prompt_appends: {}
@@ -735,6 +754,19 @@ agent:
     # Longest summary, thinking included; a cut-off summary counts as
     # failed and the session goes on uncompacted. 0 means no cap.
     max_summary_tokens: 4096
+
+# Memory: lessons flit keeps between sessions, as Markdown files you can
+# edit: <data_dir>/memory/user.md (every session) and
+# <data_dir>/memory/projects/<project id>.md (that project's sessions).
+# "flit learn <session>" proposes additions; nothing is written until you
+# accept. See docs/learning.md.
+learning:
+  # Each memory file is cut to this many bytes in the system prompt.
+  # 0 means no cap.
+  memory_max_bytes: 6000
+  # Longest session transcript sent to the learning model; long tool
+  # output is trimmed first. 0 means from the model's context window.
+  transcript_max_bytes: 0
 
 shell:
   timeout: 2m

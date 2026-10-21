@@ -66,6 +66,9 @@ type Manager struct {
 	MCP *mcpclient.Manager
 	// SkillsDirs, if set, returns the skills directories. Set before use.
 	SkillsDirs func() []string
+	// DataDir, if set, holds the user and project memory files (see
+	// package memory). Set before use.
+	DataDir string
 
 	// kv tracks llama.cpp slots and prompt cache save files.
 	kv kvPool

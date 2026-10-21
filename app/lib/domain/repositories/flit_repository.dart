@@ -1,4 +1,5 @@
 import 'package:flit/domain/models/flit_event.dart';
+import 'package:flit/domain/models/flit_learning.dart';
 import 'package:flit/domain/models/flit_session.dart';
 
 /// Operations on a flit server's sessions (flit.v1 `SessionService`).
@@ -164,4 +165,23 @@ abstract interface class FlitRepository {
     String server, {
     required bool enabled,
   });
+
+  /// Runs the learning pass on a session (the server's learning model):
+  /// its proposals replace the session's earlier pending ones. Can take a
+  /// while with a local model. An empty list is a normal answer.
+  Future<FlitLearnResult> learn(String sessionId);
+
+  /// Pending proposals, the session's ('' = every session's); decided ones
+  /// too with [includeDecided].
+  Future<List<FlitLearnProposal>> listLearnProposals({
+    String sessionId = '',
+    bool includeDecided = false,
+  });
+
+  /// Writes a pending proposal, with [text] in place of its proposed text
+  /// when given.
+  Future<FlitLearnProposal> acceptLearnProposal(String id, {String? text});
+
+  /// Rejects a pending proposal; nothing is written.
+  Future<FlitLearnProposal> rejectLearnProposal(String id);
 }

@@ -69,7 +69,7 @@ func SessionDirs(workDir string, global []string) []Dir {
 	}
 	if workDir != "" {
 		add(workDir, "repo")
-		if root := gitRoot(workDir); root != "" && root != filepath.Clean(workDir) {
+		if root := GitRoot(workDir); root != "" && root != filepath.Clean(workDir) {
 			add(root, "repo root")
 		}
 	}
@@ -79,9 +79,9 @@ func SessionDirs(workDir string, global []string) []Dir {
 	return out
 }
 
-// gitRoot returns the nearest ancestor of dir (or dir itself) containing
+// GitRoot returns the nearest ancestor of dir (or dir itself) containing
 // .git, or "".
-func gitRoot(dir string) string {
+func GitRoot(dir string) string {
 	dir = filepath.Clean(dir)
 	for {
 		if _, err := os.Stat(filepath.Join(dir, ".git")); err == nil {
@@ -146,6 +146,11 @@ func Read(dir string) (Skill, error) {
 	}
 	s.Dir = dir
 	return s, nil
+}
+
+// Parse reads and validates a SKILL.md for a skill directory named name.
+func Parse(data []byte, name string) (Skill, error) {
+	return parse(data, "skill "+name, name)
 }
 
 // parse reads a SKILL.md; where names it in errors and dirName is the name

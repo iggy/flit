@@ -665,17 +665,17 @@ func TestBuildMessagesFillsMissingToolResults(t *testing.T) {
 
 func TestSystemPromptInstructionFiles(t *testing.T) {
 	dir := t.TempDir()
-	if p := systemPrompt(dir, nil); strings.Contains(p, "Project instructions") {
+	if p := systemPrompt(dir, nil, nil); strings.Contains(p, "Project instructions") {
 		t.Fatal("instructions without files")
 	}
 	os.WriteFile(filepath.Join(dir, "AGENTS.md"), []byte("rule one"), 0o644)
 	os.WriteFile(filepath.Join(dir, "CLAUDE.md"), []byte("rule one\n"), 0o644)
-	p := systemPrompt(dir, nil)
+	p := systemPrompt(dir, nil, nil)
 	if strings.Count(p, "rule one") != 1 || !strings.Contains(p, "CLAUDE.md has the same content as AGENTS.md") {
 		t.Fatalf("duplicate files: %s", p)
 	}
 	os.WriteFile(filepath.Join(dir, "CLAUDE.md"), []byte("rule two"), 0o644)
-	if p := systemPrompt(dir, nil); !strings.Contains(p, "rule one") || !strings.Contains(p, "rule two") {
+	if p := systemPrompt(dir, nil, nil); !strings.Contains(p, "rule one") || !strings.Contains(p, "rule two") {
 		t.Fatalf("both files: %s", p)
 	}
 }
