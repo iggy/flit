@@ -38,6 +38,9 @@ type rawModel struct {
 	TopProvider struct {
 		ContextLength int64 `json:"context_length"`
 	} `json:"top_provider"`
+	Reasoning *struct {
+		SupportedEfforts []string `json:"supported_efforts"`
+	} `json:"reasoning"`
 
 	// llama.cpp (single model: meta; router mode: status.args).
 	Meta *struct {
@@ -107,6 +110,9 @@ func parseModels(provider, baseURL string, kind Kind, body []byte) (Kind, []Mode
 			m.SupportsReasoning = slices.Contains(e.SupportedParameters, "reasoning") ||
 				slices.Contains(e.SupportedParameters, "include_reasoning")
 			m.SupportsVision = slices.Contains(e.Architecture.InputModalities, "image")
+			if e.Reasoning != nil {
+				m.Efforts = effortLevels(e.Reasoning.SupportedEfforts)
+			}
 		case KindLlamaCpp:
 			llamaCpp(&m, e)
 		case KindGoModel:
@@ -123,12 +129,37 @@ func parseModels(provider, baseURL string, kind Kind, body []byte) (Kind, []Mode
 				m.SupportsVision = c["vision"]
 			}
 		}
-		if m.SupportsReasoning {
+		if m.SupportsReasoning && len(m.Efforts) == 0 {
 			m.Efforts = slices.Clone(defaultEfforts)
 		}
 		out = append(out, m)
 	}
 	return kind, out, nil
+}
+
+// effortRank orders the effort levels providers are known to name, least
+// thinking first.
+var effortRank = []string{"minimal", "low", "medium", "high", "xhigh", "max"}
+
+// effortLevels turns a provider's list of effort levels into the ones flit
+// offers, least thinking first, with levels it doesn't know kept at the end
+// in the provider's order. "none" is dropped: turning thinking off is the
+// "off" effort.
+func effortLevels(levels []string) []string {
+	var out []string
+	for _, l := range levels {
+		if l != "" && l != "none" && !slices.Contains(out, l) {
+			out = append(out, l)
+		}
+	}
+	rank := func(l string) int {
+		if i := slices.Index(effortRank, l); i >= 0 {
+			return i
+		}
+		return len(effortRank)
+	}
+	slices.SortStableFunc(out, func(a, b string) int { return rank(a) - rank(b) })
+	return out
 }
 
 // llamaCpp fills in what llama-server reports. A single-model server puts
