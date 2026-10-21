@@ -297,3 +297,68 @@ func must(t *testing.T, err error) {
 		t.Fatal(err)
 	}
 }
+
+// TestLlamaCppSubagents has a real model hand work to an explore and a
+// build subagent (FLIT_TEST_LLAMA_* as for TestLlamaCppCodingTask).
+func TestLlamaCppSubagents(t *testing.T) {
+	baseURL := os.Getenv("FLIT_TEST_LLAMA_URL")
+	if baseURL == "" {
+		t.Skip("set FLIT_TEST_LLAMA_URL to run against a real model endpoint")
+	}
+	model := os.Getenv("FLIT_TEST_LLAMA_MODEL")
+	if model == "" {
+		model = "default"
+	}
+	cfg := config.Default()
+	cfg.Providers = []config.Provider{{Name: "llama", BaseURL: baseURL, APIKey: os.Getenv("FLIT_TEST_LLAMA_KEY")}}
+	cfg.Agent.Model = model
+	cfg.Agent.MaxSteps = 25
+	cfg.Shell.Default = "deny" // the explore subagent's read-only shell still works
+	cfg.Shell.Allow = nil
+	c := start(t, cfg)
+
+	dir := t.TempDir()
+	must(t, os.WriteFile(filepath.Join(dir, "VERSION"), []byte("1.4.2\n"), 0o644))
+	must(t, os.WriteFile(filepath.Join(dir, "greet.go"), []byte(
+		"package greet\n\n// Hello returns a greeting.\nfunc Hello(name string) string {\n\treturn \"Helo, \" + name\n}\n"), 0o644))
+
+	ctx := context.Background()
+	created, err := c.CreateSession(ctx, connect.NewRequest(&flitv1.CreateSessionRequest{WorkingDir: dir}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	evs := runTurn(t, c, created.Msg.Session.Id,
+		"Use the agent tool twice. First an explore subagent: ask it which function in greet.go has a typo in a string, "+
+			"and what the typo is. Then a build subagent: tell it to fix that typo in greet.go. Don't edit files yourself.",
+		flitv1.PromptDecision_PROMPT_DECISION_DENY, 15*time.Minute)
+
+	kinds := map[flitv1.SubagentKind]*flitv1.SubagentDone{}
+	var current flitv1.SubagentKind
+	var childTools []string
+	for _, ev := range evs {
+		if s := ev.GetSubagentStarted(); s != nil {
+			current = s.Kind
+			t.Logf("%v subagent on %s: %s", s.Kind, s.Model, s.Task)
+		}
+		if d := ev.GetSubagentDone(); d != nil {
+			kinds[current] = d
+			t.Logf("%v subagent: %v after %d steps, report:\n%s", current, d.Outcome, d.Steps, d.Report)
+		}
+		if tc := ev.GetSubagentEvent().GetEvent().GetToolCallStarted(); tc != nil {
+			childTools = append(childTools, current.String()+":"+tc.Name)
+		}
+		if e := ev.GetError(); e != nil {
+			t.Errorf("turn error: %s", e.Message)
+		}
+	}
+	t.Logf("subagent tool calls: %v", childTools)
+	for _, k := range []flitv1.SubagentKind{flitv1.SubagentKind_SUBAGENT_KIND_EXPLORE, flitv1.SubagentKind_SUBAGENT_KIND_BUILD} {
+		if d := kinds[k]; d == nil || d.Outcome != flitv1.SubagentOutcome_SUBAGENT_OUTCOME_DONE || d.Report == "" {
+			t.Errorf("%v subagent: %v", k, d)
+		}
+	}
+	greet, _ := os.ReadFile(filepath.Join(dir, "greet.go"))
+	if !strings.Contains(string(greet), `"Hello, " + name`) {
+		t.Errorf("greet.go not fixed:\n%s", greet)
+	}
+}
