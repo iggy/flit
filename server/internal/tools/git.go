@@ -49,6 +49,7 @@ func gitResult(out string, err error) Result {
 
 var gitStatusTool = Tool{
 	Name:        "git_status",
+	ReadOnly:    true,
 	Description: "Show the git branch and changed files of the repository you are working in.",
 	Schema:      `{"type":"object","properties":{}}`,
 	Run: func(ctx context.Context, env *Env, raw json.RawMessage) Result {
@@ -61,6 +62,7 @@ var gitStatusTool = Tool{
 
 var gitDiffTool = Tool{
 	Name:        "git_diff",
+	ReadOnly:    true,
 	Description: "Show changes as a unified diff: unstaged changes by default, staged ones with staged=true, or against a commit with ref.",
 	Schema: `{"type":"object","properties":{
 "staged":{"type":"boolean","description":"Diff the index instead of the working tree"},
@@ -99,6 +101,7 @@ var gitDiffTool = Tool{
 
 var gitLogTool = Tool{
 	Name:        "git_log",
+	ReadOnly:    true,
 	Description: "Show recent commits (hash, date, author, subject).",
 	Schema: `{"type":"object","properties":{
 "count":{"type":"integer","description":"How many commits (default 10, max 100)"},

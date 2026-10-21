@@ -30,6 +30,7 @@ func skipDir(name string) bool {
 
 var readTool = Tool{
 	Name:        "read",
+	ReadOnly:    true,
 	Description: "Read a text file. Returns lines prefixed with their line numbers. Use offset and limit to page through large files.",
 	Schema: `{"type":"object","properties":{
 "path":{"type":"string","description":"File path, relative to the working directory"},
@@ -188,6 +189,7 @@ var patchTool = Tool{
 
 var listTool = Tool{
 	Name:        "list",
+	ReadOnly:    true,
 	Description: "List a directory. Directories end in /. Skips .git and node_modules.",
 	Schema: `{"type":"object","properties":{
 "path":{"type":"string","description":"Directory, relative to the working directory (default .)"},

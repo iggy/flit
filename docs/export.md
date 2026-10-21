@@ -93,7 +93,8 @@ this response".
 reply, or a model rating on it); `turn_ratings` are all turn ratings of the
 turn the call belongs to. `task` is `chat` for the agent's own calls,
 `permission` for the shell safety check (see [shell.md](shell.md)) and
-`compaction` for summarizing a long conversation (below); its `params`
+`compaction` for summarizing a long conversation (below), and `explore` or
+`build` for a subagent's calls (below); its `params`
 include `chat_template_kwargs` when effort was `off` on llama.cpp.
 
 #### Compaction
@@ -108,6 +109,16 @@ followed by a user message asking for the summary, and its `response` is
 the summary. Its `turn_id` is the turn it happened in, or empty when it
 ran between turns (`/compact` on an idle session). It is never part of a
 `turn` record.
+
+#### Subagents
+
+A subagent (the agent tool) has its own conversation, so its calls are
+exported as `model_call` records with `task: "explore"` or `"build"`: each
+one's messages are the subagent's system prompt, its task as the user
+message, and its own tool calls and results so far; the `response` includes
+its `tool_calls`. They carry the `turn_id` of the turn that ran them and are
+never part of a `turn` record. In that turn, the agent's call to the `agent`
+tool and its result (the subagent's report) appear like any other tool call.
 
 ### `turn`
 

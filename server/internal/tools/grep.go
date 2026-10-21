@@ -45,6 +45,7 @@ var errGrepFull = errors.New("full")
 
 var grepTool = Tool{
 	Name:        "grep",
+	ReadOnly:    true,
 	Description: "Search file contents with a regular expression (RE2 syntax). Returns path:line: text for each match. Skips binary files, .git and node_modules (and .gitignored files when ripgrep is installed).",
 	Schema: `{"type":"object","properties":{
 "pattern":{"type":"string","description":"Regular expression"},

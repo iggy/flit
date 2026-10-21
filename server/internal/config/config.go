@@ -183,7 +183,7 @@ func (g Git) IsEnabled() bool { return g.Enabled == nil || *g.Enabled }
 var ProviderKinds = []string{"auto", "openai", "openrouter", "llamacpp", "gomodel"}
 
 // Tasks are the kinds of work that can have their own model.
-var Tasks = []string{"chat", "planning", "cron", "compaction", "search", "permission"}
+var Tasks = []string{"chat", "planning", "cron", "compaction", "search", "permission", "explore", "build"}
 
 // TaskModel picks a model for one kind of work.
 type TaskModel struct {
@@ -222,8 +222,9 @@ type Agent struct {
 	// sessions' default model and permission rates shell commands before
 	// flit asks the user (see docs/shell.md); compaction summarizes long
 	// conversations (see Compaction; without it the session's own model
-	// does); planning, cron and search are for those features as they
-	// arrive.
+	// does); explore and build run the agent tool's subagents of that
+	// kind (see Subagents; without one the session's own model does);
+	// planning, cron and search are for those features as they arrive.
 	Tasks map[string]TaskModel `yaml:"tasks"`
 	// ModelPromptAppends adds text to the system prompt for specific
 	// models, keyed "provider/model".
@@ -246,7 +247,24 @@ type Agent struct {
 	// Compaction summarizes the older part of a long conversation so it
 	// fits the model's context (tasks.compaction picks the model).
 	Compaction Compaction `yaml:"compaction"`
+	// Subagents configures the agent tool (tasks.explore and tasks.build
+	// pick the models).
+	Subagents Subagents `yaml:"subagents"`
 }
+
+// Subagents configures the agent tool, which runs a task in a fresh
+// context (read-only "explore", or "build" with the session's tools and
+// permission rules) and gives the agent only its final report.
+type Subagents struct {
+	// Enabled offers the agent tool. Default true.
+	Enabled *bool `yaml:"enabled"`
+	// MaxSteps caps a subagent's model calls (1-200); at the cap it is
+	// told to stop and report. Default 20.
+	MaxSteps int `yaml:"max_steps"`
+}
+
+// IsEnabled reports whether the agent tool is offered.
+func (s Subagents) IsEnabled() bool { return s.Enabled == nil || *s.Enabled }
 
 // Compaction configures context compaction.
 type Compaction struct {
@@ -360,6 +378,7 @@ func Default() Config {
 				KeepTurns:        2,
 				MaxSummaryTokens: 4096,
 			},
+			Subagents: Subagents{Enabled: ptr(true), MaxSteps: 20},
 		},
 		Shell: Shell{
 			Timeout:    2 * time.Minute,
@@ -411,6 +430,9 @@ func (c *Config) fillDefaults() {
 	}
 	if c.Agent.Compaction.Threshold == 0 {
 		c.Agent.Compaction.Threshold = d.Agent.Compaction.Threshold
+	}
+	if c.Agent.Subagents.MaxSteps == 0 {
+		c.Agent.Subagents.MaxSteps = d.Agent.Subagents.MaxSteps
 	}
 	if c.Agent.Compaction.KeepTurns == 0 {
 		c.Agent.Compaction.KeepTurns = d.Agent.Compaction.KeepTurns
@@ -548,6 +570,9 @@ func (c Config) Validate() error {
 	if cp := c.Agent.Compaction; cp.KeepTurns < 1 || cp.KeepTurns > 50 {
 		return errors.New("agent.compaction.keep_turns must be between 1 and 50")
 	}
+	if n := c.Agent.Subagents.MaxSteps; n < 1 || n > 200 {
+		return errors.New("agent.subagents.max_steps must be between 1 and 200")
+	}
 	if c.Agent.Compaction.MaxSummaryTokens < 0 {
 		return errors.New("agent.compaction.max_summary_tokens must not be negative")
 	}
@@ -671,15 +696,17 @@ agent:
   # off to turn thinking off on llama.cpp. Empty means the model's default.
   effort: ""
   # A model per kind of work: chat, permission, planning, cron, compaction,
-  # search. chat overrides the defaults above. permission rates shell
-  # commands (safe, ask or block) before flit asks you; without it, flit
-  # just asks. compaction writes the summary when a long conversation is
-  # compacted; without it, the session's own model does. planning, cron
+  # search, explore, build. chat overrides the defaults above. permission
+  # rates shell commands (safe, ask or block) before flit asks you; without
+  # it, flit just asks. compaction writes the summary when a long
+  # conversation is compacted; explore and build run the agent tool's
+  # subagents; without them, the session's own model does. planning, cron
   # and search aren't used yet.
   tasks: {}
   #   chat:       {provider: local, model: qwen3-coder, effort: medium}
   #   permission: {provider: local, model: qwen3-4b, effort: off}
   #   compaction: {provider: local, model: qwen3-4b, effort: off}
+  #   explore:    {provider: local, model: qwen3-4b, effort: low}
   # Extra system prompt text for specific models ("provider/model"); a
   # provider's prompt_append applies to all its models.
   model_prompt_appends: {}
@@ -712,6 +739,15 @@ agent:
     # Longest summary, thinking included; a cut-off summary counts as
     # failed and the session goes on uncompacted. 0 means no cap.
     max_summary_tokens: 4096
+  # The agent tool hands a task to a subagent with a fresh context and
+  # gets back only its final report. explore subagents only read (files,
+  # grep, git, web, read-only shell commands) and never ask you anything;
+  # build subagents get the session's tools, and their commands follow the
+  # session's shell rules and prompts. Subagents can't start subagents.
+  subagents:
+    enabled: true
+    # Maximum model calls per subagent; at the cap it is told to report.
+    max_steps: 20
 
 shell:
   timeout: 2m

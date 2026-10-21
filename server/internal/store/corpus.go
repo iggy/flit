@@ -28,8 +28,9 @@ type ModelCall struct {
 	TurnID    string
 	BranchID  string
 	CreatedAt time.Time
-	// Task is the kind of work: "chat" (the agent's own calls) or
-	// "permission" (a shell command safety check). Empty means chat.
+	// Task is the kind of work: "chat" (the agent's own calls),
+	// "permission" (a shell command safety check), "compaction", or
+	// "explore"/"build" (a subagent's calls). Empty means chat.
 	Task string
 
 	Provider    string

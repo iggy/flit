@@ -629,6 +629,118 @@ func (BranchKind) EnumDescriptor() ([]byte, []int) {
 	return file_flit_v1_session_proto_rawDescGZIP(), []int{10}
 }
 
+// SubagentKind is what a subagent may do.
+type SubagentKind int32
+
+const (
+	SubagentKind_SUBAGENT_KIND_UNSPECIFIED SubagentKind = 0
+	// Read-only tools only; never asks the user anything.
+	SubagentKind_SUBAGENT_KIND_EXPLORE SubagentKind = 1
+	// Every tool the session has (but agent); its calls go through the
+	// session's permission rules and prompts like the agent's own.
+	SubagentKind_SUBAGENT_KIND_BUILD SubagentKind = 2
+)
+
+// Enum value maps for SubagentKind.
+var (
+	SubagentKind_name = map[int32]string{
+		0: "SUBAGENT_KIND_UNSPECIFIED",
+		1: "SUBAGENT_KIND_EXPLORE",
+		2: "SUBAGENT_KIND_BUILD",
+	}
+	SubagentKind_value = map[string]int32{
+		"SUBAGENT_KIND_UNSPECIFIED": 0,
+		"SUBAGENT_KIND_EXPLORE":     1,
+		"SUBAGENT_KIND_BUILD":       2,
+	}
+)
+
+func (x SubagentKind) Enum() *SubagentKind {
+	p := new(SubagentKind)
+	*p = x
+	return p
+}
+
+func (x SubagentKind) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SubagentKind) Descriptor() protoreflect.EnumDescriptor {
+	return file_flit_v1_session_proto_enumTypes[11].Descriptor()
+}
+
+func (SubagentKind) Type() protoreflect.EnumType {
+	return &file_flit_v1_session_proto_enumTypes[11]
+}
+
+func (x SubagentKind) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SubagentKind.Descriptor instead.
+func (SubagentKind) EnumDescriptor() ([]byte, []int) {
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{11}
+}
+
+type SubagentOutcome int32
+
+const (
+	SubagentOutcome_SUBAGENT_OUTCOME_UNSPECIFIED SubagentOutcome = 0
+	// It finished and wrote its report.
+	SubagentOutcome_SUBAGENT_OUTCOME_DONE SubagentOutcome = 1
+	// It hit its step cap; report is what it wrote when told to stop.
+	SubagentOutcome_SUBAGENT_OUTCOME_STEP_LIMIT SubagentOutcome = 2
+	// The turn was stopped.
+	SubagentOutcome_SUBAGENT_OUTCOME_CANCELLED SubagentOutcome = 3
+	// It could not run or its model call failed (see error).
+	SubagentOutcome_SUBAGENT_OUTCOME_ERROR SubagentOutcome = 4
+)
+
+// Enum value maps for SubagentOutcome.
+var (
+	SubagentOutcome_name = map[int32]string{
+		0: "SUBAGENT_OUTCOME_UNSPECIFIED",
+		1: "SUBAGENT_OUTCOME_DONE",
+		2: "SUBAGENT_OUTCOME_STEP_LIMIT",
+		3: "SUBAGENT_OUTCOME_CANCELLED",
+		4: "SUBAGENT_OUTCOME_ERROR",
+	}
+	SubagentOutcome_value = map[string]int32{
+		"SUBAGENT_OUTCOME_UNSPECIFIED": 0,
+		"SUBAGENT_OUTCOME_DONE":        1,
+		"SUBAGENT_OUTCOME_STEP_LIMIT":  2,
+		"SUBAGENT_OUTCOME_CANCELLED":   3,
+		"SUBAGENT_OUTCOME_ERROR":       4,
+	}
+)
+
+func (x SubagentOutcome) Enum() *SubagentOutcome {
+	p := new(SubagentOutcome)
+	*p = x
+	return p
+}
+
+func (x SubagentOutcome) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SubagentOutcome) Descriptor() protoreflect.EnumDescriptor {
+	return file_flit_v1_session_proto_enumTypes[12].Descriptor()
+}
+
+func (SubagentOutcome) Type() protoreflect.EnumType {
+	return &file_flit_v1_session_proto_enumTypes[12]
+}
+
+func (x SubagentOutcome) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SubagentOutcome.Descriptor instead.
+func (SubagentOutcome) EnumDescriptor() ([]byte, []int) {
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{12}
+}
+
 type Session struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
 	Id        string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -3366,6 +3478,9 @@ type Event struct {
 	//	*Event_CompactionDone
 	//	*Event_BranchCreated
 	//	*Event_BranchSwitched
+	//	*Event_SubagentStarted
+	//	*Event_SubagentEvent
+	//	*Event_SubagentDone
 	Payload       isEvent_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -3733,6 +3848,33 @@ func (x *Event) GetBranchSwitched() *BranchSwitched {
 	return nil
 }
 
+func (x *Event) GetSubagentStarted() *SubagentStarted {
+	if x != nil {
+		if x, ok := x.Payload.(*Event_SubagentStarted); ok {
+			return x.SubagentStarted
+		}
+	}
+	return nil
+}
+
+func (x *Event) GetSubagentEvent() *SubagentEvent {
+	if x != nil {
+		if x, ok := x.Payload.(*Event_SubagentEvent); ok {
+			return x.SubagentEvent
+		}
+	}
+	return nil
+}
+
+func (x *Event) GetSubagentDone() *SubagentDone {
+	if x != nil {
+		if x, ok := x.Payload.(*Event_SubagentDone); ok {
+			return x.SubagentDone
+		}
+	}
+	return nil
+}
+
 type isEvent_Payload interface {
 	isEvent_Payload()
 }
@@ -3869,6 +4011,18 @@ type Event_BranchSwitched struct {
 	BranchSwitched *BranchSwitched `protobuf:"bytes,42,opt,name=branch_switched,json=branchSwitched,proto3,oneof"`
 }
 
+type Event_SubagentStarted struct {
+	SubagentStarted *SubagentStarted `protobuf:"bytes,43,opt,name=subagent_started,json=subagentStarted,proto3,oneof"`
+}
+
+type Event_SubagentEvent struct {
+	SubagentEvent *SubagentEvent `protobuf:"bytes,44,opt,name=subagent_event,json=subagentEvent,proto3,oneof"`
+}
+
+type Event_SubagentDone struct {
+	SubagentDone *SubagentDone `protobuf:"bytes,45,opt,name=subagent_done,json=subagentDone,proto3,oneof"`
+}
+
 func (*Event_MessageStarted) isEvent_Payload() {}
 
 func (*Event_TextDelta) isEvent_Payload() {}
@@ -3934,6 +4088,12 @@ func (*Event_CompactionDone) isEvent_Payload() {}
 func (*Event_BranchCreated) isEvent_Payload() {}
 
 func (*Event_BranchSwitched) isEvent_Payload() {}
+
+func (*Event_SubagentStarted) isEvent_Payload() {}
+
+func (*Event_SubagentEvent) isEvent_Payload() {}
+
+func (*Event_SubagentDone) isEvent_Payload() {}
 
 // MessageStarted opens a message. Its text arrives as TextDelta events and
 // it ends with MessageDone.
@@ -6535,6 +6695,244 @@ func (x *BranchSwitched) GetClient() string {
 	return ""
 }
 
+// SubagentStarted opens the run of a subagent for the agent tool call
+// tool_call_id. Its own events follow as SubagentEvent and it ends with
+// SubagentDone, before that tool call's ToolCallDone.
+type SubagentStarted struct {
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	ToolCallId string                 `protobuf:"bytes,1,opt,name=tool_call_id,json=toolCallId,proto3" json:"tool_call_id,omitempty"`
+	Kind       SubagentKind           `protobuf:"varint,2,opt,name=kind,proto3,enum=flit.v1.SubagentKind" json:"kind,omitempty"`
+	// The model it runs on (agent.tasks.explore / build, else the
+	// session's).
+	Provider string `protobuf:"bytes,3,opt,name=provider,proto3" json:"provider,omitempty"`
+	Model    string `protobuf:"bytes,4,opt,name=model,proto3" json:"model,omitempty"`
+	Effort   string `protobuf:"bytes,5,opt,name=effort,proto3" json:"effort,omitempty"`
+	// What it was asked to do.
+	Task string `protobuf:"bytes,6,opt,name=task,proto3" json:"task,omitempty"`
+	// Its step cap (agent.subagents.max_steps).
+	MaxSteps      int32 `protobuf:"varint,7,opt,name=max_steps,json=maxSteps,proto3" json:"max_steps,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SubagentStarted) Reset() {
+	*x = SubagentStarted{}
+	mi := &file_flit_v1_session_proto_msgTypes[84]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SubagentStarted) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SubagentStarted) ProtoMessage() {}
+
+func (x *SubagentStarted) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_session_proto_msgTypes[84]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SubagentStarted.ProtoReflect.Descriptor instead.
+func (*SubagentStarted) Descriptor() ([]byte, []int) {
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{84}
+}
+
+func (x *SubagentStarted) GetToolCallId() string {
+	if x != nil {
+		return x.ToolCallId
+	}
+	return ""
+}
+
+func (x *SubagentStarted) GetKind() SubagentKind {
+	if x != nil {
+		return x.Kind
+	}
+	return SubagentKind_SUBAGENT_KIND_UNSPECIFIED
+}
+
+func (x *SubagentStarted) GetProvider() string {
+	if x != nil {
+		return x.Provider
+	}
+	return ""
+}
+
+func (x *SubagentStarted) GetModel() string {
+	if x != nil {
+		return x.Model
+	}
+	return ""
+}
+
+func (x *SubagentStarted) GetEffort() string {
+	if x != nil {
+		return x.Effort
+	}
+	return ""
+}
+
+func (x *SubagentStarted) GetTask() string {
+	if x != nil {
+		return x.Task
+	}
+	return ""
+}
+
+func (x *SubagentStarted) GetMaxSteps() int32 {
+	if x != nil {
+		return x.MaxSteps
+	}
+	return 0
+}
+
+// SubagentEvent is one event of a subagent's own conversation: the same
+// payloads the session's log uses for the agent (MessageStarted, deltas,
+// MessageDone, ToolCallStarted, ToolOutput, ToolCallDone, ModelCallStarted,
+// ModelCallEnded, Usage, ...). event carries only its payload; seq, time
+// and branch are the outer event's. Its permission prompts and safety
+// checks are not wrapped: they are the session's own PromptRequested,
+// PromptResolved and PermissionCheck events, naming the subagent's tool
+// call.
+type SubagentEvent struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ToolCallId    string                 `protobuf:"bytes,1,opt,name=tool_call_id,json=toolCallId,proto3" json:"tool_call_id,omitempty"`
+	Event         *Event                 `protobuf:"bytes,2,opt,name=event,proto3" json:"event,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SubagentEvent) Reset() {
+	*x = SubagentEvent{}
+	mi := &file_flit_v1_session_proto_msgTypes[85]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SubagentEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SubagentEvent) ProtoMessage() {}
+
+func (x *SubagentEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_session_proto_msgTypes[85]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SubagentEvent.ProtoReflect.Descriptor instead.
+func (*SubagentEvent) Descriptor() ([]byte, []int) {
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{85}
+}
+
+func (x *SubagentEvent) GetToolCallId() string {
+	if x != nil {
+		return x.ToolCallId
+	}
+	return ""
+}
+
+func (x *SubagentEvent) GetEvent() *Event {
+	if x != nil {
+		return x.Event
+	}
+	return nil
+}
+
+// SubagentDone closes a subagent run.
+type SubagentDone struct {
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	ToolCallId string                 `protobuf:"bytes,1,opt,name=tool_call_id,json=toolCallId,proto3" json:"tool_call_id,omitempty"`
+	Outcome    SubagentOutcome        `protobuf:"varint,2,opt,name=outcome,proto3,enum=flit.v1.SubagentOutcome" json:"outcome,omitempty"`
+	// Its final report: all of it that the agent sees (as the tool result).
+	Report string `protobuf:"bytes,3,opt,name=report,proto3" json:"report,omitempty"`
+	Error  string `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`
+	// Model calls it made.
+	Steps         int32 `protobuf:"varint,5,opt,name=steps,proto3" json:"steps,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SubagentDone) Reset() {
+	*x = SubagentDone{}
+	mi := &file_flit_v1_session_proto_msgTypes[86]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SubagentDone) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SubagentDone) ProtoMessage() {}
+
+func (x *SubagentDone) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_session_proto_msgTypes[86]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SubagentDone.ProtoReflect.Descriptor instead.
+func (*SubagentDone) Descriptor() ([]byte, []int) {
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{86}
+}
+
+func (x *SubagentDone) GetToolCallId() string {
+	if x != nil {
+		return x.ToolCallId
+	}
+	return ""
+}
+
+func (x *SubagentDone) GetOutcome() SubagentOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return SubagentOutcome_SUBAGENT_OUTCOME_UNSPECIFIED
+}
+
+func (x *SubagentDone) GetReport() string {
+	if x != nil {
+		return x.Report
+	}
+	return ""
+}
+
+func (x *SubagentDone) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+func (x *SubagentDone) GetSteps() int32 {
+	if x != nil {
+		return x.Steps
+	}
+	return 0
+}
+
 var File_flit_v1_session_proto protoreflect.FileDescriptor
 
 const file_flit_v1_session_proto_rawDesc = "" +
@@ -6734,7 +7132,7 @@ const file_flit_v1_session_proto_rawDesc = "" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x12\n" +
 	"\x04yolo\x18\x02 \x01(\bR\x04yolo\"=\n" +
 	"\x0fSetYoloResponse\x12*\n" +
-	"\asession\x18\x01 \x01(\v2\x10.flit.v1.SessionR\asession\"\xbc\x12\n" +
+	"\asession\x18\x01 \x01(\v2\x10.flit.v1.SessionR\asession\"\x82\x14\n" +
 	"\x05Event\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x10\n" +
@@ -6776,7 +7174,10 @@ const file_flit_v1_session_proto_rawDesc = "" +
 	"\x12compaction_started\x18' \x01(\v2\x1a.flit.v1.CompactionStartedH\x00R\x11compactionStarted\x12B\n" +
 	"\x0fcompaction_done\x18( \x01(\v2\x17.flit.v1.CompactionDoneH\x00R\x0ecompactionDone\x12?\n" +
 	"\x0ebranch_created\x18) \x01(\v2\x16.flit.v1.BranchCreatedH\x00R\rbranchCreated\x12B\n" +
-	"\x0fbranch_switched\x18* \x01(\v2\x17.flit.v1.BranchSwitchedH\x00R\x0ebranchSwitchedB\t\n" +
+	"\x0fbranch_switched\x18* \x01(\v2\x17.flit.v1.BranchSwitchedH\x00R\x0ebranchSwitched\x12E\n" +
+	"\x10subagent_started\x18+ \x01(\v2\x18.flit.v1.SubagentStartedH\x00R\x0fsubagentStarted\x12?\n" +
+	"\x0esubagent_event\x18, \x01(\v2\x16.flit.v1.SubagentEventH\x00R\rsubagentEvent\x12<\n" +
+	"\rsubagent_done\x18- \x01(\v2\x15.flit.v1.SubagentDoneH\x00R\fsubagentDoneB\t\n" +
 	"\apayload\"\x84\x01\n" +
 	"\x0eMessageStarted\x12\x1d\n" +
 	"\n" +
@@ -7000,7 +7401,27 @@ const file_flit_v1_session_proto_rawDesc = "" +
 	"\x06client\x18\x06 \x01(\tR\x06client\"E\n" +
 	"\x0eBranchSwitched\x12\x1b\n" +
 	"\tbranch_id\x18\x01 \x01(\tR\bbranchId\x12\x16\n" +
-	"\x06client\x18\x02 \x01(\tR\x06client*\x97\x01\n" +
+	"\x06client\x18\x02 \x01(\tR\x06client\"\xd9\x01\n" +
+	"\x0fSubagentStarted\x12 \n" +
+	"\ftool_call_id\x18\x01 \x01(\tR\n" +
+	"toolCallId\x12)\n" +
+	"\x04kind\x18\x02 \x01(\x0e2\x15.flit.v1.SubagentKindR\x04kind\x12\x1a\n" +
+	"\bprovider\x18\x03 \x01(\tR\bprovider\x12\x14\n" +
+	"\x05model\x18\x04 \x01(\tR\x05model\x12\x16\n" +
+	"\x06effort\x18\x05 \x01(\tR\x06effort\x12\x12\n" +
+	"\x04task\x18\x06 \x01(\tR\x04task\x12\x1b\n" +
+	"\tmax_steps\x18\a \x01(\x05R\bmaxSteps\"W\n" +
+	"\rSubagentEvent\x12 \n" +
+	"\ftool_call_id\x18\x01 \x01(\tR\n" +
+	"toolCallId\x12$\n" +
+	"\x05event\x18\x02 \x01(\v2\x0e.flit.v1.EventR\x05event\"\xa8\x01\n" +
+	"\fSubagentDone\x12 \n" +
+	"\ftool_call_id\x18\x01 \x01(\tR\n" +
+	"toolCallId\x122\n" +
+	"\aoutcome\x18\x02 \x01(\x0e2\x18.flit.v1.SubagentOutcomeR\aoutcome\x12\x16\n" +
+	"\x06report\x18\x03 \x01(\tR\x06report\x12\x14\n" +
+	"\x05error\x18\x04 \x01(\tR\x05error\x12\x14\n" +
+	"\x05steps\x18\x05 \x01(\x05R\x05steps*\x97\x01\n" +
 	"\tTaskState\x12\x1a\n" +
 	"\x16TASK_STATE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fTASK_STATE_IDLE\x10\x01\x12\x16\n" +
@@ -7059,7 +7480,17 @@ const file_flit_v1_session_proto_rawDesc = "" +
 	"BranchKind\x12\x1b\n" +
 	"\x17BRANCH_KIND_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11BRANCH_KIND_RETRY\x10\x01\x12\x14\n" +
-	"\x10BRANCH_KIND_EDIT\x10\x022\xc0\r\n" +
+	"\x10BRANCH_KIND_EDIT\x10\x02*a\n" +
+	"\fSubagentKind\x12\x1d\n" +
+	"\x19SUBAGENT_KIND_UNSPECIFIED\x10\x00\x12\x19\n" +
+	"\x15SUBAGENT_KIND_EXPLORE\x10\x01\x12\x17\n" +
+	"\x13SUBAGENT_KIND_BUILD\x10\x02*\xab\x01\n" +
+	"\x0fSubagentOutcome\x12 \n" +
+	"\x1cSUBAGENT_OUTCOME_UNSPECIFIED\x10\x00\x12\x19\n" +
+	"\x15SUBAGENT_OUTCOME_DONE\x10\x01\x12\x1f\n" +
+	"\x1bSUBAGENT_OUTCOME_STEP_LIMIT\x10\x02\x12\x1e\n" +
+	"\x1aSUBAGENT_OUTCOME_CANCELLED\x10\x03\x12\x1a\n" +
+	"\x16SUBAGENT_OUTCOME_ERROR\x10\x042\xc0\r\n" +
 	"\x0eSessionService\x12N\n" +
 	"\rCreateSession\x12\x1d.flit.v1.CreateSessionRequest\x1a\x1e.flit.v1.CreateSessionResponse\x12P\n" +
 	"\fListSessions\x12\x1c.flit.v1.ListSessionsRequest\x1a\x1d.flit.v1.ListSessionsResponse\"\x03\x90\x02\x01\x12J\n" +
@@ -7099,8 +7530,8 @@ func file_flit_v1_session_proto_rawDescGZIP() []byte {
 	return file_flit_v1_session_proto_rawDescData
 }
 
-var file_flit_v1_session_proto_enumTypes = make([]protoimpl.EnumInfo, 11)
-var file_flit_v1_session_proto_msgTypes = make([]protoimpl.MessageInfo, 84)
+var file_flit_v1_session_proto_enumTypes = make([]protoimpl.EnumInfo, 13)
+var file_flit_v1_session_proto_msgTypes = make([]protoimpl.MessageInfo, 87)
 var file_flit_v1_session_proto_goTypes = []any{
 	(TaskState)(0),                      // 0: flit.v1.TaskState
 	(RatingTarget)(0),                   // 1: flit.v1.RatingTarget
@@ -7113,208 +7544,219 @@ var file_flit_v1_session_proto_goTypes = []any{
 	(ModelWaitReason)(0),                // 8: flit.v1.ModelWaitReason
 	(PromptCacheAction)(0),              // 9: flit.v1.PromptCacheAction
 	(BranchKind)(0),                     // 10: flit.v1.BranchKind
-	(*Session)(nil),                     // 11: flit.v1.Session
-	(*CreateSessionRequest)(nil),        // 12: flit.v1.CreateSessionRequest
-	(*CreateSessionResponse)(nil),       // 13: flit.v1.CreateSessionResponse
-	(*ListSessionsRequest)(nil),         // 14: flit.v1.ListSessionsRequest
-	(*ListSessionsResponse)(nil),        // 15: flit.v1.ListSessionsResponse
-	(*GetSessionRequest)(nil),           // 16: flit.v1.GetSessionRequest
-	(*GetSessionResponse)(nil),          // 17: flit.v1.GetSessionResponse
-	(*AttachRequest)(nil),               // 18: flit.v1.AttachRequest
-	(*AttachResponse)(nil),              // 19: flit.v1.AttachResponse
-	(*SendRequest)(nil),                 // 20: flit.v1.SendRequest
-	(*SendResponse)(nil),                // 21: flit.v1.SendResponse
-	(*EditQueuedMessageRequest)(nil),    // 22: flit.v1.EditQueuedMessageRequest
-	(*EditQueuedMessageResponse)(nil),   // 23: flit.v1.EditQueuedMessageResponse
-	(*CancelQueuedMessageRequest)(nil),  // 24: flit.v1.CancelQueuedMessageRequest
-	(*CancelQueuedMessageResponse)(nil), // 25: flit.v1.CancelQueuedMessageResponse
-	(*InterruptRequest)(nil),            // 26: flit.v1.InterruptRequest
-	(*InterruptResponse)(nil),           // 27: flit.v1.InterruptResponse
-	(*RetryModelCallRequest)(nil),       // 28: flit.v1.RetryModelCallRequest
-	(*RetryModelCallResponse)(nil),      // 29: flit.v1.RetryModelCallResponse
-	(*EndReasoningRequest)(nil),         // 30: flit.v1.EndReasoningRequest
-	(*EndReasoningResponse)(nil),        // 31: flit.v1.EndReasoningResponse
-	(*CompactRequest)(nil),              // 32: flit.v1.CompactRequest
-	(*CompactResponse)(nil),             // 33: flit.v1.CompactResponse
-	(*AnswerPromptRequest)(nil),         // 34: flit.v1.AnswerPromptRequest
-	(*AnswerPromptResponse)(nil),        // 35: flit.v1.AnswerPromptResponse
-	(*SetModelRequest)(nil),             // 36: flit.v1.SetModelRequest
-	(*SetModelResponse)(nil),            // 37: flit.v1.SetModelResponse
-	(*MoveSessionRequest)(nil),          // 38: flit.v1.MoveSessionRequest
-	(*MoveSessionResponse)(nil),         // 39: flit.v1.MoveSessionResponse
-	(*RateRequest)(nil),                 // 40: flit.v1.RateRequest
-	(*RateResponse)(nil),                // 41: flit.v1.RateResponse
-	(*McpServer)(nil),                   // 42: flit.v1.McpServer
-	(*ListMcpServersRequest)(nil),       // 43: flit.v1.ListMcpServersRequest
-	(*ListMcpServersResponse)(nil),      // 44: flit.v1.ListMcpServersResponse
-	(*Skill)(nil),                       // 45: flit.v1.Skill
-	(*ListSkillsRequest)(nil),           // 46: flit.v1.ListSkillsRequest
-	(*ListSkillsResponse)(nil),          // 47: flit.v1.ListSkillsResponse
-	(*SetMcpServerRequest)(nil),         // 48: flit.v1.SetMcpServerRequest
-	(*RetryFromMessageRequest)(nil),     // 49: flit.v1.RetryFromMessageRequest
-	(*RetryFromMessageResponse)(nil),    // 50: flit.v1.RetryFromMessageResponse
-	(*EditMessageRequest)(nil),          // 51: flit.v1.EditMessageRequest
-	(*EditMessageResponse)(nil),         // 52: flit.v1.EditMessageResponse
-	(*SwitchBranchRequest)(nil),         // 53: flit.v1.SwitchBranchRequest
-	(*SwitchBranchResponse)(nil),        // 54: flit.v1.SwitchBranchResponse
-	(*SetMcpServerResponse)(nil),        // 55: flit.v1.SetMcpServerResponse
-	(*SetEffortRequest)(nil),            // 56: flit.v1.SetEffortRequest
-	(*SetEffortResponse)(nil),           // 57: flit.v1.SetEffortResponse
-	(*SetYoloRequest)(nil),              // 58: flit.v1.SetYoloRequest
-	(*SetYoloResponse)(nil),             // 59: flit.v1.SetYoloResponse
-	(*Event)(nil),                       // 60: flit.v1.Event
-	(*MessageStarted)(nil),              // 61: flit.v1.MessageStarted
-	(*TextDelta)(nil),                   // 62: flit.v1.TextDelta
-	(*ReasoningDelta)(nil),              // 63: flit.v1.ReasoningDelta
-	(*MessageDone)(nil),                 // 64: flit.v1.MessageDone
-	(*ToolCallStarted)(nil),             // 65: flit.v1.ToolCallStarted
-	(*ToolOutput)(nil),                  // 66: flit.v1.ToolOutput
-	(*ToolCallDone)(nil),                // 67: flit.v1.ToolCallDone
-	(*PromptRequested)(nil),             // 68: flit.v1.PromptRequested
-	(*PromptResolved)(nil),              // 69: flit.v1.PromptResolved
-	(*TaskStateChanged)(nil),            // 70: flit.v1.TaskStateChanged
-	(*ModelChanged)(nil),                // 71: flit.v1.ModelChanged
-	(*Usage)(nil),                       // 72: flit.v1.Usage
-	(*TodoUpdated)(nil),                 // 73: flit.v1.TodoUpdated
-	(*TodoItem)(nil),                    // 74: flit.v1.TodoItem
-	(*TurnError)(nil),                   // 75: flit.v1.TurnError
-	(*Feedback)(nil),                    // 76: flit.v1.Feedback
-	(*McpServersChanged)(nil),           // 77: flit.v1.McpServersChanged
-	(*SessionMoved)(nil),                // 78: flit.v1.SessionMoved
-	(*YoloChanged)(nil),                 // 79: flit.v1.YoloChanged
-	(*PermissionCheck)(nil),             // 80: flit.v1.PermissionCheck
-	(*ModelCallStarted)(nil),            // 81: flit.v1.ModelCallStarted
-	(*PromptProgress)(nil),              // 82: flit.v1.PromptProgress
-	(*ModelCallEnded)(nil),              // 83: flit.v1.ModelCallEnded
-	(*MessageQueued)(nil),               // 84: flit.v1.MessageQueued
-	(*QueuedMessageUpdated)(nil),        // 85: flit.v1.QueuedMessageUpdated
-	(*QueuedMessageDelivered)(nil),      // 86: flit.v1.QueuedMessageDelivered
-	(*ModelCallWaiting)(nil),            // 87: flit.v1.ModelCallWaiting
-	(*PromptCache)(nil),                 // 88: flit.v1.PromptCache
-	(*ReasoningEndRequested)(nil),       // 89: flit.v1.ReasoningEndRequested
-	(*ReasoningEndIgnored)(nil),         // 90: flit.v1.ReasoningEndIgnored
-	(*CompactionStarted)(nil),           // 91: flit.v1.CompactionStarted
-	(*CompactionDone)(nil),              // 92: flit.v1.CompactionDone
-	(*BranchCreated)(nil),               // 93: flit.v1.BranchCreated
-	(*BranchSwitched)(nil),              // 94: flit.v1.BranchSwitched
-	(*timestamppb.Timestamp)(nil),       // 95: google.protobuf.Timestamp
+	(SubagentKind)(0),                   // 11: flit.v1.SubagentKind
+	(SubagentOutcome)(0),                // 12: flit.v1.SubagentOutcome
+	(*Session)(nil),                     // 13: flit.v1.Session
+	(*CreateSessionRequest)(nil),        // 14: flit.v1.CreateSessionRequest
+	(*CreateSessionResponse)(nil),       // 15: flit.v1.CreateSessionResponse
+	(*ListSessionsRequest)(nil),         // 16: flit.v1.ListSessionsRequest
+	(*ListSessionsResponse)(nil),        // 17: flit.v1.ListSessionsResponse
+	(*GetSessionRequest)(nil),           // 18: flit.v1.GetSessionRequest
+	(*GetSessionResponse)(nil),          // 19: flit.v1.GetSessionResponse
+	(*AttachRequest)(nil),               // 20: flit.v1.AttachRequest
+	(*AttachResponse)(nil),              // 21: flit.v1.AttachResponse
+	(*SendRequest)(nil),                 // 22: flit.v1.SendRequest
+	(*SendResponse)(nil),                // 23: flit.v1.SendResponse
+	(*EditQueuedMessageRequest)(nil),    // 24: flit.v1.EditQueuedMessageRequest
+	(*EditQueuedMessageResponse)(nil),   // 25: flit.v1.EditQueuedMessageResponse
+	(*CancelQueuedMessageRequest)(nil),  // 26: flit.v1.CancelQueuedMessageRequest
+	(*CancelQueuedMessageResponse)(nil), // 27: flit.v1.CancelQueuedMessageResponse
+	(*InterruptRequest)(nil),            // 28: flit.v1.InterruptRequest
+	(*InterruptResponse)(nil),           // 29: flit.v1.InterruptResponse
+	(*RetryModelCallRequest)(nil),       // 30: flit.v1.RetryModelCallRequest
+	(*RetryModelCallResponse)(nil),      // 31: flit.v1.RetryModelCallResponse
+	(*EndReasoningRequest)(nil),         // 32: flit.v1.EndReasoningRequest
+	(*EndReasoningResponse)(nil),        // 33: flit.v1.EndReasoningResponse
+	(*CompactRequest)(nil),              // 34: flit.v1.CompactRequest
+	(*CompactResponse)(nil),             // 35: flit.v1.CompactResponse
+	(*AnswerPromptRequest)(nil),         // 36: flit.v1.AnswerPromptRequest
+	(*AnswerPromptResponse)(nil),        // 37: flit.v1.AnswerPromptResponse
+	(*SetModelRequest)(nil),             // 38: flit.v1.SetModelRequest
+	(*SetModelResponse)(nil),            // 39: flit.v1.SetModelResponse
+	(*MoveSessionRequest)(nil),          // 40: flit.v1.MoveSessionRequest
+	(*MoveSessionResponse)(nil),         // 41: flit.v1.MoveSessionResponse
+	(*RateRequest)(nil),                 // 42: flit.v1.RateRequest
+	(*RateResponse)(nil),                // 43: flit.v1.RateResponse
+	(*McpServer)(nil),                   // 44: flit.v1.McpServer
+	(*ListMcpServersRequest)(nil),       // 45: flit.v1.ListMcpServersRequest
+	(*ListMcpServersResponse)(nil),      // 46: flit.v1.ListMcpServersResponse
+	(*Skill)(nil),                       // 47: flit.v1.Skill
+	(*ListSkillsRequest)(nil),           // 48: flit.v1.ListSkillsRequest
+	(*ListSkillsResponse)(nil),          // 49: flit.v1.ListSkillsResponse
+	(*SetMcpServerRequest)(nil),         // 50: flit.v1.SetMcpServerRequest
+	(*RetryFromMessageRequest)(nil),     // 51: flit.v1.RetryFromMessageRequest
+	(*RetryFromMessageResponse)(nil),    // 52: flit.v1.RetryFromMessageResponse
+	(*EditMessageRequest)(nil),          // 53: flit.v1.EditMessageRequest
+	(*EditMessageResponse)(nil),         // 54: flit.v1.EditMessageResponse
+	(*SwitchBranchRequest)(nil),         // 55: flit.v1.SwitchBranchRequest
+	(*SwitchBranchResponse)(nil),        // 56: flit.v1.SwitchBranchResponse
+	(*SetMcpServerResponse)(nil),        // 57: flit.v1.SetMcpServerResponse
+	(*SetEffortRequest)(nil),            // 58: flit.v1.SetEffortRequest
+	(*SetEffortResponse)(nil),           // 59: flit.v1.SetEffortResponse
+	(*SetYoloRequest)(nil),              // 60: flit.v1.SetYoloRequest
+	(*SetYoloResponse)(nil),             // 61: flit.v1.SetYoloResponse
+	(*Event)(nil),                       // 62: flit.v1.Event
+	(*MessageStarted)(nil),              // 63: flit.v1.MessageStarted
+	(*TextDelta)(nil),                   // 64: flit.v1.TextDelta
+	(*ReasoningDelta)(nil),              // 65: flit.v1.ReasoningDelta
+	(*MessageDone)(nil),                 // 66: flit.v1.MessageDone
+	(*ToolCallStarted)(nil),             // 67: flit.v1.ToolCallStarted
+	(*ToolOutput)(nil),                  // 68: flit.v1.ToolOutput
+	(*ToolCallDone)(nil),                // 69: flit.v1.ToolCallDone
+	(*PromptRequested)(nil),             // 70: flit.v1.PromptRequested
+	(*PromptResolved)(nil),              // 71: flit.v1.PromptResolved
+	(*TaskStateChanged)(nil),            // 72: flit.v1.TaskStateChanged
+	(*ModelChanged)(nil),                // 73: flit.v1.ModelChanged
+	(*Usage)(nil),                       // 74: flit.v1.Usage
+	(*TodoUpdated)(nil),                 // 75: flit.v1.TodoUpdated
+	(*TodoItem)(nil),                    // 76: flit.v1.TodoItem
+	(*TurnError)(nil),                   // 77: flit.v1.TurnError
+	(*Feedback)(nil),                    // 78: flit.v1.Feedback
+	(*McpServersChanged)(nil),           // 79: flit.v1.McpServersChanged
+	(*SessionMoved)(nil),                // 80: flit.v1.SessionMoved
+	(*YoloChanged)(nil),                 // 81: flit.v1.YoloChanged
+	(*PermissionCheck)(nil),             // 82: flit.v1.PermissionCheck
+	(*ModelCallStarted)(nil),            // 83: flit.v1.ModelCallStarted
+	(*PromptProgress)(nil),              // 84: flit.v1.PromptProgress
+	(*ModelCallEnded)(nil),              // 85: flit.v1.ModelCallEnded
+	(*MessageQueued)(nil),               // 86: flit.v1.MessageQueued
+	(*QueuedMessageUpdated)(nil),        // 87: flit.v1.QueuedMessageUpdated
+	(*QueuedMessageDelivered)(nil),      // 88: flit.v1.QueuedMessageDelivered
+	(*ModelCallWaiting)(nil),            // 89: flit.v1.ModelCallWaiting
+	(*PromptCache)(nil),                 // 90: flit.v1.PromptCache
+	(*ReasoningEndRequested)(nil),       // 91: flit.v1.ReasoningEndRequested
+	(*ReasoningEndIgnored)(nil),         // 92: flit.v1.ReasoningEndIgnored
+	(*CompactionStarted)(nil),           // 93: flit.v1.CompactionStarted
+	(*CompactionDone)(nil),              // 94: flit.v1.CompactionDone
+	(*BranchCreated)(nil),               // 95: flit.v1.BranchCreated
+	(*BranchSwitched)(nil),              // 96: flit.v1.BranchSwitched
+	(*SubagentStarted)(nil),             // 97: flit.v1.SubagentStarted
+	(*SubagentEvent)(nil),               // 98: flit.v1.SubagentEvent
+	(*SubagentDone)(nil),                // 99: flit.v1.SubagentDone
+	(*timestamppb.Timestamp)(nil),       // 100: google.protobuf.Timestamp
 }
 var file_flit_v1_session_proto_depIdxs = []int32{
-	0,  // 0: flit.v1.Session.state:type_name -> flit.v1.TaskState
-	95, // 1: flit.v1.Session.create_time:type_name -> google.protobuf.Timestamp
-	95, // 2: flit.v1.Session.update_time:type_name -> google.protobuf.Timestamp
-	11, // 3: flit.v1.CreateSessionResponse.session:type_name -> flit.v1.Session
-	11, // 4: flit.v1.ListSessionsResponse.sessions:type_name -> flit.v1.Session
-	11, // 5: flit.v1.GetSessionResponse.session:type_name -> flit.v1.Session
-	60, // 6: flit.v1.AttachResponse.event:type_name -> flit.v1.Event
-	4,  // 7: flit.v1.AnswerPromptRequest.decision:type_name -> flit.v1.PromptDecision
-	11, // 8: flit.v1.SetModelResponse.session:type_name -> flit.v1.Session
-	11, // 9: flit.v1.MoveSessionResponse.session:type_name -> flit.v1.Session
-	1,  // 10: flit.v1.RateRequest.target:type_name -> flit.v1.RatingTarget
-	2,  // 11: flit.v1.RateRequest.rating:type_name -> flit.v1.Rating
-	42, // 12: flit.v1.ListMcpServersResponse.servers:type_name -> flit.v1.McpServer
-	45, // 13: flit.v1.ListSkillsResponse.skills:type_name -> flit.v1.Skill
-	11, // 14: flit.v1.SwitchBranchResponse.session:type_name -> flit.v1.Session
-	11, // 15: flit.v1.SetMcpServerResponse.session:type_name -> flit.v1.Session
-	11, // 16: flit.v1.SetEffortResponse.session:type_name -> flit.v1.Session
-	11, // 17: flit.v1.SetYoloResponse.session:type_name -> flit.v1.Session
-	95, // 18: flit.v1.Event.time:type_name -> google.protobuf.Timestamp
-	61, // 19: flit.v1.Event.message_started:type_name -> flit.v1.MessageStarted
-	62, // 20: flit.v1.Event.text_delta:type_name -> flit.v1.TextDelta
-	63, // 21: flit.v1.Event.reasoning_delta:type_name -> flit.v1.ReasoningDelta
-	64, // 22: flit.v1.Event.message_done:type_name -> flit.v1.MessageDone
-	65, // 23: flit.v1.Event.tool_call_started:type_name -> flit.v1.ToolCallStarted
-	66, // 24: flit.v1.Event.tool_output:type_name -> flit.v1.ToolOutput
-	67, // 25: flit.v1.Event.tool_call_done:type_name -> flit.v1.ToolCallDone
-	68, // 26: flit.v1.Event.prompt_requested:type_name -> flit.v1.PromptRequested
-	69, // 27: flit.v1.Event.prompt_resolved:type_name -> flit.v1.PromptResolved
-	70, // 28: flit.v1.Event.task_state_changed:type_name -> flit.v1.TaskStateChanged
-	71, // 29: flit.v1.Event.model_changed:type_name -> flit.v1.ModelChanged
-	72, // 30: flit.v1.Event.usage:type_name -> flit.v1.Usage
-	75, // 31: flit.v1.Event.error:type_name -> flit.v1.TurnError
-	73, // 32: flit.v1.Event.todo_updated:type_name -> flit.v1.TodoUpdated
-	76, // 33: flit.v1.Event.feedback:type_name -> flit.v1.Feedback
-	77, // 34: flit.v1.Event.mcp_servers_changed:type_name -> flit.v1.McpServersChanged
-	78, // 35: flit.v1.Event.session_moved:type_name -> flit.v1.SessionMoved
-	79, // 36: flit.v1.Event.yolo_changed:type_name -> flit.v1.YoloChanged
-	80, // 37: flit.v1.Event.permission_check:type_name -> flit.v1.PermissionCheck
-	81, // 38: flit.v1.Event.model_call_started:type_name -> flit.v1.ModelCallStarted
-	82, // 39: flit.v1.Event.prompt_progress:type_name -> flit.v1.PromptProgress
-	83, // 40: flit.v1.Event.model_call_ended:type_name -> flit.v1.ModelCallEnded
-	84, // 41: flit.v1.Event.message_queued:type_name -> flit.v1.MessageQueued
-	85, // 42: flit.v1.Event.queued_message_updated:type_name -> flit.v1.QueuedMessageUpdated
-	86, // 43: flit.v1.Event.queued_message_delivered:type_name -> flit.v1.QueuedMessageDelivered
-	87, // 44: flit.v1.Event.model_call_waiting:type_name -> flit.v1.ModelCallWaiting
-	88, // 45: flit.v1.Event.prompt_cache:type_name -> flit.v1.PromptCache
-	89, // 46: flit.v1.Event.reasoning_end_requested:type_name -> flit.v1.ReasoningEndRequested
-	90, // 47: flit.v1.Event.reasoning_end_ignored:type_name -> flit.v1.ReasoningEndIgnored
-	91, // 48: flit.v1.Event.compaction_started:type_name -> flit.v1.CompactionStarted
-	92, // 49: flit.v1.Event.compaction_done:type_name -> flit.v1.CompactionDone
-	93, // 50: flit.v1.Event.branch_created:type_name -> flit.v1.BranchCreated
-	94, // 51: flit.v1.Event.branch_switched:type_name -> flit.v1.BranchSwitched
-	3,  // 52: flit.v1.MessageStarted.role:type_name -> flit.v1.Role
-	4,  // 53: flit.v1.PromptResolved.decision:type_name -> flit.v1.PromptDecision
-	0,  // 54: flit.v1.TaskStateChanged.state:type_name -> flit.v1.TaskState
-	74, // 55: flit.v1.TodoUpdated.items:type_name -> flit.v1.TodoItem
-	5,  // 56: flit.v1.TodoItem.status:type_name -> flit.v1.TodoStatus
-	1,  // 57: flit.v1.Feedback.target:type_name -> flit.v1.RatingTarget
-	2,  // 58: flit.v1.Feedback.rating:type_name -> flit.v1.Rating
-	6,  // 59: flit.v1.PermissionCheck.verdict:type_name -> flit.v1.PermissionVerdict
-	7,  // 60: flit.v1.ModelCallEnded.outcome:type_name -> flit.v1.ModelCallOutcome
-	8,  // 61: flit.v1.ModelCallWaiting.reason:type_name -> flit.v1.ModelWaitReason
-	9,  // 62: flit.v1.PromptCache.action:type_name -> flit.v1.PromptCacheAction
-	10, // 63: flit.v1.BranchCreated.kind:type_name -> flit.v1.BranchKind
-	12, // 64: flit.v1.SessionService.CreateSession:input_type -> flit.v1.CreateSessionRequest
-	14, // 65: flit.v1.SessionService.ListSessions:input_type -> flit.v1.ListSessionsRequest
-	16, // 66: flit.v1.SessionService.GetSession:input_type -> flit.v1.GetSessionRequest
-	18, // 67: flit.v1.SessionService.Attach:input_type -> flit.v1.AttachRequest
-	20, // 68: flit.v1.SessionService.Send:input_type -> flit.v1.SendRequest
-	22, // 69: flit.v1.SessionService.EditQueuedMessage:input_type -> flit.v1.EditQueuedMessageRequest
-	24, // 70: flit.v1.SessionService.CancelQueuedMessage:input_type -> flit.v1.CancelQueuedMessageRequest
-	26, // 71: flit.v1.SessionService.Interrupt:input_type -> flit.v1.InterruptRequest
-	28, // 72: flit.v1.SessionService.RetryModelCall:input_type -> flit.v1.RetryModelCallRequest
-	30, // 73: flit.v1.SessionService.EndReasoning:input_type -> flit.v1.EndReasoningRequest
-	32, // 74: flit.v1.SessionService.Compact:input_type -> flit.v1.CompactRequest
-	34, // 75: flit.v1.SessionService.AnswerPrompt:input_type -> flit.v1.AnswerPromptRequest
-	36, // 76: flit.v1.SessionService.SetModel:input_type -> flit.v1.SetModelRequest
-	56, // 77: flit.v1.SessionService.SetEffort:input_type -> flit.v1.SetEffortRequest
-	58, // 78: flit.v1.SessionService.SetYolo:input_type -> flit.v1.SetYoloRequest
-	38, // 79: flit.v1.SessionService.MoveSession:input_type -> flit.v1.MoveSessionRequest
-	40, // 80: flit.v1.SessionService.Rate:input_type -> flit.v1.RateRequest
-	43, // 81: flit.v1.SessionService.ListMcpServers:input_type -> flit.v1.ListMcpServersRequest
-	48, // 82: flit.v1.SessionService.SetMcpServer:input_type -> flit.v1.SetMcpServerRequest
-	46, // 83: flit.v1.SessionService.ListSkills:input_type -> flit.v1.ListSkillsRequest
-	49, // 84: flit.v1.SessionService.RetryFromMessage:input_type -> flit.v1.RetryFromMessageRequest
-	51, // 85: flit.v1.SessionService.EditMessage:input_type -> flit.v1.EditMessageRequest
-	53, // 86: flit.v1.SessionService.SwitchBranch:input_type -> flit.v1.SwitchBranchRequest
-	13, // 87: flit.v1.SessionService.CreateSession:output_type -> flit.v1.CreateSessionResponse
-	15, // 88: flit.v1.SessionService.ListSessions:output_type -> flit.v1.ListSessionsResponse
-	17, // 89: flit.v1.SessionService.GetSession:output_type -> flit.v1.GetSessionResponse
-	19, // 90: flit.v1.SessionService.Attach:output_type -> flit.v1.AttachResponse
-	21, // 91: flit.v1.SessionService.Send:output_type -> flit.v1.SendResponse
-	23, // 92: flit.v1.SessionService.EditQueuedMessage:output_type -> flit.v1.EditQueuedMessageResponse
-	25, // 93: flit.v1.SessionService.CancelQueuedMessage:output_type -> flit.v1.CancelQueuedMessageResponse
-	27, // 94: flit.v1.SessionService.Interrupt:output_type -> flit.v1.InterruptResponse
-	29, // 95: flit.v1.SessionService.RetryModelCall:output_type -> flit.v1.RetryModelCallResponse
-	31, // 96: flit.v1.SessionService.EndReasoning:output_type -> flit.v1.EndReasoningResponse
-	33, // 97: flit.v1.SessionService.Compact:output_type -> flit.v1.CompactResponse
-	35, // 98: flit.v1.SessionService.AnswerPrompt:output_type -> flit.v1.AnswerPromptResponse
-	37, // 99: flit.v1.SessionService.SetModel:output_type -> flit.v1.SetModelResponse
-	57, // 100: flit.v1.SessionService.SetEffort:output_type -> flit.v1.SetEffortResponse
-	59, // 101: flit.v1.SessionService.SetYolo:output_type -> flit.v1.SetYoloResponse
-	39, // 102: flit.v1.SessionService.MoveSession:output_type -> flit.v1.MoveSessionResponse
-	41, // 103: flit.v1.SessionService.Rate:output_type -> flit.v1.RateResponse
-	44, // 104: flit.v1.SessionService.ListMcpServers:output_type -> flit.v1.ListMcpServersResponse
-	55, // 105: flit.v1.SessionService.SetMcpServer:output_type -> flit.v1.SetMcpServerResponse
-	47, // 106: flit.v1.SessionService.ListSkills:output_type -> flit.v1.ListSkillsResponse
-	50, // 107: flit.v1.SessionService.RetryFromMessage:output_type -> flit.v1.RetryFromMessageResponse
-	52, // 108: flit.v1.SessionService.EditMessage:output_type -> flit.v1.EditMessageResponse
-	54, // 109: flit.v1.SessionService.SwitchBranch:output_type -> flit.v1.SwitchBranchResponse
-	87, // [87:110] is the sub-list for method output_type
-	64, // [64:87] is the sub-list for method input_type
-	64, // [64:64] is the sub-list for extension type_name
-	64, // [64:64] is the sub-list for extension extendee
-	0,  // [0:64] is the sub-list for field type_name
+	0,   // 0: flit.v1.Session.state:type_name -> flit.v1.TaskState
+	100, // 1: flit.v1.Session.create_time:type_name -> google.protobuf.Timestamp
+	100, // 2: flit.v1.Session.update_time:type_name -> google.protobuf.Timestamp
+	13,  // 3: flit.v1.CreateSessionResponse.session:type_name -> flit.v1.Session
+	13,  // 4: flit.v1.ListSessionsResponse.sessions:type_name -> flit.v1.Session
+	13,  // 5: flit.v1.GetSessionResponse.session:type_name -> flit.v1.Session
+	62,  // 6: flit.v1.AttachResponse.event:type_name -> flit.v1.Event
+	4,   // 7: flit.v1.AnswerPromptRequest.decision:type_name -> flit.v1.PromptDecision
+	13,  // 8: flit.v1.SetModelResponse.session:type_name -> flit.v1.Session
+	13,  // 9: flit.v1.MoveSessionResponse.session:type_name -> flit.v1.Session
+	1,   // 10: flit.v1.RateRequest.target:type_name -> flit.v1.RatingTarget
+	2,   // 11: flit.v1.RateRequest.rating:type_name -> flit.v1.Rating
+	44,  // 12: flit.v1.ListMcpServersResponse.servers:type_name -> flit.v1.McpServer
+	47,  // 13: flit.v1.ListSkillsResponse.skills:type_name -> flit.v1.Skill
+	13,  // 14: flit.v1.SwitchBranchResponse.session:type_name -> flit.v1.Session
+	13,  // 15: flit.v1.SetMcpServerResponse.session:type_name -> flit.v1.Session
+	13,  // 16: flit.v1.SetEffortResponse.session:type_name -> flit.v1.Session
+	13,  // 17: flit.v1.SetYoloResponse.session:type_name -> flit.v1.Session
+	100, // 18: flit.v1.Event.time:type_name -> google.protobuf.Timestamp
+	63,  // 19: flit.v1.Event.message_started:type_name -> flit.v1.MessageStarted
+	64,  // 20: flit.v1.Event.text_delta:type_name -> flit.v1.TextDelta
+	65,  // 21: flit.v1.Event.reasoning_delta:type_name -> flit.v1.ReasoningDelta
+	66,  // 22: flit.v1.Event.message_done:type_name -> flit.v1.MessageDone
+	67,  // 23: flit.v1.Event.tool_call_started:type_name -> flit.v1.ToolCallStarted
+	68,  // 24: flit.v1.Event.tool_output:type_name -> flit.v1.ToolOutput
+	69,  // 25: flit.v1.Event.tool_call_done:type_name -> flit.v1.ToolCallDone
+	70,  // 26: flit.v1.Event.prompt_requested:type_name -> flit.v1.PromptRequested
+	71,  // 27: flit.v1.Event.prompt_resolved:type_name -> flit.v1.PromptResolved
+	72,  // 28: flit.v1.Event.task_state_changed:type_name -> flit.v1.TaskStateChanged
+	73,  // 29: flit.v1.Event.model_changed:type_name -> flit.v1.ModelChanged
+	74,  // 30: flit.v1.Event.usage:type_name -> flit.v1.Usage
+	77,  // 31: flit.v1.Event.error:type_name -> flit.v1.TurnError
+	75,  // 32: flit.v1.Event.todo_updated:type_name -> flit.v1.TodoUpdated
+	78,  // 33: flit.v1.Event.feedback:type_name -> flit.v1.Feedback
+	79,  // 34: flit.v1.Event.mcp_servers_changed:type_name -> flit.v1.McpServersChanged
+	80,  // 35: flit.v1.Event.session_moved:type_name -> flit.v1.SessionMoved
+	81,  // 36: flit.v1.Event.yolo_changed:type_name -> flit.v1.YoloChanged
+	82,  // 37: flit.v1.Event.permission_check:type_name -> flit.v1.PermissionCheck
+	83,  // 38: flit.v1.Event.model_call_started:type_name -> flit.v1.ModelCallStarted
+	84,  // 39: flit.v1.Event.prompt_progress:type_name -> flit.v1.PromptProgress
+	85,  // 40: flit.v1.Event.model_call_ended:type_name -> flit.v1.ModelCallEnded
+	86,  // 41: flit.v1.Event.message_queued:type_name -> flit.v1.MessageQueued
+	87,  // 42: flit.v1.Event.queued_message_updated:type_name -> flit.v1.QueuedMessageUpdated
+	88,  // 43: flit.v1.Event.queued_message_delivered:type_name -> flit.v1.QueuedMessageDelivered
+	89,  // 44: flit.v1.Event.model_call_waiting:type_name -> flit.v1.ModelCallWaiting
+	90,  // 45: flit.v1.Event.prompt_cache:type_name -> flit.v1.PromptCache
+	91,  // 46: flit.v1.Event.reasoning_end_requested:type_name -> flit.v1.ReasoningEndRequested
+	92,  // 47: flit.v1.Event.reasoning_end_ignored:type_name -> flit.v1.ReasoningEndIgnored
+	93,  // 48: flit.v1.Event.compaction_started:type_name -> flit.v1.CompactionStarted
+	94,  // 49: flit.v1.Event.compaction_done:type_name -> flit.v1.CompactionDone
+	95,  // 50: flit.v1.Event.branch_created:type_name -> flit.v1.BranchCreated
+	96,  // 51: flit.v1.Event.branch_switched:type_name -> flit.v1.BranchSwitched
+	97,  // 52: flit.v1.Event.subagent_started:type_name -> flit.v1.SubagentStarted
+	98,  // 53: flit.v1.Event.subagent_event:type_name -> flit.v1.SubagentEvent
+	99,  // 54: flit.v1.Event.subagent_done:type_name -> flit.v1.SubagentDone
+	3,   // 55: flit.v1.MessageStarted.role:type_name -> flit.v1.Role
+	4,   // 56: flit.v1.PromptResolved.decision:type_name -> flit.v1.PromptDecision
+	0,   // 57: flit.v1.TaskStateChanged.state:type_name -> flit.v1.TaskState
+	76,  // 58: flit.v1.TodoUpdated.items:type_name -> flit.v1.TodoItem
+	5,   // 59: flit.v1.TodoItem.status:type_name -> flit.v1.TodoStatus
+	1,   // 60: flit.v1.Feedback.target:type_name -> flit.v1.RatingTarget
+	2,   // 61: flit.v1.Feedback.rating:type_name -> flit.v1.Rating
+	6,   // 62: flit.v1.PermissionCheck.verdict:type_name -> flit.v1.PermissionVerdict
+	7,   // 63: flit.v1.ModelCallEnded.outcome:type_name -> flit.v1.ModelCallOutcome
+	8,   // 64: flit.v1.ModelCallWaiting.reason:type_name -> flit.v1.ModelWaitReason
+	9,   // 65: flit.v1.PromptCache.action:type_name -> flit.v1.PromptCacheAction
+	10,  // 66: flit.v1.BranchCreated.kind:type_name -> flit.v1.BranchKind
+	11,  // 67: flit.v1.SubagentStarted.kind:type_name -> flit.v1.SubagentKind
+	62,  // 68: flit.v1.SubagentEvent.event:type_name -> flit.v1.Event
+	12,  // 69: flit.v1.SubagentDone.outcome:type_name -> flit.v1.SubagentOutcome
+	14,  // 70: flit.v1.SessionService.CreateSession:input_type -> flit.v1.CreateSessionRequest
+	16,  // 71: flit.v1.SessionService.ListSessions:input_type -> flit.v1.ListSessionsRequest
+	18,  // 72: flit.v1.SessionService.GetSession:input_type -> flit.v1.GetSessionRequest
+	20,  // 73: flit.v1.SessionService.Attach:input_type -> flit.v1.AttachRequest
+	22,  // 74: flit.v1.SessionService.Send:input_type -> flit.v1.SendRequest
+	24,  // 75: flit.v1.SessionService.EditQueuedMessage:input_type -> flit.v1.EditQueuedMessageRequest
+	26,  // 76: flit.v1.SessionService.CancelQueuedMessage:input_type -> flit.v1.CancelQueuedMessageRequest
+	28,  // 77: flit.v1.SessionService.Interrupt:input_type -> flit.v1.InterruptRequest
+	30,  // 78: flit.v1.SessionService.RetryModelCall:input_type -> flit.v1.RetryModelCallRequest
+	32,  // 79: flit.v1.SessionService.EndReasoning:input_type -> flit.v1.EndReasoningRequest
+	34,  // 80: flit.v1.SessionService.Compact:input_type -> flit.v1.CompactRequest
+	36,  // 81: flit.v1.SessionService.AnswerPrompt:input_type -> flit.v1.AnswerPromptRequest
+	38,  // 82: flit.v1.SessionService.SetModel:input_type -> flit.v1.SetModelRequest
+	58,  // 83: flit.v1.SessionService.SetEffort:input_type -> flit.v1.SetEffortRequest
+	60,  // 84: flit.v1.SessionService.SetYolo:input_type -> flit.v1.SetYoloRequest
+	40,  // 85: flit.v1.SessionService.MoveSession:input_type -> flit.v1.MoveSessionRequest
+	42,  // 86: flit.v1.SessionService.Rate:input_type -> flit.v1.RateRequest
+	45,  // 87: flit.v1.SessionService.ListMcpServers:input_type -> flit.v1.ListMcpServersRequest
+	50,  // 88: flit.v1.SessionService.SetMcpServer:input_type -> flit.v1.SetMcpServerRequest
+	48,  // 89: flit.v1.SessionService.ListSkills:input_type -> flit.v1.ListSkillsRequest
+	51,  // 90: flit.v1.SessionService.RetryFromMessage:input_type -> flit.v1.RetryFromMessageRequest
+	53,  // 91: flit.v1.SessionService.EditMessage:input_type -> flit.v1.EditMessageRequest
+	55,  // 92: flit.v1.SessionService.SwitchBranch:input_type -> flit.v1.SwitchBranchRequest
+	15,  // 93: flit.v1.SessionService.CreateSession:output_type -> flit.v1.CreateSessionResponse
+	17,  // 94: flit.v1.SessionService.ListSessions:output_type -> flit.v1.ListSessionsResponse
+	19,  // 95: flit.v1.SessionService.GetSession:output_type -> flit.v1.GetSessionResponse
+	21,  // 96: flit.v1.SessionService.Attach:output_type -> flit.v1.AttachResponse
+	23,  // 97: flit.v1.SessionService.Send:output_type -> flit.v1.SendResponse
+	25,  // 98: flit.v1.SessionService.EditQueuedMessage:output_type -> flit.v1.EditQueuedMessageResponse
+	27,  // 99: flit.v1.SessionService.CancelQueuedMessage:output_type -> flit.v1.CancelQueuedMessageResponse
+	29,  // 100: flit.v1.SessionService.Interrupt:output_type -> flit.v1.InterruptResponse
+	31,  // 101: flit.v1.SessionService.RetryModelCall:output_type -> flit.v1.RetryModelCallResponse
+	33,  // 102: flit.v1.SessionService.EndReasoning:output_type -> flit.v1.EndReasoningResponse
+	35,  // 103: flit.v1.SessionService.Compact:output_type -> flit.v1.CompactResponse
+	37,  // 104: flit.v1.SessionService.AnswerPrompt:output_type -> flit.v1.AnswerPromptResponse
+	39,  // 105: flit.v1.SessionService.SetModel:output_type -> flit.v1.SetModelResponse
+	59,  // 106: flit.v1.SessionService.SetEffort:output_type -> flit.v1.SetEffortResponse
+	61,  // 107: flit.v1.SessionService.SetYolo:output_type -> flit.v1.SetYoloResponse
+	41,  // 108: flit.v1.SessionService.MoveSession:output_type -> flit.v1.MoveSessionResponse
+	43,  // 109: flit.v1.SessionService.Rate:output_type -> flit.v1.RateResponse
+	46,  // 110: flit.v1.SessionService.ListMcpServers:output_type -> flit.v1.ListMcpServersResponse
+	57,  // 111: flit.v1.SessionService.SetMcpServer:output_type -> flit.v1.SetMcpServerResponse
+	49,  // 112: flit.v1.SessionService.ListSkills:output_type -> flit.v1.ListSkillsResponse
+	52,  // 113: flit.v1.SessionService.RetryFromMessage:output_type -> flit.v1.RetryFromMessageResponse
+	54,  // 114: flit.v1.SessionService.EditMessage:output_type -> flit.v1.EditMessageResponse
+	56,  // 115: flit.v1.SessionService.SwitchBranch:output_type -> flit.v1.SwitchBranchResponse
+	93,  // [93:116] is the sub-list for method output_type
+	70,  // [70:93] is the sub-list for method input_type
+	70,  // [70:70] is the sub-list for extension type_name
+	70,  // [70:70] is the sub-list for extension extendee
+	0,   // [0:70] is the sub-list for field type_name
 }
 
 func init() { file_flit_v1_session_proto_init() }
@@ -7357,14 +7799,17 @@ func file_flit_v1_session_proto_init() {
 		(*Event_CompactionDone)(nil),
 		(*Event_BranchCreated)(nil),
 		(*Event_BranchSwitched)(nil),
+		(*Event_SubagentStarted)(nil),
+		(*Event_SubagentEvent)(nil),
+		(*Event_SubagentDone)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_flit_v1_session_proto_rawDesc), len(file_flit_v1_session_proto_rawDesc)),
-			NumEnums:      11,
-			NumMessages:   84,
+			NumEnums:      13,
+			NumMessages:   87,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

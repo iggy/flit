@@ -3654,6 +3654,9 @@ enum Event_Payload {
   compactionDone,
   branchCreated,
   branchSwitched,
+  subagentStarted,
+  subagentEvent,
+  subagentDone,
   notSet
 }
 
@@ -3697,6 +3700,9 @@ class Event extends $pb.GeneratedMessage {
     CompactionDone? compactionDone,
     BranchCreated? branchCreated,
     BranchSwitched? branchSwitched,
+    SubagentStarted? subagentStarted,
+    SubagentEvent? subagentEvent,
+    SubagentDone? subagentDone,
   }) {
     final result = Event._();
     if (sessionId != null) result.sessionId = sessionId;
@@ -3740,6 +3746,9 @@ class Event extends $pb.GeneratedMessage {
     if (compactionDone != null) result.compactionDone = compactionDone;
     if (branchCreated != null) result.branchCreated = branchCreated;
     if (branchSwitched != null) result.branchSwitched = branchSwitched;
+    if (subagentStarted != null) result.subagentStarted = subagentStarted;
+    if (subagentEvent != null) result.subagentEvent = subagentEvent;
+    if (subagentDone != null) result.subagentDone = subagentDone;
     return result;
   }
 
@@ -3786,6 +3795,9 @@ class Event extends $pb.GeneratedMessage {
     40: Event_Payload.compactionDone,
     41: Event_Payload.branchCreated,
     42: Event_Payload.branchSwitched,
+    43: Event_Payload.subagentStarted,
+    44: Event_Payload.subagentEvent,
+    45: Event_Payload.subagentDone,
     0: Event_Payload.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
@@ -3825,7 +3837,10 @@ class Event extends $pb.GeneratedMessage {
       39,
       40,
       41,
-      42
+      42,
+      43,
+      44,
+      45
     ])
     ..aOS(1, _omitFieldNames ? '' : 'sessionId')
     ..aInt64(2, _omitFieldNames ? '' : 'seq')
@@ -3901,6 +3916,12 @@ class Event extends $pb.GeneratedMessage {
         subBuilder: BranchCreated.$_createMessage)
     ..aOM<BranchSwitched>(42, _omitFieldNames ? '' : 'branchSwitched',
         subBuilder: BranchSwitched.$_createMessage)
+    ..aOM<SubagentStarted>(43, _omitFieldNames ? '' : 'subagentStarted',
+        subBuilder: SubagentStarted.$_createMessage)
+    ..aOM<SubagentEvent>(44, _omitFieldNames ? '' : 'subagentEvent',
+        subBuilder: SubagentEvent.$_createMessage)
+    ..aOM<SubagentDone>(45, _omitFieldNames ? '' : 'subagentDone',
+        subBuilder: SubagentDone.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -3956,6 +3977,9 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(40)
   @$pb.TagNumber(41)
   @$pb.TagNumber(42)
+  @$pb.TagNumber(43)
+  @$pb.TagNumber(44)
+  @$pb.TagNumber(45)
   Event_Payload whichPayload() => _Event_PayloadByTag[$_whichOneof(0)]!;
   @$pb.TagNumber(10)
   @$pb.TagNumber(11)
@@ -3990,6 +4014,9 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(40)
   @$pb.TagNumber(41)
   @$pb.TagNumber(42)
+  @$pb.TagNumber(43)
+  @$pb.TagNumber(44)
+  @$pb.TagNumber(45)
   void clearPayload() => $_clearField($_whichOneof(0));
 
   @$pb.TagNumber(1)
@@ -4401,6 +4428,39 @@ class Event extends $pb.GeneratedMessage {
   void clearBranchSwitched() => $_clearField(42);
   @$pb.TagNumber(42)
   BranchSwitched ensureBranchSwitched() => $_ensure(36);
+
+  @$pb.TagNumber(43)
+  SubagentStarted get subagentStarted => $_getN(37);
+  @$pb.TagNumber(43)
+  set subagentStarted(SubagentStarted value) => $_setField(43, value);
+  @$pb.TagNumber(43)
+  $core.bool hasSubagentStarted() => $_has(37);
+  @$pb.TagNumber(43)
+  void clearSubagentStarted() => $_clearField(43);
+  @$pb.TagNumber(43)
+  SubagentStarted ensureSubagentStarted() => $_ensure(37);
+
+  @$pb.TagNumber(44)
+  SubagentEvent get subagentEvent => $_getN(38);
+  @$pb.TagNumber(44)
+  set subagentEvent(SubagentEvent value) => $_setField(44, value);
+  @$pb.TagNumber(44)
+  $core.bool hasSubagentEvent() => $_has(38);
+  @$pb.TagNumber(44)
+  void clearSubagentEvent() => $_clearField(44);
+  @$pb.TagNumber(44)
+  SubagentEvent ensureSubagentEvent() => $_ensure(38);
+
+  @$pb.TagNumber(45)
+  SubagentDone get subagentDone => $_getN(39);
+  @$pb.TagNumber(45)
+  set subagentDone(SubagentDone value) => $_setField(45, value);
+  @$pb.TagNumber(45)
+  $core.bool hasSubagentDone() => $_has(39);
+  @$pb.TagNumber(45)
+  void clearSubagentDone() => $_clearField(45);
+  @$pb.TagNumber(45)
+  SubagentDone ensureSubagentDone() => $_ensure(39);
 }
 
 /// MessageStarted opens a message. Its text arrives as TextDelta events and
@@ -7911,6 +7971,332 @@ class BranchSwitched extends $pb.GeneratedMessage {
   $core.bool hasClient() => $_has(1);
   @$pb.TagNumber(2)
   void clearClient() => $_clearField(2);
+}
+
+/// SubagentStarted opens the run of a subagent for the agent tool call
+/// tool_call_id. Its own events follow as SubagentEvent and it ends with
+/// SubagentDone, before that tool call's ToolCallDone.
+class SubagentStarted extends $pb.GeneratedMessage {
+  factory SubagentStarted({
+    $core.String? toolCallId,
+    SubagentKind? kind,
+    $core.String? provider,
+    $core.String? model,
+    $core.String? effort,
+    $core.String? task,
+    $core.int? maxSteps,
+  }) {
+    final result = SubagentStarted._();
+    if (toolCallId != null) result.toolCallId = toolCallId;
+    if (kind != null) result.kind = kind;
+    if (provider != null) result.provider = provider;
+    if (model != null) result.model = model;
+    if (effort != null) result.effort = effort;
+    if (task != null) result.task = task;
+    if (maxSteps != null) result.maxSteps = maxSteps;
+    return result;
+  }
+
+  SubagentStarted._();
+
+  factory SubagentStarted.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SubagentStarted()..mergeFromBuffer(data, registry);
+  factory SubagentStarted.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SubagentStarted()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SubagentStarted',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: SubagentStarted.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'toolCallId')
+    ..aE<SubagentKind>(2, _omitFieldNames ? '' : 'kind',
+        enumValues: SubagentKind.values)
+    ..aOS(3, _omitFieldNames ? '' : 'provider')
+    ..aOS(4, _omitFieldNames ? '' : 'model')
+    ..aOS(5, _omitFieldNames ? '' : 'effort')
+    ..aOS(6, _omitFieldNames ? '' : 'task')
+    ..aI(7, _omitFieldNames ? '' : 'maxSteps')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SubagentStarted clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SubagentStarted copyWith(void Function(SubagentStarted) updates) =>
+      super.copyWith((message) => updates(message as SubagentStarted))
+          as SubagentStarted;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use SubagentStarted() / SubagentStarted.new instead')
+  static SubagentStarted create() => SubagentStarted._();
+  static $pb.GeneratedMessage $_createMessage() => SubagentStarted._();
+  @$core.override
+  SubagentStarted createEmptyInstance() => SubagentStarted._();
+  @$core.pragma('dart2js:noInline')
+  static SubagentStarted getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SubagentStarted>(
+          SubagentStarted.$_createMessage);
+  static SubagentStarted? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get toolCallId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set toolCallId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasToolCallId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearToolCallId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  SubagentKind get kind => $_getN(1);
+  @$pb.TagNumber(2)
+  set kind(SubagentKind value) => $_setField(2, value);
+  @$pb.TagNumber(2)
+  $core.bool hasKind() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearKind() => $_clearField(2);
+
+  /// The model it runs on (agent.tasks.explore / build, else the
+  /// session's).
+  @$pb.TagNumber(3)
+  $core.String get provider => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set provider($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasProvider() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearProvider() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get model => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set model($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasModel() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearModel() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.String get effort => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set effort($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasEffort() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearEffort() => $_clearField(5);
+
+  /// What it was asked to do.
+  @$pb.TagNumber(6)
+  $core.String get task => $_getSZ(5);
+  @$pb.TagNumber(6)
+  set task($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasTask() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearTask() => $_clearField(6);
+
+  /// Its step cap (agent.subagents.max_steps).
+  @$pb.TagNumber(7)
+  $core.int get maxSteps => $_getIZ(6);
+  @$pb.TagNumber(7)
+  set maxSteps($core.int value) => $_setSignedInt32(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasMaxSteps() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearMaxSteps() => $_clearField(7);
+}
+
+/// SubagentEvent is one event of a subagent's own conversation: the same
+/// payloads the session's log uses for the agent (MessageStarted, deltas,
+/// MessageDone, ToolCallStarted, ToolOutput, ToolCallDone, ModelCallStarted,
+/// ModelCallEnded, Usage, ...). event carries only its payload; seq, time
+/// and branch are the outer event's. Its permission prompts and safety
+/// checks are not wrapped: they are the session's own PromptRequested,
+/// PromptResolved and PermissionCheck events, naming the subagent's tool
+/// call.
+class SubagentEvent extends $pb.GeneratedMessage {
+  factory SubagentEvent({
+    $core.String? toolCallId,
+    Event? event,
+  }) {
+    final result = SubagentEvent._();
+    if (toolCallId != null) result.toolCallId = toolCallId;
+    if (event != null) result.event = event;
+    return result;
+  }
+
+  SubagentEvent._();
+
+  factory SubagentEvent.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SubagentEvent()..mergeFromBuffer(data, registry);
+  factory SubagentEvent.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SubagentEvent()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SubagentEvent',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: SubagentEvent.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'toolCallId')
+    ..aOM<Event>(2, _omitFieldNames ? '' : 'event',
+        subBuilder: Event.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SubagentEvent clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SubagentEvent copyWith(void Function(SubagentEvent) updates) =>
+      super.copyWith((message) => updates(message as SubagentEvent))
+          as SubagentEvent;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use SubagentEvent() / SubagentEvent.new instead')
+  static SubagentEvent create() => SubagentEvent._();
+  static $pb.GeneratedMessage $_createMessage() => SubagentEvent._();
+  @$core.override
+  SubagentEvent createEmptyInstance() => SubagentEvent._();
+  @$core.pragma('dart2js:noInline')
+  static SubagentEvent getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SubagentEvent>(
+          SubagentEvent.$_createMessage);
+  static SubagentEvent? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get toolCallId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set toolCallId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasToolCallId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearToolCallId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  Event get event => $_getN(1);
+  @$pb.TagNumber(2)
+  set event(Event value) => $_setField(2, value);
+  @$pb.TagNumber(2)
+  $core.bool hasEvent() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearEvent() => $_clearField(2);
+  @$pb.TagNumber(2)
+  Event ensureEvent() => $_ensure(1);
+}
+
+/// SubagentDone closes a subagent run.
+class SubagentDone extends $pb.GeneratedMessage {
+  factory SubagentDone({
+    $core.String? toolCallId,
+    SubagentOutcome? outcome,
+    $core.String? report,
+    $core.String? error,
+    $core.int? steps,
+  }) {
+    final result = SubagentDone._();
+    if (toolCallId != null) result.toolCallId = toolCallId;
+    if (outcome != null) result.outcome = outcome;
+    if (report != null) result.report = report;
+    if (error != null) result.error = error;
+    if (steps != null) result.steps = steps;
+    return result;
+  }
+
+  SubagentDone._();
+
+  factory SubagentDone.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SubagentDone()..mergeFromBuffer(data, registry);
+  factory SubagentDone.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SubagentDone()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SubagentDone',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: SubagentDone.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'toolCallId')
+    ..aE<SubagentOutcome>(2, _omitFieldNames ? '' : 'outcome',
+        enumValues: SubagentOutcome.values)
+    ..aOS(3, _omitFieldNames ? '' : 'report')
+    ..aOS(4, _omitFieldNames ? '' : 'error')
+    ..aI(5, _omitFieldNames ? '' : 'steps')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SubagentDone clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SubagentDone copyWith(void Function(SubagentDone) updates) =>
+      super.copyWith((message) => updates(message as SubagentDone))
+          as SubagentDone;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use SubagentDone() / SubagentDone.new instead')
+  static SubagentDone create() => SubagentDone._();
+  static $pb.GeneratedMessage $_createMessage() => SubagentDone._();
+  @$core.override
+  SubagentDone createEmptyInstance() => SubagentDone._();
+  @$core.pragma('dart2js:noInline')
+  static SubagentDone getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SubagentDone>(
+          SubagentDone.$_createMessage);
+  static SubagentDone? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get toolCallId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set toolCallId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasToolCallId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearToolCallId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  SubagentOutcome get outcome => $_getN(1);
+  @$pb.TagNumber(2)
+  set outcome(SubagentOutcome value) => $_setField(2, value);
+  @$pb.TagNumber(2)
+  $core.bool hasOutcome() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearOutcome() => $_clearField(2);
+
+  /// Its final report: all of it that the agent sees (as the tool result).
+  @$pb.TagNumber(3)
+  $core.String get report => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set report($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasReport() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearReport() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get error => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set error($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasError() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearError() => $_clearField(4);
+
+  /// Model calls it made.
+  @$pb.TagNumber(5)
+  $core.int get steps => $_getIZ(4);
+  @$pb.TagNumber(5)
+  set steps($core.int value) => $_setSignedInt32(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasSteps() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearSteps() => $_clearField(5);
 }
 
 /// SessionService runs agent sessions. A session is a conversation with the
