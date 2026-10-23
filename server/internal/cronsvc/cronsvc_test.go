@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
 
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
 	"github.com/iggy/flit/server/internal/agent"
@@ -54,12 +54,12 @@ func TestCronService(t *testing.T) {
 	}
 	svc := &Service{S: s}
 
-	list, err := svc.ListCronJobs(ctx, connect.NewRequest(&flitv1.ListCronJobsRequest{}))
+	list, err := svc.ListCronJobs(ctx, &flitv1.ListCronJobsRequest{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	jobs := list.Msg.Jobs
-	if len(jobs) != 2 || list.Msg.Dir != dir {
+	jobs := list.Jobs
+	if len(jobs) != 2 || list.Dir != dir {
 		t.Fatalf("jobs %v", jobs)
 	}
 	if b := jobs[0]; b.Name != "broken" || b.Error == "" || b.NextRunTime != nil {
@@ -70,29 +70,29 @@ func TestCronService(t *testing.T) {
 		t.Errorf("morning %v", j)
 	}
 
-	off, err := svc.SetCronJobEnabled(ctx, connect.NewRequest(&flitv1.SetCronJobEnabledRequest{Name: "morning", Enabled: false}))
+	off, err := svc.SetCronJobEnabled(ctx, &flitv1.SetCronJobEnabledRequest{Name: "morning", Enabled: false})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if off.Msg.Job.Enabled || off.Msg.Job.NextRunTime != nil {
-		t.Errorf("disabled %v", off.Msg.Job)
+	if off.Job.Enabled || off.Job.NextRunTime != nil {
+		t.Errorf("disabled %v", off.Job)
 	}
 
 	llm.Push(llmtest.Response{Chunks: llmtest.Text("CI is green.")})
-	run, err := svc.RunCronJob(ctx, connect.NewRequest(&flitv1.RunCronJobRequest{Name: "morning"}))
+	run, err := svc.RunCronJob(ctx, &flitv1.RunCronJobRequest{Name: "morning"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if r := run.Msg.Run; r.SessionId == "" || r.Trigger != flitv1.CronTrigger_CRON_TRIGGER_MANUAL {
+	if r := run.Run; r.SessionId == "" || r.Trigger != flitv1.CronTrigger_CRON_TRIGGER_MANUAL {
 		t.Fatalf("run %v", r)
 	}
 	deadline := time.Now().Add(10 * time.Second)
 	for {
-		runs, err := svc.ListCronRuns(ctx, connect.NewRequest(&flitv1.ListCronRunsRequest{Name: "morning"}))
+		runs, err := svc.ListCronRuns(ctx, &flitv1.ListCronRunsRequest{Name: "morning"})
 		if err != nil {
 			t.Fatal(err)
 		}
-		if r := runs.Msg.Runs[0]; r.State == flitv1.CronRunState_CRON_RUN_STATE_OK {
+		if r := runs.Runs[0]; r.State == flitv1.CronRunState_CRON_RUN_STATE_OK {
 			if r.Summary != "CI is green." || r.FinishTime == nil {
 				t.Fatalf("run %v", r)
 			}
@@ -103,22 +103,22 @@ func TestCronService(t *testing.T) {
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
-	got, err := svc.GetCronJob(ctx, connect.NewRequest(&flitv1.GetCronJobRequest{Name: "morning"}))
-	if err != nil || got.Msg.Job.LastRun.GetSummary() != "CI is green." {
+	got, err := svc.GetCronJob(ctx, &flitv1.GetCronJobRequest{Name: "morning"})
+	if err != nil || got.Job.LastRun.GetSummary() != "CI is green." {
 		t.Fatalf("get %v %v", got, err)
 	}
 
 	for _, err := range []error{
 		func() error {
-			_, err := svc.GetCronJob(ctx, connect.NewRequest(&flitv1.GetCronJobRequest{Name: "nope"}))
+			_, err := svc.GetCronJob(ctx, &flitv1.GetCronJobRequest{Name: "nope"})
 			return err
 		}(),
 		func() error {
-			_, err := svc.RunCronJob(ctx, connect.NewRequest(&flitv1.RunCronJobRequest{Name: "broken"}))
+			_, err := svc.RunCronJob(ctx, &flitv1.RunCronJobRequest{Name: "broken"})
 			return err
 		}(),
 		func() error {
-			_, err := svc.RunCronJob(ctx, connect.NewRequest(&flitv1.RunCronJobRequest{}))
+			_, err := svc.RunCronJob(ctx, &flitv1.RunCronJobRequest{})
 			return err
 		}(),
 	} {

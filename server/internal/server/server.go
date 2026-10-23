@@ -14,7 +14,8 @@ import (
 	"sync"
 	"time"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
+	"connectrpc.com/connect/v2/connecthttp"
 
 	"github.com/iggy/flit/server/gen/flit/v1/flitv1connect"
 	"github.com/iggy/flit/server/internal/agent"
@@ -57,24 +58,37 @@ func NewHandler(adminToken string, d Deps) http.Handler {
 	if d.Devices != nil {
 		authOpts.Devices = d.Devices
 	}
-	opts := connect.WithInterceptors(auth.NewInterceptor(adminToken, authOpts))
+	interceptor := auth.NewInterceptor(adminToken, authOpts)
 	mux := http.NewServeMux()
-	mux.Handle(flitv1connect.NewSystemServiceHandler(&system.Service{Devices: d.Devices, Config: d.Config}, opts))
+	server := connect.NewServer(connect.ServerInterceptor(interceptor.Intercept))
+	flitv1connect.RegisterSystemServiceHandler(server, &system.Service{Devices: d.Devices, Config: d.Config})
+	connecthttp.Mount(mux, server, connecthttp.WithReadMaxBytes(0))
 	if d.Sessions != nil {
-		mux.Handle(flitv1connect.NewSessionServiceHandler(&sessionsvc.Service{M: d.Sessions}, opts))
-		mux.Handle(flitv1connect.NewProjectServiceHandler(&sessionsvc.Projects{M: d.Sessions}, opts))
+		server := connect.NewServer(connect.ServerInterceptor(interceptor.Intercept))
+		flitv1connect.RegisterSessionServiceHandler(server, &sessionsvc.Service{M: d.Sessions})
+		flitv1connect.RegisterProjectServiceHandler(server, &sessionsvc.Projects{M: d.Sessions})
+		connecthttp.Mount(mux, server, connecthttp.WithReadMaxBytes(0))
+
 	}
 	if d.Catalog != nil {
-		mux.Handle(flitv1connect.NewModelServiceHandler(&modelsvc.Models{Catalog: d.Catalog, Store: d.Store}, opts))
+		server := connect.NewServer(connect.ServerInterceptor(interceptor.Intercept))
+		flitv1connect.RegisterModelServiceHandler(server, &modelsvc.Models{Catalog: d.Catalog, Store: d.Store})
+		connecthttp.Mount(mux, server, connecthttp.WithReadMaxBytes(0))
 	}
 	if d.Learning != nil {
-		mux.Handle(flitv1connect.NewLearningServiceHandler(&learn.API{S: d.Learning}, opts))
+		server := connect.NewServer(connect.ServerInterceptor(interceptor.Intercept))
+		flitv1connect.RegisterLearningServiceHandler(server, &learn.API{S: d.Learning})
+		connecthttp.Mount(mux, server, connecthttp.WithReadMaxBytes(0))
 	}
 	if d.RolesDir != nil {
-		mux.Handle(flitv1connect.NewRoleServiceHandler(&modelsvc.Roles{Dir: d.RolesDir}, opts))
+		server := connect.NewServer(connect.ServerInterceptor(interceptor.Intercept))
+		flitv1connect.RegisterRoleServiceHandler(server, &modelsvc.Roles{Dir: d.RolesDir})
+		connecthttp.Mount(mux, server, connecthttp.WithReadMaxBytes(0))
 	}
 	if d.Crons != nil {
-		mux.Handle(flitv1connect.NewCronServiceHandler(&cronsvc.Service{S: d.Crons}, opts))
+		server := connect.NewServer(connect.ServerInterceptor(interceptor.Intercept))
+		flitv1connect.RegisterCronServiceHandler(server, &cronsvc.Service{S: d.Crons})
+		connecthttp.Mount(mux, server, connecthttp.WithReadMaxBytes(0))
 	}
 	return mux
 }

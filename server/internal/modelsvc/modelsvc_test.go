@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
 
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
 	"github.com/iggy/flit/server/internal/config"
@@ -38,19 +38,19 @@ func TestFavoritesRecentsAndLoad(t *testing.T) {
 	defer st.Close()
 	svc := &Models{Catalog: cat, Store: st}
 
-	if _, err := svc.SetFavorite(ctx, connect.NewRequest(&flitv1.SetFavoriteRequest{Provider: "p", Model: "b", Favorite: true})); err != nil {
+	if _, err := svc.SetFavorite(ctx, &flitv1.SetFavoriteRequest{Provider: "p", Model: "b", Favorite: true}); err != nil {
 		t.Fatal(err)
 	}
 	used := time.Unix(2000, 0)
 	if err := st.TouchModel(ctx, store.DefaultTeamID, store.ModelKey{Provider: "p", Model: "a"}, used); err != nil {
 		t.Fatal(err)
 	}
-	res, err := svc.ListModels(ctx, connect.NewRequest(&flitv1.ListModelsRequest{}))
+	res, err := svc.ListModels(ctx, &flitv1.ListModelsRequest{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	got := map[string]*flitv1.Model{}
-	for _, m := range res.Msg.Models {
+	for _, m := range res.Models {
 		got[m.Id] = m
 	}
 	if a := got["a"]; a.Favorite || !a.LastUsed.AsTime().Equal(used) || a.State != flitv1.ModelState_MODEL_STATE_UNSPECIFIED {
@@ -60,10 +60,10 @@ func TestFavoritesRecentsAndLoad(t *testing.T) {
 		t.Fatalf("b = %v", b)
 	}
 
-	if _, err := svc.SetFavorite(ctx, connect.NewRequest(&flitv1.SetFavoriteRequest{Provider: "p"})); connect.CodeOf(err) != connect.CodeInvalidArgument {
+	if _, err := svc.SetFavorite(ctx, &flitv1.SetFavoriteRequest{Provider: "p"}); connect.CodeOf(err) != connect.CodeInvalidArgument {
 		t.Fatalf("no model: %v", err)
 	}
-	if _, err := svc.LoadModel(ctx, connect.NewRequest(&flitv1.LoadModelRequest{Provider: "p", Model: "a"})); connect.CodeOf(err) != connect.CodeFailedPrecondition {
+	if _, err := svc.LoadModel(ctx, &flitv1.LoadModelRequest{Provider: "p", Model: "a"}); connect.CodeOf(err) != connect.CodeFailedPrecondition {
 		t.Fatalf("load on a non-router: %v", err)
 	}
 }
@@ -73,12 +73,12 @@ func TestListRolesIncludesBuiltin(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "pm.md"), []byte("Mine."), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	res, err := (&Roles{Dir: func() string { return dir }}).ListRoles(context.Background(), connect.NewRequest(&flitv1.ListRolesRequest{}))
+	res, err := (&Roles{Dir: func() string { return dir }}).ListRoles(context.Background(), &flitv1.ListRolesRequest{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	got := map[string]bool{}
-	for _, r := range res.Msg.Roles {
+	for _, r := range res.Roles {
 		got[r.Name] = r.Builtin
 	}
 	if !got["qa"] || !got["frontend-dev"] || !got["backend-dev"] || got["pm"] {

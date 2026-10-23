@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strings"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
@@ -40,9 +40,9 @@ var AdminOnly = []string{
 var Public = []string{flitv1connect.SystemServicePairProcedure}
 
 // Version implements flitv1connect.SystemServiceHandler.
-func (*Service) Version(context.Context, *connect.Request[flitv1.VersionRequest]) (*connect.Response[flitv1.VersionResponse], error) {
+func (*Service) Version(context.Context, *flitv1.VersionRequest) (*flitv1.VersionResponse, error) {
 	bi := buildinfo.Get()
-	return connect.NewResponse(&flitv1.VersionResponse{
+	return &flitv1.VersionResponse{
 		Version:    bi.Version,
 		Commit:     bi.Commit,
 		BuildTime:  bi.BuildTime,
@@ -50,21 +50,21 @@ func (*Service) Version(context.Context, *connect.Request[flitv1.VersionRequest]
 		Os:         bi.OS,
 		Arch:       bi.Arch,
 		ApiVersion: buildinfo.APIVersion,
-	}), nil
+	}, nil
 }
 
 // Health implements flitv1connect.SystemServiceHandler. A server that can
 // answer is serving.
-func (*Service) Health(context.Context, *connect.Request[flitv1.HealthRequest]) (*connect.Response[flitv1.HealthResponse], error) {
-	return connect.NewResponse(&flitv1.HealthResponse{
+func (*Service) Health(context.Context, *flitv1.HealthRequest) (*flitv1.HealthResponse, error) {
+	return &flitv1.HealthResponse{
 		Status: flitv1.HealthResponse_STATUS_SERVING,
-	}), nil
+	}, nil
 }
 
-var errNoPairing = connect.NewError(connect.CodeUnimplemented, errors.New("pairing is not enabled"))
+var errNoPairing = connect.NewError(connect.CodeUnimplemented, "pairing is not enabled")
 
 // CreatePairingCode implements flitv1connect.SystemServiceHandler.
-func (s *Service) CreatePairingCode(context.Context, *connect.Request[flitv1.CreatePairingCodeRequest]) (*connect.Response[flitv1.CreatePairingCodeResponse], error) {
+func (s *Service) CreatePairingCode(context.Context, *flitv1.CreatePairingCodeRequest) (*flitv1.CreatePairingCodeResponse, error) {
 	if s.Devices == nil {
 		return nil, errNoPairing
 	}
@@ -73,53 +73,53 @@ func (s *Service) CreatePairingCode(context.Context, *connect.Request[flitv1.Cre
 	if s.Config != nil {
 		res.ServerUrl = ServerURL(s.Config())
 	}
-	return connect.NewResponse(res), nil
+	return res, nil
 }
 
 // Pair implements flitv1connect.SystemServiceHandler.
-func (s *Service) Pair(ctx context.Context, req *connect.Request[flitv1.PairRequest]) (*connect.Response[flitv1.PairResponse], error) {
+func (s *Service) Pair(ctx context.Context, req *flitv1.PairRequest) (*flitv1.PairResponse, error) {
 	if s.Devices == nil {
 		return nil, errNoPairing
 	}
-	d, token, err := s.Devices.Pair(ctx, req.Msg.Code, req.Msg.DeviceName)
+	d, token, err := s.Devices.Pair(ctx, req.Code, req.DeviceName)
 	if errors.Is(err, devices.ErrBadCode) {
-		return nil, connect.NewError(connect.CodePermissionDenied, err)
+		return nil, connect.NewError(connect.CodePermissionDenied, err.Error())
 	}
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, connect.NewError(connect.CodeInternal, err.Error())
 	}
-	return connect.NewResponse(&flitv1.PairResponse{Device: deviceProto(d), Token: token}), nil
+	return &flitv1.PairResponse{Device: deviceProto(d), Token: token}, nil
 }
 
 // ListDevices implements flitv1connect.SystemServiceHandler.
-func (s *Service) ListDevices(ctx context.Context, req *connect.Request[flitv1.ListDevicesRequest]) (*connect.Response[flitv1.ListDevicesResponse], error) {
+func (s *Service) ListDevices(ctx context.Context, req *flitv1.ListDevicesRequest) (*flitv1.ListDevicesResponse, error) {
 	if s.Devices == nil {
 		return nil, errNoPairing
 	}
-	list, err := s.Devices.List(ctx, req.Msg.IncludeRevoked)
+	list, err := s.Devices.List(ctx, req.IncludeRevoked)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, connect.NewError(connect.CodeInternal, err.Error())
 	}
 	res := &flitv1.ListDevicesResponse{}
 	for _, d := range list {
 		res.Devices = append(res.Devices, deviceProto(d))
 	}
-	return connect.NewResponse(res), nil
+	return res, nil
 }
 
 // RevokeDevice implements flitv1connect.SystemServiceHandler.
-func (s *Service) RevokeDevice(ctx context.Context, req *connect.Request[flitv1.RevokeDeviceRequest]) (*connect.Response[flitv1.RevokeDeviceResponse], error) {
+func (s *Service) RevokeDevice(ctx context.Context, req *flitv1.RevokeDeviceRequest) (*flitv1.RevokeDeviceResponse, error) {
 	if s.Devices == nil {
 		return nil, errNoPairing
 	}
-	err := s.Devices.Revoke(ctx, req.Msg.DeviceId)
+	err := s.Devices.Revoke(ctx, req.DeviceId)
 	if errors.Is(err, store.ErrNotFound) {
-		return nil, connect.NewError(connect.CodeNotFound, err)
+		return nil, connect.NewError(connect.CodeNotFound, err.Error())
 	}
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, connect.NewError(connect.CodeInternal, err.Error())
 	}
-	return connect.NewResponse(&flitv1.RevokeDeviceResponse{}), nil
+	return &flitv1.RevokeDeviceResponse{}, nil
 }
 
 func deviceProto(d store.Device) *flitv1.Device {

@@ -5,120 +5,295 @@
 package flitv1connect
 
 import (
-	connect "connectrpc.com/connect"
+	connect "connectrpc.com/connect/v2"
 	context "context"
-	errors "errors"
 	v1 "github.com/iggy/flit/server/gen/flit/v1"
-	http "net/http"
-	strings "strings"
+	sync "sync"
 )
-
-// This is a compile-time assertion to ensure that this generated file and the connect package are
-// compatible. If you get a compiler error that this constant is not defined, this code was
-// generated with a version of connect newer than the one compiled into your binary. You can fix the
-// problem by either regenerating this code with an older version of connect or updating the connect
-// version compiled into your binary.
-const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// SessionServiceName is the fully-qualified name of the SessionService service.
 	SessionServiceName = "flit.v1.SessionService"
 )
 
-// These constants are the fully-qualified names of the RPCs defined in this package. They're
-// exposed at runtime as Spec.Procedure and as the final two segments of the HTTP route.
+// These constants are the procedure names of the RPCs defined in this package. They're exposed at
+// runtime as Spec.Procedure and as the final two segments of the HTTP route.
 //
 // Note that these are different from the fully-qualified method names used by
 // google.golang.org/protobuf/reflect/protoreflect. To convert from these constants to
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// SessionServiceCreateSessionProcedure is the fully-qualified name of the SessionService's
-	// CreateSession RPC.
-	SessionServiceCreateSessionProcedure = "/flit.v1.SessionService/CreateSession"
-	// SessionServiceListSessionsProcedure is the fully-qualified name of the SessionService's
-	// ListSessions RPC.
-	SessionServiceListSessionsProcedure = "/flit.v1.SessionService/ListSessions"
-	// SessionServiceGetSessionProcedure is the fully-qualified name of the SessionService's GetSession
+	// SessionServiceCreateSessionProcedure is the procedure name of the SessionService's CreateSession
 	// RPC.
+	SessionServiceCreateSessionProcedure = "/flit.v1.SessionService/CreateSession"
+	// SessionServiceListSessionsProcedure is the procedure name of the SessionService's ListSessions
+	// RPC.
+	SessionServiceListSessionsProcedure = "/flit.v1.SessionService/ListSessions"
+	// SessionServiceGetSessionProcedure is the procedure name of the SessionService's GetSession RPC.
 	SessionServiceGetSessionProcedure = "/flit.v1.SessionService/GetSession"
-	// SessionServiceAttachProcedure is the fully-qualified name of the SessionService's Attach RPC.
+	// SessionServiceAttachProcedure is the procedure name of the SessionService's Attach RPC.
 	SessionServiceAttachProcedure = "/flit.v1.SessionService/Attach"
-	// SessionServiceSendProcedure is the fully-qualified name of the SessionService's Send RPC.
+	// SessionServiceSendProcedure is the procedure name of the SessionService's Send RPC.
 	SessionServiceSendProcedure = "/flit.v1.SessionService/Send"
-	// SessionServiceEditQueuedMessageProcedure is the fully-qualified name of the SessionService's
+	// SessionServiceEditQueuedMessageProcedure is the procedure name of the SessionService's
 	// EditQueuedMessage RPC.
 	SessionServiceEditQueuedMessageProcedure = "/flit.v1.SessionService/EditQueuedMessage"
-	// SessionServiceCancelQueuedMessageProcedure is the fully-qualified name of the SessionService's
+	// SessionServiceCancelQueuedMessageProcedure is the procedure name of the SessionService's
 	// CancelQueuedMessage RPC.
 	SessionServiceCancelQueuedMessageProcedure = "/flit.v1.SessionService/CancelQueuedMessage"
-	// SessionServiceInterruptProcedure is the fully-qualified name of the SessionService's Interrupt
-	// RPC.
+	// SessionServiceInterruptProcedure is the procedure name of the SessionService's Interrupt RPC.
 	SessionServiceInterruptProcedure = "/flit.v1.SessionService/Interrupt"
-	// SessionServiceRetryModelCallProcedure is the fully-qualified name of the SessionService's
+	// SessionServiceRetryModelCallProcedure is the procedure name of the SessionService's
 	// RetryModelCall RPC.
 	SessionServiceRetryModelCallProcedure = "/flit.v1.SessionService/RetryModelCall"
-	// SessionServiceEndReasoningProcedure is the fully-qualified name of the SessionService's
-	// EndReasoning RPC.
-	SessionServiceEndReasoningProcedure = "/flit.v1.SessionService/EndReasoning"
-	// SessionServiceCompactProcedure is the fully-qualified name of the SessionService's Compact RPC.
-	SessionServiceCompactProcedure = "/flit.v1.SessionService/Compact"
-	// SessionServiceAnswerPromptProcedure is the fully-qualified name of the SessionService's
-	// AnswerPrompt RPC.
-	SessionServiceAnswerPromptProcedure = "/flit.v1.SessionService/AnswerPrompt"
-	// SessionServiceSetModelProcedure is the fully-qualified name of the SessionService's SetModel RPC.
-	SessionServiceSetModelProcedure = "/flit.v1.SessionService/SetModel"
-	// SessionServiceSetEffortProcedure is the fully-qualified name of the SessionService's SetEffort
+	// SessionServiceEndReasoningProcedure is the procedure name of the SessionService's EndReasoning
 	// RPC.
+	SessionServiceEndReasoningProcedure = "/flit.v1.SessionService/EndReasoning"
+	// SessionServiceCompactProcedure is the procedure name of the SessionService's Compact RPC.
+	SessionServiceCompactProcedure = "/flit.v1.SessionService/Compact"
+	// SessionServiceAnswerPromptProcedure is the procedure name of the SessionService's AnswerPrompt
+	// RPC.
+	SessionServiceAnswerPromptProcedure = "/flit.v1.SessionService/AnswerPrompt"
+	// SessionServiceSetModelProcedure is the procedure name of the SessionService's SetModel RPC.
+	SessionServiceSetModelProcedure = "/flit.v1.SessionService/SetModel"
+	// SessionServiceSetEffortProcedure is the procedure name of the SessionService's SetEffort RPC.
 	SessionServiceSetEffortProcedure = "/flit.v1.SessionService/SetEffort"
-	// SessionServiceSetYoloProcedure is the fully-qualified name of the SessionService's SetYolo RPC.
+	// SessionServiceSetYoloProcedure is the procedure name of the SessionService's SetYolo RPC.
 	SessionServiceSetYoloProcedure = "/flit.v1.SessionService/SetYolo"
-	// SessionServiceMoveSessionProcedure is the fully-qualified name of the SessionService's
-	// MoveSession RPC.
+	// SessionServiceMoveSessionProcedure is the procedure name of the SessionService's MoveSession RPC.
 	SessionServiceMoveSessionProcedure = "/flit.v1.SessionService/MoveSession"
-	// SessionServiceRateProcedure is the fully-qualified name of the SessionService's Rate RPC.
+	// SessionServiceRateProcedure is the procedure name of the SessionService's Rate RPC.
 	SessionServiceRateProcedure = "/flit.v1.SessionService/Rate"
-	// SessionServiceListMcpServersProcedure is the fully-qualified name of the SessionService's
+	// SessionServiceListMcpServersProcedure is the procedure name of the SessionService's
 	// ListMcpServers RPC.
 	SessionServiceListMcpServersProcedure = "/flit.v1.SessionService/ListMcpServers"
-	// SessionServiceSetMcpServerProcedure is the fully-qualified name of the SessionService's
-	// SetMcpServer RPC.
-	SessionServiceSetMcpServerProcedure = "/flit.v1.SessionService/SetMcpServer"
-	// SessionServiceListSkillsProcedure is the fully-qualified name of the SessionService's ListSkills
+	// SessionServiceSetMcpServerProcedure is the procedure name of the SessionService's SetMcpServer
 	// RPC.
+	SessionServiceSetMcpServerProcedure = "/flit.v1.SessionService/SetMcpServer"
+	// SessionServiceListSkillsProcedure is the procedure name of the SessionService's ListSkills RPC.
 	SessionServiceListSkillsProcedure = "/flit.v1.SessionService/ListSkills"
-	// SessionServiceRetryFromMessageProcedure is the fully-qualified name of the SessionService's
+	// SessionServiceRetryFromMessageProcedure is the procedure name of the SessionService's
 	// RetryFromMessage RPC.
 	SessionServiceRetryFromMessageProcedure = "/flit.v1.SessionService/RetryFromMessage"
-	// SessionServiceEditMessageProcedure is the fully-qualified name of the SessionService's
-	// EditMessage RPC.
+	// SessionServiceEditMessageProcedure is the procedure name of the SessionService's EditMessage RPC.
 	SessionServiceEditMessageProcedure = "/flit.v1.SessionService/EditMessage"
-	// SessionServiceSwitchBranchProcedure is the fully-qualified name of the SessionService's
-	// SwitchBranch RPC.
-	SessionServiceSwitchBranchProcedure = "/flit.v1.SessionService/SwitchBranch"
-	// SessionServiceGitStatusProcedure is the fully-qualified name of the SessionService's GitStatus
+	// SessionServiceSwitchBranchProcedure is the procedure name of the SessionService's SwitchBranch
 	// RPC.
+	SessionServiceSwitchBranchProcedure = "/flit.v1.SessionService/SwitchBranch"
+	// SessionServiceGitStatusProcedure is the procedure name of the SessionService's GitStatus RPC.
 	SessionServiceGitStatusProcedure = "/flit.v1.SessionService/GitStatus"
-	// SessionServiceGitDiffProcedure is the fully-qualified name of the SessionService's GitDiff RPC.
+	// SessionServiceGitDiffProcedure is the procedure name of the SessionService's GitDiff RPC.
 	SessionServiceGitDiffProcedure = "/flit.v1.SessionService/GitDiff"
-	// SessionServiceRemoveWorktreeProcedure is the fully-qualified name of the SessionService's
+	// SessionServiceRemoveWorktreeProcedure is the procedure name of the SessionService's
 	// RemoveWorktree RPC.
 	SessionServiceRemoveWorktreeProcedure = "/flit.v1.SessionService/RemoveWorktree"
+)
+
+var (
+	sessionServiceCreateSessionSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("CreateSession"),
+			Procedure:  SessionServiceCreateSessionProcedure,
+		}
+	})
+	sessionServiceListSessionsSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType:       connect.StreamTypeUnary,
+			Schema:           v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("ListSessions"),
+			Procedure:        SessionServiceListSessionsProcedure,
+			IdempotencyLevel: connect.IdempotencyNoSideEffects,
+		}
+	})
+	sessionServiceGetSessionSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType:       connect.StreamTypeUnary,
+			Schema:           v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("GetSession"),
+			Procedure:        SessionServiceGetSessionProcedure,
+			IdempotencyLevel: connect.IdempotencyNoSideEffects,
+		}
+	})
+	sessionServiceAttachSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeServer,
+			Schema:     v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("Attach"),
+			Procedure:  SessionServiceAttachProcedure,
+		}
+	})
+	sessionServiceSendSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("Send"),
+			Procedure:  SessionServiceSendProcedure,
+		}
+	})
+	sessionServiceEditQueuedMessageSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("EditQueuedMessage"),
+			Procedure:  SessionServiceEditQueuedMessageProcedure,
+		}
+	})
+	sessionServiceCancelQueuedMessageSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("CancelQueuedMessage"),
+			Procedure:  SessionServiceCancelQueuedMessageProcedure,
+		}
+	})
+	sessionServiceInterruptSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("Interrupt"),
+			Procedure:  SessionServiceInterruptProcedure,
+		}
+	})
+	sessionServiceRetryModelCallSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("RetryModelCall"),
+			Procedure:  SessionServiceRetryModelCallProcedure,
+		}
+	})
+	sessionServiceEndReasoningSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("EndReasoning"),
+			Procedure:  SessionServiceEndReasoningProcedure,
+		}
+	})
+	sessionServiceCompactSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("Compact"),
+			Procedure:  SessionServiceCompactProcedure,
+		}
+	})
+	sessionServiceAnswerPromptSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("AnswerPrompt"),
+			Procedure:  SessionServiceAnswerPromptProcedure,
+		}
+	})
+	sessionServiceSetModelSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("SetModel"),
+			Procedure:  SessionServiceSetModelProcedure,
+		}
+	})
+	sessionServiceSetEffortSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("SetEffort"),
+			Procedure:  SessionServiceSetEffortProcedure,
+		}
+	})
+	sessionServiceSetYoloSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("SetYolo"),
+			Procedure:  SessionServiceSetYoloProcedure,
+		}
+	})
+	sessionServiceMoveSessionSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("MoveSession"),
+			Procedure:  SessionServiceMoveSessionProcedure,
+		}
+	})
+	sessionServiceRateSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("Rate"),
+			Procedure:  SessionServiceRateProcedure,
+		}
+	})
+	sessionServiceListMcpServersSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType:       connect.StreamTypeUnary,
+			Schema:           v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("ListMcpServers"),
+			Procedure:        SessionServiceListMcpServersProcedure,
+			IdempotencyLevel: connect.IdempotencyNoSideEffects,
+		}
+	})
+	sessionServiceSetMcpServerSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("SetMcpServer"),
+			Procedure:  SessionServiceSetMcpServerProcedure,
+		}
+	})
+	sessionServiceListSkillsSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType:       connect.StreamTypeUnary,
+			Schema:           v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("ListSkills"),
+			Procedure:        SessionServiceListSkillsProcedure,
+			IdempotencyLevel: connect.IdempotencyNoSideEffects,
+		}
+	})
+	sessionServiceRetryFromMessageSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("RetryFromMessage"),
+			Procedure:  SessionServiceRetryFromMessageProcedure,
+		}
+	})
+	sessionServiceEditMessageSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("EditMessage"),
+			Procedure:  SessionServiceEditMessageProcedure,
+		}
+	})
+	sessionServiceSwitchBranchSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("SwitchBranch"),
+			Procedure:  SessionServiceSwitchBranchProcedure,
+		}
+	})
+	sessionServiceGitStatusSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType:       connect.StreamTypeUnary,
+			Schema:           v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("GitStatus"),
+			Procedure:        SessionServiceGitStatusProcedure,
+			IdempotencyLevel: connect.IdempotencyNoSideEffects,
+		}
+	})
+	sessionServiceGitDiffSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType:       connect.StreamTypeUnary,
+			Schema:           v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("GitDiff"),
+			Procedure:        SessionServiceGitDiffProcedure,
+			IdempotencyLevel: connect.IdempotencyNoSideEffects,
+		}
+	})
+	sessionServiceRemoveWorktreeSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("RemoveWorktree"),
+			Procedure:  SessionServiceRemoveWorktreeProcedure,
+		}
+	})
 )
 
 // SessionServiceClient is a client for the flit.v1.SessionService service.
 type SessionServiceClient interface {
 	// CreateSession starts a new, idle session. Give working_dir, or a
 	// project_id whose project has a directory.
-	CreateSession(context.Context, *connect.Request[v1.CreateSessionRequest]) (*connect.Response[v1.CreateSessionResponse], error)
+	CreateSession(context.Context, *v1.CreateSessionRequest) (*v1.CreateSessionResponse, error)
 	// ListSessions lists sessions, most recently updated first.
-	ListSessions(context.Context, *connect.Request[v1.ListSessionsRequest]) (*connect.Response[v1.ListSessionsResponse], error)
+	ListSessions(context.Context, *v1.ListSessionsRequest) (*v1.ListSessionsResponse, error)
 	// GetSession returns one session.
-	GetSession(context.Context, *connect.Request[v1.GetSessionRequest]) (*connect.Response[v1.GetSessionResponse], error)
+	GetSession(context.Context, *v1.GetSessionRequest) (*v1.GetSessionResponse, error)
 	// Attach streams a session's events with seq >= from_seq, then follows new
 	// events live until the client disconnects. Replayed events are identical
 	// to what a live client saw, deltas included.
-	Attach(context.Context, *connect.Request[v1.AttachRequest]) (*connect.ServerStreamForClient[v1.AttachResponse], error)
+	Attach(context.Context, *v1.AttachRequest) (SessionServiceAttachClientStream, error)
 	// Send adds a user message and starts a turn. While a turn is running
 	// the message is queued instead (MessageQueued) and delivered at the
 	// turn's next step: after the current model call or tool, before the
@@ -126,26 +301,26 @@ type SessionServiceClient interface {
 	// next turn. Messages still queued when a turn is interrupted wait for
 	// the next Send, which delivers them first; with an empty text, Send
 	// just delivers the queue.
-	Send(context.Context, *connect.Request[v1.SendRequest]) (*connect.Response[v1.SendResponse], error)
+	Send(context.Context, *v1.SendRequest) (*v1.SendResponse, error)
 	// EditQueuedMessage changes, and CancelQueuedMessage withdraws, a queued
 	// message that hasn't been delivered yet. Once it has, they fail with
 	// FAILED_PRECONDITION.
-	EditQueuedMessage(context.Context, *connect.Request[v1.EditQueuedMessageRequest]) (*connect.Response[v1.EditQueuedMessageResponse], error)
-	CancelQueuedMessage(context.Context, *connect.Request[v1.CancelQueuedMessageRequest]) (*connect.Response[v1.CancelQueuedMessageResponse], error)
+	EditQueuedMessage(context.Context, *v1.EditQueuedMessageRequest) (*v1.EditQueuedMessageResponse, error)
+	CancelQueuedMessage(context.Context, *v1.CancelQueuedMessageRequest) (*v1.CancelQueuedMessageResponse, error)
 	// Interrupt stops the running turn, if any. Pending prompts are resolved
 	// as denied.
-	Interrupt(context.Context, *connect.Request[v1.InterruptRequest]) (*connect.Response[v1.InterruptResponse], error)
+	Interrupt(context.Context, *v1.InterruptRequest) (*v1.InterruptResponse, error)
 	// RetryModelCall gives up on the model call in progress and sends it
 	// again, for when the model hasn't answered. Only while none of the reply
 	// has arrived: once it is streaming, the call fails with
 	// FAILED_PRECONDITION (interrupt instead).
-	RetryModelCall(context.Context, *connect.Request[v1.RetryModelCallRequest]) (*connect.Response[v1.RetryModelCallResponse], error)
+	RetryModelCall(context.Context, *v1.RetryModelCallRequest) (*v1.RetryModelCallResponse, error)
 	// EndReasoning asks the model to stop thinking and answer now (llama.cpp
 	// only, for models where it can: ListModels' can_end_reasoning). Only
 	// while the model is thinking and hasn't started its answer; otherwise
 	// FAILED_PRECONDITION. If the model keeps thinking anyway, the log gets
 	// ReasoningEndIgnored and the model is marked as not supporting it.
-	EndReasoning(context.Context, *connect.Request[v1.EndReasoningRequest]) (*connect.Response[v1.EndReasoningResponse], error)
+	EndReasoning(context.Context, *v1.EndReasoningRequest) (*v1.EndReasoningResponse, error)
 	// Compact summarizes the older part of the conversation so it takes less
 	// of the model's context: from then on the model sees the summary plus
 	// the most recent turns instead of the whole log (nothing is deleted).
@@ -154,32 +329,32 @@ type SessionServiceClient interface {
 	// sent meanwhile are queued); while a turn runs, it happens at the
 	// turn's next step (queued = true). flit also compacts on its own near
 	// the context limit (agent.compaction in the config).
-	Compact(context.Context, *connect.Request[v1.CompactRequest]) (*connect.Response[v1.CompactResponse], error)
+	Compact(context.Context, *v1.CompactRequest) (*v1.CompactResponse, error)
 	// AnswerPrompt answers a prompt the agent is waiting on. The first answer
 	// wins; later answers fail with FAILED_PRECONDITION.
-	AnswerPrompt(context.Context, *connect.Request[v1.AnswerPromptRequest]) (*connect.Response[v1.AnswerPromptResponse], error)
+	AnswerPrompt(context.Context, *v1.AnswerPromptRequest) (*v1.AnswerPromptResponse, error)
 	// SetModel changes the provider and model used from the next model call.
-	SetModel(context.Context, *connect.Request[v1.SetModelRequest]) (*connect.Response[v1.SetModelResponse], error)
+	SetModel(context.Context, *v1.SetModelRequest) (*v1.SetModelResponse, error)
 	// SetEffort changes the reasoning effort used from the next model call.
-	SetEffort(context.Context, *connect.Request[v1.SetEffortRequest]) (*connect.Response[v1.SetEffortResponse], error)
+	SetEffort(context.Context, *v1.SetEffortRequest) (*v1.SetEffortResponse, error)
 	// SetYolo turns yolo mode on or off for the session: every shell command
 	// runs unless a deny rule matches. Effective from the next command.
-	SetYolo(context.Context, *connect.Request[v1.SetYoloRequest]) (*connect.Response[v1.SetYoloResponse], error)
+	SetYolo(context.Context, *v1.SetYoloRequest) (*v1.SetYoloResponse, error)
 	// MoveSession moves a session to another project. Its working directory
 	// stays the same.
-	MoveSession(context.Context, *connect.Request[v1.MoveSessionRequest]) (*connect.Response[v1.MoveSessionResponse], error)
+	MoveSession(context.Context, *v1.MoveSessionRequest) (*v1.MoveSessionResponse, error)
 	// Rate records whether a turn's result or the model choice was good or
 	// bad. Ratings are events in the session log.
-	Rate(context.Context, *connect.Request[v1.RateRequest]) (*connect.Response[v1.RateResponse], error)
+	Rate(context.Context, *v1.RateRequest) (*v1.RateResponse, error)
 	// ListMcpServers lists the configured MCP servers and whether each is
 	// enabled for the session. Only enabled servers' tools reach the model.
-	ListMcpServers(context.Context, *connect.Request[v1.ListMcpServersRequest]) (*connect.Response[v1.ListMcpServersResponse], error)
+	ListMcpServers(context.Context, *v1.ListMcpServersRequest) (*v1.ListMcpServersResponse, error)
 	// SetMcpServer enables or disables an MCP server for the session, from
 	// its next model call.
-	SetMcpServer(context.Context, *connect.Request[v1.SetMcpServerRequest]) (*connect.Response[v1.SetMcpServerResponse], error)
+	SetMcpServer(context.Context, *v1.SetMcpServerRequest) (*v1.SetMcpServerResponse, error)
 	// ListSkills lists the skills the session's agent can load: the repo's
 	// own (.agents/skills, .claude/skills) and the global ones.
-	ListSkills(context.Context, *connect.Request[v1.ListSkillsRequest]) (*connect.Response[v1.ListSkillsResponse], error)
+	ListSkills(context.Context, *v1.ListSkillsRequest) (*v1.ListSkillsResponse, error)
 	// RetryFromMessage starts a new branch of the conversation that keeps
 	// user message message_id (on the active branch's path) and everything
 	// before it, drops what came after, and runs the turn again with the
@@ -189,22 +364,22 @@ type SessionServiceClient interface {
 	// with FAILED_PRECONDITION while a turn is running (Interrupt first) or
 	// while messages are queued (send or cancel them first). Files the agent
 	// changed stay as they are: a branch only forks the conversation.
-	RetryFromMessage(context.Context, *connect.Request[v1.RetryFromMessageRequest]) (*connect.Response[v1.RetryFromMessageResponse], error)
-	EditMessage(context.Context, *connect.Request[v1.EditMessageRequest]) (*connect.Response[v1.EditMessageResponse], error)
+	RetryFromMessage(context.Context, *v1.RetryFromMessageRequest) (*v1.RetryFromMessageResponse, error)
+	EditMessage(context.Context, *v1.EditMessageRequest) (*v1.EditMessageResponse, error)
 	// SwitchBranch makes another branch the active one: the next message
 	// continues it and the model sees its history. FAILED_PRECONDITION while
 	// a turn is running.
-	SwitchBranch(context.Context, *connect.Request[v1.SwitchBranchRequest]) (*connect.Response[v1.SwitchBranchResponse], error)
+	SwitchBranch(context.Context, *v1.SwitchBranchRequest) (*v1.SwitchBranchResponse, error)
 	// GitStatus reports the git repository the session works in: branch,
 	// upstream, counts like git status, and the files changed since the
 	// session's base commit (Session.base_commit), committed or not. A
 	// working directory outside git is not an error: is_repo is false.
 	// Clients refresh it when a turn ends or a tool call finishes.
-	GitStatus(context.Context, *connect.Request[v1.GitStatusRequest]) (*connect.Response[v1.GitStatusResponse], error)
+	GitStatus(context.Context, *v1.GitStatusRequest) (*v1.GitStatusResponse, error)
 	// GitDiff returns the unified diff of the session's changes: the base
 	// commit against the working tree, untracked files included as new
 	// files. The repository's index is left untouched.
-	GitDiff(context.Context, *connect.Request[v1.GitDiffRequest]) (*connect.Response[v1.GitDiffResponse], error)
+	GitDiff(context.Context, *v1.GitDiffRequest) (*v1.GitDiffResponse, error)
 	// RemoveWorktree deletes the session's own git worktree (see
 	// ProjectService.SetProjectWorktrees) without losing history: its
 	// branch stays when it has commits no other branch, tag or remote has.
@@ -212,358 +387,48 @@ type SessionServiceClient interface {
 	// discard them first), while a turn is running, or if the session has no
 	// worktree. Afterwards the session can't run turns. The log gets
 	// WorktreeRemoved.
-	RemoveWorktree(context.Context, *connect.Request[v1.RemoveWorktreeRequest]) (*connect.Response[v1.RemoveWorktreeResponse], error)
+	RemoveWorktree(context.Context, *v1.RemoveWorktreeRequest) (*v1.RemoveWorktreeResponse, error)
 }
 
-// NewSessionServiceClient constructs a client for the flit.v1.SessionService service. By default,
-// it uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and
-// sends uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC()
-// or connect.WithGRPCWeb() options.
-//
-// The URL supplied here should be the base URL for the Connect or gRPC server (for example,
-// http://api.acme.com or https://acme.com/grpc).
-func NewSessionServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) SessionServiceClient {
-	baseURL = strings.TrimRight(baseURL, "/")
-	sessionServiceMethods := v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods()
-	return &sessionServiceClient{
-		createSession: connect.NewClient[v1.CreateSessionRequest, v1.CreateSessionResponse](
-			httpClient,
-			baseURL+SessionServiceCreateSessionProcedure,
-			connect.WithSchema(sessionServiceMethods.ByName("CreateSession")),
-			connect.WithClientOptions(opts...),
-		),
-		listSessions: connect.NewClient[v1.ListSessionsRequest, v1.ListSessionsResponse](
-			httpClient,
-			baseURL+SessionServiceListSessionsProcedure,
-			connect.WithSchema(sessionServiceMethods.ByName("ListSessions")),
-			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-			connect.WithClientOptions(opts...),
-		),
-		getSession: connect.NewClient[v1.GetSessionRequest, v1.GetSessionResponse](
-			httpClient,
-			baseURL+SessionServiceGetSessionProcedure,
-			connect.WithSchema(sessionServiceMethods.ByName("GetSession")),
-			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-			connect.WithClientOptions(opts...),
-		),
-		attach: connect.NewClient[v1.AttachRequest, v1.AttachResponse](
-			httpClient,
-			baseURL+SessionServiceAttachProcedure,
-			connect.WithSchema(sessionServiceMethods.ByName("Attach")),
-			connect.WithClientOptions(opts...),
-		),
-		send: connect.NewClient[v1.SendRequest, v1.SendResponse](
-			httpClient,
-			baseURL+SessionServiceSendProcedure,
-			connect.WithSchema(sessionServiceMethods.ByName("Send")),
-			connect.WithClientOptions(opts...),
-		),
-		editQueuedMessage: connect.NewClient[v1.EditQueuedMessageRequest, v1.EditQueuedMessageResponse](
-			httpClient,
-			baseURL+SessionServiceEditQueuedMessageProcedure,
-			connect.WithSchema(sessionServiceMethods.ByName("EditQueuedMessage")),
-			connect.WithClientOptions(opts...),
-		),
-		cancelQueuedMessage: connect.NewClient[v1.CancelQueuedMessageRequest, v1.CancelQueuedMessageResponse](
-			httpClient,
-			baseURL+SessionServiceCancelQueuedMessageProcedure,
-			connect.WithSchema(sessionServiceMethods.ByName("CancelQueuedMessage")),
-			connect.WithClientOptions(opts...),
-		),
-		interrupt: connect.NewClient[v1.InterruptRequest, v1.InterruptResponse](
-			httpClient,
-			baseURL+SessionServiceInterruptProcedure,
-			connect.WithSchema(sessionServiceMethods.ByName("Interrupt")),
-			connect.WithClientOptions(opts...),
-		),
-		retryModelCall: connect.NewClient[v1.RetryModelCallRequest, v1.RetryModelCallResponse](
-			httpClient,
-			baseURL+SessionServiceRetryModelCallProcedure,
-			connect.WithSchema(sessionServiceMethods.ByName("RetryModelCall")),
-			connect.WithClientOptions(opts...),
-		),
-		endReasoning: connect.NewClient[v1.EndReasoningRequest, v1.EndReasoningResponse](
-			httpClient,
-			baseURL+SessionServiceEndReasoningProcedure,
-			connect.WithSchema(sessionServiceMethods.ByName("EndReasoning")),
-			connect.WithClientOptions(opts...),
-		),
-		compact: connect.NewClient[v1.CompactRequest, v1.CompactResponse](
-			httpClient,
-			baseURL+SessionServiceCompactProcedure,
-			connect.WithSchema(sessionServiceMethods.ByName("Compact")),
-			connect.WithClientOptions(opts...),
-		),
-		answerPrompt: connect.NewClient[v1.AnswerPromptRequest, v1.AnswerPromptResponse](
-			httpClient,
-			baseURL+SessionServiceAnswerPromptProcedure,
-			connect.WithSchema(sessionServiceMethods.ByName("AnswerPrompt")),
-			connect.WithClientOptions(opts...),
-		),
-		setModel: connect.NewClient[v1.SetModelRequest, v1.SetModelResponse](
-			httpClient,
-			baseURL+SessionServiceSetModelProcedure,
-			connect.WithSchema(sessionServiceMethods.ByName("SetModel")),
-			connect.WithClientOptions(opts...),
-		),
-		setEffort: connect.NewClient[v1.SetEffortRequest, v1.SetEffortResponse](
-			httpClient,
-			baseURL+SessionServiceSetEffortProcedure,
-			connect.WithSchema(sessionServiceMethods.ByName("SetEffort")),
-			connect.WithClientOptions(opts...),
-		),
-		setYolo: connect.NewClient[v1.SetYoloRequest, v1.SetYoloResponse](
-			httpClient,
-			baseURL+SessionServiceSetYoloProcedure,
-			connect.WithSchema(sessionServiceMethods.ByName("SetYolo")),
-			connect.WithClientOptions(opts...),
-		),
-		moveSession: connect.NewClient[v1.MoveSessionRequest, v1.MoveSessionResponse](
-			httpClient,
-			baseURL+SessionServiceMoveSessionProcedure,
-			connect.WithSchema(sessionServiceMethods.ByName("MoveSession")),
-			connect.WithClientOptions(opts...),
-		),
-		rate: connect.NewClient[v1.RateRequest, v1.RateResponse](
-			httpClient,
-			baseURL+SessionServiceRateProcedure,
-			connect.WithSchema(sessionServiceMethods.ByName("Rate")),
-			connect.WithClientOptions(opts...),
-		),
-		listMcpServers: connect.NewClient[v1.ListMcpServersRequest, v1.ListMcpServersResponse](
-			httpClient,
-			baseURL+SessionServiceListMcpServersProcedure,
-			connect.WithSchema(sessionServiceMethods.ByName("ListMcpServers")),
-			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-			connect.WithClientOptions(opts...),
-		),
-		setMcpServer: connect.NewClient[v1.SetMcpServerRequest, v1.SetMcpServerResponse](
-			httpClient,
-			baseURL+SessionServiceSetMcpServerProcedure,
-			connect.WithSchema(sessionServiceMethods.ByName("SetMcpServer")),
-			connect.WithClientOptions(opts...),
-		),
-		listSkills: connect.NewClient[v1.ListSkillsRequest, v1.ListSkillsResponse](
-			httpClient,
-			baseURL+SessionServiceListSkillsProcedure,
-			connect.WithSchema(sessionServiceMethods.ByName("ListSkills")),
-			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-			connect.WithClientOptions(opts...),
-		),
-		retryFromMessage: connect.NewClient[v1.RetryFromMessageRequest, v1.RetryFromMessageResponse](
-			httpClient,
-			baseURL+SessionServiceRetryFromMessageProcedure,
-			connect.WithSchema(sessionServiceMethods.ByName("RetryFromMessage")),
-			connect.WithClientOptions(opts...),
-		),
-		editMessage: connect.NewClient[v1.EditMessageRequest, v1.EditMessageResponse](
-			httpClient,
-			baseURL+SessionServiceEditMessageProcedure,
-			connect.WithSchema(sessionServiceMethods.ByName("EditMessage")),
-			connect.WithClientOptions(opts...),
-		),
-		switchBranch: connect.NewClient[v1.SwitchBranchRequest, v1.SwitchBranchResponse](
-			httpClient,
-			baseURL+SessionServiceSwitchBranchProcedure,
-			connect.WithSchema(sessionServiceMethods.ByName("SwitchBranch")),
-			connect.WithClientOptions(opts...),
-		),
-		gitStatus: connect.NewClient[v1.GitStatusRequest, v1.GitStatusResponse](
-			httpClient,
-			baseURL+SessionServiceGitStatusProcedure,
-			connect.WithSchema(sessionServiceMethods.ByName("GitStatus")),
-			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-			connect.WithClientOptions(opts...),
-		),
-		gitDiff: connect.NewClient[v1.GitDiffRequest, v1.GitDiffResponse](
-			httpClient,
-			baseURL+SessionServiceGitDiffProcedure,
-			connect.WithSchema(sessionServiceMethods.ByName("GitDiff")),
-			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-			connect.WithClientOptions(opts...),
-		),
-		removeWorktree: connect.NewClient[v1.RemoveWorktreeRequest, v1.RemoveWorktreeResponse](
-			httpClient,
-			baseURL+SessionServiceRemoveWorktreeProcedure,
-			connect.WithSchema(sessionServiceMethods.ByName("RemoveWorktree")),
-			connect.WithClientOptions(opts...),
-		),
+// NewSessionServiceClient constructs a client for the flit.v1.SessionService service. Multiple
+// service clients may share a single connect.Client.
+func NewSessionServiceClient(client *connect.Client) SessionServiceClient {
+	return &sessionServiceClient{client: client}
+}
+
+// SessionServiceAttachClientStream is the client stream for the SessionService's Attach RPC.
+type SessionServiceAttachClientStream struct {
+	stream connect.ClientStream
+}
+
+// Receive returns the next response message from the server.
+func (s SessionServiceAttachClientStream) Receive() (*v1.AttachResponse, error) {
+	var res v1.AttachResponse
+	if err := s.stream.Receive(&res); err != nil {
+		return nil, err
 	}
+	return &res, nil
 }
 
-// sessionServiceClient implements SessionServiceClient.
-type sessionServiceClient struct {
-	createSession       *connect.Client[v1.CreateSessionRequest, v1.CreateSessionResponse]
-	listSessions        *connect.Client[v1.ListSessionsRequest, v1.ListSessionsResponse]
-	getSession          *connect.Client[v1.GetSessionRequest, v1.GetSessionResponse]
-	attach              *connect.Client[v1.AttachRequest, v1.AttachResponse]
-	send                *connect.Client[v1.SendRequest, v1.SendResponse]
-	editQueuedMessage   *connect.Client[v1.EditQueuedMessageRequest, v1.EditQueuedMessageResponse]
-	cancelQueuedMessage *connect.Client[v1.CancelQueuedMessageRequest, v1.CancelQueuedMessageResponse]
-	interrupt           *connect.Client[v1.InterruptRequest, v1.InterruptResponse]
-	retryModelCall      *connect.Client[v1.RetryModelCallRequest, v1.RetryModelCallResponse]
-	endReasoning        *connect.Client[v1.EndReasoningRequest, v1.EndReasoningResponse]
-	compact             *connect.Client[v1.CompactRequest, v1.CompactResponse]
-	answerPrompt        *connect.Client[v1.AnswerPromptRequest, v1.AnswerPromptResponse]
-	setModel            *connect.Client[v1.SetModelRequest, v1.SetModelResponse]
-	setEffort           *connect.Client[v1.SetEffortRequest, v1.SetEffortResponse]
-	setYolo             *connect.Client[v1.SetYoloRequest, v1.SetYoloResponse]
-	moveSession         *connect.Client[v1.MoveSessionRequest, v1.MoveSessionResponse]
-	rate                *connect.Client[v1.RateRequest, v1.RateResponse]
-	listMcpServers      *connect.Client[v1.ListMcpServersRequest, v1.ListMcpServersResponse]
-	setMcpServer        *connect.Client[v1.SetMcpServerRequest, v1.SetMcpServerResponse]
-	listSkills          *connect.Client[v1.ListSkillsRequest, v1.ListSkillsResponse]
-	retryFromMessage    *connect.Client[v1.RetryFromMessageRequest, v1.RetryFromMessageResponse]
-	editMessage         *connect.Client[v1.EditMessageRequest, v1.EditMessageResponse]
-	switchBranch        *connect.Client[v1.SwitchBranchRequest, v1.SwitchBranchResponse]
-	gitStatus           *connect.Client[v1.GitStatusRequest, v1.GitStatusResponse]
-	gitDiff             *connect.Client[v1.GitDiffRequest, v1.GitDiffResponse]
-	removeWorktree      *connect.Client[v1.RemoveWorktreeRequest, v1.RemoveWorktreeResponse]
-}
-
-// CreateSession calls flit.v1.SessionService.CreateSession.
-func (c *sessionServiceClient) CreateSession(ctx context.Context, req *connect.Request[v1.CreateSessionRequest]) (*connect.Response[v1.CreateSessionResponse], error) {
-	return c.createSession.CallUnary(ctx, req)
-}
-
-// ListSessions calls flit.v1.SessionService.ListSessions.
-func (c *sessionServiceClient) ListSessions(ctx context.Context, req *connect.Request[v1.ListSessionsRequest]) (*connect.Response[v1.ListSessionsResponse], error) {
-	return c.listSessions.CallUnary(ctx, req)
-}
-
-// GetSession calls flit.v1.SessionService.GetSession.
-func (c *sessionServiceClient) GetSession(ctx context.Context, req *connect.Request[v1.GetSessionRequest]) (*connect.Response[v1.GetSessionResponse], error) {
-	return c.getSession.CallUnary(ctx, req)
-}
-
-// Attach calls flit.v1.SessionService.Attach.
-func (c *sessionServiceClient) Attach(ctx context.Context, req *connect.Request[v1.AttachRequest]) (*connect.ServerStreamForClient[v1.AttachResponse], error) {
-	return c.attach.CallServerStream(ctx, req)
-}
-
-// Send calls flit.v1.SessionService.Send.
-func (c *sessionServiceClient) Send(ctx context.Context, req *connect.Request[v1.SendRequest]) (*connect.Response[v1.SendResponse], error) {
-	return c.send.CallUnary(ctx, req)
-}
-
-// EditQueuedMessage calls flit.v1.SessionService.EditQueuedMessage.
-func (c *sessionServiceClient) EditQueuedMessage(ctx context.Context, req *connect.Request[v1.EditQueuedMessageRequest]) (*connect.Response[v1.EditQueuedMessageResponse], error) {
-	return c.editQueuedMessage.CallUnary(ctx, req)
-}
-
-// CancelQueuedMessage calls flit.v1.SessionService.CancelQueuedMessage.
-func (c *sessionServiceClient) CancelQueuedMessage(ctx context.Context, req *connect.Request[v1.CancelQueuedMessageRequest]) (*connect.Response[v1.CancelQueuedMessageResponse], error) {
-	return c.cancelQueuedMessage.CallUnary(ctx, req)
-}
-
-// Interrupt calls flit.v1.SessionService.Interrupt.
-func (c *sessionServiceClient) Interrupt(ctx context.Context, req *connect.Request[v1.InterruptRequest]) (*connect.Response[v1.InterruptResponse], error) {
-	return c.interrupt.CallUnary(ctx, req)
-}
-
-// RetryModelCall calls flit.v1.SessionService.RetryModelCall.
-func (c *sessionServiceClient) RetryModelCall(ctx context.Context, req *connect.Request[v1.RetryModelCallRequest]) (*connect.Response[v1.RetryModelCallResponse], error) {
-	return c.retryModelCall.CallUnary(ctx, req)
-}
-
-// EndReasoning calls flit.v1.SessionService.EndReasoning.
-func (c *sessionServiceClient) EndReasoning(ctx context.Context, req *connect.Request[v1.EndReasoningRequest]) (*connect.Response[v1.EndReasoningResponse], error) {
-	return c.endReasoning.CallUnary(ctx, req)
-}
-
-// Compact calls flit.v1.SessionService.Compact.
-func (c *sessionServiceClient) Compact(ctx context.Context, req *connect.Request[v1.CompactRequest]) (*connect.Response[v1.CompactResponse], error) {
-	return c.compact.CallUnary(ctx, req)
-}
-
-// AnswerPrompt calls flit.v1.SessionService.AnswerPrompt.
-func (c *sessionServiceClient) AnswerPrompt(ctx context.Context, req *connect.Request[v1.AnswerPromptRequest]) (*connect.Response[v1.AnswerPromptResponse], error) {
-	return c.answerPrompt.CallUnary(ctx, req)
-}
-
-// SetModel calls flit.v1.SessionService.SetModel.
-func (c *sessionServiceClient) SetModel(ctx context.Context, req *connect.Request[v1.SetModelRequest]) (*connect.Response[v1.SetModelResponse], error) {
-	return c.setModel.CallUnary(ctx, req)
-}
-
-// SetEffort calls flit.v1.SessionService.SetEffort.
-func (c *sessionServiceClient) SetEffort(ctx context.Context, req *connect.Request[v1.SetEffortRequest]) (*connect.Response[v1.SetEffortResponse], error) {
-	return c.setEffort.CallUnary(ctx, req)
-}
-
-// SetYolo calls flit.v1.SessionService.SetYolo.
-func (c *sessionServiceClient) SetYolo(ctx context.Context, req *connect.Request[v1.SetYoloRequest]) (*connect.Response[v1.SetYoloResponse], error) {
-	return c.setYolo.CallUnary(ctx, req)
-}
-
-// MoveSession calls flit.v1.SessionService.MoveSession.
-func (c *sessionServiceClient) MoveSession(ctx context.Context, req *connect.Request[v1.MoveSessionRequest]) (*connect.Response[v1.MoveSessionResponse], error) {
-	return c.moveSession.CallUnary(ctx, req)
-}
-
-// Rate calls flit.v1.SessionService.Rate.
-func (c *sessionServiceClient) Rate(ctx context.Context, req *connect.Request[v1.RateRequest]) (*connect.Response[v1.RateResponse], error) {
-	return c.rate.CallUnary(ctx, req)
-}
-
-// ListMcpServers calls flit.v1.SessionService.ListMcpServers.
-func (c *sessionServiceClient) ListMcpServers(ctx context.Context, req *connect.Request[v1.ListMcpServersRequest]) (*connect.Response[v1.ListMcpServersResponse], error) {
-	return c.listMcpServers.CallUnary(ctx, req)
-}
-
-// SetMcpServer calls flit.v1.SessionService.SetMcpServer.
-func (c *sessionServiceClient) SetMcpServer(ctx context.Context, req *connect.Request[v1.SetMcpServerRequest]) (*connect.Response[v1.SetMcpServerResponse], error) {
-	return c.setMcpServer.CallUnary(ctx, req)
-}
-
-// ListSkills calls flit.v1.SessionService.ListSkills.
-func (c *sessionServiceClient) ListSkills(ctx context.Context, req *connect.Request[v1.ListSkillsRequest]) (*connect.Response[v1.ListSkillsResponse], error) {
-	return c.listSkills.CallUnary(ctx, req)
-}
-
-// RetryFromMessage calls flit.v1.SessionService.RetryFromMessage.
-func (c *sessionServiceClient) RetryFromMessage(ctx context.Context, req *connect.Request[v1.RetryFromMessageRequest]) (*connect.Response[v1.RetryFromMessageResponse], error) {
-	return c.retryFromMessage.CallUnary(ctx, req)
-}
-
-// EditMessage calls flit.v1.SessionService.EditMessage.
-func (c *sessionServiceClient) EditMessage(ctx context.Context, req *connect.Request[v1.EditMessageRequest]) (*connect.Response[v1.EditMessageResponse], error) {
-	return c.editMessage.CallUnary(ctx, req)
-}
-
-// SwitchBranch calls flit.v1.SessionService.SwitchBranch.
-func (c *sessionServiceClient) SwitchBranch(ctx context.Context, req *connect.Request[v1.SwitchBranchRequest]) (*connect.Response[v1.SwitchBranchResponse], error) {
-	return c.switchBranch.CallUnary(ctx, req)
-}
-
-// GitStatus calls flit.v1.SessionService.GitStatus.
-func (c *sessionServiceClient) GitStatus(ctx context.Context, req *connect.Request[v1.GitStatusRequest]) (*connect.Response[v1.GitStatusResponse], error) {
-	return c.gitStatus.CallUnary(ctx, req)
-}
-
-// GitDiff calls flit.v1.SessionService.GitDiff.
-func (c *sessionServiceClient) GitDiff(ctx context.Context, req *connect.Request[v1.GitDiffRequest]) (*connect.Response[v1.GitDiffResponse], error) {
-	return c.gitDiff.CallUnary(ctx, req)
-}
-
-// RemoveWorktree calls flit.v1.SessionService.RemoveWorktree.
-func (c *sessionServiceClient) RemoveWorktree(ctx context.Context, req *connect.Request[v1.RemoveWorktreeRequest]) (*connect.Response[v1.RemoveWorktreeResponse], error) {
-	return c.removeWorktree.CallUnary(ctx, req)
+// Close releases the stream's resources. It is idempotent and is typically deferred to clean up a
+// stream abandoned before io.EOF.
+func (s SessionServiceAttachClientStream) Close() error {
+	return s.stream.Close()
 }
 
 // SessionServiceHandler is an implementation of the flit.v1.SessionService service.
 type SessionServiceHandler interface {
 	// CreateSession starts a new, idle session. Give working_dir, or a
 	// project_id whose project has a directory.
-	CreateSession(context.Context, *connect.Request[v1.CreateSessionRequest]) (*connect.Response[v1.CreateSessionResponse], error)
+	CreateSession(context.Context, *v1.CreateSessionRequest) (*v1.CreateSessionResponse, error)
 	// ListSessions lists sessions, most recently updated first.
-	ListSessions(context.Context, *connect.Request[v1.ListSessionsRequest]) (*connect.Response[v1.ListSessionsResponse], error)
+	ListSessions(context.Context, *v1.ListSessionsRequest) (*v1.ListSessionsResponse, error)
 	// GetSession returns one session.
-	GetSession(context.Context, *connect.Request[v1.GetSessionRequest]) (*connect.Response[v1.GetSessionResponse], error)
+	GetSession(context.Context, *v1.GetSessionRequest) (*v1.GetSessionResponse, error)
 	// Attach streams a session's events with seq >= from_seq, then follows new
 	// events live until the client disconnects. Replayed events are identical
 	// to what a live client saw, deltas included.
-	Attach(context.Context, *connect.Request[v1.AttachRequest], *connect.ServerStream[v1.AttachResponse]) error
+	Attach(context.Context, *v1.AttachRequest, SessionServiceAttachServerStream) error
 	// Send adds a user message and starts a turn. While a turn is running
 	// the message is queued instead (MessageQueued) and delivered at the
 	// turn's next step: after the current model call or tool, before the
@@ -571,26 +436,26 @@ type SessionServiceHandler interface {
 	// next turn. Messages still queued when a turn is interrupted wait for
 	// the next Send, which delivers them first; with an empty text, Send
 	// just delivers the queue.
-	Send(context.Context, *connect.Request[v1.SendRequest]) (*connect.Response[v1.SendResponse], error)
+	Send(context.Context, *v1.SendRequest) (*v1.SendResponse, error)
 	// EditQueuedMessage changes, and CancelQueuedMessage withdraws, a queued
 	// message that hasn't been delivered yet. Once it has, they fail with
 	// FAILED_PRECONDITION.
-	EditQueuedMessage(context.Context, *connect.Request[v1.EditQueuedMessageRequest]) (*connect.Response[v1.EditQueuedMessageResponse], error)
-	CancelQueuedMessage(context.Context, *connect.Request[v1.CancelQueuedMessageRequest]) (*connect.Response[v1.CancelQueuedMessageResponse], error)
+	EditQueuedMessage(context.Context, *v1.EditQueuedMessageRequest) (*v1.EditQueuedMessageResponse, error)
+	CancelQueuedMessage(context.Context, *v1.CancelQueuedMessageRequest) (*v1.CancelQueuedMessageResponse, error)
 	// Interrupt stops the running turn, if any. Pending prompts are resolved
 	// as denied.
-	Interrupt(context.Context, *connect.Request[v1.InterruptRequest]) (*connect.Response[v1.InterruptResponse], error)
+	Interrupt(context.Context, *v1.InterruptRequest) (*v1.InterruptResponse, error)
 	// RetryModelCall gives up on the model call in progress and sends it
 	// again, for when the model hasn't answered. Only while none of the reply
 	// has arrived: once it is streaming, the call fails with
 	// FAILED_PRECONDITION (interrupt instead).
-	RetryModelCall(context.Context, *connect.Request[v1.RetryModelCallRequest]) (*connect.Response[v1.RetryModelCallResponse], error)
+	RetryModelCall(context.Context, *v1.RetryModelCallRequest) (*v1.RetryModelCallResponse, error)
 	// EndReasoning asks the model to stop thinking and answer now (llama.cpp
 	// only, for models where it can: ListModels' can_end_reasoning). Only
 	// while the model is thinking and hasn't started its answer; otherwise
 	// FAILED_PRECONDITION. If the model keeps thinking anyway, the log gets
 	// ReasoningEndIgnored and the model is marked as not supporting it.
-	EndReasoning(context.Context, *connect.Request[v1.EndReasoningRequest]) (*connect.Response[v1.EndReasoningResponse], error)
+	EndReasoning(context.Context, *v1.EndReasoningRequest) (*v1.EndReasoningResponse, error)
 	// Compact summarizes the older part of the conversation so it takes less
 	// of the model's context: from then on the model sees the summary plus
 	// the most recent turns instead of the whole log (nothing is deleted).
@@ -599,32 +464,32 @@ type SessionServiceHandler interface {
 	// sent meanwhile are queued); while a turn runs, it happens at the
 	// turn's next step (queued = true). flit also compacts on its own near
 	// the context limit (agent.compaction in the config).
-	Compact(context.Context, *connect.Request[v1.CompactRequest]) (*connect.Response[v1.CompactResponse], error)
+	Compact(context.Context, *v1.CompactRequest) (*v1.CompactResponse, error)
 	// AnswerPrompt answers a prompt the agent is waiting on. The first answer
 	// wins; later answers fail with FAILED_PRECONDITION.
-	AnswerPrompt(context.Context, *connect.Request[v1.AnswerPromptRequest]) (*connect.Response[v1.AnswerPromptResponse], error)
+	AnswerPrompt(context.Context, *v1.AnswerPromptRequest) (*v1.AnswerPromptResponse, error)
 	// SetModel changes the provider and model used from the next model call.
-	SetModel(context.Context, *connect.Request[v1.SetModelRequest]) (*connect.Response[v1.SetModelResponse], error)
+	SetModel(context.Context, *v1.SetModelRequest) (*v1.SetModelResponse, error)
 	// SetEffort changes the reasoning effort used from the next model call.
-	SetEffort(context.Context, *connect.Request[v1.SetEffortRequest]) (*connect.Response[v1.SetEffortResponse], error)
+	SetEffort(context.Context, *v1.SetEffortRequest) (*v1.SetEffortResponse, error)
 	// SetYolo turns yolo mode on or off for the session: every shell command
 	// runs unless a deny rule matches. Effective from the next command.
-	SetYolo(context.Context, *connect.Request[v1.SetYoloRequest]) (*connect.Response[v1.SetYoloResponse], error)
+	SetYolo(context.Context, *v1.SetYoloRequest) (*v1.SetYoloResponse, error)
 	// MoveSession moves a session to another project. Its working directory
 	// stays the same.
-	MoveSession(context.Context, *connect.Request[v1.MoveSessionRequest]) (*connect.Response[v1.MoveSessionResponse], error)
+	MoveSession(context.Context, *v1.MoveSessionRequest) (*v1.MoveSessionResponse, error)
 	// Rate records whether a turn's result or the model choice was good or
 	// bad. Ratings are events in the session log.
-	Rate(context.Context, *connect.Request[v1.RateRequest]) (*connect.Response[v1.RateResponse], error)
+	Rate(context.Context, *v1.RateRequest) (*v1.RateResponse, error)
 	// ListMcpServers lists the configured MCP servers and whether each is
 	// enabled for the session. Only enabled servers' tools reach the model.
-	ListMcpServers(context.Context, *connect.Request[v1.ListMcpServersRequest]) (*connect.Response[v1.ListMcpServersResponse], error)
+	ListMcpServers(context.Context, *v1.ListMcpServersRequest) (*v1.ListMcpServersResponse, error)
 	// SetMcpServer enables or disables an MCP server for the session, from
 	// its next model call.
-	SetMcpServer(context.Context, *connect.Request[v1.SetMcpServerRequest]) (*connect.Response[v1.SetMcpServerResponse], error)
+	SetMcpServer(context.Context, *v1.SetMcpServerRequest) (*v1.SetMcpServerResponse, error)
 	// ListSkills lists the skills the session's agent can load: the repo's
 	// own (.agents/skills, .claude/skills) and the global ones.
-	ListSkills(context.Context, *connect.Request[v1.ListSkillsRequest]) (*connect.Response[v1.ListSkillsResponse], error)
+	ListSkills(context.Context, *v1.ListSkillsRequest) (*v1.ListSkillsResponse, error)
 	// RetryFromMessage starts a new branch of the conversation that keeps
 	// user message message_id (on the active branch's path) and everything
 	// before it, drops what came after, and runs the turn again with the
@@ -634,22 +499,22 @@ type SessionServiceHandler interface {
 	// with FAILED_PRECONDITION while a turn is running (Interrupt first) or
 	// while messages are queued (send or cancel them first). Files the agent
 	// changed stay as they are: a branch only forks the conversation.
-	RetryFromMessage(context.Context, *connect.Request[v1.RetryFromMessageRequest]) (*connect.Response[v1.RetryFromMessageResponse], error)
-	EditMessage(context.Context, *connect.Request[v1.EditMessageRequest]) (*connect.Response[v1.EditMessageResponse], error)
+	RetryFromMessage(context.Context, *v1.RetryFromMessageRequest) (*v1.RetryFromMessageResponse, error)
+	EditMessage(context.Context, *v1.EditMessageRequest) (*v1.EditMessageResponse, error)
 	// SwitchBranch makes another branch the active one: the next message
 	// continues it and the model sees its history. FAILED_PRECONDITION while
 	// a turn is running.
-	SwitchBranch(context.Context, *connect.Request[v1.SwitchBranchRequest]) (*connect.Response[v1.SwitchBranchResponse], error)
+	SwitchBranch(context.Context, *v1.SwitchBranchRequest) (*v1.SwitchBranchResponse, error)
 	// GitStatus reports the git repository the session works in: branch,
 	// upstream, counts like git status, and the files changed since the
 	// session's base commit (Session.base_commit), committed or not. A
 	// working directory outside git is not an error: is_repo is false.
 	// Clients refresh it when a turn ends or a tool call finishes.
-	GitStatus(context.Context, *connect.Request[v1.GitStatusRequest]) (*connect.Response[v1.GitStatusResponse], error)
+	GitStatus(context.Context, *v1.GitStatusRequest) (*v1.GitStatusResponse, error)
 	// GitDiff returns the unified diff of the session's changes: the base
 	// commit against the working tree, untracked files included as new
 	// files. The repository's index is left untouched.
-	GitDiff(context.Context, *connect.Request[v1.GitDiffRequest]) (*connect.Response[v1.GitDiffResponse], error)
+	GitDiff(context.Context, *v1.GitDiffRequest) (*v1.GitDiffResponse, error)
 	// RemoveWorktree deletes the session's own git worktree (see
 	// ProjectService.SetProjectWorktrees) without losing history: its
 	// branch stays when it has commits no other branch, tag or remote has.
@@ -657,341 +522,683 @@ type SessionServiceHandler interface {
 	// discard them first), while a turn is running, or if the session has no
 	// worktree. Afterwards the session can't run turns. The log gets
 	// WorktreeRemoved.
-	RemoveWorktree(context.Context, *connect.Request[v1.RemoveWorktreeRequest]) (*connect.Response[v1.RemoveWorktreeResponse], error)
+	RemoveWorktree(context.Context, *v1.RemoveWorktreeRequest) (*v1.RemoveWorktreeResponse, error)
 }
 
-// NewSessionServiceHandler builds an HTTP handler from the service implementation. It returns the
-// path on which to mount the handler and the handler itself.
-//
-// By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
-// and JSON codecs. They also support gzip compression.
-func NewSessionServiceHandler(svc SessionServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	sessionServiceMethods := v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods()
-	sessionServiceCreateSessionHandler := connect.NewUnaryHandler(
-		SessionServiceCreateSessionProcedure,
-		svc.CreateSession,
-		connect.WithSchema(sessionServiceMethods.ByName("CreateSession")),
-		connect.WithHandlerOptions(opts...),
+// RegisterSessionServiceHandler registers svc as the flit.v1.SessionService implementation on
+// server.
+func RegisterSessionServiceHandler(server *connect.Server, svc SessionServiceHandler) {
+	adapter := sessionServiceHandler{svc: svc}
+	server.Register(
+		connect.Method{Spec: sessionServiceCreateSessionSpec(), Handler: adapter.createSession},
+		connect.Method{Spec: sessionServiceListSessionsSpec(), Handler: adapter.listSessions},
+		connect.Method{Spec: sessionServiceGetSessionSpec(), Handler: adapter.getSession},
+		connect.Method{Spec: sessionServiceAttachSpec(), Handler: adapter.attach},
+		connect.Method{Spec: sessionServiceSendSpec(), Handler: adapter.send},
+		connect.Method{Spec: sessionServiceEditQueuedMessageSpec(), Handler: adapter.editQueuedMessage},
+		connect.Method{Spec: sessionServiceCancelQueuedMessageSpec(), Handler: adapter.cancelQueuedMessage},
+		connect.Method{Spec: sessionServiceInterruptSpec(), Handler: adapter.interrupt},
+		connect.Method{Spec: sessionServiceRetryModelCallSpec(), Handler: adapter.retryModelCall},
+		connect.Method{Spec: sessionServiceEndReasoningSpec(), Handler: adapter.endReasoning},
+		connect.Method{Spec: sessionServiceCompactSpec(), Handler: adapter.compact},
+		connect.Method{Spec: sessionServiceAnswerPromptSpec(), Handler: adapter.answerPrompt},
+		connect.Method{Spec: sessionServiceSetModelSpec(), Handler: adapter.setModel},
+		connect.Method{Spec: sessionServiceSetEffortSpec(), Handler: adapter.setEffort},
+		connect.Method{Spec: sessionServiceSetYoloSpec(), Handler: adapter.setYolo},
+		connect.Method{Spec: sessionServiceMoveSessionSpec(), Handler: adapter.moveSession},
+		connect.Method{Spec: sessionServiceRateSpec(), Handler: adapter.rate},
+		connect.Method{Spec: sessionServiceListMcpServersSpec(), Handler: adapter.listMcpServers},
+		connect.Method{Spec: sessionServiceSetMcpServerSpec(), Handler: adapter.setMcpServer},
+		connect.Method{Spec: sessionServiceListSkillsSpec(), Handler: adapter.listSkills},
+		connect.Method{Spec: sessionServiceRetryFromMessageSpec(), Handler: adapter.retryFromMessage},
+		connect.Method{Spec: sessionServiceEditMessageSpec(), Handler: adapter.editMessage},
+		connect.Method{Spec: sessionServiceSwitchBranchSpec(), Handler: adapter.switchBranch},
+		connect.Method{Spec: sessionServiceGitStatusSpec(), Handler: adapter.gitStatus},
+		connect.Method{Spec: sessionServiceGitDiffSpec(), Handler: adapter.gitDiff},
+		connect.Method{Spec: sessionServiceRemoveWorktreeSpec(), Handler: adapter.removeWorktree},
 	)
-	sessionServiceListSessionsHandler := connect.NewUnaryHandler(
-		SessionServiceListSessionsProcedure,
-		svc.ListSessions,
-		connect.WithSchema(sessionServiceMethods.ByName("ListSessions")),
-		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-		connect.WithHandlerOptions(opts...),
-	)
-	sessionServiceGetSessionHandler := connect.NewUnaryHandler(
-		SessionServiceGetSessionProcedure,
-		svc.GetSession,
-		connect.WithSchema(sessionServiceMethods.ByName("GetSession")),
-		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-		connect.WithHandlerOptions(opts...),
-	)
-	sessionServiceAttachHandler := connect.NewServerStreamHandler(
-		SessionServiceAttachProcedure,
-		svc.Attach,
-		connect.WithSchema(sessionServiceMethods.ByName("Attach")),
-		connect.WithHandlerOptions(opts...),
-	)
-	sessionServiceSendHandler := connect.NewUnaryHandler(
-		SessionServiceSendProcedure,
-		svc.Send,
-		connect.WithSchema(sessionServiceMethods.ByName("Send")),
-		connect.WithHandlerOptions(opts...),
-	)
-	sessionServiceEditQueuedMessageHandler := connect.NewUnaryHandler(
-		SessionServiceEditQueuedMessageProcedure,
-		svc.EditQueuedMessage,
-		connect.WithSchema(sessionServiceMethods.ByName("EditQueuedMessage")),
-		connect.WithHandlerOptions(opts...),
-	)
-	sessionServiceCancelQueuedMessageHandler := connect.NewUnaryHandler(
-		SessionServiceCancelQueuedMessageProcedure,
-		svc.CancelQueuedMessage,
-		connect.WithSchema(sessionServiceMethods.ByName("CancelQueuedMessage")),
-		connect.WithHandlerOptions(opts...),
-	)
-	sessionServiceInterruptHandler := connect.NewUnaryHandler(
-		SessionServiceInterruptProcedure,
-		svc.Interrupt,
-		connect.WithSchema(sessionServiceMethods.ByName("Interrupt")),
-		connect.WithHandlerOptions(opts...),
-	)
-	sessionServiceRetryModelCallHandler := connect.NewUnaryHandler(
-		SessionServiceRetryModelCallProcedure,
-		svc.RetryModelCall,
-		connect.WithSchema(sessionServiceMethods.ByName("RetryModelCall")),
-		connect.WithHandlerOptions(opts...),
-	)
-	sessionServiceEndReasoningHandler := connect.NewUnaryHandler(
-		SessionServiceEndReasoningProcedure,
-		svc.EndReasoning,
-		connect.WithSchema(sessionServiceMethods.ByName("EndReasoning")),
-		connect.WithHandlerOptions(opts...),
-	)
-	sessionServiceCompactHandler := connect.NewUnaryHandler(
-		SessionServiceCompactProcedure,
-		svc.Compact,
-		connect.WithSchema(sessionServiceMethods.ByName("Compact")),
-		connect.WithHandlerOptions(opts...),
-	)
-	sessionServiceAnswerPromptHandler := connect.NewUnaryHandler(
-		SessionServiceAnswerPromptProcedure,
-		svc.AnswerPrompt,
-		connect.WithSchema(sessionServiceMethods.ByName("AnswerPrompt")),
-		connect.WithHandlerOptions(opts...),
-	)
-	sessionServiceSetModelHandler := connect.NewUnaryHandler(
-		SessionServiceSetModelProcedure,
-		svc.SetModel,
-		connect.WithSchema(sessionServiceMethods.ByName("SetModel")),
-		connect.WithHandlerOptions(opts...),
-	)
-	sessionServiceSetEffortHandler := connect.NewUnaryHandler(
-		SessionServiceSetEffortProcedure,
-		svc.SetEffort,
-		connect.WithSchema(sessionServiceMethods.ByName("SetEffort")),
-		connect.WithHandlerOptions(opts...),
-	)
-	sessionServiceSetYoloHandler := connect.NewUnaryHandler(
-		SessionServiceSetYoloProcedure,
-		svc.SetYolo,
-		connect.WithSchema(sessionServiceMethods.ByName("SetYolo")),
-		connect.WithHandlerOptions(opts...),
-	)
-	sessionServiceMoveSessionHandler := connect.NewUnaryHandler(
-		SessionServiceMoveSessionProcedure,
-		svc.MoveSession,
-		connect.WithSchema(sessionServiceMethods.ByName("MoveSession")),
-		connect.WithHandlerOptions(opts...),
-	)
-	sessionServiceRateHandler := connect.NewUnaryHandler(
-		SessionServiceRateProcedure,
-		svc.Rate,
-		connect.WithSchema(sessionServiceMethods.ByName("Rate")),
-		connect.WithHandlerOptions(opts...),
-	)
-	sessionServiceListMcpServersHandler := connect.NewUnaryHandler(
-		SessionServiceListMcpServersProcedure,
-		svc.ListMcpServers,
-		connect.WithSchema(sessionServiceMethods.ByName("ListMcpServers")),
-		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-		connect.WithHandlerOptions(opts...),
-	)
-	sessionServiceSetMcpServerHandler := connect.NewUnaryHandler(
-		SessionServiceSetMcpServerProcedure,
-		svc.SetMcpServer,
-		connect.WithSchema(sessionServiceMethods.ByName("SetMcpServer")),
-		connect.WithHandlerOptions(opts...),
-	)
-	sessionServiceListSkillsHandler := connect.NewUnaryHandler(
-		SessionServiceListSkillsProcedure,
-		svc.ListSkills,
-		connect.WithSchema(sessionServiceMethods.ByName("ListSkills")),
-		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-		connect.WithHandlerOptions(opts...),
-	)
-	sessionServiceRetryFromMessageHandler := connect.NewUnaryHandler(
-		SessionServiceRetryFromMessageProcedure,
-		svc.RetryFromMessage,
-		connect.WithSchema(sessionServiceMethods.ByName("RetryFromMessage")),
-		connect.WithHandlerOptions(opts...),
-	)
-	sessionServiceEditMessageHandler := connect.NewUnaryHandler(
-		SessionServiceEditMessageProcedure,
-		svc.EditMessage,
-		connect.WithSchema(sessionServiceMethods.ByName("EditMessage")),
-		connect.WithHandlerOptions(opts...),
-	)
-	sessionServiceSwitchBranchHandler := connect.NewUnaryHandler(
-		SessionServiceSwitchBranchProcedure,
-		svc.SwitchBranch,
-		connect.WithSchema(sessionServiceMethods.ByName("SwitchBranch")),
-		connect.WithHandlerOptions(opts...),
-	)
-	sessionServiceGitStatusHandler := connect.NewUnaryHandler(
-		SessionServiceGitStatusProcedure,
-		svc.GitStatus,
-		connect.WithSchema(sessionServiceMethods.ByName("GitStatus")),
-		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-		connect.WithHandlerOptions(opts...),
-	)
-	sessionServiceGitDiffHandler := connect.NewUnaryHandler(
-		SessionServiceGitDiffProcedure,
-		svc.GitDiff,
-		connect.WithSchema(sessionServiceMethods.ByName("GitDiff")),
-		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-		connect.WithHandlerOptions(opts...),
-	)
-	sessionServiceRemoveWorktreeHandler := connect.NewUnaryHandler(
-		SessionServiceRemoveWorktreeProcedure,
-		svc.RemoveWorktree,
-		connect.WithSchema(sessionServiceMethods.ByName("RemoveWorktree")),
-		connect.WithHandlerOptions(opts...),
-	)
-	return "/flit.v1.SessionService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case SessionServiceCreateSessionProcedure:
-			sessionServiceCreateSessionHandler.ServeHTTP(w, r)
-		case SessionServiceListSessionsProcedure:
-			sessionServiceListSessionsHandler.ServeHTTP(w, r)
-		case SessionServiceGetSessionProcedure:
-			sessionServiceGetSessionHandler.ServeHTTP(w, r)
-		case SessionServiceAttachProcedure:
-			sessionServiceAttachHandler.ServeHTTP(w, r)
-		case SessionServiceSendProcedure:
-			sessionServiceSendHandler.ServeHTTP(w, r)
-		case SessionServiceEditQueuedMessageProcedure:
-			sessionServiceEditQueuedMessageHandler.ServeHTTP(w, r)
-		case SessionServiceCancelQueuedMessageProcedure:
-			sessionServiceCancelQueuedMessageHandler.ServeHTTP(w, r)
-		case SessionServiceInterruptProcedure:
-			sessionServiceInterruptHandler.ServeHTTP(w, r)
-		case SessionServiceRetryModelCallProcedure:
-			sessionServiceRetryModelCallHandler.ServeHTTP(w, r)
-		case SessionServiceEndReasoningProcedure:
-			sessionServiceEndReasoningHandler.ServeHTTP(w, r)
-		case SessionServiceCompactProcedure:
-			sessionServiceCompactHandler.ServeHTTP(w, r)
-		case SessionServiceAnswerPromptProcedure:
-			sessionServiceAnswerPromptHandler.ServeHTTP(w, r)
-		case SessionServiceSetModelProcedure:
-			sessionServiceSetModelHandler.ServeHTTP(w, r)
-		case SessionServiceSetEffortProcedure:
-			sessionServiceSetEffortHandler.ServeHTTP(w, r)
-		case SessionServiceSetYoloProcedure:
-			sessionServiceSetYoloHandler.ServeHTTP(w, r)
-		case SessionServiceMoveSessionProcedure:
-			sessionServiceMoveSessionHandler.ServeHTTP(w, r)
-		case SessionServiceRateProcedure:
-			sessionServiceRateHandler.ServeHTTP(w, r)
-		case SessionServiceListMcpServersProcedure:
-			sessionServiceListMcpServersHandler.ServeHTTP(w, r)
-		case SessionServiceSetMcpServerProcedure:
-			sessionServiceSetMcpServerHandler.ServeHTTP(w, r)
-		case SessionServiceListSkillsProcedure:
-			sessionServiceListSkillsHandler.ServeHTTP(w, r)
-		case SessionServiceRetryFromMessageProcedure:
-			sessionServiceRetryFromMessageHandler.ServeHTTP(w, r)
-		case SessionServiceEditMessageProcedure:
-			sessionServiceEditMessageHandler.ServeHTTP(w, r)
-		case SessionServiceSwitchBranchProcedure:
-			sessionServiceSwitchBranchHandler.ServeHTTP(w, r)
-		case SessionServiceGitStatusProcedure:
-			sessionServiceGitStatusHandler.ServeHTTP(w, r)
-		case SessionServiceGitDiffProcedure:
-			sessionServiceGitDiffHandler.ServeHTTP(w, r)
-		case SessionServiceRemoveWorktreeProcedure:
-			sessionServiceRemoveWorktreeHandler.ServeHTTP(w, r)
-		default:
-			http.NotFound(w, r)
-		}
-	})
+}
+
+// SessionServiceAttachServerStream is the server stream for the SessionService's Attach RPC.
+type SessionServiceAttachServerStream struct {
+	stream connect.ServerStream
+}
+
+// SendHeaders flushes the response headers without a message. The first Send does this implicitly.
+func (s SessionServiceAttachServerStream) SendHeaders() error {
+	return s.stream.SendHeaders()
+}
+
+// Send sends a response message to the client.
+func (s SessionServiceAttachServerStream) Send(res *v1.AttachResponse) error {
+	return s.stream.Send(res)
 }
 
 // UnimplementedSessionServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedSessionServiceHandler struct{}
 
-func (UnimplementedSessionServiceHandler) CreateSession(context.Context, *connect.Request[v1.CreateSessionRequest]) (*connect.Response[v1.CreateSessionResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.CreateSession is not implemented"))
+func (UnimplementedSessionServiceHandler) CreateSession(context.Context, *v1.CreateSessionRequest) (*v1.CreateSessionResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.CreateSession is not implemented")
 }
 
-func (UnimplementedSessionServiceHandler) ListSessions(context.Context, *connect.Request[v1.ListSessionsRequest]) (*connect.Response[v1.ListSessionsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.ListSessions is not implemented"))
+func (UnimplementedSessionServiceHandler) ListSessions(context.Context, *v1.ListSessionsRequest) (*v1.ListSessionsResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.ListSessions is not implemented")
 }
 
-func (UnimplementedSessionServiceHandler) GetSession(context.Context, *connect.Request[v1.GetSessionRequest]) (*connect.Response[v1.GetSessionResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.GetSession is not implemented"))
+func (UnimplementedSessionServiceHandler) GetSession(context.Context, *v1.GetSessionRequest) (*v1.GetSessionResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.GetSession is not implemented")
 }
 
-func (UnimplementedSessionServiceHandler) Attach(context.Context, *connect.Request[v1.AttachRequest], *connect.ServerStream[v1.AttachResponse]) error {
-	return connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.Attach is not implemented"))
+func (UnimplementedSessionServiceHandler) Attach(context.Context, *v1.AttachRequest, SessionServiceAttachServerStream) error {
+	return connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.Attach is not implemented")
 }
 
-func (UnimplementedSessionServiceHandler) Send(context.Context, *connect.Request[v1.SendRequest]) (*connect.Response[v1.SendResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.Send is not implemented"))
+func (UnimplementedSessionServiceHandler) Send(context.Context, *v1.SendRequest) (*v1.SendResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.Send is not implemented")
 }
 
-func (UnimplementedSessionServiceHandler) EditQueuedMessage(context.Context, *connect.Request[v1.EditQueuedMessageRequest]) (*connect.Response[v1.EditQueuedMessageResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.EditQueuedMessage is not implemented"))
+func (UnimplementedSessionServiceHandler) EditQueuedMessage(context.Context, *v1.EditQueuedMessageRequest) (*v1.EditQueuedMessageResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.EditQueuedMessage is not implemented")
 }
 
-func (UnimplementedSessionServiceHandler) CancelQueuedMessage(context.Context, *connect.Request[v1.CancelQueuedMessageRequest]) (*connect.Response[v1.CancelQueuedMessageResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.CancelQueuedMessage is not implemented"))
+func (UnimplementedSessionServiceHandler) CancelQueuedMessage(context.Context, *v1.CancelQueuedMessageRequest) (*v1.CancelQueuedMessageResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.CancelQueuedMessage is not implemented")
 }
 
-func (UnimplementedSessionServiceHandler) Interrupt(context.Context, *connect.Request[v1.InterruptRequest]) (*connect.Response[v1.InterruptResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.Interrupt is not implemented"))
+func (UnimplementedSessionServiceHandler) Interrupt(context.Context, *v1.InterruptRequest) (*v1.InterruptResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.Interrupt is not implemented")
 }
 
-func (UnimplementedSessionServiceHandler) RetryModelCall(context.Context, *connect.Request[v1.RetryModelCallRequest]) (*connect.Response[v1.RetryModelCallResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.RetryModelCall is not implemented"))
+func (UnimplementedSessionServiceHandler) RetryModelCall(context.Context, *v1.RetryModelCallRequest) (*v1.RetryModelCallResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.RetryModelCall is not implemented")
 }
 
-func (UnimplementedSessionServiceHandler) EndReasoning(context.Context, *connect.Request[v1.EndReasoningRequest]) (*connect.Response[v1.EndReasoningResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.EndReasoning is not implemented"))
+func (UnimplementedSessionServiceHandler) EndReasoning(context.Context, *v1.EndReasoningRequest) (*v1.EndReasoningResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.EndReasoning is not implemented")
 }
 
-func (UnimplementedSessionServiceHandler) Compact(context.Context, *connect.Request[v1.CompactRequest]) (*connect.Response[v1.CompactResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.Compact is not implemented"))
+func (UnimplementedSessionServiceHandler) Compact(context.Context, *v1.CompactRequest) (*v1.CompactResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.Compact is not implemented")
 }
 
-func (UnimplementedSessionServiceHandler) AnswerPrompt(context.Context, *connect.Request[v1.AnswerPromptRequest]) (*connect.Response[v1.AnswerPromptResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.AnswerPrompt is not implemented"))
+func (UnimplementedSessionServiceHandler) AnswerPrompt(context.Context, *v1.AnswerPromptRequest) (*v1.AnswerPromptResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.AnswerPrompt is not implemented")
 }
 
-func (UnimplementedSessionServiceHandler) SetModel(context.Context, *connect.Request[v1.SetModelRequest]) (*connect.Response[v1.SetModelResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.SetModel is not implemented"))
+func (UnimplementedSessionServiceHandler) SetModel(context.Context, *v1.SetModelRequest) (*v1.SetModelResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.SetModel is not implemented")
 }
 
-func (UnimplementedSessionServiceHandler) SetEffort(context.Context, *connect.Request[v1.SetEffortRequest]) (*connect.Response[v1.SetEffortResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.SetEffort is not implemented"))
+func (UnimplementedSessionServiceHandler) SetEffort(context.Context, *v1.SetEffortRequest) (*v1.SetEffortResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.SetEffort is not implemented")
 }
 
-func (UnimplementedSessionServiceHandler) SetYolo(context.Context, *connect.Request[v1.SetYoloRequest]) (*connect.Response[v1.SetYoloResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.SetYolo is not implemented"))
+func (UnimplementedSessionServiceHandler) SetYolo(context.Context, *v1.SetYoloRequest) (*v1.SetYoloResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.SetYolo is not implemented")
 }
 
-func (UnimplementedSessionServiceHandler) MoveSession(context.Context, *connect.Request[v1.MoveSessionRequest]) (*connect.Response[v1.MoveSessionResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.MoveSession is not implemented"))
+func (UnimplementedSessionServiceHandler) MoveSession(context.Context, *v1.MoveSessionRequest) (*v1.MoveSessionResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.MoveSession is not implemented")
 }
 
-func (UnimplementedSessionServiceHandler) Rate(context.Context, *connect.Request[v1.RateRequest]) (*connect.Response[v1.RateResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.Rate is not implemented"))
+func (UnimplementedSessionServiceHandler) Rate(context.Context, *v1.RateRequest) (*v1.RateResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.Rate is not implemented")
 }
 
-func (UnimplementedSessionServiceHandler) ListMcpServers(context.Context, *connect.Request[v1.ListMcpServersRequest]) (*connect.Response[v1.ListMcpServersResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.ListMcpServers is not implemented"))
+func (UnimplementedSessionServiceHandler) ListMcpServers(context.Context, *v1.ListMcpServersRequest) (*v1.ListMcpServersResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.ListMcpServers is not implemented")
 }
 
-func (UnimplementedSessionServiceHandler) SetMcpServer(context.Context, *connect.Request[v1.SetMcpServerRequest]) (*connect.Response[v1.SetMcpServerResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.SetMcpServer is not implemented"))
+func (UnimplementedSessionServiceHandler) SetMcpServer(context.Context, *v1.SetMcpServerRequest) (*v1.SetMcpServerResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.SetMcpServer is not implemented")
 }
 
-func (UnimplementedSessionServiceHandler) ListSkills(context.Context, *connect.Request[v1.ListSkillsRequest]) (*connect.Response[v1.ListSkillsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.ListSkills is not implemented"))
+func (UnimplementedSessionServiceHandler) ListSkills(context.Context, *v1.ListSkillsRequest) (*v1.ListSkillsResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.ListSkills is not implemented")
 }
 
-func (UnimplementedSessionServiceHandler) RetryFromMessage(context.Context, *connect.Request[v1.RetryFromMessageRequest]) (*connect.Response[v1.RetryFromMessageResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.RetryFromMessage is not implemented"))
+func (UnimplementedSessionServiceHandler) RetryFromMessage(context.Context, *v1.RetryFromMessageRequest) (*v1.RetryFromMessageResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.RetryFromMessage is not implemented")
 }
 
-func (UnimplementedSessionServiceHandler) EditMessage(context.Context, *connect.Request[v1.EditMessageRequest]) (*connect.Response[v1.EditMessageResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.EditMessage is not implemented"))
+func (UnimplementedSessionServiceHandler) EditMessage(context.Context, *v1.EditMessageRequest) (*v1.EditMessageResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.EditMessage is not implemented")
 }
 
-func (UnimplementedSessionServiceHandler) SwitchBranch(context.Context, *connect.Request[v1.SwitchBranchRequest]) (*connect.Response[v1.SwitchBranchResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.SwitchBranch is not implemented"))
+func (UnimplementedSessionServiceHandler) SwitchBranch(context.Context, *v1.SwitchBranchRequest) (*v1.SwitchBranchResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.SwitchBranch is not implemented")
 }
 
-func (UnimplementedSessionServiceHandler) GitStatus(context.Context, *connect.Request[v1.GitStatusRequest]) (*connect.Response[v1.GitStatusResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.GitStatus is not implemented"))
+func (UnimplementedSessionServiceHandler) GitStatus(context.Context, *v1.GitStatusRequest) (*v1.GitStatusResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.GitStatus is not implemented")
 }
 
-func (UnimplementedSessionServiceHandler) GitDiff(context.Context, *connect.Request[v1.GitDiffRequest]) (*connect.Response[v1.GitDiffResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.GitDiff is not implemented"))
+func (UnimplementedSessionServiceHandler) GitDiff(context.Context, *v1.GitDiffRequest) (*v1.GitDiffResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.GitDiff is not implemented")
 }
 
-func (UnimplementedSessionServiceHandler) RemoveWorktree(context.Context, *connect.Request[v1.RemoveWorktreeRequest]) (*connect.Response[v1.RemoveWorktreeResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.SessionService.RemoveWorktree is not implemented"))
+func (UnimplementedSessionServiceHandler) RemoveWorktree(context.Context, *v1.RemoveWorktreeRequest) (*v1.RemoveWorktreeResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.RemoveWorktree is not implemented")
+}
+
+type sessionServiceClient struct {
+	client *connect.Client
+}
+
+func (c *sessionServiceClient) CreateSession(ctx context.Context, req *v1.CreateSessionRequest) (*v1.CreateSessionResponse, error) {
+	var res v1.CreateSessionResponse
+	if err := c.client.CallUnary(ctx, sessionServiceCreateSessionSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *sessionServiceClient) ListSessions(ctx context.Context, req *v1.ListSessionsRequest) (*v1.ListSessionsResponse, error) {
+	var res v1.ListSessionsResponse
+	if err := c.client.CallUnary(ctx, sessionServiceListSessionsSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *sessionServiceClient) GetSession(ctx context.Context, req *v1.GetSessionRequest) (*v1.GetSessionResponse, error) {
+	var res v1.GetSessionResponse
+	if err := c.client.CallUnary(ctx, sessionServiceGetSessionSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *sessionServiceClient) Attach(ctx context.Context, req *v1.AttachRequest) (SessionServiceAttachClientStream, error) {
+	stream, err := c.client.CallServerStream(ctx, sessionServiceAttachSpec(), req)
+	if err != nil {
+		return SessionServiceAttachClientStream{}, err
+	}
+	return SessionServiceAttachClientStream{stream: stream}, nil
+}
+
+func (c *sessionServiceClient) Send(ctx context.Context, req *v1.SendRequest) (*v1.SendResponse, error) {
+	var res v1.SendResponse
+	if err := c.client.CallUnary(ctx, sessionServiceSendSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *sessionServiceClient) EditQueuedMessage(ctx context.Context, req *v1.EditQueuedMessageRequest) (*v1.EditQueuedMessageResponse, error) {
+	var res v1.EditQueuedMessageResponse
+	if err := c.client.CallUnary(ctx, sessionServiceEditQueuedMessageSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *sessionServiceClient) CancelQueuedMessage(ctx context.Context, req *v1.CancelQueuedMessageRequest) (*v1.CancelQueuedMessageResponse, error) {
+	var res v1.CancelQueuedMessageResponse
+	if err := c.client.CallUnary(ctx, sessionServiceCancelQueuedMessageSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *sessionServiceClient) Interrupt(ctx context.Context, req *v1.InterruptRequest) (*v1.InterruptResponse, error) {
+	var res v1.InterruptResponse
+	if err := c.client.CallUnary(ctx, sessionServiceInterruptSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *sessionServiceClient) RetryModelCall(ctx context.Context, req *v1.RetryModelCallRequest) (*v1.RetryModelCallResponse, error) {
+	var res v1.RetryModelCallResponse
+	if err := c.client.CallUnary(ctx, sessionServiceRetryModelCallSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *sessionServiceClient) EndReasoning(ctx context.Context, req *v1.EndReasoningRequest) (*v1.EndReasoningResponse, error) {
+	var res v1.EndReasoningResponse
+	if err := c.client.CallUnary(ctx, sessionServiceEndReasoningSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *sessionServiceClient) Compact(ctx context.Context, req *v1.CompactRequest) (*v1.CompactResponse, error) {
+	var res v1.CompactResponse
+	if err := c.client.CallUnary(ctx, sessionServiceCompactSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *sessionServiceClient) AnswerPrompt(ctx context.Context, req *v1.AnswerPromptRequest) (*v1.AnswerPromptResponse, error) {
+	var res v1.AnswerPromptResponse
+	if err := c.client.CallUnary(ctx, sessionServiceAnswerPromptSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *sessionServiceClient) SetModel(ctx context.Context, req *v1.SetModelRequest) (*v1.SetModelResponse, error) {
+	var res v1.SetModelResponse
+	if err := c.client.CallUnary(ctx, sessionServiceSetModelSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *sessionServiceClient) SetEffort(ctx context.Context, req *v1.SetEffortRequest) (*v1.SetEffortResponse, error) {
+	var res v1.SetEffortResponse
+	if err := c.client.CallUnary(ctx, sessionServiceSetEffortSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *sessionServiceClient) SetYolo(ctx context.Context, req *v1.SetYoloRequest) (*v1.SetYoloResponse, error) {
+	var res v1.SetYoloResponse
+	if err := c.client.CallUnary(ctx, sessionServiceSetYoloSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *sessionServiceClient) MoveSession(ctx context.Context, req *v1.MoveSessionRequest) (*v1.MoveSessionResponse, error) {
+	var res v1.MoveSessionResponse
+	if err := c.client.CallUnary(ctx, sessionServiceMoveSessionSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *sessionServiceClient) Rate(ctx context.Context, req *v1.RateRequest) (*v1.RateResponse, error) {
+	var res v1.RateResponse
+	if err := c.client.CallUnary(ctx, sessionServiceRateSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *sessionServiceClient) ListMcpServers(ctx context.Context, req *v1.ListMcpServersRequest) (*v1.ListMcpServersResponse, error) {
+	var res v1.ListMcpServersResponse
+	if err := c.client.CallUnary(ctx, sessionServiceListMcpServersSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *sessionServiceClient) SetMcpServer(ctx context.Context, req *v1.SetMcpServerRequest) (*v1.SetMcpServerResponse, error) {
+	var res v1.SetMcpServerResponse
+	if err := c.client.CallUnary(ctx, sessionServiceSetMcpServerSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *sessionServiceClient) ListSkills(ctx context.Context, req *v1.ListSkillsRequest) (*v1.ListSkillsResponse, error) {
+	var res v1.ListSkillsResponse
+	if err := c.client.CallUnary(ctx, sessionServiceListSkillsSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *sessionServiceClient) RetryFromMessage(ctx context.Context, req *v1.RetryFromMessageRequest) (*v1.RetryFromMessageResponse, error) {
+	var res v1.RetryFromMessageResponse
+	if err := c.client.CallUnary(ctx, sessionServiceRetryFromMessageSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *sessionServiceClient) EditMessage(ctx context.Context, req *v1.EditMessageRequest) (*v1.EditMessageResponse, error) {
+	var res v1.EditMessageResponse
+	if err := c.client.CallUnary(ctx, sessionServiceEditMessageSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *sessionServiceClient) SwitchBranch(ctx context.Context, req *v1.SwitchBranchRequest) (*v1.SwitchBranchResponse, error) {
+	var res v1.SwitchBranchResponse
+	if err := c.client.CallUnary(ctx, sessionServiceSwitchBranchSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *sessionServiceClient) GitStatus(ctx context.Context, req *v1.GitStatusRequest) (*v1.GitStatusResponse, error) {
+	var res v1.GitStatusResponse
+	if err := c.client.CallUnary(ctx, sessionServiceGitStatusSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *sessionServiceClient) GitDiff(ctx context.Context, req *v1.GitDiffRequest) (*v1.GitDiffResponse, error) {
+	var res v1.GitDiffResponse
+	if err := c.client.CallUnary(ctx, sessionServiceGitDiffSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *sessionServiceClient) RemoveWorktree(ctx context.Context, req *v1.RemoveWorktreeRequest) (*v1.RemoveWorktreeResponse, error) {
+	var res v1.RemoveWorktreeResponse
+	if err := c.client.CallUnary(ctx, sessionServiceRemoveWorktreeSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+type sessionServiceHandler struct{ svc SessionServiceHandler }
+
+func (h sessionServiceHandler) createSession(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.CreateSessionRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.CreateSession(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h sessionServiceHandler) listSessions(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.ListSessionsRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.ListSessions(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h sessionServiceHandler) getSession(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.GetSessionRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.GetSession(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h sessionServiceHandler) attach(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.AttachRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	return h.svc.Attach(ctx, &req, SessionServiceAttachServerStream{stream: stream})
+}
+
+func (h sessionServiceHandler) send(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.SendRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.Send(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h sessionServiceHandler) editQueuedMessage(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.EditQueuedMessageRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.EditQueuedMessage(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h sessionServiceHandler) cancelQueuedMessage(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.CancelQueuedMessageRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.CancelQueuedMessage(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h sessionServiceHandler) interrupt(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.InterruptRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.Interrupt(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h sessionServiceHandler) retryModelCall(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.RetryModelCallRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.RetryModelCall(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h sessionServiceHandler) endReasoning(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.EndReasoningRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.EndReasoning(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h sessionServiceHandler) compact(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.CompactRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.Compact(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h sessionServiceHandler) answerPrompt(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.AnswerPromptRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.AnswerPrompt(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h sessionServiceHandler) setModel(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.SetModelRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.SetModel(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h sessionServiceHandler) setEffort(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.SetEffortRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.SetEffort(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h sessionServiceHandler) setYolo(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.SetYoloRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.SetYolo(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h sessionServiceHandler) moveSession(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.MoveSessionRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.MoveSession(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h sessionServiceHandler) rate(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.RateRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.Rate(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h sessionServiceHandler) listMcpServers(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.ListMcpServersRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.ListMcpServers(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h sessionServiceHandler) setMcpServer(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.SetMcpServerRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.SetMcpServer(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h sessionServiceHandler) listSkills(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.ListSkillsRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.ListSkills(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h sessionServiceHandler) retryFromMessage(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.RetryFromMessageRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.RetryFromMessage(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h sessionServiceHandler) editMessage(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.EditMessageRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.EditMessage(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h sessionServiceHandler) switchBranch(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.SwitchBranchRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.SwitchBranch(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h sessionServiceHandler) gitStatus(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.GitStatusRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.GitStatus(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h sessionServiceHandler) gitDiff(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.GitDiffRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.GitDiff(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h sessionServiceHandler) removeWorktree(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.RemoveWorktreeRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.RemoveWorktree(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
 }

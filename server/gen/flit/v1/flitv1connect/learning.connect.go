@@ -5,45 +5,68 @@
 package flitv1connect
 
 import (
-	connect "connectrpc.com/connect"
+	connect "connectrpc.com/connect/v2"
 	context "context"
-	errors "errors"
 	v1 "github.com/iggy/flit/server/gen/flit/v1"
-	http "net/http"
-	strings "strings"
+	sync "sync"
 )
-
-// This is a compile-time assertion to ensure that this generated file and the connect package are
-// compatible. If you get a compiler error that this constant is not defined, this code was
-// generated with a version of connect newer than the one compiled into your binary. You can fix the
-// problem by either regenerating this code with an older version of connect or updating the connect
-// version compiled into your binary.
-const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// LearningServiceName is the fully-qualified name of the LearningService service.
 	LearningServiceName = "flit.v1.LearningService"
 )
 
-// These constants are the fully-qualified names of the RPCs defined in this package. They're
-// exposed at runtime as Spec.Procedure and as the final two segments of the HTTP route.
+// These constants are the procedure names of the RPCs defined in this package. They're exposed at
+// runtime as Spec.Procedure and as the final two segments of the HTTP route.
 //
 // Note that these are different from the fully-qualified method names used by
 // google.golang.org/protobuf/reflect/protoreflect. To convert from these constants to
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// LearningServiceLearnProcedure is the fully-qualified name of the LearningService's Learn RPC.
+	// LearningServiceLearnProcedure is the procedure name of the LearningService's Learn RPC.
 	LearningServiceLearnProcedure = "/flit.v1.LearningService/Learn"
-	// LearningServiceListLearnProposalsProcedure is the fully-qualified name of the LearningService's
+	// LearningServiceListLearnProposalsProcedure is the procedure name of the LearningService's
 	// ListLearnProposals RPC.
 	LearningServiceListLearnProposalsProcedure = "/flit.v1.LearningService/ListLearnProposals"
-	// LearningServiceAcceptLearnProposalProcedure is the fully-qualified name of the LearningService's
+	// LearningServiceAcceptLearnProposalProcedure is the procedure name of the LearningService's
 	// AcceptLearnProposal RPC.
 	LearningServiceAcceptLearnProposalProcedure = "/flit.v1.LearningService/AcceptLearnProposal"
-	// LearningServiceRejectLearnProposalProcedure is the fully-qualified name of the LearningService's
+	// LearningServiceRejectLearnProposalProcedure is the procedure name of the LearningService's
 	// RejectLearnProposal RPC.
 	LearningServiceRejectLearnProposalProcedure = "/flit.v1.LearningService/RejectLearnProposal"
+)
+
+var (
+	learningServiceLearnSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_learning_proto.Services().ByName("LearningService").Methods().ByName("Learn"),
+			Procedure:  LearningServiceLearnProcedure,
+		}
+	})
+	learningServiceListLearnProposalsSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType:       connect.StreamTypeUnary,
+			Schema:           v1.File_flit_v1_learning_proto.Services().ByName("LearningService").Methods().ByName("ListLearnProposals"),
+			Procedure:        LearningServiceListLearnProposalsProcedure,
+			IdempotencyLevel: connect.IdempotencyNoSideEffects,
+		}
+	})
+	learningServiceAcceptLearnProposalSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_learning_proto.Services().ByName("LearningService").Methods().ByName("AcceptLearnProposal"),
+			Procedure:  LearningServiceAcceptLearnProposalProcedure,
+		}
+	})
+	learningServiceRejectLearnProposalSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_learning_proto.Services().ByName("LearningService").Methods().ByName("RejectLearnProposal"),
+			Procedure:  LearningServiceRejectLearnProposalProcedure,
+		}
+	})
 )
 
 // LearningServiceClient is a client for the flit.v1.LearningService service.
@@ -52,80 +75,19 @@ type LearningServiceClient interface {
 	// and returns its proposals, stored as pending. They replace the
 	// session's earlier pending proposals. An empty list is a normal
 	// answer: most sessions teach nothing new.
-	Learn(context.Context, *connect.Request[v1.LearnRequest]) (*connect.Response[v1.LearnResponse], error)
-	ListLearnProposals(context.Context, *connect.Request[v1.ListLearnProposalsRequest]) (*connect.Response[v1.ListLearnProposalsResponse], error)
+	Learn(context.Context, *v1.LearnRequest) (*v1.LearnResponse, error)
+	ListLearnProposals(context.Context, *v1.ListLearnProposalsRequest) (*v1.ListLearnProposalsResponse, error)
 	// AcceptLearnProposal writes a pending proposal, optionally with edited
 	// text, and marks it accepted. FAILED_PRECONDITION when it was already
 	// decided or the file changed underneath it.
-	AcceptLearnProposal(context.Context, *connect.Request[v1.AcceptLearnProposalRequest]) (*connect.Response[v1.AcceptLearnProposalResponse], error)
-	RejectLearnProposal(context.Context, *connect.Request[v1.RejectLearnProposalRequest]) (*connect.Response[v1.RejectLearnProposalResponse], error)
+	AcceptLearnProposal(context.Context, *v1.AcceptLearnProposalRequest) (*v1.AcceptLearnProposalResponse, error)
+	RejectLearnProposal(context.Context, *v1.RejectLearnProposalRequest) (*v1.RejectLearnProposalResponse, error)
 }
 
-// NewLearningServiceClient constructs a client for the flit.v1.LearningService service. By default,
-// it uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and
-// sends uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC()
-// or connect.WithGRPCWeb() options.
-//
-// The URL supplied here should be the base URL for the Connect or gRPC server (for example,
-// http://api.acme.com or https://acme.com/grpc).
-func NewLearningServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) LearningServiceClient {
-	baseURL = strings.TrimRight(baseURL, "/")
-	learningServiceMethods := v1.File_flit_v1_learning_proto.Services().ByName("LearningService").Methods()
-	return &learningServiceClient{
-		learn: connect.NewClient[v1.LearnRequest, v1.LearnResponse](
-			httpClient,
-			baseURL+LearningServiceLearnProcedure,
-			connect.WithSchema(learningServiceMethods.ByName("Learn")),
-			connect.WithClientOptions(opts...),
-		),
-		listLearnProposals: connect.NewClient[v1.ListLearnProposalsRequest, v1.ListLearnProposalsResponse](
-			httpClient,
-			baseURL+LearningServiceListLearnProposalsProcedure,
-			connect.WithSchema(learningServiceMethods.ByName("ListLearnProposals")),
-			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-			connect.WithClientOptions(opts...),
-		),
-		acceptLearnProposal: connect.NewClient[v1.AcceptLearnProposalRequest, v1.AcceptLearnProposalResponse](
-			httpClient,
-			baseURL+LearningServiceAcceptLearnProposalProcedure,
-			connect.WithSchema(learningServiceMethods.ByName("AcceptLearnProposal")),
-			connect.WithClientOptions(opts...),
-		),
-		rejectLearnProposal: connect.NewClient[v1.RejectLearnProposalRequest, v1.RejectLearnProposalResponse](
-			httpClient,
-			baseURL+LearningServiceRejectLearnProposalProcedure,
-			connect.WithSchema(learningServiceMethods.ByName("RejectLearnProposal")),
-			connect.WithClientOptions(opts...),
-		),
-	}
-}
-
-// learningServiceClient implements LearningServiceClient.
-type learningServiceClient struct {
-	learn               *connect.Client[v1.LearnRequest, v1.LearnResponse]
-	listLearnProposals  *connect.Client[v1.ListLearnProposalsRequest, v1.ListLearnProposalsResponse]
-	acceptLearnProposal *connect.Client[v1.AcceptLearnProposalRequest, v1.AcceptLearnProposalResponse]
-	rejectLearnProposal *connect.Client[v1.RejectLearnProposalRequest, v1.RejectLearnProposalResponse]
-}
-
-// Learn calls flit.v1.LearningService.Learn.
-func (c *learningServiceClient) Learn(ctx context.Context, req *connect.Request[v1.LearnRequest]) (*connect.Response[v1.LearnResponse], error) {
-	return c.learn.CallUnary(ctx, req)
-}
-
-// ListLearnProposals calls flit.v1.LearningService.ListLearnProposals.
-func (c *learningServiceClient) ListLearnProposals(ctx context.Context, req *connect.Request[v1.ListLearnProposalsRequest]) (*connect.Response[v1.ListLearnProposalsResponse], error) {
-	return c.listLearnProposals.CallUnary(ctx, req)
-}
-
-// AcceptLearnProposal calls flit.v1.LearningService.AcceptLearnProposal.
-func (c *learningServiceClient) AcceptLearnProposal(ctx context.Context, req *connect.Request[v1.AcceptLearnProposalRequest]) (*connect.Response[v1.AcceptLearnProposalResponse], error) {
-	return c.acceptLearnProposal.CallUnary(ctx, req)
-}
-
-// RejectLearnProposal calls flit.v1.LearningService.RejectLearnProposal.
-func (c *learningServiceClient) RejectLearnProposal(ctx context.Context, req *connect.Request[v1.RejectLearnProposalRequest]) (*connect.Response[v1.RejectLearnProposalResponse], error) {
-	return c.rejectLearnProposal.CallUnary(ctx, req)
+// NewLearningServiceClient constructs a client for the flit.v1.LearningService service. Multiple
+// service clients may share a single connect.Client.
+func NewLearningServiceClient(client *connect.Client) LearningServiceClient {
+	return &learningServiceClient{client: client}
 }
 
 // LearningServiceHandler is an implementation of the flit.v1.LearningService service.
@@ -134,78 +96,128 @@ type LearningServiceHandler interface {
 	// and returns its proposals, stored as pending. They replace the
 	// session's earlier pending proposals. An empty list is a normal
 	// answer: most sessions teach nothing new.
-	Learn(context.Context, *connect.Request[v1.LearnRequest]) (*connect.Response[v1.LearnResponse], error)
-	ListLearnProposals(context.Context, *connect.Request[v1.ListLearnProposalsRequest]) (*connect.Response[v1.ListLearnProposalsResponse], error)
+	Learn(context.Context, *v1.LearnRequest) (*v1.LearnResponse, error)
+	ListLearnProposals(context.Context, *v1.ListLearnProposalsRequest) (*v1.ListLearnProposalsResponse, error)
 	// AcceptLearnProposal writes a pending proposal, optionally with edited
 	// text, and marks it accepted. FAILED_PRECONDITION when it was already
 	// decided or the file changed underneath it.
-	AcceptLearnProposal(context.Context, *connect.Request[v1.AcceptLearnProposalRequest]) (*connect.Response[v1.AcceptLearnProposalResponse], error)
-	RejectLearnProposal(context.Context, *connect.Request[v1.RejectLearnProposalRequest]) (*connect.Response[v1.RejectLearnProposalResponse], error)
+	AcceptLearnProposal(context.Context, *v1.AcceptLearnProposalRequest) (*v1.AcceptLearnProposalResponse, error)
+	RejectLearnProposal(context.Context, *v1.RejectLearnProposalRequest) (*v1.RejectLearnProposalResponse, error)
 }
 
-// NewLearningServiceHandler builds an HTTP handler from the service implementation. It returns the
-// path on which to mount the handler and the handler itself.
-//
-// By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
-// and JSON codecs. They also support gzip compression.
-func NewLearningServiceHandler(svc LearningServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	learningServiceMethods := v1.File_flit_v1_learning_proto.Services().ByName("LearningService").Methods()
-	learningServiceLearnHandler := connect.NewUnaryHandler(
-		LearningServiceLearnProcedure,
-		svc.Learn,
-		connect.WithSchema(learningServiceMethods.ByName("Learn")),
-		connect.WithHandlerOptions(opts...),
+// RegisterLearningServiceHandler registers svc as the flit.v1.LearningService implementation on
+// server.
+func RegisterLearningServiceHandler(server *connect.Server, svc LearningServiceHandler) {
+	adapter := learningServiceHandler{svc: svc}
+	server.Register(
+		connect.Method{Spec: learningServiceLearnSpec(), Handler: adapter.learn},
+		connect.Method{Spec: learningServiceListLearnProposalsSpec(), Handler: adapter.listLearnProposals},
+		connect.Method{Spec: learningServiceAcceptLearnProposalSpec(), Handler: adapter.acceptLearnProposal},
+		connect.Method{Spec: learningServiceRejectLearnProposalSpec(), Handler: adapter.rejectLearnProposal},
 	)
-	learningServiceListLearnProposalsHandler := connect.NewUnaryHandler(
-		LearningServiceListLearnProposalsProcedure,
-		svc.ListLearnProposals,
-		connect.WithSchema(learningServiceMethods.ByName("ListLearnProposals")),
-		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-		connect.WithHandlerOptions(opts...),
-	)
-	learningServiceAcceptLearnProposalHandler := connect.NewUnaryHandler(
-		LearningServiceAcceptLearnProposalProcedure,
-		svc.AcceptLearnProposal,
-		connect.WithSchema(learningServiceMethods.ByName("AcceptLearnProposal")),
-		connect.WithHandlerOptions(opts...),
-	)
-	learningServiceRejectLearnProposalHandler := connect.NewUnaryHandler(
-		LearningServiceRejectLearnProposalProcedure,
-		svc.RejectLearnProposal,
-		connect.WithSchema(learningServiceMethods.ByName("RejectLearnProposal")),
-		connect.WithHandlerOptions(opts...),
-	)
-	return "/flit.v1.LearningService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case LearningServiceLearnProcedure:
-			learningServiceLearnHandler.ServeHTTP(w, r)
-		case LearningServiceListLearnProposalsProcedure:
-			learningServiceListLearnProposalsHandler.ServeHTTP(w, r)
-		case LearningServiceAcceptLearnProposalProcedure:
-			learningServiceAcceptLearnProposalHandler.ServeHTTP(w, r)
-		case LearningServiceRejectLearnProposalProcedure:
-			learningServiceRejectLearnProposalHandler.ServeHTTP(w, r)
-		default:
-			http.NotFound(w, r)
-		}
-	})
 }
 
 // UnimplementedLearningServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedLearningServiceHandler struct{}
 
-func (UnimplementedLearningServiceHandler) Learn(context.Context, *connect.Request[v1.LearnRequest]) (*connect.Response[v1.LearnResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.LearningService.Learn is not implemented"))
+func (UnimplementedLearningServiceHandler) Learn(context.Context, *v1.LearnRequest) (*v1.LearnResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.LearningService.Learn is not implemented")
 }
 
-func (UnimplementedLearningServiceHandler) ListLearnProposals(context.Context, *connect.Request[v1.ListLearnProposalsRequest]) (*connect.Response[v1.ListLearnProposalsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.LearningService.ListLearnProposals is not implemented"))
+func (UnimplementedLearningServiceHandler) ListLearnProposals(context.Context, *v1.ListLearnProposalsRequest) (*v1.ListLearnProposalsResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.LearningService.ListLearnProposals is not implemented")
 }
 
-func (UnimplementedLearningServiceHandler) AcceptLearnProposal(context.Context, *connect.Request[v1.AcceptLearnProposalRequest]) (*connect.Response[v1.AcceptLearnProposalResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.LearningService.AcceptLearnProposal is not implemented"))
+func (UnimplementedLearningServiceHandler) AcceptLearnProposal(context.Context, *v1.AcceptLearnProposalRequest) (*v1.AcceptLearnProposalResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.LearningService.AcceptLearnProposal is not implemented")
 }
 
-func (UnimplementedLearningServiceHandler) RejectLearnProposal(context.Context, *connect.Request[v1.RejectLearnProposalRequest]) (*connect.Response[v1.RejectLearnProposalResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.LearningService.RejectLearnProposal is not implemented"))
+func (UnimplementedLearningServiceHandler) RejectLearnProposal(context.Context, *v1.RejectLearnProposalRequest) (*v1.RejectLearnProposalResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.LearningService.RejectLearnProposal is not implemented")
+}
+
+type learningServiceClient struct {
+	client *connect.Client
+}
+
+func (c *learningServiceClient) Learn(ctx context.Context, req *v1.LearnRequest) (*v1.LearnResponse, error) {
+	var res v1.LearnResponse
+	if err := c.client.CallUnary(ctx, learningServiceLearnSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *learningServiceClient) ListLearnProposals(ctx context.Context, req *v1.ListLearnProposalsRequest) (*v1.ListLearnProposalsResponse, error) {
+	var res v1.ListLearnProposalsResponse
+	if err := c.client.CallUnary(ctx, learningServiceListLearnProposalsSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *learningServiceClient) AcceptLearnProposal(ctx context.Context, req *v1.AcceptLearnProposalRequest) (*v1.AcceptLearnProposalResponse, error) {
+	var res v1.AcceptLearnProposalResponse
+	if err := c.client.CallUnary(ctx, learningServiceAcceptLearnProposalSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *learningServiceClient) RejectLearnProposal(ctx context.Context, req *v1.RejectLearnProposalRequest) (*v1.RejectLearnProposalResponse, error) {
+	var res v1.RejectLearnProposalResponse
+	if err := c.client.CallUnary(ctx, learningServiceRejectLearnProposalSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+type learningServiceHandler struct{ svc LearningServiceHandler }
+
+func (h learningServiceHandler) learn(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.LearnRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.Learn(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h learningServiceHandler) listLearnProposals(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.ListLearnProposalsRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.ListLearnProposals(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h learningServiceHandler) acceptLearnProposal(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.AcceptLearnProposalRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.AcceptLearnProposal(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h learningServiceHandler) rejectLearnProposal(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.RejectLearnProposalRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.RejectLearnProposal(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
 }

@@ -11,7 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
+	"connectrpc.com/connect/v2/connecthttp"
 	qrcode "github.com/skip2/go-qrcode"
 
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
@@ -36,7 +37,7 @@ func adminClient(configPath, dataDirFlag string) (flitv1connect.SystemServiceCli
 		return nil, fmt.Errorf("read admin token from %s: %w (is this the machine running \"flit serve\"?)", dataDir, err)
 	}
 	base, hc := localURL(cfg)
-	return flitv1connect.NewSystemServiceClient(hc, base, connect.WithInterceptors(bearerInterceptor(token))), nil
+	return flitv1connect.NewSystemServiceClient(connect.NewClient(connecthttp.NewTransport(hc, base, connecthttp.WithReadMaxBytes(0)), connect.ClientInterceptor(bearerInterceptor(token).Intercept))), nil
 }
 
 // localURL is how this machine reaches its own server: the listen address,
@@ -59,19 +60,12 @@ func localURL(cfg config.Config) (string, *http.Client) {
 
 type bearerInterceptor string
 
-func (b bearerInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
-	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-		req.Header().Set("Authorization", "Bearer "+string(b))
-		return next(ctx, req)
+func (b bearerInterceptor) Intercept(next connect.ClientFunc) connect.ClientFunc {
+	return func(ctx context.Context, spec connect.Spec) (connect.ClientStream, error) {
+		ctx, info := connect.NewClientContext(ctx)
+		info.RequestHeader().Set("Authorization", "Bearer "+string(b))
+		return next(ctx, spec)
 	}
-}
-
-func (b bearerInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
-	return next
-}
-
-func (b bearerInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
-	return next
 }
 
 // PairingURI is what the QR code holds. The app parses it.
@@ -85,21 +79,21 @@ func pair(ctx context.Context, stdout io.Writer, configPath, dataDirFlag, urlOve
 	if err != nil {
 		return err
 	}
-	res, err := c.CreatePairingCode(ctx, connect.NewRequest(&flitv1.CreatePairingCodeRequest{}))
+	res, err := c.CreatePairingCode(ctx, &flitv1.CreatePairingCodeRequest{})
 	if err != nil {
 		return fmt.Errorf("ask the server for a pairing code (is \"flit serve\" running?): %w", err)
 	}
-	server := res.Msg.ServerUrl
+	server := res.ServerUrl
 	if urlOverride != "" {
 		server = strings.TrimSuffix(urlOverride, "/")
 	}
-	qr, err := qrcode.New(PairingURI(server, res.Msg.Code), qrcode.Medium)
+	qr, err := qrcode.New(PairingURI(server, res.Code), qrcode.Medium)
 	if err != nil {
 		return err
 	}
-	mins := int(time.Until(res.Msg.ExpireTime.AsTime()).Round(time.Minute).Minutes())
+	mins := int(time.Until(res.ExpireTime.AsTime()).Round(time.Minute).Minutes())
 	fmt.Fprintf(stdout, "Scan this with the flit app on your phone:\n\n%s\n", qr.ToSmallString(false))
-	fmt.Fprintf(stdout, "Or enter these in the app by hand:\n\n    Server: %s\n    Code:   %s\n\n", server, res.Msg.Code)
+	fmt.Fprintf(stdout, "Or enter these in the app by hand:\n\n    Server: %s\n    Code:   %s\n\n", server, res.Code)
 	fmt.Fprintf(stdout, "The code works once and expires in %d minutes.\n", mins)
 	if u, err := url.Parse(server); err == nil {
 		if ip := net.ParseIP(u.Hostname()); (ip != nil && ip.IsLoopback()) || u.Hostname() == "localhost" {
@@ -114,15 +108,15 @@ func listDevices(ctx context.Context, stdout io.Writer, configPath, dataDirFlag 
 	if err != nil {
 		return err
 	}
-	res, err := c.ListDevices(ctx, connect.NewRequest(&flitv1.ListDevicesRequest{IncludeRevoked: all}))
+	res, err := c.ListDevices(ctx, &flitv1.ListDevicesRequest{IncludeRevoked: all})
 	if err != nil {
 		return err
 	}
-	if len(res.Msg.Devices) == 0 {
+	if len(res.Devices) == 0 {
 		fmt.Fprintln(stdout, "No paired devices. Pair one with \"flit pair\".")
 		return nil
 	}
-	for _, d := range res.Msg.Devices {
+	for _, d := range res.Devices {
 		seen := "never"
 		if d.LastSeenTime != nil {
 			seen = d.LastSeenTime.AsTime().Local().Format(time.DateTime)
@@ -142,7 +136,7 @@ func revokeDevice(ctx context.Context, stdout io.Writer, configPath, dataDirFlag
 	if err != nil {
 		return err
 	}
-	if _, err := c.RevokeDevice(ctx, connect.NewRequest(&flitv1.RevokeDeviceRequest{DeviceId: id})); err != nil {
+	if _, err := c.RevokeDevice(ctx, &flitv1.RevokeDeviceRequest{DeviceId: id}); err != nil {
 		return err
 	}
 	fmt.Fprintf(stdout, "Revoked %s.\n", id)

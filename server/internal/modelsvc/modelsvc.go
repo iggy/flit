@@ -5,7 +5,7 @@ import (
 	"context"
 	"errors"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
@@ -55,21 +55,21 @@ func (s *Models) providers() []*flitv1.Provider {
 }
 
 // ListProviders implements flitv1connect.ModelServiceHandler.
-func (s *Models) ListProviders(context.Context, *connect.Request[flitv1.ListProvidersRequest]) (*connect.Response[flitv1.ListProvidersResponse], error) {
-	return connect.NewResponse(&flitv1.ListProvidersResponse{Providers: s.providers()}), nil
+func (s *Models) ListProviders(context.Context, *flitv1.ListProvidersRequest) (*flitv1.ListProvidersResponse, error) {
+	return &flitv1.ListProvidersResponse{Providers: s.providers()}, nil
 }
 
 // ListModels implements flitv1connect.ModelServiceHandler.
-func (s *Models) ListModels(ctx context.Context, req *connect.Request[flitv1.ListModelsRequest]) (*connect.Response[flitv1.ListModelsResponse], error) {
+func (s *Models) ListModels(ctx context.Context, req *flitv1.ListModelsRequest) (*flitv1.ListModelsResponse, error) {
 	prefs, err := s.prefs(ctx)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, connect.NewError(connect.CodeInternal, err.Error())
 	}
 	res := &flitv1.ListModelsResponse{}
-	for _, m := range s.Catalog.Models(req.Msg.Provider) {
+	for _, m := range s.Catalog.Models(req.Provider) {
 		res.Models = append(res.Models, modelProto(m, prefs[store.ModelKey{Provider: m.Provider, Model: m.ID}], s.Catalog.Kind(m.Provider) == models.KindLlamaCpp))
 	}
-	return connect.NewResponse(res), nil
+	return res, nil
 }
 
 func (s *Models) prefs(ctx context.Context) (map[store.ModelKey]store.ModelPref, error) {
@@ -119,62 +119,62 @@ func stateProto(st models.State) flitv1.ModelState {
 }
 
 // SetFavorite implements flitv1connect.ModelServiceHandler.
-func (s *Models) SetFavorite(ctx context.Context, req *connect.Request[flitv1.SetFavoriteRequest]) (*connect.Response[flitv1.SetFavoriteResponse], error) {
-	m := req.Msg
+func (s *Models) SetFavorite(ctx context.Context, req *flitv1.SetFavoriteRequest) (*flitv1.SetFavoriteResponse, error) {
+	m := req
 	if m.Provider == "" || m.Model == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("provider and model are required"))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("provider and model are required").Error())
 	}
 	if s.Store == nil {
-		return nil, connect.NewError(connect.CodeUnimplemented, errors.New("favorites are not enabled"))
+		return nil, connect.NewError(connect.CodeUnimplemented, errors.New("favorites are not enabled").Error())
 	}
 	if err := s.Store.SetFavorite(ctx, prefsTeam, store.ModelKey{Provider: m.Provider, Model: m.Model}, m.Favorite); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, connect.NewError(connect.CodeInternal, err.Error())
 	}
-	return connect.NewResponse(&flitv1.SetFavoriteResponse{}), nil
+	return &flitv1.SetFavoriteResponse{}, nil
 }
 
 // LoadModel implements flitv1connect.ModelServiceHandler.
-func (s *Models) LoadModel(ctx context.Context, req *connect.Request[flitv1.LoadModelRequest]) (*connect.Response[flitv1.LoadModelResponse], error) {
-	m, err := s.setLoaded(ctx, req.Msg.Provider, req.Msg.Model, true)
+func (s *Models) LoadModel(ctx context.Context, req *flitv1.LoadModelRequest) (*flitv1.LoadModelResponse, error) {
+	m, err := s.setLoaded(ctx, req.Provider, req.Model, true)
 	if err != nil {
 		return nil, err
 	}
-	return connect.NewResponse(&flitv1.LoadModelResponse{Model: m}), nil
+	return &flitv1.LoadModelResponse{Model: m}, nil
 }
 
 // UnloadModel implements flitv1connect.ModelServiceHandler.
-func (s *Models) UnloadModel(ctx context.Context, req *connect.Request[flitv1.UnloadModelRequest]) (*connect.Response[flitv1.UnloadModelResponse], error) {
-	m, err := s.setLoaded(ctx, req.Msg.Provider, req.Msg.Model, false)
+func (s *Models) UnloadModel(ctx context.Context, req *flitv1.UnloadModelRequest) (*flitv1.UnloadModelResponse, error) {
+	m, err := s.setLoaded(ctx, req.Provider, req.Model, false)
 	if err != nil {
 		return nil, err
 	}
-	return connect.NewResponse(&flitv1.UnloadModelResponse{Model: m}), nil
+	return &flitv1.UnloadModelResponse{Model: m}, nil
 }
 
 func (s *Models) setLoaded(ctx context.Context, provider, model string, load bool) (*flitv1.Model, error) {
 	if provider == "" || model == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("provider and model are required"))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("provider and model are required").Error())
 	}
 	m, err := s.Catalog.SetLoaded(ctx, provider, model, load)
 	switch {
 	case errors.Is(err, models.ErrCantLoad):
-		return nil, connect.NewError(connect.CodeFailedPrecondition, err)
+		return nil, connect.NewError(connect.CodeFailedPrecondition, err.Error())
 	case err != nil:
-		return nil, connect.NewError(connect.CodeUnavailable, err)
+		return nil, connect.NewError(connect.CodeUnavailable, err.Error())
 	}
 	prefs, err := s.prefs(ctx)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, connect.NewError(connect.CodeInternal, err.Error())
 	}
 	return modelProto(m, prefs[store.ModelKey{Provider: m.Provider, Model: m.ID}], s.Catalog.Kind(m.Provider) == models.KindLlamaCpp), nil
 }
 
 // Refresh implements flitv1connect.ModelServiceHandler.
-func (s *Models) Refresh(ctx context.Context, req *connect.Request[flitv1.RefreshRequest]) (*connect.Response[flitv1.RefreshResponse], error) {
-	if err := s.Catalog.Refresh(ctx, req.Msg.Provider); err != nil {
-		return nil, connect.NewError(connect.CodeNotFound, err)
+func (s *Models) Refresh(ctx context.Context, req *flitv1.RefreshRequest) (*flitv1.RefreshResponse, error) {
+	if err := s.Catalog.Refresh(ctx, req.Provider); err != nil {
+		return nil, connect.NewError(connect.CodeNotFound, err.Error())
 	}
-	return connect.NewResponse(&flitv1.RefreshResponse{Providers: s.providers()}), nil
+	return &flitv1.RefreshResponse{Providers: s.providers()}, nil
 }
 
 // Roles implements flitv1connect.RoleServiceHandler.
@@ -185,10 +185,10 @@ type Roles struct {
 var _ flitv1connect.RoleServiceHandler = (*Roles)(nil)
 
 // ListRoles implements flitv1connect.RoleServiceHandler.
-func (s *Roles) ListRoles(context.Context, *connect.Request[flitv1.ListRolesRequest]) (*connect.Response[flitv1.ListRolesResponse], error) {
+func (s *Roles) ListRoles(context.Context, *flitv1.ListRolesRequest) (*flitv1.ListRolesResponse, error) {
 	list, err := roles.List(s.Dir())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, connect.NewError(connect.CodeInternal, err.Error())
 	}
 	res := &flitv1.ListRolesResponse{}
 	for _, r := range list {
@@ -201,5 +201,5 @@ func (s *Roles) ListRoles(context.Context, *connect.Request[flitv1.ListRolesRequ
 		}
 		res.Roles = append(res.Roles, ar)
 	}
-	return connect.NewResponse(res), nil
+	return res, nil
 }

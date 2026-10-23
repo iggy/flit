@@ -5,208 +5,220 @@
 package flitv1connect
 
 import (
-	connect "connectrpc.com/connect"
+	connect "connectrpc.com/connect/v2"
 	context "context"
-	errors "errors"
 	v1 "github.com/iggy/flit/server/gen/flit/v1"
-	http "net/http"
-	strings "strings"
+	sync "sync"
 )
-
-// This is a compile-time assertion to ensure that this generated file and the connect package are
-// compatible. If you get a compiler error that this constant is not defined, this code was
-// generated with a version of connect newer than the one compiled into your binary. You can fix the
-// problem by either regenerating this code with an older version of connect or updating the connect
-// version compiled into your binary.
-const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// ProjectServiceName is the fully-qualified name of the ProjectService service.
 	ProjectServiceName = "flit.v1.ProjectService"
 )
 
-// These constants are the fully-qualified names of the RPCs defined in this package. They're
-// exposed at runtime as Spec.Procedure and as the final two segments of the HTTP route.
+// These constants are the procedure names of the RPCs defined in this package. They're exposed at
+// runtime as Spec.Procedure and as the final two segments of the HTTP route.
 //
 // Note that these are different from the fully-qualified method names used by
 // google.golang.org/protobuf/reflect/protoreflect. To convert from these constants to
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// ProjectServiceListProjectsProcedure is the fully-qualified name of the ProjectService's
-	// ListProjects RPC.
+	// ProjectServiceListProjectsProcedure is the procedure name of the ProjectService's ListProjects
+	// RPC.
 	ProjectServiceListProjectsProcedure = "/flit.v1.ProjectService/ListProjects"
-	// ProjectServiceCreateProjectProcedure is the fully-qualified name of the ProjectService's
-	// CreateProject RPC.
+	// ProjectServiceCreateProjectProcedure is the procedure name of the ProjectService's CreateProject
+	// RPC.
 	ProjectServiceCreateProjectProcedure = "/flit.v1.ProjectService/CreateProject"
-	// ProjectServiceSetProjectExportProcedure is the fully-qualified name of the ProjectService's
+	// ProjectServiceSetProjectExportProcedure is the procedure name of the ProjectService's
 	// SetProjectExport RPC.
 	ProjectServiceSetProjectExportProcedure = "/flit.v1.ProjectService/SetProjectExport"
-	// ProjectServiceSetProjectWorktreesProcedure is the fully-qualified name of the ProjectService's
+	// ProjectServiceSetProjectWorktreesProcedure is the procedure name of the ProjectService's
 	// SetProjectWorktrees RPC.
 	ProjectServiceSetProjectWorktreesProcedure = "/flit.v1.ProjectService/SetProjectWorktrees"
 )
 
+var (
+	projectServiceListProjectsSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType:       connect.StreamTypeUnary,
+			Schema:           v1.File_flit_v1_project_proto.Services().ByName("ProjectService").Methods().ByName("ListProjects"),
+			Procedure:        ProjectServiceListProjectsProcedure,
+			IdempotencyLevel: connect.IdempotencyNoSideEffects,
+		}
+	})
+	projectServiceCreateProjectSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_project_proto.Services().ByName("ProjectService").Methods().ByName("CreateProject"),
+			Procedure:  ProjectServiceCreateProjectProcedure,
+		}
+	})
+	projectServiceSetProjectExportSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_project_proto.Services().ByName("ProjectService").Methods().ByName("SetProjectExport"),
+			Procedure:  ProjectServiceSetProjectExportProcedure,
+		}
+	})
+	projectServiceSetProjectWorktreesSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_project_proto.Services().ByName("ProjectService").Methods().ByName("SetProjectWorktrees"),
+			Procedure:  ProjectServiceSetProjectWorktreesProcedure,
+		}
+	})
+)
+
 // ProjectServiceClient is a client for the flit.v1.ProjectService service.
 type ProjectServiceClient interface {
-	ListProjects(context.Context, *connect.Request[v1.ListProjectsRequest]) (*connect.Response[v1.ListProjectsResponse], error)
+	ListProjects(context.Context, *v1.ListProjectsRequest) (*v1.ListProjectsResponse, error)
 	// CreateProject adds a project for a directory on the server.
-	CreateProject(context.Context, *connect.Request[v1.CreateProjectRequest]) (*connect.Response[v1.CreateProjectResponse], error)
+	CreateProject(context.Context, *v1.CreateProjectRequest) (*v1.CreateProjectResponse, error)
 	// SetProjectExport includes or excludes a project's sessions from
 	// "flit export". Projects are included by default.
-	SetProjectExport(context.Context, *connect.Request[v1.SetProjectExportRequest]) (*connect.Response[v1.SetProjectExportResponse], error)
+	SetProjectExport(context.Context, *v1.SetProjectExportRequest) (*v1.SetProjectExportResponse, error)
 	// SetProjectWorktrees sets whether new sessions in the project get their
 	// own git worktree and branch (when its directory is in a repository).
 	// Unset goes back to the config's git.worktrees.default. Existing
 	// sessions keep what they have.
-	SetProjectWorktrees(context.Context, *connect.Request[v1.SetProjectWorktreesRequest]) (*connect.Response[v1.SetProjectWorktreesResponse], error)
+	SetProjectWorktrees(context.Context, *v1.SetProjectWorktreesRequest) (*v1.SetProjectWorktreesResponse, error)
 }
 
-// NewProjectServiceClient constructs a client for the flit.v1.ProjectService service. By default,
-// it uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and
-// sends uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC()
-// or connect.WithGRPCWeb() options.
-//
-// The URL supplied here should be the base URL for the Connect or gRPC server (for example,
-// http://api.acme.com or https://acme.com/grpc).
-func NewProjectServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) ProjectServiceClient {
-	baseURL = strings.TrimRight(baseURL, "/")
-	projectServiceMethods := v1.File_flit_v1_project_proto.Services().ByName("ProjectService").Methods()
-	return &projectServiceClient{
-		listProjects: connect.NewClient[v1.ListProjectsRequest, v1.ListProjectsResponse](
-			httpClient,
-			baseURL+ProjectServiceListProjectsProcedure,
-			connect.WithSchema(projectServiceMethods.ByName("ListProjects")),
-			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-			connect.WithClientOptions(opts...),
-		),
-		createProject: connect.NewClient[v1.CreateProjectRequest, v1.CreateProjectResponse](
-			httpClient,
-			baseURL+ProjectServiceCreateProjectProcedure,
-			connect.WithSchema(projectServiceMethods.ByName("CreateProject")),
-			connect.WithClientOptions(opts...),
-		),
-		setProjectExport: connect.NewClient[v1.SetProjectExportRequest, v1.SetProjectExportResponse](
-			httpClient,
-			baseURL+ProjectServiceSetProjectExportProcedure,
-			connect.WithSchema(projectServiceMethods.ByName("SetProjectExport")),
-			connect.WithClientOptions(opts...),
-		),
-		setProjectWorktrees: connect.NewClient[v1.SetProjectWorktreesRequest, v1.SetProjectWorktreesResponse](
-			httpClient,
-			baseURL+ProjectServiceSetProjectWorktreesProcedure,
-			connect.WithSchema(projectServiceMethods.ByName("SetProjectWorktrees")),
-			connect.WithClientOptions(opts...),
-		),
-	}
-}
-
-// projectServiceClient implements ProjectServiceClient.
-type projectServiceClient struct {
-	listProjects        *connect.Client[v1.ListProjectsRequest, v1.ListProjectsResponse]
-	createProject       *connect.Client[v1.CreateProjectRequest, v1.CreateProjectResponse]
-	setProjectExport    *connect.Client[v1.SetProjectExportRequest, v1.SetProjectExportResponse]
-	setProjectWorktrees *connect.Client[v1.SetProjectWorktreesRequest, v1.SetProjectWorktreesResponse]
-}
-
-// ListProjects calls flit.v1.ProjectService.ListProjects.
-func (c *projectServiceClient) ListProjects(ctx context.Context, req *connect.Request[v1.ListProjectsRequest]) (*connect.Response[v1.ListProjectsResponse], error) {
-	return c.listProjects.CallUnary(ctx, req)
-}
-
-// CreateProject calls flit.v1.ProjectService.CreateProject.
-func (c *projectServiceClient) CreateProject(ctx context.Context, req *connect.Request[v1.CreateProjectRequest]) (*connect.Response[v1.CreateProjectResponse], error) {
-	return c.createProject.CallUnary(ctx, req)
-}
-
-// SetProjectExport calls flit.v1.ProjectService.SetProjectExport.
-func (c *projectServiceClient) SetProjectExport(ctx context.Context, req *connect.Request[v1.SetProjectExportRequest]) (*connect.Response[v1.SetProjectExportResponse], error) {
-	return c.setProjectExport.CallUnary(ctx, req)
-}
-
-// SetProjectWorktrees calls flit.v1.ProjectService.SetProjectWorktrees.
-func (c *projectServiceClient) SetProjectWorktrees(ctx context.Context, req *connect.Request[v1.SetProjectWorktreesRequest]) (*connect.Response[v1.SetProjectWorktreesResponse], error) {
-	return c.setProjectWorktrees.CallUnary(ctx, req)
+// NewProjectServiceClient constructs a client for the flit.v1.ProjectService service. Multiple
+// service clients may share a single connect.Client.
+func NewProjectServiceClient(client *connect.Client) ProjectServiceClient {
+	return &projectServiceClient{client: client}
 }
 
 // ProjectServiceHandler is an implementation of the flit.v1.ProjectService service.
 type ProjectServiceHandler interface {
-	ListProjects(context.Context, *connect.Request[v1.ListProjectsRequest]) (*connect.Response[v1.ListProjectsResponse], error)
+	ListProjects(context.Context, *v1.ListProjectsRequest) (*v1.ListProjectsResponse, error)
 	// CreateProject adds a project for a directory on the server.
-	CreateProject(context.Context, *connect.Request[v1.CreateProjectRequest]) (*connect.Response[v1.CreateProjectResponse], error)
+	CreateProject(context.Context, *v1.CreateProjectRequest) (*v1.CreateProjectResponse, error)
 	// SetProjectExport includes or excludes a project's sessions from
 	// "flit export". Projects are included by default.
-	SetProjectExport(context.Context, *connect.Request[v1.SetProjectExportRequest]) (*connect.Response[v1.SetProjectExportResponse], error)
+	SetProjectExport(context.Context, *v1.SetProjectExportRequest) (*v1.SetProjectExportResponse, error)
 	// SetProjectWorktrees sets whether new sessions in the project get their
 	// own git worktree and branch (when its directory is in a repository).
 	// Unset goes back to the config's git.worktrees.default. Existing
 	// sessions keep what they have.
-	SetProjectWorktrees(context.Context, *connect.Request[v1.SetProjectWorktreesRequest]) (*connect.Response[v1.SetProjectWorktreesResponse], error)
+	SetProjectWorktrees(context.Context, *v1.SetProjectWorktreesRequest) (*v1.SetProjectWorktreesResponse, error)
 }
 
-// NewProjectServiceHandler builds an HTTP handler from the service implementation. It returns the
-// path on which to mount the handler and the handler itself.
-//
-// By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
-// and JSON codecs. They also support gzip compression.
-func NewProjectServiceHandler(svc ProjectServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	projectServiceMethods := v1.File_flit_v1_project_proto.Services().ByName("ProjectService").Methods()
-	projectServiceListProjectsHandler := connect.NewUnaryHandler(
-		ProjectServiceListProjectsProcedure,
-		svc.ListProjects,
-		connect.WithSchema(projectServiceMethods.ByName("ListProjects")),
-		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-		connect.WithHandlerOptions(opts...),
+// RegisterProjectServiceHandler registers svc as the flit.v1.ProjectService implementation on
+// server.
+func RegisterProjectServiceHandler(server *connect.Server, svc ProjectServiceHandler) {
+	adapter := projectServiceHandler{svc: svc}
+	server.Register(
+		connect.Method{Spec: projectServiceListProjectsSpec(), Handler: adapter.listProjects},
+		connect.Method{Spec: projectServiceCreateProjectSpec(), Handler: adapter.createProject},
+		connect.Method{Spec: projectServiceSetProjectExportSpec(), Handler: adapter.setProjectExport},
+		connect.Method{Spec: projectServiceSetProjectWorktreesSpec(), Handler: adapter.setProjectWorktrees},
 	)
-	projectServiceCreateProjectHandler := connect.NewUnaryHandler(
-		ProjectServiceCreateProjectProcedure,
-		svc.CreateProject,
-		connect.WithSchema(projectServiceMethods.ByName("CreateProject")),
-		connect.WithHandlerOptions(opts...),
-	)
-	projectServiceSetProjectExportHandler := connect.NewUnaryHandler(
-		ProjectServiceSetProjectExportProcedure,
-		svc.SetProjectExport,
-		connect.WithSchema(projectServiceMethods.ByName("SetProjectExport")),
-		connect.WithHandlerOptions(opts...),
-	)
-	projectServiceSetProjectWorktreesHandler := connect.NewUnaryHandler(
-		ProjectServiceSetProjectWorktreesProcedure,
-		svc.SetProjectWorktrees,
-		connect.WithSchema(projectServiceMethods.ByName("SetProjectWorktrees")),
-		connect.WithHandlerOptions(opts...),
-	)
-	return "/flit.v1.ProjectService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case ProjectServiceListProjectsProcedure:
-			projectServiceListProjectsHandler.ServeHTTP(w, r)
-		case ProjectServiceCreateProjectProcedure:
-			projectServiceCreateProjectHandler.ServeHTTP(w, r)
-		case ProjectServiceSetProjectExportProcedure:
-			projectServiceSetProjectExportHandler.ServeHTTP(w, r)
-		case ProjectServiceSetProjectWorktreesProcedure:
-			projectServiceSetProjectWorktreesHandler.ServeHTTP(w, r)
-		default:
-			http.NotFound(w, r)
-		}
-	})
 }
 
 // UnimplementedProjectServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedProjectServiceHandler struct{}
 
-func (UnimplementedProjectServiceHandler) ListProjects(context.Context, *connect.Request[v1.ListProjectsRequest]) (*connect.Response[v1.ListProjectsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.ProjectService.ListProjects is not implemented"))
+func (UnimplementedProjectServiceHandler) ListProjects(context.Context, *v1.ListProjectsRequest) (*v1.ListProjectsResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.ProjectService.ListProjects is not implemented")
 }
 
-func (UnimplementedProjectServiceHandler) CreateProject(context.Context, *connect.Request[v1.CreateProjectRequest]) (*connect.Response[v1.CreateProjectResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.ProjectService.CreateProject is not implemented"))
+func (UnimplementedProjectServiceHandler) CreateProject(context.Context, *v1.CreateProjectRequest) (*v1.CreateProjectResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.ProjectService.CreateProject is not implemented")
 }
 
-func (UnimplementedProjectServiceHandler) SetProjectExport(context.Context, *connect.Request[v1.SetProjectExportRequest]) (*connect.Response[v1.SetProjectExportResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.ProjectService.SetProjectExport is not implemented"))
+func (UnimplementedProjectServiceHandler) SetProjectExport(context.Context, *v1.SetProjectExportRequest) (*v1.SetProjectExportResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.ProjectService.SetProjectExport is not implemented")
 }
 
-func (UnimplementedProjectServiceHandler) SetProjectWorktrees(context.Context, *connect.Request[v1.SetProjectWorktreesRequest]) (*connect.Response[v1.SetProjectWorktreesResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.ProjectService.SetProjectWorktrees is not implemented"))
+func (UnimplementedProjectServiceHandler) SetProjectWorktrees(context.Context, *v1.SetProjectWorktreesRequest) (*v1.SetProjectWorktreesResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.ProjectService.SetProjectWorktrees is not implemented")
+}
+
+type projectServiceClient struct {
+	client *connect.Client
+}
+
+func (c *projectServiceClient) ListProjects(ctx context.Context, req *v1.ListProjectsRequest) (*v1.ListProjectsResponse, error) {
+	var res v1.ListProjectsResponse
+	if err := c.client.CallUnary(ctx, projectServiceListProjectsSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *projectServiceClient) CreateProject(ctx context.Context, req *v1.CreateProjectRequest) (*v1.CreateProjectResponse, error) {
+	var res v1.CreateProjectResponse
+	if err := c.client.CallUnary(ctx, projectServiceCreateProjectSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *projectServiceClient) SetProjectExport(ctx context.Context, req *v1.SetProjectExportRequest) (*v1.SetProjectExportResponse, error) {
+	var res v1.SetProjectExportResponse
+	if err := c.client.CallUnary(ctx, projectServiceSetProjectExportSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *projectServiceClient) SetProjectWorktrees(ctx context.Context, req *v1.SetProjectWorktreesRequest) (*v1.SetProjectWorktreesResponse, error) {
+	var res v1.SetProjectWorktreesResponse
+	if err := c.client.CallUnary(ctx, projectServiceSetProjectWorktreesSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+type projectServiceHandler struct{ svc ProjectServiceHandler }
+
+func (h projectServiceHandler) listProjects(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.ListProjectsRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.ListProjects(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h projectServiceHandler) createProject(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.CreateProjectRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.CreateProject(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h projectServiceHandler) setProjectExport(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.SetProjectExportRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.SetProjectExport(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h projectServiceHandler) setProjectWorktrees(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.SetProjectWorktreesRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.SetProjectWorktrees(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
 }
