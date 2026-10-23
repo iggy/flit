@@ -9,7 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
+	"connectrpc.com/connect/v2/connecthttp"
 
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
 	"github.com/iggy/flit/server/gen/flit/v1/flitv1connect"
@@ -30,15 +31,15 @@ func start(t *testing.T) (*Server, string) {
 	return srv, "http://" + srv.Addr().String()
 }
 
-func client(baseURL, token string, opts ...connect.ClientOption) flitv1connect.SystemServiceClient {
+func client(baseURL, token string, opts ...connecthttp.Option) flitv1connect.SystemServiceClient {
 	return clientWith(http.DefaultClient, baseURL, token, opts...)
 }
 
-func clientWith(hc *http.Client, baseURL, token string, opts ...connect.ClientOption) flitv1connect.SystemServiceClient {
+func clientWith(hc *http.Client, baseURL, token string, opts ...connecthttp.Option) flitv1connect.SystemServiceClient {
 	if token != "" {
-		opts = append(opts, connect.WithInterceptors(bearer(token)))
+		return flitv1connect.NewSystemServiceClient(connect.NewClient(connecthttp.NewTransport(hc, baseURL, append(opts, connecthttp.WithReadMaxBytes(0))...), bearer(token)))
 	}
-	return flitv1connect.NewSystemServiceClient(hc, baseURL, opts...)
+	return flitv1connect.NewSystemServiceClient(connect.NewClient(connecthttp.NewTransport(hc, baseURL, append(opts, connecthttp.WithReadMaxBytes(0))...)))
 }
 
 // h2cClient speaks HTTP/2 without TLS, as gRPC clients do against a plain
@@ -49,11 +50,12 @@ func h2cClient() *http.Client {
 	return &http.Client{Transport: &http.Transport{Protocols: p}}
 }
 
-func bearer(token string) connect.UnaryInterceptorFunc {
-	return func(next connect.UnaryFunc) connect.UnaryFunc {
-		return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-			req.Header().Set("Authorization", "Bearer "+token)
-			return next(ctx, req)
+func bearer(token string) connect.ClientInterceptor {
+	return func(next connect.ClientFunc) connect.ClientFunc {
+		return func(ctx context.Context, spec connect.Spec) (connect.ClientStream, error) {
+			ctx, info := connect.NewClientContext(ctx)
+			info.RequestHeader().Set("Authorization", "Bearer "+token)
+			return next(ctx, spec)
 		}
 	}
 }
@@ -64,37 +66,37 @@ func TestAuth(t *testing.T) {
 
 	for name, tc := range map[string]struct {
 		hc   *http.Client
-		opts []connect.ClientOption
+		opts []connecthttp.Option
 	}{
 		"connect": {http.DefaultClient, nil},
-		"grpc":    {h2cClient(), []connect.ClientOption{connect.WithGRPC()}},
+		"grpc":    {h2cClient(), []connecthttp.Option{connecthttp.WithGRPC()}},
 	} {
 		t.Run(name, func(t *testing.T) {
 			client := func(baseURL, token string) flitv1connect.SystemServiceClient {
 				return clientWith(tc.hc, baseURL, token, tc.opts...)
 			}
-			res, err := client(url, testToken).Version(ctx, connect.NewRequest(&flitv1.VersionRequest{}))
+			res, err := client(url, testToken).Version(ctx, &flitv1.VersionRequest{})
 			if err != nil {
 				t.Fatalf("authenticated Version: %v", err)
 			}
-			if res.Msg.ApiVersion != "v1" || res.Msg.Version == "" {
-				t.Fatalf("unexpected version response %+v", res.Msg)
+			if res.ApiVersion != "v1" || res.Version == "" {
+				t.Fatalf("unexpected version response %+v", res)
 			}
 
-			health, err := client(url, testToken).Health(ctx, connect.NewRequest(&flitv1.HealthRequest{}))
+			health, err := client(url, testToken).Health(ctx, &flitv1.HealthRequest{})
 			if err != nil {
 				t.Fatalf("authenticated Health: %v", err)
 			}
-			if health.Msg.Status != flitv1.HealthResponse_STATUS_SERVING {
-				t.Fatalf("health = %v", health.Msg.Status)
+			if health.Status != flitv1.HealthResponse_STATUS_SERVING {
+				t.Fatalf("health = %v", health.Status)
 			}
 
 			for name, tok := range map[string]string{"no token": "", "wrong token": "flit_nope"} {
-				_, err := client(url, tok).Version(ctx, connect.NewRequest(&flitv1.VersionRequest{}))
+				_, err := client(url, tok).Version(ctx, &flitv1.VersionRequest{})
 				if connect.CodeOf(err) != connect.CodeUnauthenticated {
 					t.Errorf("%s: err = %v, want unauthenticated", name, err)
 				}
-				_, err = client(url, tok).Health(ctx, connect.NewRequest(&flitv1.HealthRequest{}))
+				_, err = client(url, tok).Health(ctx, &flitv1.HealthRequest{})
 				if connect.CodeOf(err) != connect.CodeUnauthenticated {
 					t.Errorf("%s: Health err = %v, want unauthenticated", name, err)
 				}
@@ -130,12 +132,12 @@ func TestApplyRebinds(t *testing.T) {
 	if err := srv.Apply(cfg); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := client("http://"+newAddr, testToken).Version(ctx, connect.NewRequest(&flitv1.VersionRequest{})); err != nil {
+	if _, err := client("http://"+newAddr, testToken).Version(ctx, &flitv1.VersionRequest{}); err != nil {
 		t.Fatalf("new address: %v", err)
 	}
 	deadline := time.Now().Add(5 * time.Second)
 	for {
-		_, err := client(oldURL, testToken).Version(ctx, connect.NewRequest(&flitv1.VersionRequest{}))
+		_, err := client(oldURL, testToken).Version(ctx, &flitv1.VersionRequest{})
 		if connect.CodeOf(err) == connect.CodeUnavailable {
 			break
 		}
@@ -158,7 +160,7 @@ func TestApplyRebinds(t *testing.T) {
 	if got := srv.Addr().String(); got != newAddr {
 		t.Fatalf("serving %s after failed rebind, want %s", got, newAddr)
 	}
-	if _, err := client("http://"+newAddr, testToken).Version(ctx, connect.NewRequest(&flitv1.VersionRequest{})); err != nil {
+	if _, err := client("http://"+newAddr, testToken).Version(ctx, &flitv1.VersionRequest{}); err != nil {
 		t.Fatalf("after failed rebind: %v", err)
 	}
 }

@@ -12,7 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
+	"connectrpc.com/connect/v2/connecthttp"
 
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
 	"github.com/iggy/flit/server/gen/flit/v1/flitv1connect"
@@ -48,16 +49,23 @@ func freeAddr(t *testing.T) string {
 }
 
 func version(addr, token string) (*flitv1.VersionResponse, error) {
-	c := flitv1connect.NewSystemServiceClient(http.DefaultClient, "http://"+addr)
-	req := connect.NewRequest(&flitv1.VersionRequest{})
-	if token != "" {
-		req.Header().Set("Authorization", "Bearer "+token)
-	}
-	res, err := c.Version(context.Background(), req)
+	c := flitv1connect.NewSystemServiceClient(connect.NewClient(connecthttp.NewTransport(http.DefaultClient, "http://"+addr, connecthttp.WithReadMaxBytes(0)), connect.ClientInterceptor(
+		func(next connect.ClientFunc) connect.ClientFunc {
+			return func(ctx context.Context, spec connect.Spec) (connect.ClientStream, error) {
+				if token != "" {
+					var info *connect.CallInfo
+					ctx, info = connect.NewClientContext(ctx)
+					info.RequestHeader().Set("Authorization", "Bearer "+token)
+				}
+				return next(ctx, spec)
+			}
+		},
+	)))
+	res, err := c.Version(context.Background(), &flitv1.VersionRequest{})
 	if err != nil {
 		return nil, err
 	}
-	return res.Msg, nil
+	return res, nil
 }
 
 func eventually(t *testing.T, what string, f func() bool) {

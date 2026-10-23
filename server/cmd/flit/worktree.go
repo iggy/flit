@@ -7,7 +7,8 @@ import (
 	"fmt"
 	"io"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
+	"connectrpc.com/connect/v2/connecthttp"
 
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
 	"github.com/iggy/flit/server/gen/flit/v1/flitv1connect"
@@ -57,15 +58,15 @@ func worktreeCmd(ctx context.Context, stdout, stderr io.Writer, args []string, d
 		return fmt.Errorf("read admin token from %s: %w (is this the machine running \"flit serve\"?)", dataDir, err)
 	}
 	base, hc := localURL(cfg)
-	c := flitv1connect.NewSessionServiceClient(hc, base, connect.WithInterceptors(bearerInterceptor(token)))
-	res, err := c.RemoveWorktree(ctx, connect.NewRequest(&flitv1.RemoveWorktreeRequest{SessionId: fs.Arg(0)}))
+	c := flitv1connect.NewSessionServiceClient(connect.NewClient(connecthttp.NewTransport(hc, base, connecthttp.WithReadMaxBytes(0)), connect.ClientInterceptor(bearerInterceptor(token).Intercept)))
+	res, err := c.RemoveWorktree(ctx, &flitv1.RemoveWorktreeRequest{SessionId: fs.Arg(0)})
 	if err != nil {
 		return err
 	}
-	s := res.Msg.Session
+	s := res.Session
 	fmt.Fprintf(stdout, "removed %s\n", s.WorktreePath)
-	if res.Msg.BranchKept {
-		fmt.Fprintf(stdout, "kept branch %s (%d commits found nowhere else)\n", s.WorktreeBranch, res.Msg.Commits)
+	if res.BranchKept {
+		fmt.Fprintf(stdout, "kept branch %s (%d commits found nowhere else)\n", s.WorktreeBranch, res.Commits)
 	} else {
 		fmt.Fprintf(stdout, "deleted branch %s (nothing on it that isn't elsewhere)\n", s.WorktreeBranch)
 	}

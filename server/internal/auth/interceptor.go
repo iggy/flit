@@ -4,10 +4,9 @@ import (
 	"context"
 	"crypto/subtle"
 	"errors"
-	"net/http"
 	"strings"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
 )
 
 var (
@@ -38,6 +37,13 @@ func FromContext(ctx context.Context) (Principal, bool) {
 	return p, ok
 }
 
+// Options configures NewInterceptor.
+type Options struct {
+	Devices   DeviceTokens
+	Public    []string // full procedure names, e.g. "/flit.v1.SystemService/Pair"
+	AdminOnly []string
+}
+
 // Interceptor rejects every RPC that doesn't carry a valid token as
 // "Authorization: Bearer <token>", localhost included. Procedures in public
 // need no token; procedures in adminOnly need the admin token.
@@ -46,13 +52,6 @@ type Interceptor struct {
 	devices   DeviceTokens
 	public    map[string]bool
 	adminOnly map[string]bool
-}
-
-// Options configures NewInterceptor.
-type Options struct {
-	Devices   DeviceTokens
-	Public    []string // full procedure names, e.g. "/flit.v1.SystemService/Pair"
-	AdminOnly []string
 }
 
 // NewInterceptor returns an Interceptor that accepts adminToken and, if
@@ -68,15 +67,13 @@ func NewInterceptor(adminToken string, o Options) *Interceptor {
 	return &Interceptor{admin: []byte(adminToken), devices: o.Devices, public: set(o.Public), adminOnly: set(o.AdminOnly)}
 }
 
-var _ connect.Interceptor = (*Interceptor)(nil)
-
-func (i *Interceptor) authenticate(ctx context.Context, procedure string, h http.Header) (context.Context, error) {
+func (i *Interceptor) authenticate(ctx context.Context, procedure string, h connect.Header) (context.Context, error) {
 	if i.public[procedure] {
 		return ctx, nil
 	}
 	token, ok := strings.CutPrefix(h.Get("Authorization"), "Bearer ")
 	if !ok || token == "" {
-		return nil, connect.NewError(connect.CodeUnauthenticated, errUnauthenticated)
+		return nil, connect.NewError(connect.CodeUnauthenticated, errUnauthenticated.Error())
 	}
 	var p Principal
 	switch {
@@ -84,44 +81,34 @@ func (i *Interceptor) authenticate(ctx context.Context, procedure string, h http
 		p = Principal{Admin: true, Name: "admin"}
 	case i.devices != nil:
 		if p, ok = i.devices.Lookup(ctx, token); !ok {
-			return nil, connect.NewError(connect.CodeUnauthenticated, errUnauthenticated)
+			return nil, connect.NewError(connect.CodeUnauthenticated, errUnauthenticated.Error())
 		}
 	default:
-		return nil, connect.NewError(connect.CodeUnauthenticated, errUnauthenticated)
+		return nil, connect.NewError(connect.CodeUnauthenticated, errUnauthenticated.Error())
 	}
 	if i.adminOnly[procedure] && !p.Admin {
-		return nil, connect.NewError(connect.CodePermissionDenied, errAdminOnly)
+		return nil, connect.NewError(connect.CodePermissionDenied, errAdminOnly.Error())
 	}
 	return context.WithValue(ctx, principalKey{}, p), nil
 }
 
-// WrapUnary implements connect.Interceptor.
-func (i *Interceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
-	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-		if req.Spec().IsClient {
-			return next(ctx, req)
+// Intercept implements connect.ServerInterceptor. Every RPC requires a valid
+// token, except procedures in Options.Public; localhost included. It runs
+// before any message is read or written, so a missing credential rejects the
+// call from its headers alone.
+func (i *Interceptor) Intercept(next connect.ServerFunc) connect.ServerFunc {
+	return func(ctx context.Context, spec connect.Spec, stream connect.ServerStream) error {
+		var info *connect.CallInfo
+		var ok bool
+		if info, ok = connect.CallInfoForServerContext(ctx); !ok {
+			// Not routed through a *connect.Server (e.g. an in-process or
+			// raw invocation); nothing to authenticate against.
+			return next(ctx, spec, stream)
 		}
-		ctx, err := i.authenticate(ctx, req.Spec().Procedure, req.Header())
-		if err != nil {
-			return nil, err
-		}
-		return next(ctx, req)
-	}
-}
-
-// WrapStreamingClient implements connect.Interceptor. Client streams are not
-// checked; this interceptor guards handlers.
-func (i *Interceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
-	return next
-}
-
-// WrapStreamingHandler implements connect.Interceptor.
-func (i *Interceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
-	return func(ctx context.Context, conn connect.StreamingHandlerConn) error {
-		ctx, err := i.authenticate(ctx, conn.Spec().Procedure, conn.RequestHeader())
+		ctx, err := i.authenticate(ctx, spec.Procedure, *info.RequestHeader())
 		if err != nil {
 			return err
 		}
-		return next(ctx, conn)
+		return next(ctx, spec, stream)
 	}
 }

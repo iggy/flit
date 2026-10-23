@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
 
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
 	"github.com/iggy/flit/server/internal/llm/llmtest"
@@ -45,11 +45,11 @@ func TestGitStatusAndDiff(t *testing.T) {
 	gitCmd(t, dir, "commit", "-q", "-m", "first")
 	base := gitCmd(t, dir, "rev-parse", "HEAD")
 
-	created, err := c.CreateSession(ctx, connect.NewRequest(&flitv1.CreateSessionRequest{WorkingDir: dir}))
+	created, err := c.CreateSession(ctx, &flitv1.CreateSessionRequest{WorkingDir: dir})
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := created.Msg.Session
+	s := created.Session
 	if s.BaseCommit != base {
 		t.Fatalf("base_commit = %q, want %q", s.BaseCommit, base)
 	}
@@ -63,11 +63,11 @@ func TestGitStatusAndDiff(t *testing.T) {
 	)
 	runTurn(t, c, s.Id, "go", flitv1.PromptDecision_PROMPT_DECISION_ALLOW, 10*time.Second)
 
-	st, err := c.GitStatus(ctx, connect.NewRequest(&flitv1.GitStatusRequest{SessionId: s.Id}))
+	st, err := c.GitStatus(ctx, &flitv1.GitStatusRequest{SessionId: s.Id})
 	if err != nil {
 		t.Fatal(err)
 	}
-	g := st.Msg
+	g := st
 	if !g.IsRepo || g.Branch != "main" || g.BaseCommit != base || g.DiffBase != base ||
 		g.DiffBaseKind != flitv1.GitDiffBase_GIT_DIFF_BASE_SESSION_START || g.UntrackedCount != 1 || g.Head == base {
 		t.Fatalf("status = %v", g)
@@ -83,14 +83,14 @@ func TestGitStatusAndDiff(t *testing.T) {
 		t.Errorf("later.txt = %v", f)
 	}
 
-	d, err := c.GitDiff(ctx, connect.NewRequest(&flitv1.GitDiffRequest{SessionId: s.Id, Path: "later.txt"}))
+	d, err := c.GitDiff(ctx, &flitv1.GitDiffRequest{SessionId: s.Id, Path: "later.txt"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(d.Msg.Diff, "+++ b/later.txt") || strings.Contains(d.Msg.Diff, "new.txt") || d.Msg.Truncated {
-		t.Errorf("diff = %v", d.Msg)
+	if !strings.Contains(d.Diff, "+++ b/later.txt") || strings.Contains(d.Diff, "new.txt") || d.Truncated {
+		t.Errorf("diff = %v", d)
 	}
-	_, err = c.GitDiff(ctx, connect.NewRequest(&flitv1.GitDiffRequest{SessionId: s.Id, Path: "../escape"}))
+	_, err = c.GitDiff(ctx, &flitv1.GitDiffRequest{SessionId: s.Id, Path: "../escape"})
 	if connect.CodeOf(err) != connect.CodeInvalidArgument {
 		t.Errorf("escaping path: %v", err)
 	}
@@ -100,25 +100,25 @@ func TestGitStatusNotARepo(t *testing.T) {
 	cfg, _ := fakeConfig(t)
 	c := start(t, cfg)
 	ctx := context.Background()
-	created, err := c.CreateSession(ctx, connect.NewRequest(&flitv1.CreateSessionRequest{WorkingDir: t.TempDir()}))
+	created, err := c.CreateSession(ctx, &flitv1.CreateSessionRequest{WorkingDir: t.TempDir()})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if b := created.Msg.Session.BaseCommit; b != "" {
+	if b := created.Session.BaseCommit; b != "" {
 		t.Fatalf("base_commit = %q", b)
 	}
-	st, err := c.GitStatus(ctx, connect.NewRequest(&flitv1.GitStatusRequest{SessionId: created.Msg.Session.Id}))
+	st, err := c.GitStatus(ctx, &flitv1.GitStatusRequest{SessionId: created.Session.Id})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if st.Msg.IsRepo || len(st.Msg.Files) != 0 {
-		t.Fatalf("status = %v", st.Msg)
+	if st.IsRepo || len(st.Files) != 0 {
+		t.Fatalf("status = %v", st)
 	}
-	_, err = c.RemoveWorktree(ctx, connect.NewRequest(&flitv1.RemoveWorktreeRequest{SessionId: created.Msg.Session.Id}))
+	_, err = c.RemoveWorktree(ctx, &flitv1.RemoveWorktreeRequest{SessionId: created.Session.Id})
 	if connect.CodeOf(err) != connect.CodeFailedPrecondition {
 		t.Fatalf("RemoveWorktree without a worktree: %v", err)
 	}
-	if _, err := c.GitStatus(ctx, connect.NewRequest(&flitv1.GitStatusRequest{SessionId: "ses_nope"})); connect.CodeOf(err) != connect.CodeNotFound {
+	if _, err := c.GitStatus(ctx, &flitv1.GitStatusRequest{SessionId: "ses_nope"}); connect.CodeOf(err) != connect.CodeNotFound {
 		t.Fatalf("unknown session: %v", err)
 	}
 }

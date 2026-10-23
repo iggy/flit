@@ -10,7 +10,8 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
+	"connectrpc.com/connect/v2/connecthttp"
 
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
 	"github.com/iggy/flit/server/gen/flit/v1/flitv1connect"
@@ -42,7 +43,7 @@ func cronClient(configPath, dataDirFlag string) (flitv1connect.CronServiceClient
 		return nil, fmt.Errorf("read admin token from %s: %w (is this the machine running \"flit serve\"?)", dataDir, err)
 	}
 	base, hc := localURL(cfg)
-	return flitv1connect.NewCronServiceClient(hc, base, connect.WithInterceptors(bearerInterceptor(token))), nil
+	return flitv1connect.NewCronServiceClient(connect.NewClient(connecthttp.NewTransport(hc, base, connecthttp.WithReadMaxBytes(0)), connect.ClientInterceptor(bearerInterceptor(token).Intercept))), nil
 }
 
 func cronCmd(ctx context.Context, stdout, stderr io.Writer, args []string, defaultConfig string) error {
@@ -88,17 +89,17 @@ func cronCmd(ctx context.Context, stdout, stderr io.Writer, args []string, defau
 }
 
 func cronList(ctx context.Context, w io.Writer, c flitv1connect.CronServiceClient) error {
-	res, err := c.ListCronJobs(ctx, connect.NewRequest(&flitv1.ListCronJobsRequest{}))
+	res, err := c.ListCronJobs(ctx, &flitv1.ListCronJobsRequest{})
 	if err != nil {
 		return err
 	}
-	if len(res.Msg.Jobs) == 0 {
-		fmt.Fprintf(w, "No cron jobs. Add one as a .md file in %s (see docs/cron.md).\n", res.Msg.Dir)
+	if len(res.Jobs) == 0 {
+		fmt.Fprintf(w, "No cron jobs. Add one as a .md file in %s (see docs/cron.md).\n", res.Dir)
 		return nil
 	}
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
 	fmt.Fprintln(tw, "NAME\tSCHEDULE\tNEXT RUN\tLAST RUN")
-	for _, j := range res.Msg.Jobs {
+	for _, j := range res.Jobs {
 		sched, next, last := j.ScheduleText, "-", "-"
 		switch {
 		case j.Error != "":
@@ -115,7 +116,7 @@ func cronList(ctx context.Context, w io.Writer, c flitv1connect.CronServiceClien
 		}
 		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", j.Name, sched, next, last)
 	}
-	fmt.Fprintf(tw, "\n(jobs in %s)\n", res.Msg.Dir)
+	fmt.Fprintf(tw, "\n(jobs in %s)\n", res.Dir)
 	return tw.Flush()
 }
 
@@ -124,11 +125,11 @@ func runState(s flitv1.CronRunState) string {
 }
 
 func cronRun(ctx context.Context, w io.Writer, c flitv1connect.CronServiceClient, name string, wait bool) error {
-	res, err := c.RunCronJob(ctx, connect.NewRequest(&flitv1.RunCronJobRequest{Name: name}))
+	res, err := c.RunCronJob(ctx, &flitv1.RunCronJobRequest{Name: name})
 	if err != nil {
 		return err
 	}
-	run := res.Msg.Run
+	run := res.Run
 	fmt.Fprintf(w, "Started %s (session %s).\n", name, run.SessionId)
 	if !wait {
 		return nil
@@ -140,11 +141,11 @@ func cronRun(ctx context.Context, w io.Writer, c flitv1connect.CronServiceClient
 			return nil
 		case <-time.After(2 * time.Second):
 		}
-		runs, err := c.ListCronRuns(ctx, connect.NewRequest(&flitv1.ListCronRunsRequest{Name: name, PageSize: 20}))
+		runs, err := c.ListCronRuns(ctx, &flitv1.ListCronRunsRequest{Name: name, PageSize: 20})
 		if err != nil {
 			return err
 		}
-		for _, r := range runs.Msg.Runs {
+		for _, r := range runs.Runs {
 			if r.Id == run.Id {
 				run = r
 			}

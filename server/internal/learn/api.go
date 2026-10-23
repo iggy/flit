@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
 
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
 	"github.com/iggy/flit/server/internal/memory"
@@ -29,22 +29,22 @@ func apiErr(err error) error {
 	case errors.Is(err, context.Canceled):
 		code = connect.CodeCanceled
 	}
-	return connect.NewError(code, err)
+	return connect.NewError(code, err.Error())
 }
 
 func required(name, v string) error {
 	if v == "" {
-		return connect.NewError(connect.CodeInvalidArgument, errors.New(name+" is required"))
+		return connect.NewError(connect.CodeInvalidArgument, errors.New(name+" is required").Error())
 	}
 	return nil
 }
 
 // Learn implements flitv1connect.LearningServiceHandler.
-func (a *API) Learn(ctx context.Context, req *connect.Request[flitv1.LearnRequest]) (*connect.Response[flitv1.LearnResponse], error) {
-	if err := required("session_id", req.Msg.SessionId); err != nil {
+func (a *API) Learn(ctx context.Context, req *flitv1.LearnRequest) (*flitv1.LearnResponse, error) {
+	if err := required("session_id", req.SessionId); err != nil {
 		return nil, err
 	}
-	res, err := a.S.Run(ctx, req.Msg.SessionId, false)
+	res, err := a.S.Run(ctx, req.SessionId, false)
 	if err != nil {
 		return nil, apiErr(err)
 	}
@@ -52,12 +52,12 @@ func (a *API) Learn(ctx context.Context, req *connect.Request[flitv1.LearnReques
 	for _, p := range res.Proposals {
 		out.Proposals = append(out.Proposals, ProposalProto(p))
 	}
-	return connect.NewResponse(out), nil
+	return out, nil
 }
 
 // ListLearnProposals implements flitv1connect.LearningServiceHandler.
-func (a *API) ListLearnProposals(ctx context.Context, req *connect.Request[flitv1.ListLearnProposalsRequest]) (*connect.Response[flitv1.ListLearnProposalsResponse], error) {
-	list, err := a.S.Store.ListProposals(ctx, req.Msg.SessionId, req.Msg.IncludeDecided)
+func (a *API) ListLearnProposals(ctx context.Context, req *flitv1.ListLearnProposalsRequest) (*flitv1.ListLearnProposalsResponse, error) {
+	list, err := a.S.Store.ListProposals(ctx, req.SessionId, req.IncludeDecided)
 	if err != nil {
 		return nil, apiErr(err)
 	}
@@ -65,29 +65,29 @@ func (a *API) ListLearnProposals(ctx context.Context, req *connect.Request[flitv
 	for _, p := range list {
 		out.Proposals = append(out.Proposals, ProposalProto(p))
 	}
-	return connect.NewResponse(out), nil
+	return out, nil
 }
 
 // AcceptLearnProposal implements flitv1connect.LearningServiceHandler.
-func (a *API) AcceptLearnProposal(ctx context.Context, req *connect.Request[flitv1.AcceptLearnProposalRequest]) (*connect.Response[flitv1.AcceptLearnProposalResponse], error) {
-	if err := required("id", req.Msg.Id); err != nil {
+func (a *API) AcceptLearnProposal(ctx context.Context, req *flitv1.AcceptLearnProposalRequest) (*flitv1.AcceptLearnProposalResponse, error) {
+	if err := required("id", req.Id); err != nil {
 		return nil, err
 	}
-	p, err := a.S.Accept(ctx, req.Msg.Id, req.Msg.Text)
+	p, err := a.S.Accept(ctx, req.Id, req.Text)
 	if err != nil {
 		return nil, apiErr(err)
 	}
-	return connect.NewResponse(&flitv1.AcceptLearnProposalResponse{Proposal: ProposalProto(p)}), nil
+	return &flitv1.AcceptLearnProposalResponse{Proposal: ProposalProto(p)}, nil
 }
 
 // RejectLearnProposal implements flitv1connect.LearningServiceHandler.
-func (a *API) RejectLearnProposal(ctx context.Context, req *connect.Request[flitv1.RejectLearnProposalRequest]) (*connect.Response[flitv1.RejectLearnProposalResponse], error) {
-	if err := required("id", req.Msg.Id); err != nil {
+func (a *API) RejectLearnProposal(ctx context.Context, req *flitv1.RejectLearnProposalRequest) (*flitv1.RejectLearnProposalResponse, error) {
+	if err := required("id", req.Id); err != nil {
 		return nil, err
 	}
-	p, err := a.S.Reject(ctx, req.Msg.Id)
+	p, err := a.S.Reject(ctx, req.Id)
 	if err != nil {
 		return nil, apiErr(err)
 	}
-	return connect.NewResponse(&flitv1.RejectLearnProposalResponse{Proposal: ProposalProto(p)}), nil
+	return &flitv1.RejectLearnProposalResponse{Proposal: ProposalProto(p)}, nil
 }

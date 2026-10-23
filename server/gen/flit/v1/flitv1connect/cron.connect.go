@@ -5,237 +5,252 @@
 package flitv1connect
 
 import (
-	connect "connectrpc.com/connect"
+	connect "connectrpc.com/connect/v2"
 	context "context"
-	errors "errors"
 	v1 "github.com/iggy/flit/server/gen/flit/v1"
-	http "net/http"
-	strings "strings"
+	sync "sync"
 )
-
-// This is a compile-time assertion to ensure that this generated file and the connect package are
-// compatible. If you get a compiler error that this constant is not defined, this code was
-// generated with a version of connect newer than the one compiled into your binary. You can fix the
-// problem by either regenerating this code with an older version of connect or updating the connect
-// version compiled into your binary.
-const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// CronServiceName is the fully-qualified name of the CronService service.
 	CronServiceName = "flit.v1.CronService"
 )
 
-// These constants are the fully-qualified names of the RPCs defined in this package. They're
-// exposed at runtime as Spec.Procedure and as the final two segments of the HTTP route.
+// These constants are the procedure names of the RPCs defined in this package. They're exposed at
+// runtime as Spec.Procedure and as the final two segments of the HTTP route.
 //
 // Note that these are different from the fully-qualified method names used by
 // google.golang.org/protobuf/reflect/protoreflect. To convert from these constants to
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// CronServiceListCronJobsProcedure is the fully-qualified name of the CronService's ListCronJobs
-	// RPC.
+	// CronServiceListCronJobsProcedure is the procedure name of the CronService's ListCronJobs RPC.
 	CronServiceListCronJobsProcedure = "/flit.v1.CronService/ListCronJobs"
-	// CronServiceGetCronJobProcedure is the fully-qualified name of the CronService's GetCronJob RPC.
+	// CronServiceGetCronJobProcedure is the procedure name of the CronService's GetCronJob RPC.
 	CronServiceGetCronJobProcedure = "/flit.v1.CronService/GetCronJob"
-	// CronServiceRunCronJobProcedure is the fully-qualified name of the CronService's RunCronJob RPC.
+	// CronServiceRunCronJobProcedure is the procedure name of the CronService's RunCronJob RPC.
 	CronServiceRunCronJobProcedure = "/flit.v1.CronService/RunCronJob"
-	// CronServiceSetCronJobEnabledProcedure is the fully-qualified name of the CronService's
+	// CronServiceSetCronJobEnabledProcedure is the procedure name of the CronService's
 	// SetCronJobEnabled RPC.
 	CronServiceSetCronJobEnabledProcedure = "/flit.v1.CronService/SetCronJobEnabled"
-	// CronServiceListCronRunsProcedure is the fully-qualified name of the CronService's ListCronRuns
-	// RPC.
+	// CronServiceListCronRunsProcedure is the procedure name of the CronService's ListCronRuns RPC.
 	CronServiceListCronRunsProcedure = "/flit.v1.CronService/ListCronRuns"
+)
+
+var (
+	cronServiceListCronJobsSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType:       connect.StreamTypeUnary,
+			Schema:           v1.File_flit_v1_cron_proto.Services().ByName("CronService").Methods().ByName("ListCronJobs"),
+			Procedure:        CronServiceListCronJobsProcedure,
+			IdempotencyLevel: connect.IdempotencyNoSideEffects,
+		}
+	})
+	cronServiceGetCronJobSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType:       connect.StreamTypeUnary,
+			Schema:           v1.File_flit_v1_cron_proto.Services().ByName("CronService").Methods().ByName("GetCronJob"),
+			Procedure:        CronServiceGetCronJobProcedure,
+			IdempotencyLevel: connect.IdempotencyNoSideEffects,
+		}
+	})
+	cronServiceRunCronJobSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_cron_proto.Services().ByName("CronService").Methods().ByName("RunCronJob"),
+			Procedure:  CronServiceRunCronJobProcedure,
+		}
+	})
+	cronServiceSetCronJobEnabledSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_cron_proto.Services().ByName("CronService").Methods().ByName("SetCronJobEnabled"),
+			Procedure:  CronServiceSetCronJobEnabledProcedure,
+		}
+	})
+	cronServiceListCronRunsSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType:       connect.StreamTypeUnary,
+			Schema:           v1.File_flit_v1_cron_proto.Services().ByName("CronService").Methods().ByName("ListCronRuns"),
+			Procedure:        CronServiceListCronRunsProcedure,
+			IdempotencyLevel: connect.IdempotencyNoSideEffects,
+		}
+	})
 )
 
 // CronServiceClient is a client for the flit.v1.CronService service.
 type CronServiceClient interface {
-	ListCronJobs(context.Context, *connect.Request[v1.ListCronJobsRequest]) (*connect.Response[v1.ListCronJobsResponse], error)
-	GetCronJob(context.Context, *connect.Request[v1.GetCronJobRequest]) (*connect.Response[v1.GetCronJobResponse], error)
+	ListCronJobs(context.Context, *v1.ListCronJobsRequest) (*v1.ListCronJobsResponse, error)
+	GetCronJob(context.Context, *v1.GetCronJobRequest) (*v1.GetCronJobResponse, error)
 	// RunCronJob starts a run now, whatever the schedule and even if the job
 	// is disabled. Fails with FAILED_PRECONDITION while a run of the job is
 	// going.
-	RunCronJob(context.Context, *connect.Request[v1.RunCronJobRequest]) (*connect.Response[v1.RunCronJobResponse], error)
+	RunCronJob(context.Context, *v1.RunCronJobRequest) (*v1.RunCronJobResponse, error)
 	// SetCronJobEnabled turns a job's schedule on or off (it rewrites
 	// enabled: in the job file).
-	SetCronJobEnabled(context.Context, *connect.Request[v1.SetCronJobEnabledRequest]) (*connect.Response[v1.SetCronJobEnabledResponse], error)
+	SetCronJobEnabled(context.Context, *v1.SetCronJobEnabledRequest) (*v1.SetCronJobEnabledResponse, error)
 	// ListCronRuns lists a job's runs, newest first.
-	ListCronRuns(context.Context, *connect.Request[v1.ListCronRunsRequest]) (*connect.Response[v1.ListCronRunsResponse], error)
+	ListCronRuns(context.Context, *v1.ListCronRunsRequest) (*v1.ListCronRunsResponse, error)
 }
 
-// NewCronServiceClient constructs a client for the flit.v1.CronService service. By default, it uses
-// the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and sends
-// uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC() or
-// connect.WithGRPCWeb() options.
-//
-// The URL supplied here should be the base URL for the Connect or gRPC server (for example,
-// http://api.acme.com or https://acme.com/grpc).
-func NewCronServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) CronServiceClient {
-	baseURL = strings.TrimRight(baseURL, "/")
-	cronServiceMethods := v1.File_flit_v1_cron_proto.Services().ByName("CronService").Methods()
-	return &cronServiceClient{
-		listCronJobs: connect.NewClient[v1.ListCronJobsRequest, v1.ListCronJobsResponse](
-			httpClient,
-			baseURL+CronServiceListCronJobsProcedure,
-			connect.WithSchema(cronServiceMethods.ByName("ListCronJobs")),
-			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-			connect.WithClientOptions(opts...),
-		),
-		getCronJob: connect.NewClient[v1.GetCronJobRequest, v1.GetCronJobResponse](
-			httpClient,
-			baseURL+CronServiceGetCronJobProcedure,
-			connect.WithSchema(cronServiceMethods.ByName("GetCronJob")),
-			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-			connect.WithClientOptions(opts...),
-		),
-		runCronJob: connect.NewClient[v1.RunCronJobRequest, v1.RunCronJobResponse](
-			httpClient,
-			baseURL+CronServiceRunCronJobProcedure,
-			connect.WithSchema(cronServiceMethods.ByName("RunCronJob")),
-			connect.WithClientOptions(opts...),
-		),
-		setCronJobEnabled: connect.NewClient[v1.SetCronJobEnabledRequest, v1.SetCronJobEnabledResponse](
-			httpClient,
-			baseURL+CronServiceSetCronJobEnabledProcedure,
-			connect.WithSchema(cronServiceMethods.ByName("SetCronJobEnabled")),
-			connect.WithClientOptions(opts...),
-		),
-		listCronRuns: connect.NewClient[v1.ListCronRunsRequest, v1.ListCronRunsResponse](
-			httpClient,
-			baseURL+CronServiceListCronRunsProcedure,
-			connect.WithSchema(cronServiceMethods.ByName("ListCronRuns")),
-			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-			connect.WithClientOptions(opts...),
-		),
-	}
-}
-
-// cronServiceClient implements CronServiceClient.
-type cronServiceClient struct {
-	listCronJobs      *connect.Client[v1.ListCronJobsRequest, v1.ListCronJobsResponse]
-	getCronJob        *connect.Client[v1.GetCronJobRequest, v1.GetCronJobResponse]
-	runCronJob        *connect.Client[v1.RunCronJobRequest, v1.RunCronJobResponse]
-	setCronJobEnabled *connect.Client[v1.SetCronJobEnabledRequest, v1.SetCronJobEnabledResponse]
-	listCronRuns      *connect.Client[v1.ListCronRunsRequest, v1.ListCronRunsResponse]
-}
-
-// ListCronJobs calls flit.v1.CronService.ListCronJobs.
-func (c *cronServiceClient) ListCronJobs(ctx context.Context, req *connect.Request[v1.ListCronJobsRequest]) (*connect.Response[v1.ListCronJobsResponse], error) {
-	return c.listCronJobs.CallUnary(ctx, req)
-}
-
-// GetCronJob calls flit.v1.CronService.GetCronJob.
-func (c *cronServiceClient) GetCronJob(ctx context.Context, req *connect.Request[v1.GetCronJobRequest]) (*connect.Response[v1.GetCronJobResponse], error) {
-	return c.getCronJob.CallUnary(ctx, req)
-}
-
-// RunCronJob calls flit.v1.CronService.RunCronJob.
-func (c *cronServiceClient) RunCronJob(ctx context.Context, req *connect.Request[v1.RunCronJobRequest]) (*connect.Response[v1.RunCronJobResponse], error) {
-	return c.runCronJob.CallUnary(ctx, req)
-}
-
-// SetCronJobEnabled calls flit.v1.CronService.SetCronJobEnabled.
-func (c *cronServiceClient) SetCronJobEnabled(ctx context.Context, req *connect.Request[v1.SetCronJobEnabledRequest]) (*connect.Response[v1.SetCronJobEnabledResponse], error) {
-	return c.setCronJobEnabled.CallUnary(ctx, req)
-}
-
-// ListCronRuns calls flit.v1.CronService.ListCronRuns.
-func (c *cronServiceClient) ListCronRuns(ctx context.Context, req *connect.Request[v1.ListCronRunsRequest]) (*connect.Response[v1.ListCronRunsResponse], error) {
-	return c.listCronRuns.CallUnary(ctx, req)
+// NewCronServiceClient constructs a client for the flit.v1.CronService service. Multiple service
+// clients may share a single connect.Client.
+func NewCronServiceClient(client *connect.Client) CronServiceClient {
+	return &cronServiceClient{client: client}
 }
 
 // CronServiceHandler is an implementation of the flit.v1.CronService service.
 type CronServiceHandler interface {
-	ListCronJobs(context.Context, *connect.Request[v1.ListCronJobsRequest]) (*connect.Response[v1.ListCronJobsResponse], error)
-	GetCronJob(context.Context, *connect.Request[v1.GetCronJobRequest]) (*connect.Response[v1.GetCronJobResponse], error)
+	ListCronJobs(context.Context, *v1.ListCronJobsRequest) (*v1.ListCronJobsResponse, error)
+	GetCronJob(context.Context, *v1.GetCronJobRequest) (*v1.GetCronJobResponse, error)
 	// RunCronJob starts a run now, whatever the schedule and even if the job
 	// is disabled. Fails with FAILED_PRECONDITION while a run of the job is
 	// going.
-	RunCronJob(context.Context, *connect.Request[v1.RunCronJobRequest]) (*connect.Response[v1.RunCronJobResponse], error)
+	RunCronJob(context.Context, *v1.RunCronJobRequest) (*v1.RunCronJobResponse, error)
 	// SetCronJobEnabled turns a job's schedule on or off (it rewrites
 	// enabled: in the job file).
-	SetCronJobEnabled(context.Context, *connect.Request[v1.SetCronJobEnabledRequest]) (*connect.Response[v1.SetCronJobEnabledResponse], error)
+	SetCronJobEnabled(context.Context, *v1.SetCronJobEnabledRequest) (*v1.SetCronJobEnabledResponse, error)
 	// ListCronRuns lists a job's runs, newest first.
-	ListCronRuns(context.Context, *connect.Request[v1.ListCronRunsRequest]) (*connect.Response[v1.ListCronRunsResponse], error)
+	ListCronRuns(context.Context, *v1.ListCronRunsRequest) (*v1.ListCronRunsResponse, error)
 }
 
-// NewCronServiceHandler builds an HTTP handler from the service implementation. It returns the path
-// on which to mount the handler and the handler itself.
-//
-// By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
-// and JSON codecs. They also support gzip compression.
-func NewCronServiceHandler(svc CronServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	cronServiceMethods := v1.File_flit_v1_cron_proto.Services().ByName("CronService").Methods()
-	cronServiceListCronJobsHandler := connect.NewUnaryHandler(
-		CronServiceListCronJobsProcedure,
-		svc.ListCronJobs,
-		connect.WithSchema(cronServiceMethods.ByName("ListCronJobs")),
-		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-		connect.WithHandlerOptions(opts...),
+// RegisterCronServiceHandler registers svc as the flit.v1.CronService implementation on server.
+func RegisterCronServiceHandler(server *connect.Server, svc CronServiceHandler) {
+	adapter := cronServiceHandler{svc: svc}
+	server.Register(
+		connect.Method{Spec: cronServiceListCronJobsSpec(), Handler: adapter.listCronJobs},
+		connect.Method{Spec: cronServiceGetCronJobSpec(), Handler: adapter.getCronJob},
+		connect.Method{Spec: cronServiceRunCronJobSpec(), Handler: adapter.runCronJob},
+		connect.Method{Spec: cronServiceSetCronJobEnabledSpec(), Handler: adapter.setCronJobEnabled},
+		connect.Method{Spec: cronServiceListCronRunsSpec(), Handler: adapter.listCronRuns},
 	)
-	cronServiceGetCronJobHandler := connect.NewUnaryHandler(
-		CronServiceGetCronJobProcedure,
-		svc.GetCronJob,
-		connect.WithSchema(cronServiceMethods.ByName("GetCronJob")),
-		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-		connect.WithHandlerOptions(opts...),
-	)
-	cronServiceRunCronJobHandler := connect.NewUnaryHandler(
-		CronServiceRunCronJobProcedure,
-		svc.RunCronJob,
-		connect.WithSchema(cronServiceMethods.ByName("RunCronJob")),
-		connect.WithHandlerOptions(opts...),
-	)
-	cronServiceSetCronJobEnabledHandler := connect.NewUnaryHandler(
-		CronServiceSetCronJobEnabledProcedure,
-		svc.SetCronJobEnabled,
-		connect.WithSchema(cronServiceMethods.ByName("SetCronJobEnabled")),
-		connect.WithHandlerOptions(opts...),
-	)
-	cronServiceListCronRunsHandler := connect.NewUnaryHandler(
-		CronServiceListCronRunsProcedure,
-		svc.ListCronRuns,
-		connect.WithSchema(cronServiceMethods.ByName("ListCronRuns")),
-		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-		connect.WithHandlerOptions(opts...),
-	)
-	return "/flit.v1.CronService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case CronServiceListCronJobsProcedure:
-			cronServiceListCronJobsHandler.ServeHTTP(w, r)
-		case CronServiceGetCronJobProcedure:
-			cronServiceGetCronJobHandler.ServeHTTP(w, r)
-		case CronServiceRunCronJobProcedure:
-			cronServiceRunCronJobHandler.ServeHTTP(w, r)
-		case CronServiceSetCronJobEnabledProcedure:
-			cronServiceSetCronJobEnabledHandler.ServeHTTP(w, r)
-		case CronServiceListCronRunsProcedure:
-			cronServiceListCronRunsHandler.ServeHTTP(w, r)
-		default:
-			http.NotFound(w, r)
-		}
-	})
 }
 
 // UnimplementedCronServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedCronServiceHandler struct{}
 
-func (UnimplementedCronServiceHandler) ListCronJobs(context.Context, *connect.Request[v1.ListCronJobsRequest]) (*connect.Response[v1.ListCronJobsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.CronService.ListCronJobs is not implemented"))
+func (UnimplementedCronServiceHandler) ListCronJobs(context.Context, *v1.ListCronJobsRequest) (*v1.ListCronJobsResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.CronService.ListCronJobs is not implemented")
 }
 
-func (UnimplementedCronServiceHandler) GetCronJob(context.Context, *connect.Request[v1.GetCronJobRequest]) (*connect.Response[v1.GetCronJobResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.CronService.GetCronJob is not implemented"))
+func (UnimplementedCronServiceHandler) GetCronJob(context.Context, *v1.GetCronJobRequest) (*v1.GetCronJobResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.CronService.GetCronJob is not implemented")
 }
 
-func (UnimplementedCronServiceHandler) RunCronJob(context.Context, *connect.Request[v1.RunCronJobRequest]) (*connect.Response[v1.RunCronJobResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.CronService.RunCronJob is not implemented"))
+func (UnimplementedCronServiceHandler) RunCronJob(context.Context, *v1.RunCronJobRequest) (*v1.RunCronJobResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.CronService.RunCronJob is not implemented")
 }
 
-func (UnimplementedCronServiceHandler) SetCronJobEnabled(context.Context, *connect.Request[v1.SetCronJobEnabledRequest]) (*connect.Response[v1.SetCronJobEnabledResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.CronService.SetCronJobEnabled is not implemented"))
+func (UnimplementedCronServiceHandler) SetCronJobEnabled(context.Context, *v1.SetCronJobEnabledRequest) (*v1.SetCronJobEnabledResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.CronService.SetCronJobEnabled is not implemented")
 }
 
-func (UnimplementedCronServiceHandler) ListCronRuns(context.Context, *connect.Request[v1.ListCronRunsRequest]) (*connect.Response[v1.ListCronRunsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.CronService.ListCronRuns is not implemented"))
+func (UnimplementedCronServiceHandler) ListCronRuns(context.Context, *v1.ListCronRunsRequest) (*v1.ListCronRunsResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.CronService.ListCronRuns is not implemented")
+}
+
+type cronServiceClient struct {
+	client *connect.Client
+}
+
+func (c *cronServiceClient) ListCronJobs(ctx context.Context, req *v1.ListCronJobsRequest) (*v1.ListCronJobsResponse, error) {
+	var res v1.ListCronJobsResponse
+	if err := c.client.CallUnary(ctx, cronServiceListCronJobsSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *cronServiceClient) GetCronJob(ctx context.Context, req *v1.GetCronJobRequest) (*v1.GetCronJobResponse, error) {
+	var res v1.GetCronJobResponse
+	if err := c.client.CallUnary(ctx, cronServiceGetCronJobSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *cronServiceClient) RunCronJob(ctx context.Context, req *v1.RunCronJobRequest) (*v1.RunCronJobResponse, error) {
+	var res v1.RunCronJobResponse
+	if err := c.client.CallUnary(ctx, cronServiceRunCronJobSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *cronServiceClient) SetCronJobEnabled(ctx context.Context, req *v1.SetCronJobEnabledRequest) (*v1.SetCronJobEnabledResponse, error) {
+	var res v1.SetCronJobEnabledResponse
+	if err := c.client.CallUnary(ctx, cronServiceSetCronJobEnabledSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *cronServiceClient) ListCronRuns(ctx context.Context, req *v1.ListCronRunsRequest) (*v1.ListCronRunsResponse, error) {
+	var res v1.ListCronRunsResponse
+	if err := c.client.CallUnary(ctx, cronServiceListCronRunsSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+type cronServiceHandler struct{ svc CronServiceHandler }
+
+func (h cronServiceHandler) listCronJobs(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.ListCronJobsRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.ListCronJobs(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h cronServiceHandler) getCronJob(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.GetCronJobRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.GetCronJob(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h cronServiceHandler) runCronJob(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.RunCronJobRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.RunCronJob(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h cronServiceHandler) setCronJobEnabled(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.SetCronJobEnabledRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.SetCronJobEnabled(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h cronServiceHandler) listCronRuns(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.ListCronRunsRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.ListCronRuns(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
 }

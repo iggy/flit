@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
@@ -40,7 +40,7 @@ func connectErr(err error) error {
 	case errors.Is(err, agent.ErrInvalid):
 		code = connect.CodeInvalidArgument
 	}
-	return connect.NewError(code, err)
+	return connect.NewError(code, err.Error())
 }
 
 func ts(t time.Time) *timestamppb.Timestamp {
@@ -117,13 +117,13 @@ func localZone() string {
 
 func required(name, v string) error {
 	if v == "" {
-		return connect.NewError(connect.CodeInvalidArgument, errors.New(name+" is required"))
+		return connect.NewError(connect.CodeInvalidArgument, errors.New(name+" is required").Error())
 	}
 	return nil
 }
 
 // ListCronJobs implements flitv1connect.CronServiceHandler.
-func (s *Service) ListCronJobs(ctx context.Context, _ *connect.Request[flitv1.ListCronJobsRequest]) (*connect.Response[flitv1.ListCronJobsResponse], error) {
+func (s *Service) ListCronJobs(ctx context.Context, _ *flitv1.ListCronJobsRequest) (*flitv1.ListCronJobsResponse, error) {
 	list, err := s.S.Jobs(ctx)
 	if err != nil {
 		return nil, connectErr(err)
@@ -132,61 +132,61 @@ func (s *Service) ListCronJobs(ctx context.Context, _ *connect.Request[flitv1.Li
 	for _, st := range list {
 		res.Jobs = append(res.Jobs, JobProto(st))
 	}
-	return connect.NewResponse(res), nil
+	return res, nil
 }
 
 // GetCronJob implements flitv1connect.CronServiceHandler.
-func (s *Service) GetCronJob(ctx context.Context, req *connect.Request[flitv1.GetCronJobRequest]) (*connect.Response[flitv1.GetCronJobResponse], error) {
-	if err := required("name", req.Msg.Name); err != nil {
+func (s *Service) GetCronJob(ctx context.Context, req *flitv1.GetCronJobRequest) (*flitv1.GetCronJobResponse, error) {
+	if err := required("name", req.Name); err != nil {
 		return nil, err
 	}
-	st, err := s.S.Job(ctx, req.Msg.Name)
+	st, err := s.S.Job(ctx, req.Name)
 	if err != nil {
 		return nil, connectErr(err)
 	}
-	return connect.NewResponse(&flitv1.GetCronJobResponse{Job: JobProto(st)}), nil
+	return &flitv1.GetCronJobResponse{Job: JobProto(st)}, nil
 }
 
 // RunCronJob implements flitv1connect.CronServiceHandler.
-func (s *Service) RunCronJob(ctx context.Context, req *connect.Request[flitv1.RunCronJobRequest]) (*connect.Response[flitv1.RunCronJobResponse], error) {
-	if err := required("name", req.Msg.Name); err != nil {
+func (s *Service) RunCronJob(ctx context.Context, req *flitv1.RunCronJobRequest) (*flitv1.RunCronJobResponse, error) {
+	if err := required("name", req.Name); err != nil {
 		return nil, err
 	}
-	run, err := s.S.Run(ctx, req.Msg.Name)
+	run, err := s.S.Run(ctx, req.Name)
 	if err != nil {
 		return nil, connectErr(err)
 	}
-	return connect.NewResponse(&flitv1.RunCronJobResponse{Run: RunProto(run)}), nil
+	return &flitv1.RunCronJobResponse{Run: RunProto(run)}, nil
 }
 
 // SetCronJobEnabled implements flitv1connect.CronServiceHandler.
-func (s *Service) SetCronJobEnabled(ctx context.Context, req *connect.Request[flitv1.SetCronJobEnabledRequest]) (*connect.Response[flitv1.SetCronJobEnabledResponse], error) {
-	if err := required("name", req.Msg.Name); err != nil {
+func (s *Service) SetCronJobEnabled(ctx context.Context, req *flitv1.SetCronJobEnabledRequest) (*flitv1.SetCronJobEnabledResponse, error) {
+	if err := required("name", req.Name); err != nil {
 		return nil, err
 	}
-	st, err := s.S.SetEnabled(ctx, req.Msg.Name, req.Msg.Enabled)
+	st, err := s.S.SetEnabled(ctx, req.Name, req.Enabled)
 	if err != nil {
 		return nil, connectErr(err)
 	}
-	return connect.NewResponse(&flitv1.SetCronJobEnabledResponse{Job: JobProto(st)}), nil
+	return &flitv1.SetCronJobEnabledResponse{Job: JobProto(st)}, nil
 }
 
 // ListCronRuns implements flitv1connect.CronServiceHandler.
-func (s *Service) ListCronRuns(ctx context.Context, req *connect.Request[flitv1.ListCronRunsRequest]) (*connect.Response[flitv1.ListCronRunsResponse], error) {
-	size := int(req.Msg.PageSize)
+func (s *Service) ListCronRuns(ctx context.Context, req *flitv1.ListCronRunsRequest) (*flitv1.ListCronRunsResponse, error) {
+	size := int(req.PageSize)
 	if size <= 0 {
 		size = defaultPageSize
 	}
 	size = min(size, maxPageSize)
 	offset := 0
-	if t := req.Msg.PageToken; t != "" {
+	if t := req.PageToken; t != "" {
 		n, err := strconv.Atoi(t)
 		if err != nil || n < 0 {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("bad page_token"))
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("bad page_token").Error())
 		}
 		offset = n
 	}
-	runs, err := s.S.Runs(ctx, req.Msg.Name, size+1, offset)
+	runs, err := s.S.Runs(ctx, req.Name, size+1, offset)
 	if err != nil {
 		return nil, connectErr(err)
 	}
@@ -198,5 +198,5 @@ func (s *Service) ListCronRuns(ctx context.Context, req *connect.Request[flitv1.
 	for _, r := range runs {
 		res.Runs = append(res.Runs, RunProto(r))
 	}
-	return connect.NewResponse(res), nil
+	return res, nil
 }

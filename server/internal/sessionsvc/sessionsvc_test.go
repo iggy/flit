@@ -2,6 +2,7 @@ package sessionsvc_test
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -12,7 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
+	"connectrpc.com/connect/v2/connecthttp"
 
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
 	"github.com/iggy/flit/server/gen/flit/v1/flitv1connect"
@@ -46,32 +48,21 @@ func start(t *testing.T, cfg config.Config) flitv1connect.SessionServiceClient {
 }
 
 func client(url, tok string) flitv1connect.SessionServiceClient {
-	return flitv1connect.NewSessionServiceClient(http.DefaultClient, url, connect.WithInterceptors(connect.UnaryInterceptorFunc(
-		func(next connect.UnaryFunc) connect.UnaryFunc {
-			return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-				if tok != "" {
-					req.Header().Set("Authorization", "Bearer "+tok)
-				}
-				return next(ctx, req)
+	return flitv1connect.NewSessionServiceClient(connect.NewClient(connecthttp.NewTransport(http.DefaultClient, url, connecthttp.WithReadMaxBytes(0)), connect.ClientInterceptor(authorize(tok))))
+}
+
+// authorize adds the token to every call, unary or streaming.
+func authorize(tok string) connect.ClientInterceptor {
+	return func(next connect.ClientFunc) connect.ClientFunc {
+		return func(ctx context.Context, spec connect.Spec) (connect.ClientStream, error) {
+			if tok != "" {
+				var info *connect.CallInfo
+				ctx, info = connect.NewClientContext(ctx)
+				info.RequestHeader().Set("Authorization", "Bearer "+tok)
 			}
-		}), streamAuth(tok)))
-}
-
-// streamAuth adds the token to streaming calls.
-type streamAuth string
-
-func (a streamAuth) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc { return next }
-func (a streamAuth) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
-	return func(ctx context.Context, spec connect.Spec) connect.StreamingClientConn {
-		conn := next(ctx, spec)
-		if a != "" {
-			conn.RequestHeader().Set("Authorization", "Bearer "+string(a))
+			return next(ctx, spec)
 		}
-		return conn
 	}
-}
-func (a streamAuth) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
-	return next
 }
 
 func fakeConfig(t *testing.T) (config.Config, *llmtest.Server) {
@@ -89,26 +80,32 @@ func runTurn(t *testing.T, c flitv1connect.SessionServiceClient, id, text string
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	sess, err := c.GetSession(ctx, connect.NewRequest(&flitv1.GetSessionRequest{SessionId: id}))
+	sess, err := c.GetSession(ctx, &flitv1.GetSessionRequest{SessionId: id})
 	if err != nil {
 		t.Fatal(err)
 	}
-	stream, err := c.Attach(ctx, connect.NewRequest(&flitv1.AttachRequest{SessionId: id, FromSeq: sess.Msg.Session.LastSeq + 1}))
+	stream, err := c.Attach(ctx, &flitv1.AttachRequest{SessionId: id, FromSeq: sess.Session.LastSeq + 1})
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer stream.Close()
-	if _, err := c.Send(ctx, connect.NewRequest(&flitv1.SendRequest{SessionId: id, Text: text})); err != nil {
+	if _, err := c.Send(ctx, &flitv1.SendRequest{SessionId: id, Text: text}); err != nil {
 		t.Fatal(err)
 	}
 	var evs []*flitv1.Event
-	for stream.Receive() {
-		ev := stream.Msg().Event
+	var streamErr error
+	for {
+		msg, err2 := stream.Receive()
+		if err2 != nil {
+			streamErr = err2
+			break
+		}
+		ev := msg.Event
 		evs = append(evs, ev)
 		if p := ev.GetPromptRequested(); p != nil {
-			if _, err := c.AnswerPrompt(ctx, connect.NewRequest(&flitv1.AnswerPromptRequest{
+			if _, err := c.AnswerPrompt(ctx, &flitv1.AnswerPromptRequest{
 				SessionId: id, PromptId: p.PromptId, Decision: answer, Client: "sessionsvc-test",
-			})); err != nil {
+			}); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -117,7 +114,10 @@ func runTurn(t *testing.T, c flitv1connect.SessionServiceClient, id, text string
 			return evs
 		}
 	}
-	t.Fatalf("stream ended: %v; events so far: %v", stream.Err(), evs)
+	if errors.Is(streamErr, io.EOF) {
+		streamErr = nil
+	}
+	t.Fatalf("stream ended: %v; events so far: %v", streamErr, evs)
 	return nil
 }
 
@@ -127,11 +127,11 @@ func TestSessionAPI(t *testing.T) {
 	ctx := context.Background()
 	dir := t.TempDir()
 
-	created, err := c.CreateSession(ctx, connect.NewRequest(&flitv1.CreateSessionRequest{WorkingDir: dir, Title: "api test"}))
+	created, err := c.CreateSession(ctx, &flitv1.CreateSessionRequest{WorkingDir: dir, Title: "api test"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := created.Msg.Session
+	s := created.Session
 	if s.Provider != "fake" || s.Model != "m" || s.State != flitv1.TaskState_TASK_STATE_IDLE || s.TeamId == "" || s.ProjectId == "" {
 		t.Fatalf("created %v", s)
 	}
@@ -160,15 +160,15 @@ func TestSessionAPI(t *testing.T) {
 		err  error
 		code connect.Code
 	}{
-		{err: second(c.GetSession(ctx, connect.NewRequest(&flitv1.GetSessionRequest{SessionId: "ses_nope"}))), code: connect.CodeNotFound},
-		{err: second(c.CreateSession(ctx, connect.NewRequest(&flitv1.CreateSessionRequest{WorkingDir: "relative"}))), code: connect.CodeInvalidArgument},
-		{err: second(c.AnswerPrompt(ctx, connect.NewRequest(&flitv1.AnswerPromptRequest{SessionId: s.Id, PromptId: "p"}))), code: connect.CodeInvalidArgument},
-		{err: second(c.AnswerPrompt(ctx, connect.NewRequest(&flitv1.AnswerPromptRequest{SessionId: s.Id, PromptId: "p", Decision: flitv1.PromptDecision_PROMPT_DECISION_ALLOW}))), code: connect.CodeFailedPrecondition},
-		{err: second(c.SetModel(ctx, connect.NewRequest(&flitv1.SetModelRequest{SessionId: s.Id, Provider: "nope", Model: "x"}))), code: connect.CodeInvalidArgument},
-		{err: second(c.RetryFromMessage(ctx, connect.NewRequest(&flitv1.RetryFromMessageRequest{SessionId: s.Id, MessageId: "msg_nope"}))), code: connect.CodeInvalidArgument},
-		{err: second(c.EditMessage(ctx, connect.NewRequest(&flitv1.EditMessageRequest{SessionId: s.Id, MessageId: "msg_nope", Text: "x"}))), code: connect.CodeInvalidArgument},
-		{err: second(c.SwitchBranch(ctx, connect.NewRequest(&flitv1.SwitchBranchRequest{SessionId: s.Id, BranchId: "br_nope"}))), code: connect.CodeInvalidArgument},
-		{err: second(c.SwitchBranch(ctx, connect.NewRequest(&flitv1.SwitchBranchRequest{}))), code: connect.CodeInvalidArgument},
+		{err: second(c.GetSession(ctx, &flitv1.GetSessionRequest{SessionId: "ses_nope"})), code: connect.CodeNotFound},
+		{err: second(c.CreateSession(ctx, &flitv1.CreateSessionRequest{WorkingDir: "relative"})), code: connect.CodeInvalidArgument},
+		{err: second(c.AnswerPrompt(ctx, &flitv1.AnswerPromptRequest{SessionId: s.Id, PromptId: "p"})), code: connect.CodeInvalidArgument},
+		{err: second(c.AnswerPrompt(ctx, &flitv1.AnswerPromptRequest{SessionId: s.Id, PromptId: "p", Decision: flitv1.PromptDecision_PROMPT_DECISION_ALLOW})), code: connect.CodeFailedPrecondition},
+		{err: second(c.SetModel(ctx, &flitv1.SetModelRequest{SessionId: s.Id, Provider: "nope", Model: "x"})), code: connect.CodeInvalidArgument},
+		{err: second(c.RetryFromMessage(ctx, &flitv1.RetryFromMessageRequest{SessionId: s.Id, MessageId: "msg_nope"})), code: connect.CodeInvalidArgument},
+		{err: second(c.EditMessage(ctx, &flitv1.EditMessageRequest{SessionId: s.Id, MessageId: "msg_nope", Text: "x"})), code: connect.CodeInvalidArgument},
+		{err: second(c.SwitchBranch(ctx, &flitv1.SwitchBranchRequest{SessionId: s.Id, BranchId: "br_nope"})), code: connect.CodeInvalidArgument},
+		{err: second(c.SwitchBranch(ctx, &flitv1.SwitchBranchRequest{})), code: connect.CodeInvalidArgument},
 	} {
 		if connect.CodeOf(tc.err) != tc.code {
 			t.Errorf("got %v, want %v", tc.err, tc.code)
@@ -177,16 +177,16 @@ func TestSessionAPI(t *testing.T) {
 
 	// Pagination.
 	for range 2 {
-		if _, err := c.CreateSession(ctx, connect.NewRequest(&flitv1.CreateSessionRequest{WorkingDir: dir})); err != nil {
+		if _, err := c.CreateSession(ctx, &flitv1.CreateSessionRequest{WorkingDir: dir}); err != nil {
 			t.Fatal(err)
 		}
 	}
-	page1, err := c.ListSessions(ctx, connect.NewRequest(&flitv1.ListSessionsRequest{PageSize: 2}))
-	if err != nil || len(page1.Msg.Sessions) != 2 || page1.Msg.NextPageToken == "" {
+	page1, err := c.ListSessions(ctx, &flitv1.ListSessionsRequest{PageSize: 2})
+	if err != nil || len(page1.Sessions) != 2 || page1.NextPageToken == "" {
 		t.Fatalf("page 1: %v, %v", page1, err)
 	}
-	page2, err := c.ListSessions(ctx, connect.NewRequest(&flitv1.ListSessionsRequest{PageSize: 2, PageToken: page1.Msg.NextPageToken}))
-	if err != nil || len(page2.Msg.Sessions) != 1 || page2.Msg.NextPageToken != "" {
+	page2, err := c.ListSessions(ctx, &flitv1.ListSessionsRequest{PageSize: 2, PageToken: page1.NextPageToken})
+	if err != nil || len(page2.Sessions) != 1 || page2.NextPageToken != "" {
 		t.Fatalf("page 2: %v, %v", page2, err)
 	}
 }
@@ -211,15 +211,24 @@ func TestSessionAPIRequiresToken(t *testing.T) {
 	for _, tok := range []string{"", "flit_wrong"} {
 		c := client(srv.URL, tok)
 		ctx := context.Background()
-		_, err := c.ListSessions(ctx, connect.NewRequest(&flitv1.ListSessionsRequest{}))
+		_, err := c.ListSessions(ctx, &flitv1.ListSessionsRequest{})
 		if connect.CodeOf(err) != connect.CodeUnauthenticated {
 			t.Errorf("token %q: ListSessions err = %v", tok, err)
 		}
-		stream, err := c.Attach(ctx, connect.NewRequest(&flitv1.AttachRequest{SessionId: "x"}))
+		stream, err := c.Attach(ctx, &flitv1.AttachRequest{SessionId: "x"})
 		if err == nil {
-			for stream.Receive() {
+			var streamErr error
+			for {
+				_, err := stream.Receive()
+				if err != nil {
+					streamErr = err
+					break
+				}
 			}
-			err = stream.Err()
+			if errors.Is(streamErr, io.EOF) {
+				streamErr = nil
+			}
+			err = streamErr
 		}
 		if connect.CodeOf(err) != connect.CodeUnauthenticated {
 			t.Errorf("token %q: Attach err = %v", tok, err)
@@ -258,11 +267,11 @@ func TestLlamaCppCodingTask(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(dir, "AGENTS.md"), []byte("Keep edits minimal. Do not create new files.\n"), 0o644))
 
 	ctx := context.Background()
-	created, err := c.CreateSession(ctx, connect.NewRequest(&flitv1.CreateSessionRequest{WorkingDir: dir}))
+	created, err := c.CreateSession(ctx, &flitv1.CreateSessionRequest{WorkingDir: dir})
 	if err != nil {
 		t.Fatal(err)
 	}
-	evs := runTurn(t, c, created.Msg.Session.Id,
+	evs := runTurn(t, c, created.Session.Id,
 		"Two small fixes in this directory: (1) bump the patch number in VERSION by one; "+
 			"(2) fix the typo \"Helo\" in greet.go so it says \"Hello\". Use your tools to read and edit the files.",
 		flitv1.PromptDecision_PROMPT_DECISION_DENY, 10*time.Minute)
@@ -323,11 +332,11 @@ func TestLlamaCppSubagents(t *testing.T) {
 		"package greet\n\n// Hello returns a greeting.\nfunc Hello(name string) string {\n\treturn \"Helo, \" + name\n}\n"), 0o644))
 
 	ctx := context.Background()
-	created, err := c.CreateSession(ctx, connect.NewRequest(&flitv1.CreateSessionRequest{WorkingDir: dir}))
+	created, err := c.CreateSession(ctx, &flitv1.CreateSessionRequest{WorkingDir: dir})
 	if err != nil {
 		t.Fatal(err)
 	}
-	evs := runTurn(t, c, created.Msg.Session.Id,
+	evs := runTurn(t, c, created.Session.Id,
 		"Use the agent tool twice. First an explore subagent: ask it which function in greet.go has a typo in a string, "+
 			"and what the typo is. Then a build subagent: tell it to fix that typo in greet.go. Don't edit files yourself.",
 		flitv1.PromptDecision_PROMPT_DECISION_DENY, 15*time.Minute)

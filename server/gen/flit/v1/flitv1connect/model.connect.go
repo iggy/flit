@@ -5,269 +5,291 @@
 package flitv1connect
 
 import (
-	connect "connectrpc.com/connect"
+	connect "connectrpc.com/connect/v2"
 	context "context"
-	errors "errors"
 	v1 "github.com/iggy/flit/server/gen/flit/v1"
-	http "net/http"
-	strings "strings"
+	sync "sync"
 )
-
-// This is a compile-time assertion to ensure that this generated file and the connect package are
-// compatible. If you get a compiler error that this constant is not defined, this code was
-// generated with a version of connect newer than the one compiled into your binary. You can fix the
-// problem by either regenerating this code with an older version of connect or updating the connect
-// version compiled into your binary.
-const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// ModelServiceName is the fully-qualified name of the ModelService service.
 	ModelServiceName = "flit.v1.ModelService"
 )
 
-// These constants are the fully-qualified names of the RPCs defined in this package. They're
-// exposed at runtime as Spec.Procedure and as the final two segments of the HTTP route.
+// These constants are the procedure names of the RPCs defined in this package. They're exposed at
+// runtime as Spec.Procedure and as the final two segments of the HTTP route.
 //
 // Note that these are different from the fully-qualified method names used by
 // google.golang.org/protobuf/reflect/protoreflect. To convert from these constants to
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// ModelServiceListProvidersProcedure is the fully-qualified name of the ModelService's
-	// ListProviders RPC.
+	// ModelServiceListProvidersProcedure is the procedure name of the ModelService's ListProviders RPC.
 	ModelServiceListProvidersProcedure = "/flit.v1.ModelService/ListProviders"
-	// ModelServiceListModelsProcedure is the fully-qualified name of the ModelService's ListModels RPC.
+	// ModelServiceListModelsProcedure is the procedure name of the ModelService's ListModels RPC.
 	ModelServiceListModelsProcedure = "/flit.v1.ModelService/ListModels"
-	// ModelServiceRefreshProcedure is the fully-qualified name of the ModelService's Refresh RPC.
+	// ModelServiceRefreshProcedure is the procedure name of the ModelService's Refresh RPC.
 	ModelServiceRefreshProcedure = "/flit.v1.ModelService/Refresh"
-	// ModelServiceSetFavoriteProcedure is the fully-qualified name of the ModelService's SetFavorite
-	// RPC.
+	// ModelServiceSetFavoriteProcedure is the procedure name of the ModelService's SetFavorite RPC.
 	ModelServiceSetFavoriteProcedure = "/flit.v1.ModelService/SetFavorite"
-	// ModelServiceLoadModelProcedure is the fully-qualified name of the ModelService's LoadModel RPC.
+	// ModelServiceLoadModelProcedure is the procedure name of the ModelService's LoadModel RPC.
 	ModelServiceLoadModelProcedure = "/flit.v1.ModelService/LoadModel"
-	// ModelServiceUnloadModelProcedure is the fully-qualified name of the ModelService's UnloadModel
-	// RPC.
+	// ModelServiceUnloadModelProcedure is the procedure name of the ModelService's UnloadModel RPC.
 	ModelServiceUnloadModelProcedure = "/flit.v1.ModelService/UnloadModel"
+)
+
+var (
+	modelServiceListProvidersSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType:       connect.StreamTypeUnary,
+			Schema:           v1.File_flit_v1_model_proto.Services().ByName("ModelService").Methods().ByName("ListProviders"),
+			Procedure:        ModelServiceListProvidersProcedure,
+			IdempotencyLevel: connect.IdempotencyNoSideEffects,
+		}
+	})
+	modelServiceListModelsSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType:       connect.StreamTypeUnary,
+			Schema:           v1.File_flit_v1_model_proto.Services().ByName("ModelService").Methods().ByName("ListModels"),
+			Procedure:        ModelServiceListModelsProcedure,
+			IdempotencyLevel: connect.IdempotencyNoSideEffects,
+		}
+	})
+	modelServiceRefreshSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_model_proto.Services().ByName("ModelService").Methods().ByName("Refresh"),
+			Procedure:  ModelServiceRefreshProcedure,
+		}
+	})
+	modelServiceSetFavoriteSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType:       connect.StreamTypeUnary,
+			Schema:           v1.File_flit_v1_model_proto.Services().ByName("ModelService").Methods().ByName("SetFavorite"),
+			Procedure:        ModelServiceSetFavoriteProcedure,
+			IdempotencyLevel: connect.IdempotencyIdempotent,
+		}
+	})
+	modelServiceLoadModelSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_model_proto.Services().ByName("ModelService").Methods().ByName("LoadModel"),
+			Procedure:  ModelServiceLoadModelProcedure,
+		}
+	})
+	modelServiceUnloadModelSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_model_proto.Services().ByName("ModelService").Methods().ByName("UnloadModel"),
+			Procedure:  ModelServiceUnloadModelProcedure,
+		}
+	})
 )
 
 // ModelServiceClient is a client for the flit.v1.ModelService service.
 type ModelServiceClient interface {
 	// ListProviders lists the configured providers and how discovery went.
-	ListProviders(context.Context, *connect.Request[v1.ListProvidersRequest]) (*connect.Response[v1.ListProvidersResponse], error)
+	ListProviders(context.Context, *v1.ListProvidersRequest) (*v1.ListProvidersResponse, error)
 	// ListModels lists the discovered models, optionally for one provider.
-	ListModels(context.Context, *connect.Request[v1.ListModelsRequest]) (*connect.Response[v1.ListModelsResponse], error)
+	ListModels(context.Context, *v1.ListModelsRequest) (*v1.ListModelsResponse, error)
 	// Refresh re-runs discovery (and re-reads the override file).
-	Refresh(context.Context, *connect.Request[v1.RefreshRequest]) (*connect.Response[v1.RefreshResponse], error)
+	Refresh(context.Context, *v1.RefreshRequest) (*v1.RefreshResponse, error)
 	// SetFavorite stars or unstars a model. Favorites (and recently used
 	// models) are kept on the server, so every device sees the same ones.
-	SetFavorite(context.Context, *connect.Request[v1.SetFavoriteRequest]) (*connect.Response[v1.SetFavoriteResponse], error)
+	SetFavorite(context.Context, *v1.SetFavoriteRequest) (*v1.SetFavoriteResponse, error)
 	// LoadModel and UnloadModel ask a llama.cpp router (Provider
 	// can_load_models) to load or unload a model, then refresh that
 	// provider. Other providers return FAILED_PRECONDITION.
-	LoadModel(context.Context, *connect.Request[v1.LoadModelRequest]) (*connect.Response[v1.LoadModelResponse], error)
-	UnloadModel(context.Context, *connect.Request[v1.UnloadModelRequest]) (*connect.Response[v1.UnloadModelResponse], error)
+	LoadModel(context.Context, *v1.LoadModelRequest) (*v1.LoadModelResponse, error)
+	UnloadModel(context.Context, *v1.UnloadModelRequest) (*v1.UnloadModelResponse, error)
 }
 
-// NewModelServiceClient constructs a client for the flit.v1.ModelService service. By default, it
-// uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and sends
-// uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC() or
-// connect.WithGRPCWeb() options.
-//
-// The URL supplied here should be the base URL for the Connect or gRPC server (for example,
-// http://api.acme.com or https://acme.com/grpc).
-func NewModelServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) ModelServiceClient {
-	baseURL = strings.TrimRight(baseURL, "/")
-	modelServiceMethods := v1.File_flit_v1_model_proto.Services().ByName("ModelService").Methods()
-	return &modelServiceClient{
-		listProviders: connect.NewClient[v1.ListProvidersRequest, v1.ListProvidersResponse](
-			httpClient,
-			baseURL+ModelServiceListProvidersProcedure,
-			connect.WithSchema(modelServiceMethods.ByName("ListProviders")),
-			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-			connect.WithClientOptions(opts...),
-		),
-		listModels: connect.NewClient[v1.ListModelsRequest, v1.ListModelsResponse](
-			httpClient,
-			baseURL+ModelServiceListModelsProcedure,
-			connect.WithSchema(modelServiceMethods.ByName("ListModels")),
-			connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-			connect.WithClientOptions(opts...),
-		),
-		refresh: connect.NewClient[v1.RefreshRequest, v1.RefreshResponse](
-			httpClient,
-			baseURL+ModelServiceRefreshProcedure,
-			connect.WithSchema(modelServiceMethods.ByName("Refresh")),
-			connect.WithClientOptions(opts...),
-		),
-		setFavorite: connect.NewClient[v1.SetFavoriteRequest, v1.SetFavoriteResponse](
-			httpClient,
-			baseURL+ModelServiceSetFavoriteProcedure,
-			connect.WithSchema(modelServiceMethods.ByName("SetFavorite")),
-			connect.WithIdempotency(connect.IdempotencyIdempotent),
-			connect.WithClientOptions(opts...),
-		),
-		loadModel: connect.NewClient[v1.LoadModelRequest, v1.LoadModelResponse](
-			httpClient,
-			baseURL+ModelServiceLoadModelProcedure,
-			connect.WithSchema(modelServiceMethods.ByName("LoadModel")),
-			connect.WithClientOptions(opts...),
-		),
-		unloadModel: connect.NewClient[v1.UnloadModelRequest, v1.UnloadModelResponse](
-			httpClient,
-			baseURL+ModelServiceUnloadModelProcedure,
-			connect.WithSchema(modelServiceMethods.ByName("UnloadModel")),
-			connect.WithClientOptions(opts...),
-		),
-	}
-}
-
-// modelServiceClient implements ModelServiceClient.
-type modelServiceClient struct {
-	listProviders *connect.Client[v1.ListProvidersRequest, v1.ListProvidersResponse]
-	listModels    *connect.Client[v1.ListModelsRequest, v1.ListModelsResponse]
-	refresh       *connect.Client[v1.RefreshRequest, v1.RefreshResponse]
-	setFavorite   *connect.Client[v1.SetFavoriteRequest, v1.SetFavoriteResponse]
-	loadModel     *connect.Client[v1.LoadModelRequest, v1.LoadModelResponse]
-	unloadModel   *connect.Client[v1.UnloadModelRequest, v1.UnloadModelResponse]
-}
-
-// ListProviders calls flit.v1.ModelService.ListProviders.
-func (c *modelServiceClient) ListProviders(ctx context.Context, req *connect.Request[v1.ListProvidersRequest]) (*connect.Response[v1.ListProvidersResponse], error) {
-	return c.listProviders.CallUnary(ctx, req)
-}
-
-// ListModels calls flit.v1.ModelService.ListModels.
-func (c *modelServiceClient) ListModels(ctx context.Context, req *connect.Request[v1.ListModelsRequest]) (*connect.Response[v1.ListModelsResponse], error) {
-	return c.listModels.CallUnary(ctx, req)
-}
-
-// Refresh calls flit.v1.ModelService.Refresh.
-func (c *modelServiceClient) Refresh(ctx context.Context, req *connect.Request[v1.RefreshRequest]) (*connect.Response[v1.RefreshResponse], error) {
-	return c.refresh.CallUnary(ctx, req)
-}
-
-// SetFavorite calls flit.v1.ModelService.SetFavorite.
-func (c *modelServiceClient) SetFavorite(ctx context.Context, req *connect.Request[v1.SetFavoriteRequest]) (*connect.Response[v1.SetFavoriteResponse], error) {
-	return c.setFavorite.CallUnary(ctx, req)
-}
-
-// LoadModel calls flit.v1.ModelService.LoadModel.
-func (c *modelServiceClient) LoadModel(ctx context.Context, req *connect.Request[v1.LoadModelRequest]) (*connect.Response[v1.LoadModelResponse], error) {
-	return c.loadModel.CallUnary(ctx, req)
-}
-
-// UnloadModel calls flit.v1.ModelService.UnloadModel.
-func (c *modelServiceClient) UnloadModel(ctx context.Context, req *connect.Request[v1.UnloadModelRequest]) (*connect.Response[v1.UnloadModelResponse], error) {
-	return c.unloadModel.CallUnary(ctx, req)
+// NewModelServiceClient constructs a client for the flit.v1.ModelService service. Multiple service
+// clients may share a single connect.Client.
+func NewModelServiceClient(client *connect.Client) ModelServiceClient {
+	return &modelServiceClient{client: client}
 }
 
 // ModelServiceHandler is an implementation of the flit.v1.ModelService service.
 type ModelServiceHandler interface {
 	// ListProviders lists the configured providers and how discovery went.
-	ListProviders(context.Context, *connect.Request[v1.ListProvidersRequest]) (*connect.Response[v1.ListProvidersResponse], error)
+	ListProviders(context.Context, *v1.ListProvidersRequest) (*v1.ListProvidersResponse, error)
 	// ListModels lists the discovered models, optionally for one provider.
-	ListModels(context.Context, *connect.Request[v1.ListModelsRequest]) (*connect.Response[v1.ListModelsResponse], error)
+	ListModels(context.Context, *v1.ListModelsRequest) (*v1.ListModelsResponse, error)
 	// Refresh re-runs discovery (and re-reads the override file).
-	Refresh(context.Context, *connect.Request[v1.RefreshRequest]) (*connect.Response[v1.RefreshResponse], error)
+	Refresh(context.Context, *v1.RefreshRequest) (*v1.RefreshResponse, error)
 	// SetFavorite stars or unstars a model. Favorites (and recently used
 	// models) are kept on the server, so every device sees the same ones.
-	SetFavorite(context.Context, *connect.Request[v1.SetFavoriteRequest]) (*connect.Response[v1.SetFavoriteResponse], error)
+	SetFavorite(context.Context, *v1.SetFavoriteRequest) (*v1.SetFavoriteResponse, error)
 	// LoadModel and UnloadModel ask a llama.cpp router (Provider
 	// can_load_models) to load or unload a model, then refresh that
 	// provider. Other providers return FAILED_PRECONDITION.
-	LoadModel(context.Context, *connect.Request[v1.LoadModelRequest]) (*connect.Response[v1.LoadModelResponse], error)
-	UnloadModel(context.Context, *connect.Request[v1.UnloadModelRequest]) (*connect.Response[v1.UnloadModelResponse], error)
+	LoadModel(context.Context, *v1.LoadModelRequest) (*v1.LoadModelResponse, error)
+	UnloadModel(context.Context, *v1.UnloadModelRequest) (*v1.UnloadModelResponse, error)
 }
 
-// NewModelServiceHandler builds an HTTP handler from the service implementation. It returns the
-// path on which to mount the handler and the handler itself.
-//
-// By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
-// and JSON codecs. They also support gzip compression.
-func NewModelServiceHandler(svc ModelServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	modelServiceMethods := v1.File_flit_v1_model_proto.Services().ByName("ModelService").Methods()
-	modelServiceListProvidersHandler := connect.NewUnaryHandler(
-		ModelServiceListProvidersProcedure,
-		svc.ListProviders,
-		connect.WithSchema(modelServiceMethods.ByName("ListProviders")),
-		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-		connect.WithHandlerOptions(opts...),
+// RegisterModelServiceHandler registers svc as the flit.v1.ModelService implementation on server.
+func RegisterModelServiceHandler(server *connect.Server, svc ModelServiceHandler) {
+	adapter := modelServiceHandler{svc: svc}
+	server.Register(
+		connect.Method{Spec: modelServiceListProvidersSpec(), Handler: adapter.listProviders},
+		connect.Method{Spec: modelServiceListModelsSpec(), Handler: adapter.listModels},
+		connect.Method{Spec: modelServiceRefreshSpec(), Handler: adapter.refresh},
+		connect.Method{Spec: modelServiceSetFavoriteSpec(), Handler: adapter.setFavorite},
+		connect.Method{Spec: modelServiceLoadModelSpec(), Handler: adapter.loadModel},
+		connect.Method{Spec: modelServiceUnloadModelSpec(), Handler: adapter.unloadModel},
 	)
-	modelServiceListModelsHandler := connect.NewUnaryHandler(
-		ModelServiceListModelsProcedure,
-		svc.ListModels,
-		connect.WithSchema(modelServiceMethods.ByName("ListModels")),
-		connect.WithIdempotency(connect.IdempotencyNoSideEffects),
-		connect.WithHandlerOptions(opts...),
-	)
-	modelServiceRefreshHandler := connect.NewUnaryHandler(
-		ModelServiceRefreshProcedure,
-		svc.Refresh,
-		connect.WithSchema(modelServiceMethods.ByName("Refresh")),
-		connect.WithHandlerOptions(opts...),
-	)
-	modelServiceSetFavoriteHandler := connect.NewUnaryHandler(
-		ModelServiceSetFavoriteProcedure,
-		svc.SetFavorite,
-		connect.WithSchema(modelServiceMethods.ByName("SetFavorite")),
-		connect.WithIdempotency(connect.IdempotencyIdempotent),
-		connect.WithHandlerOptions(opts...),
-	)
-	modelServiceLoadModelHandler := connect.NewUnaryHandler(
-		ModelServiceLoadModelProcedure,
-		svc.LoadModel,
-		connect.WithSchema(modelServiceMethods.ByName("LoadModel")),
-		connect.WithHandlerOptions(opts...),
-	)
-	modelServiceUnloadModelHandler := connect.NewUnaryHandler(
-		ModelServiceUnloadModelProcedure,
-		svc.UnloadModel,
-		connect.WithSchema(modelServiceMethods.ByName("UnloadModel")),
-		connect.WithHandlerOptions(opts...),
-	)
-	return "/flit.v1.ModelService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case ModelServiceListProvidersProcedure:
-			modelServiceListProvidersHandler.ServeHTTP(w, r)
-		case ModelServiceListModelsProcedure:
-			modelServiceListModelsHandler.ServeHTTP(w, r)
-		case ModelServiceRefreshProcedure:
-			modelServiceRefreshHandler.ServeHTTP(w, r)
-		case ModelServiceSetFavoriteProcedure:
-			modelServiceSetFavoriteHandler.ServeHTTP(w, r)
-		case ModelServiceLoadModelProcedure:
-			modelServiceLoadModelHandler.ServeHTTP(w, r)
-		case ModelServiceUnloadModelProcedure:
-			modelServiceUnloadModelHandler.ServeHTTP(w, r)
-		default:
-			http.NotFound(w, r)
-		}
-	})
 }
 
 // UnimplementedModelServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedModelServiceHandler struct{}
 
-func (UnimplementedModelServiceHandler) ListProviders(context.Context, *connect.Request[v1.ListProvidersRequest]) (*connect.Response[v1.ListProvidersResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.ModelService.ListProviders is not implemented"))
+func (UnimplementedModelServiceHandler) ListProviders(context.Context, *v1.ListProvidersRequest) (*v1.ListProvidersResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.ModelService.ListProviders is not implemented")
 }
 
-func (UnimplementedModelServiceHandler) ListModels(context.Context, *connect.Request[v1.ListModelsRequest]) (*connect.Response[v1.ListModelsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.ModelService.ListModels is not implemented"))
+func (UnimplementedModelServiceHandler) ListModels(context.Context, *v1.ListModelsRequest) (*v1.ListModelsResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.ModelService.ListModels is not implemented")
 }
 
-func (UnimplementedModelServiceHandler) Refresh(context.Context, *connect.Request[v1.RefreshRequest]) (*connect.Response[v1.RefreshResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.ModelService.Refresh is not implemented"))
+func (UnimplementedModelServiceHandler) Refresh(context.Context, *v1.RefreshRequest) (*v1.RefreshResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.ModelService.Refresh is not implemented")
 }
 
-func (UnimplementedModelServiceHandler) SetFavorite(context.Context, *connect.Request[v1.SetFavoriteRequest]) (*connect.Response[v1.SetFavoriteResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.ModelService.SetFavorite is not implemented"))
+func (UnimplementedModelServiceHandler) SetFavorite(context.Context, *v1.SetFavoriteRequest) (*v1.SetFavoriteResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.ModelService.SetFavorite is not implemented")
 }
 
-func (UnimplementedModelServiceHandler) LoadModel(context.Context, *connect.Request[v1.LoadModelRequest]) (*connect.Response[v1.LoadModelResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.ModelService.LoadModel is not implemented"))
+func (UnimplementedModelServiceHandler) LoadModel(context.Context, *v1.LoadModelRequest) (*v1.LoadModelResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.ModelService.LoadModel is not implemented")
 }
 
-func (UnimplementedModelServiceHandler) UnloadModel(context.Context, *connect.Request[v1.UnloadModelRequest]) (*connect.Response[v1.UnloadModelResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("flit.v1.ModelService.UnloadModel is not implemented"))
+func (UnimplementedModelServiceHandler) UnloadModel(context.Context, *v1.UnloadModelRequest) (*v1.UnloadModelResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.ModelService.UnloadModel is not implemented")
+}
+
+type modelServiceClient struct {
+	client *connect.Client
+}
+
+func (c *modelServiceClient) ListProviders(ctx context.Context, req *v1.ListProvidersRequest) (*v1.ListProvidersResponse, error) {
+	var res v1.ListProvidersResponse
+	if err := c.client.CallUnary(ctx, modelServiceListProvidersSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *modelServiceClient) ListModels(ctx context.Context, req *v1.ListModelsRequest) (*v1.ListModelsResponse, error) {
+	var res v1.ListModelsResponse
+	if err := c.client.CallUnary(ctx, modelServiceListModelsSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *modelServiceClient) Refresh(ctx context.Context, req *v1.RefreshRequest) (*v1.RefreshResponse, error) {
+	var res v1.RefreshResponse
+	if err := c.client.CallUnary(ctx, modelServiceRefreshSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *modelServiceClient) SetFavorite(ctx context.Context, req *v1.SetFavoriteRequest) (*v1.SetFavoriteResponse, error) {
+	var res v1.SetFavoriteResponse
+	if err := c.client.CallUnary(ctx, modelServiceSetFavoriteSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *modelServiceClient) LoadModel(ctx context.Context, req *v1.LoadModelRequest) (*v1.LoadModelResponse, error) {
+	var res v1.LoadModelResponse
+	if err := c.client.CallUnary(ctx, modelServiceLoadModelSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *modelServiceClient) UnloadModel(ctx context.Context, req *v1.UnloadModelRequest) (*v1.UnloadModelResponse, error) {
+	var res v1.UnloadModelResponse
+	if err := c.client.CallUnary(ctx, modelServiceUnloadModelSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+type modelServiceHandler struct{ svc ModelServiceHandler }
+
+func (h modelServiceHandler) listProviders(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.ListProvidersRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.ListProviders(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h modelServiceHandler) listModels(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.ListModelsRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.ListModels(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h modelServiceHandler) refresh(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.RefreshRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.Refresh(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h modelServiceHandler) setFavorite(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.SetFavoriteRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.SetFavorite(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h modelServiceHandler) loadModel(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.LoadModelRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.LoadModel(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h modelServiceHandler) unloadModel(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.UnloadModelRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.UnloadModel(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
 }
