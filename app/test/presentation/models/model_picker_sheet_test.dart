@@ -116,6 +116,18 @@ final class FakeModelPickerController extends ModelPickerController {
 }
 
 void main() {
+  test('parseModelKey keeps the model tag after a second ":"', () {
+    expect(parseModelKey('nous:hermes-4-70b'), ('nous', 'hermes-4-70b'));
+    expect(parseModelKey('ollama:llama3:8b'), ('ollama', 'llama3:8b'));
+    expect(parseModelKey('llama:qwen/Qwen3-Coder:Q4_K_M'), (
+      'llama',
+      'qwen/Qwen3-Coder:Q4_K_M',
+    ));
+    expect(parseModelKey('no-colon'), isNull);
+    expect(parseModelKey(':model'), isNull);
+    expect(parseModelKey('provider:'), isNull);
+  });
+
   late FakeModelRepository repository;
 
   setUp(() {
@@ -285,7 +297,10 @@ void main() {
     await tester.pump(); // currentModelProvider seed delivers
 
     // The button label is the CURRENT model (from currentModelProvider).
-    expect(find.text('hermes-4-405b'), findsOneWidget);
+    // It is wider than the label's room in the test font, so it is cut in
+    // the middle; the whole name is its semantics label and the tooltip.
+    expect(find.bySemanticsLabel('hermes-4-405b'), findsOneWidget);
+    expect(find.byTooltip('hermes-4-405b'), findsOneWidget);
 
     await tester.tap(find.byType(ModelPickerButton));
     await tester.pump();

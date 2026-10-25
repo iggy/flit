@@ -6,6 +6,7 @@ import 'package:flit/application/flit/flit_pair_controller.dart';
 import 'package:flit/application/flit/flit_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/domain/models/flit_session.dart';
+import 'package:flit/presentation/common/middle_ellipsis_text.dart';
 import 'package:flit/presentation/flit/flit_crons.dart';
 import 'package:flit/presentation/flit/flit_learn_sheet.dart';
 import 'package:flit/presentation/flit/flit_projects.dart';
@@ -170,10 +171,18 @@ class FlitSessionsScreen extends ConsumerWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      subtitle: Text(
-                        '${s.workingDir}\n${flitModelLabel(s.provider, s.model)}',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            s.workingDir,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          MiddleEllipsisText(
+                            flitModelLabel(s.provider, s.model),
+                          ),
+                        ],
                       ),
                       isThreeLine: true,
                       trailing: Row(

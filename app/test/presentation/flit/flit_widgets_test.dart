@@ -1,6 +1,7 @@
 import 'package:flit/application/flit/flit_providers.dart';
 import 'package:flit/domain/models/flit_event.dart';
 import 'package:flit/domain/models/flit_session.dart';
+import 'package:flit/presentation/common/middle_ellipsis_text.dart';
 import 'package:flit/presentation/flit/flit_model_picker.dart';
 import 'package:flit/presentation/flit/flit_widgets.dart';
 import 'package:flutter/material.dart';
@@ -42,6 +43,39 @@ void main() {
     expect(find.text('Working'), findsOneWidget);
     await tester.tap(find.text('llama / qwen'));
     expect(tapped, isTrue);
+  });
+
+  testWidgets('status strip keeps the model tag on a narrow screen', (
+    tester,
+  ) async {
+    // Phone-ish; the test font is far wider than a real one.
+    tester.view.physicalSize = const Size(600, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: FlitStatusStrip(
+            provider: 'llama',
+            model: 'qwen/Qwen3.8-Coder-30B-A3B-Instruct:Q4_K_M',
+            effort: 'high',
+            contextTokens: 0,
+            contextLength: 0,
+            state: FlitTaskState.working,
+            onModelTap: () {},
+          ),
+        ),
+      ),
+    );
+    expect(tester.takeException(), isNull);
+    final label = tester.widget<Text>(
+      find.descendant(
+        of: find.byType(MiddleEllipsisText),
+        matching: find.byType(Text),
+      ),
+    );
+    expect(label.data, contains('…'));
+    expect(label.data, endsWith(':Q4_K_M'));
   });
 
   testWidgets('todo panel', (tester) async {

@@ -1,5 +1,6 @@
 import 'package:flit/domain/models/flit_event.dart';
 import 'package:flit/domain/models/flit_session.dart';
+import 'package:flit/presentation/common/middle_ellipsis_text.dart';
 import 'package:flutter/material.dart';
 
 /// A small chip showing what a session's agent is doing.
@@ -133,10 +134,8 @@ class FlitStatusStrip extends StatelessWidget {
                         const Icon(Icons.memory, size: 14),
                         const SizedBox(width: 4),
                         Flexible(
-                          child: Text(
+                          child: MiddleEllipsisText(
                             flitModelLabel(provider, model),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                             style: small,
                           ),
                         ),
