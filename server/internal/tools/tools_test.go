@@ -491,3 +491,18 @@ func TestEditsReportDiagnostics(t *testing.T) {
 		t.Fatalf("asked about %v, want %v", asked, want)
 	}
 }
+
+func TestRunRepairsControlCharactersInStrings(t *testing.T) {
+	env := newEnv(t)
+	r := Run(context.Background(), env, testSet, "write", "{\"path\":\"a.txt\",\"content\":\"a\tb\nc\"}")
+	if r.IsError {
+		t.Fatalf("write: %s", r.Text)
+	}
+	b, err := os.ReadFile(filepath.Join(env.Dir, "a.txt"))
+	if err != nil || string(b) != "a\tb\nc" {
+		t.Fatalf("a.txt = %q, %v", b, err)
+	}
+	if r := Run(context.Background(), env, testSet, "read", `{"path": "a.txt"`); !r.IsError || !strings.Contains(r.Text, "not valid JSON") {
+		t.Fatalf("broken JSON: %+v", r)
+	}
+}

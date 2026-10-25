@@ -52,7 +52,8 @@ func buildMessages(events []*flitv1.Event) []llm.Message {
 			}
 			msgs[i].ToolCalls = append(msgs[i].ToolCalls, llm.ToolCall{
 				ID: c.ToolCallId, Type: "function",
-				Function: llm.FunctionCall{Name: c.Name, Arguments: c.Arguments},
+				// The log keeps what the model sent; the model gets valid JSON.
+				Function: llm.FunctionCall{Name: c.Name, Arguments: llm.SafeArguments(c.Arguments)},
 			})
 			pending = append(pending, c.ToolCallId)
 		case *flitv1.Event_ToolCallDone:

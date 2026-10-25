@@ -158,9 +158,13 @@ func Run(ctx context.Context, env *Env, set []Tool, name, args string) Result {
 			if strings.TrimSpace(args) == "" {
 				args = "{}"
 			}
-			if !json.Valid([]byte(args)) {
+			// Accept raw control characters inside strings (a literal tab
+			// in file contents, say); nothing else is forgiven.
+			repaired, ok := llm.RepairArguments(args)
+			if !ok {
 				return errorf("arguments are not valid JSON: %s", args)
 			}
+			args = repaired
 			return t.Run(ctx, env, json.RawMessage(args))
 		}
 	}
