@@ -464,10 +464,12 @@ func (ModelCallOutcome) EnumDescriptor() ([]byte, []int) {
 }
 
 // ModelWaitReason is why a model call hasn't started, as the model server
-// reports it.
+// reports it (or flit's own concurrency limit).
 type ModelWaitReason int32
 
 const (
+	// In ModelCallWaiting: the call is no longer waiting (it got its turn
+	// under CONCURRENCY_LIMIT).
 	ModelWaitReason_MODEL_WAIT_REASON_UNSPECIFIED ModelWaitReason = 0
 	// Every slot of the llama.cpp server is busy with other requests; this
 	// one waits for a free one.
@@ -476,6 +478,10 @@ const (
 	ModelWaitReason_MODEL_WAIT_REASON_SLEEPING ModelWaitReason = 2
 	// The llama.cpp router is loading the model.
 	ModelWaitReason_MODEL_WAIT_REASON_LOADING ModelWaitReason = 3
+	// flit holds the call back: the model's configured concurrency
+	// (providers[].concurrency) is used up by other calls, from any session
+	// or subagent. Any provider, not just llama.cpp.
+	ModelWaitReason_MODEL_WAIT_REASON_CONCURRENCY_LIMIT ModelWaitReason = 4
 )
 
 // Enum value maps for ModelWaitReason.
@@ -485,12 +491,14 @@ var (
 		1: "MODEL_WAIT_REASON_SLOTS_BUSY",
 		2: "MODEL_WAIT_REASON_SLEEPING",
 		3: "MODEL_WAIT_REASON_LOADING",
+		4: "MODEL_WAIT_REASON_CONCURRENCY_LIMIT",
 	}
 	ModelWaitReason_value = map[string]int32{
-		"MODEL_WAIT_REASON_UNSPECIFIED": 0,
-		"MODEL_WAIT_REASON_SLOTS_BUSY":  1,
-		"MODEL_WAIT_REASON_SLEEPING":    2,
-		"MODEL_WAIT_REASON_LOADING":     3,
+		"MODEL_WAIT_REASON_UNSPECIFIED":       0,
+		"MODEL_WAIT_REASON_SLOTS_BUSY":        1,
+		"MODEL_WAIT_REASON_SLEEPING":          2,
+		"MODEL_WAIT_REASON_LOADING":           3,
+		"MODEL_WAIT_REASON_CONCURRENCY_LIMIT": 4,
 	}
 )
 
@@ -6300,14 +6308,17 @@ func (x *QueuedMessageDelivered) GetMessageId() string {
 }
 
 // ModelCallWaiting says why the model call for message_id hasn't started
-// yet (llama.cpp only). Sent when the reason changes, until the server
-// starts on the call (PromptProgress or reply text follow).
+// yet (llama.cpp, or any provider for CONCURRENCY_LIMIT). Sent when the
+// reason changes, until the server starts on the call (PromptProgress or
+// reply text follow). A call that waited for CONCURRENCY_LIMIT gets one
+// with reason UNSPECIFIED when it is sent.
 type ModelCallWaiting struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
 	MessageId string                 `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
 	Attempt   int32                  `protobuf:"varint,2,opt,name=attempt,proto3" json:"attempt,omitempty"`
 	Reason    ModelWaitReason        `protobuf:"varint,3,opt,name=reason,proto3,enum=flit.v1.ModelWaitReason" json:"reason,omitempty"`
-	// For SLOTS_BUSY: how many slots there are (all busy).
+	// For SLOTS_BUSY: how many slots there are (all busy). For
+	// CONCURRENCY_LIMIT: the limit (that many calls are in flight).
 	TotalSlots    int32 `protobuf:"varint,4,opt,name=total_slots,json=totalSlots,proto3" json:"total_slots,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8877,12 +8888,13 @@ const file_flit_v1_session_proto_rawDesc = "" +
 	"\x1aMODEL_CALL_OUTCOME_STALLED\x10\x02\x12\x1c\n" +
 	"\x18MODEL_CALL_OUTCOME_ERROR\x10\x03\x12 \n" +
 	"\x1cMODEL_CALL_OUTCOME_CANCELLED\x10\x04\x12\x1e\n" +
-	"\x1aMODEL_CALL_OUTCOME_RETRIED\x10\x05*\x95\x01\n" +
+	"\x1aMODEL_CALL_OUTCOME_RETRIED\x10\x05*\xbe\x01\n" +
 	"\x0fModelWaitReason\x12!\n" +
 	"\x1dMODEL_WAIT_REASON_UNSPECIFIED\x10\x00\x12 \n" +
 	"\x1cMODEL_WAIT_REASON_SLOTS_BUSY\x10\x01\x12\x1e\n" +
 	"\x1aMODEL_WAIT_REASON_SLEEPING\x10\x02\x12\x1d\n" +
-	"\x19MODEL_WAIT_REASON_LOADING\x10\x03*\x9c\x01\n" +
+	"\x19MODEL_WAIT_REASON_LOADING\x10\x03\x12'\n" +
+	"#MODEL_WAIT_REASON_CONCURRENCY_LIMIT\x10\x04*\x9c\x01\n" +
 	"\x11PromptCacheAction\x12#\n" +
 	"\x1fPROMPT_CACHE_ACTION_UNSPECIFIED\x10\x00\x12\x1d\n" +
 	"\x19PROMPT_CACHE_ACTION_SAVED\x10\x01\x12 \n" +

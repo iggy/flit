@@ -68,6 +68,9 @@ type Service struct {
 	Catalog *models.Catalog
 	HTTP    *http.Client
 	Log     *slog.Logger
+	// Limiter, if set, caps model calls in flight (providers[].concurrency),
+	// shared with the sessions'.
+	Limiter *llm.Limiter
 }
 
 // Result is what a pass proposed.
@@ -128,6 +131,7 @@ func (s *Service) Run(ctx context.Context, sessionID string, dryRun bool) (Resul
 	client := &llm.Client{
 		BaseURL: provider.BaseURL, APIKey: provider.Key(), Header: header, HTTP: s.http(),
 		FirstTokenTimeout: cfg.Agent.ModelFirstTokenTimeout, StallTimeout: cfg.Agent.ModelStallTimeout,
+		Limiter: s.Limiter, Provider: provider.Name,
 	}
 
 	var list []raw

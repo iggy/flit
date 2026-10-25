@@ -258,8 +258,10 @@ class ModelCallOutcome extends $pb.ProtobufEnum {
 }
 
 /// ModelWaitReason is why a model call hasn't started, as the model server
-/// reports it.
+/// reports it (or flit's own concurrency limit).
 class ModelWaitReason extends $pb.ProtobufEnum {
+  /// In ModelCallWaiting: the call is no longer waiting (it got its turn
+  /// under CONCURRENCY_LIMIT).
   static const ModelWaitReason MODEL_WAIT_REASON_UNSPECIFIED =
       ModelWaitReason._(
           0, _omitEnumNames ? '' : 'MODEL_WAIT_REASON_UNSPECIFIED');
@@ -277,15 +279,23 @@ class ModelWaitReason extends $pb.ProtobufEnum {
   static const ModelWaitReason MODEL_WAIT_REASON_LOADING =
       ModelWaitReason._(3, _omitEnumNames ? '' : 'MODEL_WAIT_REASON_LOADING');
 
+  /// flit holds the call back: the model's configured concurrency
+  /// (providers[].concurrency) is used up by other calls, from any session
+  /// or subagent. Any provider, not just llama.cpp.
+  static const ModelWaitReason MODEL_WAIT_REASON_CONCURRENCY_LIMIT =
+      ModelWaitReason._(
+          4, _omitEnumNames ? '' : 'MODEL_WAIT_REASON_CONCURRENCY_LIMIT');
+
   static const $core.List<ModelWaitReason> values = <ModelWaitReason>[
     MODEL_WAIT_REASON_UNSPECIFIED,
     MODEL_WAIT_REASON_SLOTS_BUSY,
     MODEL_WAIT_REASON_SLEEPING,
     MODEL_WAIT_REASON_LOADING,
+    MODEL_WAIT_REASON_CONCURRENCY_LIMIT,
   ];
 
   static final $core.List<ModelWaitReason?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 3);
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
   static ModelWaitReason? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 

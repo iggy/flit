@@ -71,6 +71,9 @@ func TestParseErrors(t *testing.T) {
 		"compaction keep":        "agent:\n  compaction:\n    keep_turns: 100\n",
 		"compaction max":         "agent:\n  compaction:\n    max_summary_tokens: -1\n",
 		"compaction unknown":     "agent:\n  compaction:\n    ratio: 0.5\n",
+		"negative concurrency":   "providers:\n  - {name: a, base_url: http://x, concurrency: -1}\n",
+		"negative model conc":    "providers:\n  - {name: a, base_url: http://x, models: {m: {concurrency: -1}}}\n",
+		"unknown model key":      "providers:\n  - {name: a, base_url: http://x, models: {m: {parallel: 2}}}\n",
 	} {
 		t.Run(name, func(t *testing.T) {
 			if _, err := Parse([]byte(in)); err == nil {
@@ -189,6 +192,43 @@ shell:
 	}
 	if cfg.Agent.MaxSteps != Default().Agent.MaxSteps {
 		t.Fatalf("agent defaults not applied: %+v", cfg.Agent)
+	}
+}
+
+func TestConcurrency(t *testing.T) {
+	cfg, err := Parse([]byte(`
+providers:
+  - name: local
+    base_url: http://localhost:8080/v1
+    concurrency: 1
+    models:
+      small:
+        concurrency: 8
+      free:
+        concurrency: 0
+  - name: cloud
+    base_url: https://api.example.com/v1
+    models:
+      capped:
+        concurrency: 3
+`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range []struct {
+		provider, model string
+		want            int
+	}{
+		{"local", "big", 1},    // the provider's
+		{"local", "small", 8},  // the model's wins
+		{"local", "free", 0},   // an explicit 0 lifts the provider's
+		{"cloud", "any", 0},    // no limit
+		{"cloud", "capped", 3}, // a model limit without a provider one
+		{"nope", "any", 0},     // unknown provider
+	} {
+		if got := cfg.Concurrency(c.provider, c.model); got != c.want {
+			t.Errorf("Concurrency(%s, %s) = %d, want %d", c.provider, c.model, got, c.want)
+		}
 	}
 }
 

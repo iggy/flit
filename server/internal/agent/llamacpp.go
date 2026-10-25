@@ -77,6 +77,8 @@ type liveCall struct {
 	reasoning, text int
 	started         bool
 	endAsked        bool
+	// queued: the call waits for flit's concurrency limit, not the server.
+	queued bool
 }
 
 // --- Waiting: why hasn't the call started? ---
@@ -100,6 +102,13 @@ func (s *session) watchWait(ctx context.Context, c *llamacpp.Client, call *liveC
 			}
 			if s.callStarted(call) {
 				return
+			}
+			if s.callQueued(call) {
+				// flit holds it back, not the server; report again once
+				// it's sent.
+				last = flitv1.ModelWaitReason_MODEL_WAIT_REASON_UNSPECIFIED
+				timer.Reset(waitCheckEvery)
+				continue
 			}
 			reason, total := waitReason(ctx, c, call.model, slot)
 			if ctx.Err() != nil || s.callStarted(call) {

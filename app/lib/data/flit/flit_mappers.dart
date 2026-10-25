@@ -482,6 +482,8 @@ FlitEvent eventFromProto(pb.Event e) {
             FlitWaitReason.sleeping,
           pb.ModelWaitReason.MODEL_WAIT_REASON_LOADING =>
             FlitWaitReason.loading,
+          pb.ModelWaitReason.MODEL_WAIT_REASON_CONCURRENCY_LIMIT =>
+            FlitWaitReason.concurrencyLimit,
           _ => FlitWaitReason.unknown,
         },
       );

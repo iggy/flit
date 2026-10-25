@@ -82,6 +82,32 @@ void main() {
       ),
     );
     expect(find.text('Waking the model up · 0:42'), findsOneWidget);
+    await pump(
+      FlitPendingCall(
+        messageId: 'a',
+        attempt: 1,
+        startedAt: t0,
+        lastActivity: t0.add(const Duration(seconds: 40)),
+        waitReason: FlitWaitReason.concurrencyLimit,
+        totalSlots: 1,
+      ),
+    );
+    expect(
+      find.text(
+        'Waiting for a turn on this model (concurrency limit 1) · 0:42',
+      ),
+      findsOneWidget,
+    );
+    await pump(
+      FlitPendingCall(
+        messageId: 'a',
+        attempt: 1,
+        startedAt: t0,
+        lastActivity: t0.add(const Duration(seconds: 40)),
+        waitReason: FlitWaitReason.unknown,
+      ),
+    );
+    expect(find.textContaining('Waiting for a turn'), findsNothing);
     await tester.pumpWidget(const SizedBox());
   });
 

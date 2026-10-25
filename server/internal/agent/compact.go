@@ -284,6 +284,7 @@ func (s *session) summaryCall(ctx context.Context, cfg config.Config, p config.P
 	client := &llm.Client{
 		BaseURL: p.BaseURL, APIKey: p.Key(), Header: header, HTTP: s.m.http,
 		FirstTokenTimeout: cfg.Agent.ModelFirstTokenTimeout, StallTimeout: cfg.Agent.ModelStallTimeout,
+		Limiter: s.m.limiter, Provider: p.Name,
 	}
 	autoRetries := 0
 	for attempt := int32(1); ; attempt++ {
@@ -304,8 +305,11 @@ func (s *session) summaryCall(ctx context.Context, cfg config.Config, p config.P
 			stopWait = s.watchWait(callCtx, s.m.llamaClient(p, router), live, attempt, nil)
 		}
 		var trace *llm.Trace
+		queued, admitted := s.limitHandlers(callID, attempt, p.Name, model, live, s.appendFunc, &appendErr)
 		res, trace, callErr = client.StreamTrace(callCtx, req, llm.Handler{
 			ID:        s.callID,
+			Queued:    queued,
+			Admitted:  admitted,
 			Text:      func(d string) { s.callActivity(len(d), 0); output += len(d) },
 			Reasoning: func(d string) { s.callActivity(0, len(d)); output += len(d) },
 			Progress:  s.progress(callID, attempt, &appendErr),

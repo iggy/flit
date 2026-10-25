@@ -26,6 +26,7 @@ import (
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
 	"github.com/iggy/flit/server/internal/config"
 	"github.com/iggy/flit/server/internal/gitx"
+	"github.com/iggy/flit/server/internal/llm"
 	"github.com/iggy/flit/server/internal/lsp"
 	"github.com/iggy/flit/server/internal/mcpclient"
 	"github.com/iggy/flit/server/internal/models"
@@ -82,6 +83,8 @@ type Manager struct {
 
 	// kv tracks llama.cpp slots and prompt cache save files.
 	kv kvPool
+	// limiter caps model calls in flight per provider and model.
+	limiter *llm.Limiter
 
 	mu       sync.Mutex
 	sessions map[string]*session
@@ -96,6 +99,7 @@ type Manager struct {
 // Sessions left mid-turn by a previous run are marked stuck.
 func NewManager(ctx context.Context, st *store.Store, cfg func() config.Config, log *slog.Logger) (*Manager, error) {
 	m := &Manager{store: st, cfg: cfg, log: log, http: &http.Client{}, sessions: map[string]*session{}}
+	m.limiter = llm.NewLimiter(func(provider, model string) int { return m.cfg().Concurrency(provider, model) })
 	ids, err := st.SessionIDsInStates(ctx, flitv1.TaskState_TASK_STATE_WORKING, flitv1.TaskState_TASK_STATE_WAITING)
 	if err != nil {
 		return nil, err

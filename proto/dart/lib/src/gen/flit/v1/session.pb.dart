@@ -7256,8 +7256,10 @@ class QueuedMessageDelivered extends $pb.GeneratedMessage {
 }
 
 /// ModelCallWaiting says why the model call for message_id hasn't started
-/// yet (llama.cpp only). Sent when the reason changes, until the server
-/// starts on the call (PromptProgress or reply text follow).
+/// yet (llama.cpp, or any provider for CONCURRENCY_LIMIT). Sent when the
+/// reason changes, until the server starts on the call (PromptProgress or
+/// reply text follow). A call that waited for CONCURRENCY_LIMIT gets one
+/// with reason UNSPECIFIED when it is sent.
 class ModelCallWaiting extends $pb.GeneratedMessage {
   factory ModelCallWaiting({
     $core.String? messageId,
@@ -7342,7 +7344,8 @@ class ModelCallWaiting extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearReason() => $_clearField(3);
 
-  /// For SLOTS_BUSY: how many slots there are (all busy).
+  /// For SLOTS_BUSY: how many slots there are (all busy). For
+  /// CONCURRENCY_LIMIT: the limit (that many calls are in flight).
   @$pb.TagNumber(4)
   $core.int get totalSlots => $_getIZ(3);
   @$pb.TagNumber(4)

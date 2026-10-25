@@ -271,6 +271,7 @@ func serve(ctx context.Context, stderr io.Writer, configPath, dataDirFlag string
 	sessions.SkillsDirs = skillsDirs
 	learning := &learn.Service{
 		Store: st, Config: current, DataDir: dataDir, RolesDir: rolesDir, SkillsDirs: skillsDirs, Catalog: catalog, Log: log,
+		Limiter: sessions.Limiter(),
 	}
 	mcpServers := mcpclient.New(current, log)
 	mcpServers.Tokens = mcpclient.NewTokenStore(filepath.Join(dataDir, mcpclient.TokenFileName))
@@ -313,6 +314,7 @@ func serve(ctx context.Context, stderr io.Writer, configPath, dataDirFlag string
 			prev := *live.Load()
 			live.Store(&next)
 			level.Set(next.Log.SlogLevel())
+			sessions.Limiter().Changed() // a raised concurrency limit lets waiting calls in
 			if !reflect.DeepEqual(prev.Providers, next.Providers) || prev.ModelOverridesFile != next.ModelOverridesFile {
 				go func() { _ = catalog.Refresh(ctx, "") }()
 			}

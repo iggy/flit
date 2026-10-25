@@ -31,6 +31,9 @@ type Response struct {
 	Started chan struct{}
 	// HeaderDelay waits this long before sending the response headers.
 	HeaderDelay time.Duration
+	// Release, if set, holds the stream open after Chunks (and Started)
+	// until it is closed or the client goes away.
+	Release chan struct{}
 }
 
 // sleepPrefix marks a Pause pseudo-chunk.
@@ -148,6 +151,13 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 	if resp.Hang {
 		<-r.Context().Done()
 		return
+	}
+	if resp.Release != nil {
+		select {
+		case <-resp.Release:
+		case <-r.Context().Done():
+			return
+		}
 	}
 	fmt.Fprint(w, "data: [DONE]\n\n")
 }

@@ -894,8 +894,10 @@ message QueuedMessageDelivered {
 }
 
 // ModelWaitReason is why a model call hasn't started, as the model server
-// reports it.
+// reports it (or flit's own concurrency limit).
 enum ModelWaitReason {
+  // In ModelCallWaiting: the call is no longer waiting (it got its turn
+  // under CONCURRENCY_LIMIT).
   MODEL_WAIT_REASON_UNSPECIFIED = 0;
   // Every slot of the llama.cpp server is busy with other requests; this
   // one waits for a free one.
@@ -904,16 +906,23 @@ enum ModelWaitReason {
   MODEL_WAIT_REASON_SLEEPING = 2;
   // The llama.cpp router is loading the model.
   MODEL_WAIT_REASON_LOADING = 3;
+  // flit holds the call back: the model's configured concurrency
+  // (providers[].concurrency) is used up by other calls, from any session
+  // or subagent. Any provider, not just llama.cpp.
+  MODEL_WAIT_REASON_CONCURRENCY_LIMIT = 4;
 }
 
 // ModelCallWaiting says why the model call for message_id hasn't started
-// yet (llama.cpp only). Sent when the reason changes, until the server
-// starts on the call (PromptProgress or reply text follow).
+// yet (llama.cpp, or any provider for CONCURRENCY_LIMIT). Sent when the
+// reason changes, until the server starts on the call (PromptProgress or
+// reply text follow). A call that waited for CONCURRENCY_LIMIT gets one
+// with reason UNSPECIFIED when it is sent.
 message ModelCallWaiting {
   string message_id = 1;
   int32 attempt = 2;
   ModelWaitReason reason = 3;
-  // For SLOTS_BUSY: how many slots there are (all busy).
+  // For SLOTS_BUSY: how many slots there are (all busy). For
+  // CONCURRENCY_LIMIT: the limit (that many calls are in flight).
   int32 total_slots = 4;
 }
 

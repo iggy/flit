@@ -132,6 +132,19 @@ type Provider struct {
 	// User-Agent. ${VAR} in a value is replaced with that environment
 	// variable; an unset one fails the request.
 	Headers map[string]string `yaml:"headers"`
+	// Concurrency caps how many requests flit sends to each of the
+	// provider's models at once, across all sessions and subagents; more
+	// wait their turn. 0 means no limit. Models can set their own.
+	Concurrency int `yaml:"concurrency"`
+	// Models holds per-model settings, keyed by model id.
+	Models map[string]ProviderModel `yaml:"models"`
+}
+
+// ProviderModel is per-model settings on a provider.
+type ProviderModel struct {
+	// Concurrency, when set, replaces the provider's for this model; 0
+	// means no limit for it.
+	Concurrency *int `yaml:"concurrency"`
 }
 
 // MCPServer is an MCP server: either a subprocess flit starts and talks to
@@ -543,6 +556,20 @@ type Shell struct {
 // ReadOnlyEnabled reports whether the built-in read-only list applies.
 func (s Shell) ReadOnlyEnabled() bool { return s.ReadOnly == nil || *s.ReadOnly }
 
+// Concurrency returns how many requests to model on provider may be in
+// flight at once: the model's limit if it sets one, else the provider's;
+// 0 means no limit.
+func (c Config) Concurrency(provider, model string) int {
+	p, ok := c.Provider(provider)
+	if !ok {
+		return 0
+	}
+	if m, ok := p.Models[model]; ok && m.Concurrency != nil {
+		return *m.Concurrency
+	}
+	return p.Concurrency
+}
+
 // Provider returns the provider named name.
 func (c Config) Provider(name string) (Provider, bool) {
 	for _, p := range c.Providers {
@@ -773,6 +800,14 @@ func (c Config) Validate() error {
 				return fmt.Errorf("providers %q: headers: %q is not a valid header name", p.Name, k)
 			}
 		}
+		if p.Concurrency < 0 {
+			return fmt.Errorf("providers %q: concurrency %d: want 0 (no limit) or more", p.Name, p.Concurrency)
+		}
+		for id, m := range p.Models {
+			if m.Concurrency != nil && *m.Concurrency < 0 {
+				return fmt.Errorf("providers %q: models %q: concurrency %d: want 0 (no limit) or more", p.Name, id, *m.Concurrency)
+			}
+		}
 	}
 	if c.Agent.Provider != "" && !seen[c.Agent.Provider] {
 		return fmt.Errorf("agent.provider %q is not in providers", c.Agent.Provider)
@@ -956,6 +991,16 @@ providers: []
 #    api_key_env: OPENROUTER_API_KEY      # or api_key: sk-...
 #    headers:                            # sent with every request; ${VAR} is
 #      User-Agent: my-agent/1.0          # read from the environment
+#
+# concurrency caps how many requests flit sends to each of a provider's models
+# at once, across all sessions and subagents (0 or unset: no limit); more wait
+# their turn. A model under models: can set its own, which wins (0: no limit):
+#  - name: local
+#    base_url: http://localhost:8080/v1
+#    concurrency: 1                      # big local models: one at a time
+#    models:
+#      qwen3-4b:
+#        concurrency: 8                  # a small one can take more
 
 # Corrections and additions to discovered models (context length, tools,
 # reasoning, effort levels), relative to this file.

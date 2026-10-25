@@ -171,6 +171,7 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 		client := &llm.Client{
 			BaseURL: provider.BaseURL, APIKey: provider.Key(), Header: header, HTTP: s.m.http,
 			FirstTokenTimeout: cfg.Agent.ModelFirstTokenTimeout, StallTimeout: cfg.Agent.ModelStallTimeout,
+			Limiter: s.m.limiter, Provider: provider.Name,
 		}
 		var slot *int
 		if llama {
@@ -210,8 +211,11 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 			if llama {
 				stopWait = s.watchWait(callCtx, s.m.llamaClient(provider, router), live, attempt, slot)
 			}
+			queued, admitted := s.limitHandlers(msgID, attempt, provider.Name, info.Model, live, s.appendFunc, &appendErr)
 			res, trace, err = client.StreamTrace(callCtx, req, llm.Handler{
-				ID: s.callID,
+				ID:       s.callID,
+				Queued:   queued,
+				Admitted: admitted,
 				Text: func(d string) {
 					s.callActivity(len(d), 0)
 					text.WriteString(d)

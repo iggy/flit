@@ -163,6 +163,7 @@ const ModelWaitReason$json = {
     {'1': 'MODEL_WAIT_REASON_SLOTS_BUSY', '2': 1},
     {'1': 'MODEL_WAIT_REASON_SLEEPING', '2': 2},
     {'1': 'MODEL_WAIT_REASON_LOADING', '2': 3},
+    {'1': 'MODEL_WAIT_REASON_CONCURRENCY_LIMIT', '2': 4},
   ],
 };
 
@@ -170,7 +171,8 @@ const ModelWaitReason$json = {
 final $typed_data.Uint8List modelWaitReasonDescriptor = $convert.base64Decode(
     'Cg9Nb2RlbFdhaXRSZWFzb24SIQodTU9ERUxfV0FJVF9SRUFTT05fVU5TUEVDSUZJRUQQABIgCh'
     'xNT0RFTF9XQUlUX1JFQVNPTl9TTE9UU19CVVNZEAESHgoaTU9ERUxfV0FJVF9SRUFTT05fU0xF'
-    'RVBJTkcQAhIdChlNT0RFTF9XQUlUX1JFQVNPTl9MT0FESU5HEAM=');
+    'RVBJTkcQAhIdChlNT0RFTF9XQUlUX1JFQVNPTl9MT0FESU5HEAMSJwojTU9ERUxfV0FJVF9SRU'
+    'FTT05fQ09OQ1VSUkVOQ1lfTElNSVQQBA==');
 
 @$core.Deprecated('Use promptCacheActionDescriptor instead')
 const PromptCacheAction$json = {
