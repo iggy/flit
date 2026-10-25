@@ -1031,3 +1031,78 @@ func TestAllowForSession(t *testing.T) {
 		t.Fatalf("reloaded allowances = %v", got)
 	}
 }
+
+// A model that emits raw control characters inside JSON strings (a literal
+// tab in file contents) gets its call run, and later requests carry valid
+// JSON arguments: llama.cpp rejects the whole request otherwise. Arguments
+// that can't be repaired are wrapped, and the log keeps what the model sent.
+func TestToolCallArgumentsWithRawControlCharacters(t *testing.T) {
+	h := newHarness(t)
+	tabbed := "{\"path\":\"t.go\",\"content\":\"func f() {\n\treturn\n}\n\"}"
+	broken := `{"path": "a.txt"`
+	h.llm.Push(
+		llmtest.Response{Chunks: llmtest.ToolCalls(
+			[3]string{"call_1", "write", tabbed},
+			[3]string{"call_2", "read", broken},
+		)},
+		llmtest.Response{Chunks: llmtest.Text("done")},
+	)
+	sess := h.create()
+	w := h.watch(sess.ID, 0)
+	if _, err := h.m.Send(context.Background(), sess.ID, "write it"); err != nil {
+		t.Fatal(err)
+	}
+	if end := w.waitTurnEnd(); end.GetTaskStateChanged().State != flitv1.TaskState_TASK_STATE_DONE {
+		t.Fatalf("turn ended %v; events:\n%s", end, dump(w.snapshot()))
+	}
+	evs := w.snapshot()
+
+	b, err := os.ReadFile(filepath.Join(h.dir, "t.go"))
+	if err != nil || string(b) != "func f() {\n\treturn\n}\n" {
+		t.Fatalf("t.go = %q, %v", b, err)
+	}
+	results := map[string]*flitv1.ToolCallDone{}
+	started := map[string]string{}
+	for _, ev := range evs {
+		if d := ev.GetToolCallDone(); d != nil {
+			results[d.ToolCallId] = d
+		}
+		if s := ev.GetToolCallStarted(); s != nil {
+			started[s.ToolCallId] = s.Arguments
+		}
+	}
+	if r := results["call_1"]; r == nil || r.IsError {
+		t.Fatalf("write result %+v", r)
+	}
+	if r := results["call_2"]; r == nil || !r.IsError || !strings.Contains(r.Result, "not valid JSON") {
+		t.Fatalf("broken call result %+v", r)
+	}
+	if started["call_1"] != tabbed || started["call_2"] != broken {
+		t.Fatalf("log should keep the model's arguments: %q", started)
+	}
+
+	reqs := h.llm.Requests()
+	if len(reqs) != 2 {
+		t.Fatalf("%d model calls", len(reqs))
+	}
+	var calls []llm.ToolCall
+	for _, m := range reqs[1].Messages {
+		calls = append(calls, m.ToolCalls...)
+	}
+	if len(calls) != 2 {
+		t.Fatalf("history tool calls: %+v", calls)
+	}
+	for _, c := range calls {
+		if !json.Valid([]byte(c.Function.Arguments)) {
+			t.Fatalf("history has invalid JSON arguments %q", c.Function.Arguments)
+		}
+	}
+	var args struct{ Path, Content string }
+	if err := json.Unmarshal([]byte(calls[0].Function.Arguments), &args); err != nil || args.Content != "func f() {\n\treturn\n}\n" {
+		t.Fatalf("repaired arguments %q: %+v, %v", calls[0].Function.Arguments, args, err)
+	}
+	var wrapped map[string]string
+	if err := json.Unmarshal([]byte(calls[1].Function.Arguments), &wrapped); err != nil || wrapped[llm.InvalidArgumentsKey] != broken {
+		t.Fatalf("wrapped arguments %q: %v", calls[1].Function.Arguments, err)
+	}
+}
