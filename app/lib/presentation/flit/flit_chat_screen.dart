@@ -4,6 +4,7 @@
 library;
 
 import 'package:flit/application/flit/flit_chat_notifier.dart';
+import 'package:flit/application/flit/flit_drafts.dart';
 import 'package:flit/application/flit/flit_fold.dart';
 import 'package:flit/application/flit/flit_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
@@ -50,6 +51,9 @@ class FlitChatScreen extends ConsumerStatefulWidget {
 class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
     with WidgetsBindingObserver {
   final TextEditingController _input = TextEditingController();
+
+  /// Where the composer's unsent text lives between visits.
+  late final FlitDraftStore _drafts;
   final ScrollController _scroll = ScrollController();
   bool _sending = false;
 
@@ -69,12 +73,23 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _scroll.addListener(_onScroll);
+    // Pick up what was typed here before leaving the session, and keep the
+    // store current so leaving again (or sending, which clears the field)
+    // is reflected.
+    _drafts = ref.read(flitDraftStoreProvider);
+    _input
+      ..text = _drafts.read(widget.sessionId)
+      ..addListener(_saveDraft);
   }
+
+  void _saveDraft() => _drafts.write(widget.sessionId, _input.text);
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _input.dispose();
+    _input
+      ..removeListener(_saveDraft)
+      ..dispose();
     _scroll
       ..removeListener(_onScroll)
       ..dispose();
