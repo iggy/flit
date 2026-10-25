@@ -201,6 +201,10 @@ func (p *printer) event(ev *flitv1.Event) {
 			p.line(at, 2, "waiting: the model is asleep and waking up")
 		case flitv1.ModelWaitReason_MODEL_WAIT_REASON_LOADING:
 			p.line(at, 2, "waiting: llama.cpp is loading the model")
+		case flitv1.ModelWaitReason_MODEL_WAIT_REASON_CONCURRENCY_LIMIT:
+			p.line(at, 2, "waiting for its turn: the model's concurrency limit (%d) is in use", w.TotalSlots)
+		case flitv1.ModelWaitReason_MODEL_WAIT_REASON_UNSPECIFIED:
+			p.line(at, 2, "got its turn; sent")
 		}
 		p.waiting[callKey(w.MessageId, w.Attempt)] = w
 	case ev.GetPromptCache() != nil:
@@ -364,6 +368,8 @@ func (p *printer) open(sess store.Session) {
 			text += fmt.Sprintf("; last output %s ago (%d chars of text, %d of reasoning so far)", dur(p.now.Sub(m.lastDelta)), m.text, m.reasoning)
 		} else if w := p.waiting[key]; w != nil && w.Reason == flitv1.ModelWaitReason_MODEL_WAIT_REASON_SLOTS_BUSY {
 			text += fmt.Sprintf("; waiting for a free llama.cpp slot (all %d busy)", w.TotalSlots)
+		} else if w := p.waiting[key]; w != nil && w.Reason == flitv1.ModelWaitReason_MODEL_WAIT_REASON_CONCURRENCY_LIMIT {
+			text += fmt.Sprintf("; waiting for its turn under the model's concurrency limit (%d)", w.TotalSlots)
 		} else if pp := p.lastProgress[key]; pp != nil {
 			text += fmt.Sprintf("; no output yet, last prompt progress %d/%d", pp.Processed, pp.Total)
 		} else {

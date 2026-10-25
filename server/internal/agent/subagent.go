@@ -192,6 +192,7 @@ func (s *session) runSubagent(ctx context.Context, turnID, callID string, raw js
 		client := &llm.Client{
 			BaseURL: provider.BaseURL, APIKey: provider.Key(), Header: header, HTTP: s.m.http,
 			FirstTokenTimeout: cfg.Agent.ModelFirstTokenTimeout, StallTimeout: cfg.Agent.ModelStallTimeout,
+			Limiter: s.m.limiter, Provider: provider.Name,
 		}
 		res, err := r.call(ctx, cfg, info, task, client, req)
 		done.Steps = int32(step + 1)
@@ -299,7 +300,10 @@ func (r *subagentRun) call(ctx context.Context, cfg config.Config, info store.Se
 			return nil, logErr(err)
 		}
 		var trace *llm.Trace
+		queued, admitted := r.s.limitHandlers(msgID, attempt, task.Provider, task.Model, nil, r.append, &appendErr)
 		res, trace, err = client.StreamTrace(ctx, req, llm.Handler{
+			Queued:   queued,
+			Admitted: admitted,
 			Text: func(d string) {
 				text.WriteString(d)
 				if err := r.append(&flitv1.Event{Payload: &flitv1.Event_TextDelta{TextDelta: &flitv1.TextDelta{MessageId: msgID, Text: d}}}); err != nil {

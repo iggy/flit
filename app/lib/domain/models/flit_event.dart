@@ -462,8 +462,9 @@ final class FlitQueuedMessageDelivered extends FlitEvent {
   final String messageId;
 }
 
-/// Why a llama.cpp call hasn't started (flit.v1 `ModelWaitReason`).
-enum FlitWaitReason { slotsBusy, sleeping, loading, unknown }
+/// Why a call hasn't started (flit.v1 `ModelWaitReason`): llama.cpp's
+/// reasons, or flit's own per-model concurrency limit.
+enum FlitWaitReason { slotsBusy, sleeping, loading, concurrencyLimit, unknown }
 
 /// The model server says why the call for [messageId] is waiting.
 final class FlitModelCallWaiting extends FlitEvent {

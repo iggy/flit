@@ -100,6 +100,11 @@ class _FlitCallStatusState extends State<FlitCallStatus> {
             : 'Waiting for a free llama.cpp slot',
       FlitWaitReason.sleeping => 'Waking the model up',
       FlitWaitReason.loading => 'Loading the model',
+      FlitWaitReason.concurrencyLimit =>
+        call.totalSlots > 0
+            ? 'Waiting for a turn on this model '
+                  '(concurrency limit ${call.totalSlots})'
+            : 'Waiting for a turn on this model',
       FlitWaitReason.unknown || null => null,
     };
     final String text;

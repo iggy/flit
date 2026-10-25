@@ -136,6 +136,11 @@ type Handler struct {
 	Progress func(PromptProgress)
 	// ID receives the completion's id once, from the first chunk.
 	ID func(string)
+	// Queued is called when the call has to wait for its Limiter: limit
+	// calls to the model are already in flight. Admitted follows when it
+	// gets its turn (not if the context ends first).
+	Queued   func(limit int)
+	Admitted func()
 }
 
 // PromptProgress is how far the server has got reading the prompt.
@@ -237,6 +242,11 @@ type Client struct {
 	// progress, are flowing). 0 turns a limit off.
 	FirstTokenTimeout time.Duration
 	StallTimeout      time.Duration
+	// Limiter, if set, caps calls in flight to Provider's model (the
+	// request's). A call holds its slot until its stream ends; the wait
+	// for one comes before the watchdog starts.
+	Limiter  *Limiter
+	Provider string
 }
 
 // Stream sends req with streaming enabled, calls h for each delta and
@@ -251,6 +261,20 @@ func (c *Client) Stream(ctx context.Context, req Request, h Handler) (*Result, e
 // *StallError.
 func (c *Client) StreamTrace(ctx context.Context, req Request, h Handler) (*Result, *Trace, error) {
 	w := &watch{first: c.FirstTokenTimeout, stall: c.StallTimeout, trace: &Trace{Phase: PhaseConnecting}}
+	queued := false
+	release, err := c.Limiter.Acquire(ctx, c.Provider, req.Model, func(limit int) {
+		queued = true
+		if h.Queued != nil {
+			h.Queued(limit)
+		}
+	})
+	if err != nil {
+		return nil, w.finish(err), err
+	}
+	defer release()
+	if queued && h.Admitted != nil {
+		h.Admitted()
+	}
 	res, err := c.stream(ctx, req, h, w)
 	return res, w.finish(err), err
 }

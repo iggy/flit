@@ -109,6 +109,26 @@ with every request to it and replace flit's own, e.g. a different
 `User-Agent` for an endpoint that filters on it; `${VAR}` in a value is read
 from the environment.
 
+`concurrency` caps how many requests flit sends to each of a provider's models
+at once, counted across all sessions, subagents, compaction, safety checks and
+learning; calls over the limit wait their turn (the app shows "Waiting for a
+turn on this model"), and stopping the turn stops the wait. A model under
+`models:` can set its own, which wins; unset or 0 means no limit. Changes
+apply live to the next call, without stopping calls already running.
+
+```yaml
+providers:
+  - name: local                 # one big model at a time...
+    base_url: http://localhost:8080/v1
+    concurrency: 1
+    models:
+      qwen3-4b:
+        concurrency: 8          # ...but a small one can take more
+  - name: openrouter            # cloud: no limit
+    base_url: https://openrouter.ai/api/v1
+    api_key_env: OPENROUTER_API_KEY
+```
+
 ### Model discovery, effort and roles
 
 flit asks each provider's `/models` endpoint what it offers (with adapters for
