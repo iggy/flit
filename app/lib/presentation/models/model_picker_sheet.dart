@@ -9,15 +9,18 @@ import 'dart:async';
 import 'package:flit/application/config/config_providers.dart';
 import 'package:flit/application/models/model_providers.dart';
 import 'package:flit/domain/models/model_option.dart';
+import 'package:flit/presentation/common/middle_ellipsis_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Parses a "providerSlug:model" string into its components.
+/// Parses a "providerSlug:model" string into its components. Splits on the
+/// first `:` only, so a model id with its own tag (`llama3:8b`) survives.
 /// Returns null if the format is invalid.
-(String, String)? _parseModelKey(String key) {
-  final parts = key.split(':');
-  if (parts.length != 2) return null;
-  return (parts[0], parts[1]);
+@visibleForTesting
+(String, String)? parseModelKey(String key) {
+  final i = key.indexOf(':');
+  if (i <= 0 || i == key.length - 1) return null;
+  return (key.substring(0, i), key.substring(i + 1));
 }
 
 /// App-bar action for model selection: the smart-toy icon plus the current
@@ -43,7 +46,8 @@ class ModelPickerButton extends ConsumerWidget {
     });
     final known = current != null && current.model.isNotEmpty;
     return Tooltip(
-      message: warning ?? 'Select model',
+      // The label may be cut down the middle; the tooltip has it whole.
+      message: warning ?? (known ? current.model : 'Select model'),
       child: TextButton.icon(
         style: TextButton.styleFrom(
           foregroundColor: Theme.of(context).colorScheme.onSurface,
@@ -52,9 +56,9 @@ class ModelPickerButton extends ConsumerWidget {
         icon: const Icon(Icons.smart_toy_outlined, size: 20),
         label: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxLabelWidth),
-          child: Text(
+          child: MiddleEllipsisText(
             known ? current.model : 'Model',
-            overflow: TextOverflow.ellipsis,
+            tooltip: false,
           ),
         ),
         onPressed: () {
@@ -224,7 +228,7 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
     // first frame, so this ordering must be derived during every rebuild.
     final favoriteOptions = <(String, String)>[];
     for (final key in modelPrefs.favorites) {
-      final parsed = _parseModelKey(key);
+      final parsed = parseModelKey(key);
       if (parsed != null && isPickable(parsed.$1, parsed.$2)) {
         favoriteOptions.add(parsed);
       }
@@ -255,7 +259,7 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
       }
 
       // Add favorites in persisted order (oldest Android preference formats
-      // are normalized by _parseModelKey before they reach the tiles).
+      // are normalized by parseModelKey before they reach the tiles).
       for (final (providerSlug, model) in favoriteOptions) {
         final key = '$providerSlug:$model';
         if (addedToQuickPicks.contains(key)) continue;
@@ -279,7 +283,7 @@ class _ModelPickerSheetState extends ConsumerState<ModelPickerSheet> {
           .where((key) => !addedToQuickPicks.contains(key))
           .take(5);
       for (final key in recentToShow) {
-        final parsed = _parseModelKey(key);
+        final parsed = parseModelKey(key);
         if (parsed == null) continue;
         final (providerSlug, model) = parsed;
         if (!isPickable(providerSlug, model)) continue;
