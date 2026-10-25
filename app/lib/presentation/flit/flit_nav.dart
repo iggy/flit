@@ -8,6 +8,7 @@ import 'package:flit/application/flit/flit_cron.dart';
 import 'package:flit/application/flit/flit_providers.dart';
 import 'package:flit/domain/models/flit_session.dart';
 import 'package:flit/presentation/flit/flit_crons.dart';
+import 'package:flit/presentation/flit/flit_projects.dart';
 import 'package:flit/presentation/flit/flit_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -106,16 +107,40 @@ class FlitNavPane extends ConsumerWidget {
                     p.id == openProject ||
                     (sessionId == null && p.id == selectedProject),
                 leading: const Icon(Icons.folder_outlined),
+                // Right-click or long-press anywhere on the title row opens
+                // the project's context menu; tapping the name opens its
+                // session list (elsewhere on the row expands it).
                 title: GestureDetector(
-                  onTap: () => openProjectList(p.id),
-                  child: Text(
-                    p.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontWeight: sessionId == null && p.id == selectedProject
-                          ? FontWeight.bold
-                          : null,
+                  behavior: HitTestBehavior.opaque,
+                  onSecondaryTapUp: (d) => showFlitProjectMenu(
+                    context,
+                    ref,
+                    p,
+                    position: d.globalPosition,
+                    sessions: byProject[p.id] ?? const <FlitSession>[],
+                  ),
+                  onLongPressStart: (d) => showFlitProjectMenu(
+                    context,
+                    ref,
+                    p,
+                    position: d.globalPosition,
+                    sessions: byProject[p.id] ?? const <FlitSession>[],
+                  ),
+                  child: Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: GestureDetector(
+                      onTap: () => openProjectList(p.id),
+                      child: Text(
+                        p.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontWeight:
+                              sessionId == null && p.id == selectedProject
+                              ? FontWeight.bold
+                              : null,
+                        ),
+                      ),
                     ),
                   ),
                 ),

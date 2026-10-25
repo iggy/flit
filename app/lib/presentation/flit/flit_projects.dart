@@ -1,11 +1,12 @@
 /// Project switching for the flit sessions list: a menu of projects with
-/// "All projects" and "New project…", the new-project dialog, and the
-/// move-session dialog.
+/// "All projects" and "New project…", the new-project dialog, the
+/// move-session dialog, and a project's options and context menu.
 library;
 
 import 'package:flit/application/flit/flit_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/domain/models/flit_session.dart';
+import 'package:flit/presentation/flit/flit_new_session.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -251,45 +252,116 @@ class FlitProjectExportToggle extends ConsumerWidget {
     return PopupMenuButton<_ProjectOption>(
       tooltip: 'Project options',
       icon: const Icon(Icons.more_vert),
-      onSelected: (option) async {
-        final repository = ref.read(flitRepositoryProvider);
-        if (repository == null) {
-          return;
-        }
-        try {
-          switch (option) {
-            case _ProjectOption.export:
-              await repository.setProjectExport(
-                p.id,
-                enabled: !p.exportEnabled,
-              );
-            case _ProjectOption.worktrees:
-              await repository.setProjectWorktrees(p.id, enabled: !p.worktrees);
-          }
-          ref.invalidate(flitProjectsProvider);
-        } on GatewayException catch (error) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Could not change it: ${error.message}')),
-            );
-          }
-        }
-      },
-      itemBuilder: (_) => <PopupMenuEntry<_ProjectOption>>[
-        CheckedPopupMenuItem<_ProjectOption>(
-          value: _ProjectOption.export,
-          checked: p.exportEnabled,
-          child: const Text('Include in exports'),
-        ),
-        if (p.directory.isNotEmpty)
-          CheckedPopupMenuItem<_ProjectOption>(
-            value: _ProjectOption.worktrees,
-            checked: p.worktrees,
-            child: const Text('A git worktree per session'),
-          ),
-      ],
+      onSelected: (option) => _setProjectOption(context, ref, p, option),
+      itemBuilder: (_) => _projectOptionItems<_ProjectOption>(p, (o) => o),
     );
   }
 }
 
 enum _ProjectOption { export, worktrees }
+
+/// The project's checkable options, as menu entries whose values are
+/// [wrap]ped options.
+List<PopupMenuEntry<T>> _projectOptionItems<T>(
+  FlitProject p,
+  T Function(_ProjectOption) wrap,
+) => <PopupMenuEntry<T>>[
+  CheckedPopupMenuItem<T>(
+    value: wrap(_ProjectOption.export),
+    checked: p.exportEnabled,
+    child: const Text('Include in exports'),
+  ),
+  if (p.directory.isNotEmpty)
+    CheckedPopupMenuItem<T>(
+      value: wrap(_ProjectOption.worktrees),
+      checked: p.worktrees,
+      child: const Text('A git worktree per session'),
+    ),
+];
+
+/// Flips [option] for project [p].
+Future<void> _setProjectOption(
+  BuildContext context,
+  WidgetRef ref,
+  FlitProject p,
+  _ProjectOption option,
+) async {
+  final repository = ref.read(flitRepositoryProvider);
+  if (repository == null) {
+    return;
+  }
+  try {
+    switch (option) {
+      case _ProjectOption.export:
+        await repository.setProjectExport(p.id, enabled: !p.exportEnabled);
+      case _ProjectOption.worktrees:
+        await repository.setProjectWorktrees(p.id, enabled: !p.worktrees);
+    }
+    ref.invalidate(flitProjectsProvider);
+  } on GatewayException catch (error) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not change it: ${error.message}')),
+      );
+    }
+  }
+}
+
+/// What the project context menu can do: start a session or flip an
+/// option.
+sealed class _ProjectAction {
+  const _ProjectAction();
+}
+
+final class _NewSessionAction extends _ProjectAction {
+  const _NewSessionAction();
+}
+
+final class _OptionAction extends _ProjectAction {
+  const _OptionAction(this.option);
+
+  final _ProjectOption option;
+}
+
+/// The context menu for project [p] (right-click or long-press in a project
+/// list), opened at [position] (global): New session, then the project's
+/// options. [sessions] are the project's, newest first, for the new
+/// session's default directory.
+Future<void> showFlitProjectMenu(
+  BuildContext context,
+  WidgetRef ref,
+  FlitProject p, {
+  required Offset position,
+  List<FlitSession> sessions = const <FlitSession>[],
+}) async {
+  final overlay = Overlay.of(context).context.findRenderObject()! as RenderBox;
+  final action = await showMenu<_ProjectAction>(
+    context: context,
+    position: RelativeRect.fromRect(
+      position & Size.zero,
+      Offset.zero & overlay.size,
+    ),
+    items: <PopupMenuEntry<_ProjectAction>>[
+      const PopupMenuItem<_ProjectAction>(
+        value: _NewSessionAction(),
+        child: Text('New session…'),
+      ),
+      const PopupMenuDivider(),
+      ..._projectOptionItems<_ProjectAction>(p, _OptionAction.new),
+    ],
+  );
+  if (action == null || !context.mounted) {
+    return;
+  }
+  switch (action) {
+    case _NewSessionAction():
+      await showFlitNewSession(
+        context,
+        ref,
+        projectId: p.id,
+        existing: sessions,
+      );
+    case _OptionAction(:final option):
+      await _setProjectOption(context, ref, p, option);
+  }
+}
