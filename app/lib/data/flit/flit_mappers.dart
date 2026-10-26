@@ -681,6 +681,9 @@ FlitEvent eventFromProto(pb.Event e) {
     // Which cron job started the session; the app shows that from
     // FlitSession.cronJob instead.
     case pb.Event_Payload.cronRun:
+    // Which webhook delivery started the session; the app doesn't show
+    // webhook runs yet.
+    case pb.Event_Payload.webhookRun:
     // The session's worktree; the app shows it from FlitSession.
     case pb.Event_Payload.worktreeCreated:
     case pb.Event_Payload.worktreeSkipped:

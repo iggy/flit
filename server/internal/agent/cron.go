@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -45,6 +46,54 @@ type CronOutcome struct {
 	// Refused are what nobody could approve: shell commands, cron job
 	// changes.
 	Refused []string
+}
+
+// maxSummary caps a run's summary.
+const maxSummary = 300
+
+// Result is how a run is recorded: its state (store.CronOK,
+// CronNeedsAttention or CronFailed), its summary (the first line of the
+// final reply, or why it failed) and whether it had nothing to report.
+func (o CronOutcome) Result() (state, summary string, quiet bool) {
+	first := firstLine(o.Final)
+	switch {
+	case o.Failed:
+		state, summary = store.CronFailed, o.Reason
+		if first != "" {
+			summary = o.Reason + ": " + first
+		}
+	case len(o.Refused) > 0:
+		state, summary = store.CronNeedsAttention, first
+	default:
+		state, summary = store.CronOK, first
+		quiet = isNothing(first)
+	}
+	if summary == "" {
+		summary = "(no report)"
+	}
+	if utf8.RuneCountInString(summary) > maxSummary {
+		summary = string([]rune(summary)[:maxSummary-1]) + "…"
+	}
+	return state, summary, quiet
+}
+
+// firstLine is the first non-empty line of a reply, without Markdown
+// heading, list, quote or bold markers.
+func firstLine(text string) string {
+	for _, line := range strings.Split(text, "\n") {
+		line = strings.NewReplacer("**", "", "__", "").Replace(line)
+		line = strings.TrimSpace(strings.TrimLeft(strings.TrimSpace(line), "#>*- "))
+		if line != "" {
+			return line
+		}
+	}
+	return ""
+}
+
+// isNothing reports whether a summary says there is nothing to report.
+func isNothing(summary string) bool {
+	s := strings.ToLower(strings.Trim(strings.TrimSpace(summary), ".!*_\"'` "))
+	return s == NothingToReport
 }
 
 // unattended is a cron run's turn in progress.
@@ -89,24 +138,61 @@ The task:
 // prompt, and starts the turn unattended. The outcome arrives on the channel
 // when the turn ends.
 func (m *Manager) StartCronRun(ctx context.Context, o CronRunOptions) (store.Session, <-chan CronOutcome, error) {
+	ask := flitv1.CronAsk_CRON_ASK_DENY
+	if o.Wait {
+		ask = flitv1.CronAsk_CRON_ASK_WAIT
+	}
+	return m.startUnattended(ctx, unattendedStart{
+		create: o.Create, tasks: []string{"cron"}, wait: o.Wait, timeout: o.AskTimeout, prompt: cronPreamble(o), client: "cron",
+		opening: func(yolo bool) *flitv1.Event {
+			return &flitv1.Event{Payload: &flitv1.Event_CronRun{CronRun: &flitv1.CronRunStarted{
+				Job: o.Job, Schedule: o.Schedule, ScheduleText: o.ScheduleText, Trigger: o.Trigger,
+				ScheduledTime: timestamppb.New(o.ScheduledAt), RunId: o.RunID, Ask: ask,
+				AskTimeoutSeconds: int64(o.AskTimeout / time.Second), Yolo: yolo,
+			}}}
+		},
+	})
+}
+
+// unattendedStart is how startUnattended starts a run.
+type unattendedStart struct {
+	create CreateOptions
+	// tasks are the agent.tasks entries to try, in order, for the model
+	// when neither the run nor its role picks one.
+	tasks   []string
+	wait    bool
+	timeout time.Duration
+	prompt  string
+	client  string
+	opening func(yolo bool) *flitv1.Event
+}
+
+// startUnattended creates a run's session, records its opening event and
+// the prompt, and starts the turn unattended (see approveUnattended).
+func (m *Manager) startUnattended(ctx context.Context, o unattendedStart) (store.Session, <-chan CronOutcome, error) {
 	if m.closing.Load() {
 		return store.Session{}, nil, errors.New("flit is shutting down")
 	}
-	// The model: the job's, else its role's, else agent.tasks.cron, else
-	// the chat default (Create does the last two's fallbacks).
-	if o.Create.Provider == "" {
-		role, err := m.role(o.Create.Role)
+	// The model: the run's, else its role's, else the task's, else the
+	// chat default (Create does the last two's fallbacks).
+	if o.create.Provider == "" {
+		role, err := m.role(o.create.Role)
 		if err != nil {
 			return store.Session{}, nil, err
 		}
-		if t, ok := m.cfg().Task("cron"); ok && (role == nil || role.Provider == "") {
-			o.Create.Provider, o.Create.Model = t.Provider, t.Model
-			if o.Create.Effort == "" && (role == nil || role.Effort == "") {
-				o.Create.Effort = t.Effort
+		for _, task := range o.tasks {
+			t, ok := m.cfg().Task(task)
+			if !ok || (role != nil && role.Provider != "") {
+				continue
 			}
+			o.create.Provider, o.create.Model = t.Provider, t.Model
+			if o.create.Effort == "" && (role == nil || role.Effort == "") {
+				o.create.Effort = t.Effort
+			}
+			break
 		}
 	}
-	info, err := m.Create(ctx, o.Create)
+	info, err := m.Create(ctx, o.create)
 	if err != nil {
 		return store.Session{}, nil, err
 	}
@@ -114,21 +200,13 @@ func (m *Manager) StartCronRun(ctx context.Context, o CronRunOptions) (store.Ses
 	if err != nil {
 		return store.Session{}, nil, err
 	}
-	ask := flitv1.CronAsk_CRON_ASK_DENY
-	if o.Wait {
-		ask = flitv1.CronAsk_CRON_ASK_WAIT
-	}
-	u := &unattended{wait: o.Wait, timeout: o.AskTimeout, done: make(chan CronOutcome, 1)}
+	u := &unattended{wait: o.wait, timeout: o.timeout, done: make(chan CronOutcome, 1)}
 	s.mu.Lock()
 	s.unattended = u
-	_, err = s.appendLocked(&flitv1.Event{Payload: &flitv1.Event_CronRun{CronRun: &flitv1.CronRunStarted{
-		Job: o.Job, Schedule: o.Schedule, ScheduleText: o.ScheduleText, Trigger: o.Trigger,
-		ScheduledTime: timestamppb.New(o.ScheduledAt), RunId: o.RunID, Ask: ask,
-		AskTimeoutSeconds: int64(o.AskTimeout / time.Second), Yolo: s.info.Yolo,
-	}}})
+	_, err = s.appendLocked(o.opening(s.info.Yolo))
 	s.mu.Unlock()
 	if err == nil {
-		_, err = s.send(cronPreamble(o), "cron")
+		_, err = s.send(o.prompt, o.client)
 	}
 	if err != nil {
 		s.mu.Lock()
@@ -144,6 +222,12 @@ func (m *Manager) StartCronRun(ctx context.Context, o CronRunOptions) (store.Ses
 // how many it archived.
 func (m *Manager) ArchiveCronSessions(ctx context.Context, job string, keep int) (int, error) {
 	ids, err := m.store.ArchiveCronSessions(ctx, store.DefaultTeamID, job, keep)
+	return m.archived(ctx, ids, err)
+}
+
+// archived updates live sessions the store just archived and removes their
+// worktrees.
+func (m *Manager) archived(ctx context.Context, ids []string, err error) (int, error) {
 	m.mu.Lock()
 	for _, id := range ids {
 		if s, ok := m.sessions[id]; ok {
@@ -190,7 +274,7 @@ func (s *session) finishUnattendedLocked(e end) {
 
 // unattendedRefusal is the tool result for something refused in an
 // unattended run.
-var errUnattended = fmt.Errorf("%w: this is an unattended run (a cron job) and nobody approved it, so it was not done. "+
+var errUnattended = fmt.Errorf("%w: this is an unattended run (a cron job or webhook) and nobody approved it, so it was not done. "+
 	"Don't retry it; carry on without it if you can, and mention it in your report", tools.ErrNotApproved)
 
 // approveUnattended handles a prompt in an unattended run: refused at once

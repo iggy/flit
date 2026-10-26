@@ -34,9 +34,6 @@ import (
 // rescanInterval is how often the crons directory is reread.
 const rescanInterval = 10 * time.Second
 
-// maxSummary caps a run's summary.
-const maxSummary = 300
-
 // Errors returned to the API.
 var (
 	ErrNotFound = errors.New("no such cron job")
@@ -346,24 +343,7 @@ func (s *Scheduler) finish(js *jobState, run *store.CronRun, out agent.CronOutco
 	r := *run
 	r.FinishedAt = s.now()
 	r.Refused = out.Refused
-	summary := firstLine(out.Final)
-	switch {
-	case out.Failed:
-		r.State = store.CronFailed
-		r.Summary = out.Reason
-		if summary != "" {
-			r.Summary = out.Reason + ": " + summary
-		}
-	case len(out.Refused) > 0:
-		r.State, r.Summary = store.CronNeedsAttention, summary
-	default:
-		r.State, r.Summary = store.CronOK, summary
-		r.Quiet = isNothing(summary)
-	}
-	if r.Summary == "" {
-		r.Summary = "(no report)"
-	}
-	r.Summary = clip(r.Summary, maxSummary)
+	r.State, r.Summary, r.Quiet = out.Result()
 	ctx := context.Background()
 	s.mu.Lock()
 	keep := js.job.Keep()
@@ -402,25 +382,6 @@ func Message(r store.CronRun) notify.Message {
 		m.Title, m.Tags = r.Job, []string{"white_check_mark"}
 	}
 	return m
-}
-
-// firstLine is the first non-empty line of a reply, without Markdown
-// heading, list, quote or bold markers.
-func firstLine(text string) string {
-	for _, line := range strings.Split(text, "\n") {
-		line = strings.NewReplacer("**", "", "__", "").Replace(line)
-		line = strings.TrimSpace(strings.TrimLeft(strings.TrimSpace(line), "#>*- "))
-		if line != "" {
-			return line
-		}
-	}
-	return ""
-}
-
-// isNothing reports whether a summary says there is nothing to report.
-func isNothing(summary string) bool {
-	s := strings.ToLower(strings.Trim(strings.TrimSpace(summary), ".!*_\"'` "))
-	return s == agent.NothingToReport
 }
 
 func clip(s string, n int) string {

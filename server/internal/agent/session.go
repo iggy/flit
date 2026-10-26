@@ -408,7 +408,7 @@ func (s *session) answer(promptID string, a Answer) error {
 }
 
 // approve raises a prompt and waits for a client to answer it or for the
-// turn to be interrupted. In an unattended run (a cron job) it may refuse
+// turn to be interrupted. In an unattended run (a cron job or webhook) it may refuse
 // at once or give up after a while instead (see approveUnattended).
 func (s *session) approve(ctx context.Context, toolCallID string, a tools.Approval) (bool, error) {
 	if ok, handled, err := s.approveUnattended(ctx, toolCallID, a); handled {

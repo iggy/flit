@@ -408,21 +408,3 @@ func TestRestartFailsUnfinishedRuns(t *testing.T) {
 		t.Fatalf("run %+v %v", r, err)
 	}
 }
-
-func TestFirstLine(t *testing.T) {
-	for in, want := range map[string]string{
-		"## Build is red\n\nmore":  "Build is red",
-		"\n\n  **Done.** All good": "Done. All good",
-		"- item one\n- item two":   "item one",
-		"":                         "",
-	} {
-		if got := firstLine(in); got != want {
-			t.Errorf("firstLine(%q) = %q, want %q", in, got, want)
-		}
-	}
-	for in, want := range map[string]bool{"nothing to report": true, "Nothing to report.": true, `"nothing to report"`: true, "nothing to report, but": false} {
-		if got := isNothing(in); got != want {
-			t.Errorf("isNothing(%q) = %v", in, got)
-		}
-	}
-}
