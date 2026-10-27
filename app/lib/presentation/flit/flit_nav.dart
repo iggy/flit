@@ -9,6 +9,7 @@ import 'package:flit/application/flit/flit_providers.dart';
 import 'package:flit/domain/models/flit_session.dart';
 import 'package:flit/presentation/flit/flit_crons.dart';
 import 'package:flit/presentation/flit/flit_projects.dart';
+import 'package:flit/presentation/flit/flit_share.dart';
 import 'package:flit/presentation/flit/flit_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -36,15 +37,19 @@ class FlitShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Shares from other apps open the new-session dialog from here, so
+    // they work whichever flit screen is showing.
     if (!flitIsWide(context)) {
-      return child;
+      return FlitShareHandler(child: child);
     }
-    return Row(
-      children: <Widget>[
-        SizedBox(width: 300, child: FlitNavPane(sessionId: sessionId)),
-        const VerticalDivider(width: 1),
-        Expanded(child: child),
-      ],
+    return FlitShareHandler(
+      child: Row(
+        children: <Widget>[
+          SizedBox(width: 300, child: FlitNavPane(sessionId: sessionId)),
+          const VerticalDivider(width: 1),
+          Expanded(child: child),
+        ],
+      ),
     );
   }
 }

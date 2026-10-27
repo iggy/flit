@@ -1,11 +1,13 @@
 import 'package:flit/application/connection/connect_controller.dart';
 import 'package:flit/application/connection/connection_providers.dart';
 import 'package:flit/application/flit/flit_pair_controller.dart';
+import 'package:flit/application/share/share_providers.dart';
 import 'package:flit/core/router/pending_deep_link_provider.dart';
 import 'package:flit/data/transport/connection_config.dart';
 import 'package:flit/domain/models/auth_provider.dart';
 import 'package:flit/presentation/common/connection_chip.dart';
 import 'package:flit/presentation/flit/flit_pair_form.dart';
+import 'package:flit/presentation/flit/flit_share.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -183,6 +185,18 @@ class _ConnectScreenState extends ConsumerState<ConnectScreen> {
               shrinkWrap: true,
               padding: const EdgeInsets.all(24),
               children: <Widget>[
+                // Something was shared with the app before any connection:
+                // it waits, and pairing with flit picks it up.
+                if (ref.watch(pendingShareProvider) != null) ...<Widget>[
+                  const Card(
+                    child: ListTile(
+                      leading: Icon(Icons.share_outlined),
+                      title: Text(shareWaitingTitle),
+                      subtitle: Text(shareWaitingMessage),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 SegmentedButton<BackendKind>(
                   segments: const <ButtonSegment<BackendKind>>[
                     ButtonSegment<BackendKind>(
