@@ -7,6 +7,7 @@
 //	flit pair [--url URL] [--config FILE] [--data-dir DIR]
 //	flit devices [--all] | flit devices revoke ID
 //	flit debug session [ID]
+//	flit debug dump
 //	flit mcp list | flit mcp login NAME | flit mcp logout NAME
 //	flit cron list | flit cron run NAME
 //	flit worktree remove SESSION
@@ -57,6 +58,7 @@ Usage:
   flit devices revoke ID      revoke a paired device
   flit export [flags]         write recorded sessions as JSONL (see docs/export.md)
   flit debug session [ID]     print a session's timeline, to see where a turn got stuck
+  flit debug dump             show what the running server is doing now (calls, locks, stacks)
   flit mcp list               list MCP servers and which are signed in
   flit mcp login NAME         sign in to a remote MCP server that needs OAuth
   flit mcp logout NAME        forget an MCP server's sign-in

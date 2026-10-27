@@ -247,3 +247,55 @@ func TestStreamTraceKeepsTimings(t *testing.T) {
 		t.Fatalf("trace = %+v, %v", tr, err)
 	}
 }
+
+// The trace counts output chunks and keeps the last prompt progress; a
+// live snapshot says where the call is while it runs.
+func TestTraceCountsAndLiveSnapshot(t *testing.T) {
+	srv := llmtest.New(t)
+	started := make(chan struct{})
+	release := make(chan struct{})
+	chunks := append([]string{llmtest.Progress(500, 1000, 0, 5), llmtest.Progress(1000, 1000, 0, 9)}, llmtest.Text("a", "b", "c")...)
+	srv.Push(llmtest.Response{Chunks: chunks, Started: started, Release: release})
+	var snap func() llm.Trace
+	c := &llm.Client{BaseURL: srv.BaseURL(), StallTimeout: time.Minute}
+	done := make(chan *llm.Trace)
+	go func() {
+		_, tr, err := c.StreamTrace(context.Background(), llm.Request{Model: "m"}, llm.Handler{Live: func(f func() llm.Trace) { snap = f }})
+		if err != nil {
+			t.Error(err)
+		}
+		done <- tr
+	}()
+	<-started
+	time.Sleep(20 * time.Millisecond)
+	live := snap()
+	if live.Phase != llm.PhaseStreaming || live.Tokens != 3 || live.PromptProcessed != 1000 || live.PromptTotal != 1000 ||
+		live.Watchdog != time.Minute || live.LastActivity.IsZero() || live.Sent.IsZero() {
+		t.Fatalf("live %+v", live)
+	}
+	close(release)
+	tr := <-done
+	if tr.Phase != llm.PhaseDone || tr.Tokens != 3 || tr.PromptTotal != 1000 {
+		t.Fatalf("trace %+v", tr)
+	}
+	if after := snap(); after.Phase != llm.PhaseDone {
+		t.Fatalf("snapshot after the call %+v", after)
+	}
+}
+
+// OnStall runs before the request is given up: the server still has it.
+func TestOnStallRunsBeforeCancel(t *testing.T) {
+	srv := llmtest.New(t)
+	srv.Push(llmtest.Response{Chunks: []string{llmtest.Text("x")[0], llmtest.Pause(5 * time.Second)}})
+	var open int
+	var phase string
+	c := &llm.Client{BaseURL: srv.BaseURL(), StallTimeout: 50 * time.Millisecond, OnStall: func(tr llm.Trace) {
+		time.Sleep(30 * time.Millisecond)
+		open, phase = srv.Open(), tr.Phase
+	}}
+	_, tr, err := c.StreamTrace(context.Background(), llm.Request{Model: "m"}, llm.Handler{})
+	wantStall(t, err, llm.PhaseStreaming)
+	if open != 1 || phase != llm.PhaseStreaming || tr.Tokens != 1 {
+		t.Fatalf("open %d, phase %q, trace %+v", open, phase, tr)
+	}
+}

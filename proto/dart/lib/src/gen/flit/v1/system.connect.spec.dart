@@ -70,4 +70,17 @@ abstract final class SystemService {
     flitv1system.RevokeDeviceRequest.new,
     flitv1system.RevokeDeviceResponse.new,
   );
+
+  /// DebugDump reports what the server is doing right now, for working out
+  /// where a frozen turn is stuck: each loaded session's turn, lock and
+  /// model call in flight, the model concurrency limits in use, and
+  /// optionally every goroutine's stack. Admin only. "flit debug dump"
+  /// calls this.
+  static const debugDump = connect.Spec(
+    '/$name/DebugDump',
+    connect.StreamType.unary,
+    flitv1system.DebugDumpRequest.new,
+    flitv1system.DebugDumpResponse.new,
+    idempotency: connect.Idempotency.noSideEffects,
+  );
 }

@@ -66,7 +66,11 @@ func NewHandler(adminToken string, d Deps) http.Handler {
 	interceptor := auth.NewInterceptor(adminToken, authOpts)
 	mux := http.NewServeMux()
 	server := connect.NewServer(connect.ServerInterceptor(interceptor.Intercept))
-	flitv1connect.RegisterSystemServiceHandler(server, &system.Service{Devices: d.Devices, Config: d.Config})
+	sys := &system.Service{Devices: d.Devices, Config: d.Config}
+	if d.Sessions != nil {
+		sys.Debug = d.Sessions.Debug
+	}
+	flitv1connect.RegisterSystemServiceHandler(server, sys)
 	connecthttp.Mount(mux, server, connecthttp.WithReadMaxBytes(0))
 	if d.Sessions != nil {
 		server := connect.NewServer(connect.ServerInterceptor(interceptor.Intercept))

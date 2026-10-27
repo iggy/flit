@@ -10,6 +10,7 @@ import (
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
 	"github.com/iggy/flit/server/internal/config"
 	"github.com/iggy/flit/server/internal/llamacpp"
+	"github.com/iggy/flit/server/internal/llm"
 	"github.com/iggy/flit/server/internal/models"
 	"github.com/iggy/flit/server/internal/store"
 )
@@ -79,6 +80,18 @@ type liveCall struct {
 	endAsked        bool
 	// queued: the call waits for flit's concurrency limit, not the server.
 	queued bool
+	// snap returns the call's trace so far, once it has its concurrency
+	// slot (llm.Handler.Live).
+	snap func() llm.Trace
+	// llama: the provider is a llama.cpp server; slot is the slot the
+	// call is pinned to, if any.
+	llama bool
+	slot  *int
+	// server is the llama.cpp server's state, sampled before the call was
+	// given up on (watchdog or RetryModelCall); retrying is set while
+	// RetryModelCall samples it.
+	server   *flitv1.ModelServerState
+	retrying bool
 }
 
 // --- Waiting: why hasn't the call started? ---

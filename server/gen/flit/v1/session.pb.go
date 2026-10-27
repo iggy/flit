@@ -6164,7 +6164,20 @@ type ModelCallEnded struct {
 	// RetryModelCall).
 	WillRetry bool `protobuf:"varint,18,opt,name=will_retry,json=willRetry,proto3" json:"will_retry,omitempty"`
 	// Prompt tokens llama.cpp reused from its cache.
-	CachedTokens  int64 `protobuf:"varint,19,opt,name=cached_tokens,json=cachedTokens,proto3" json:"cached_tokens,omitempty"`
+	CachedTokens int64 `protobuf:"varint,19,opt,name=cached_tokens,json=cachedTokens,proto3" json:"cached_tokens,omitempty"`
+	// Output chunks (text, reasoning or tool call deltas) that arrived; on
+	// llama.cpp about one per token (more tokens per chunk with speculative
+	// decoding).
+	StreamedTokens int64 `protobuf:"varint,20,opt,name=streamed_tokens,json=streamedTokens,proto3" json:"streamed_tokens,omitempty"`
+	// The last prompt progress llama.cpp reported (return_progress), 0 if
+	// none: how far it had got reading the prompt.
+	PromptProcessed int64 `protobuf:"varint,21,opt,name=prompt_processed,json=promptProcessed,proto3" json:"prompt_processed,omitempty"`
+	PromptTotal     int64 `protobuf:"varint,22,opt,name=prompt_total,json=promptTotal,proto3" json:"prompt_total,omitempty"`
+	// For a llama.cpp call that stalled, failed or was retried: what the
+	// server said it was doing right after, which tells a model or
+	// llama.cpp hang from a reply that stopped reaching flit. Unset
+	// otherwise.
+	Server        *ModelServerState `protobuf:"bytes,23,opt,name=server,proto3" json:"server,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6332,6 +6345,255 @@ func (x *ModelCallEnded) GetCachedTokens() int64 {
 	return 0
 }
 
+func (x *ModelCallEnded) GetStreamedTokens() int64 {
+	if x != nil {
+		return x.StreamedTokens
+	}
+	return 0
+}
+
+func (x *ModelCallEnded) GetPromptProcessed() int64 {
+	if x != nil {
+		return x.PromptProcessed
+	}
+	return 0
+}
+
+func (x *ModelCallEnded) GetPromptTotal() int64 {
+	if x != nil {
+		return x.PromptTotal
+	}
+	return 0
+}
+
+func (x *ModelCallEnded) GetServer() *ModelServerState {
+	if x != nil {
+		return x.Server
+	}
+	return nil
+}
+
+// ModelServerState is a llama.cpp server's view of a model, sampled when a
+// call to it stalled, failed or was retried.
+type ModelServerState struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The model's state: "loaded", "loading", "sleeping", "unloaded"
+	// (router), or "" when the server doesn't say.
+	ModelState string `protobuf:"bytes,1,opt,name=model_state,json=modelState,proto3" json:"model_state,omitempty"`
+	// The model's slots (GET /slots), from the second sample if there were
+	// two.
+	Slots []*LlamaSlot `protobuf:"bytes,2,rep,name=slots,proto3" json:"slots,omitempty"`
+	// The slot the call was pinned to (id_slot), if it was.
+	PinnedSlot *int32 `protobuf:"varint,3,opt,name=pinned_slot,json=pinnedSlot,proto3,oneof" json:"pinned_slot,omitempty"`
+	// Why the model's state couldn't be read, if it couldn't: the server
+	// (or router) is unreachable or failing.
+	Error string `protobuf:"bytes,4,opt,name=error,proto3" json:"error,omitempty"`
+	// When a slot was busy the slots are sampled twice, this far apart, and
+	// each LlamaSlot says how far it got in between; 0 for one sample.
+	SampleMs int64 `protobuf:"varint,5,opt,name=sample_ms,json=sampleMs,proto3" json:"sample_ms,omitempty"`
+	// Why the slots couldn't be read, if they couldn't. llama.cpp answers
+	// GET /slots between batches, so a timeout here while the model state
+	// was readable means its main loop is stuck in (or slow at) a batch.
+	SlotsError    string `protobuf:"bytes,6,opt,name=slots_error,json=slotsError,proto3" json:"slots_error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ModelServerState) Reset() {
+	*x = ModelServerState{}
+	mi := &file_flit_v1_session_proto_msgTypes[76]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ModelServerState) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ModelServerState) ProtoMessage() {}
+
+func (x *ModelServerState) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_session_proto_msgTypes[76]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ModelServerState.ProtoReflect.Descriptor instead.
+func (*ModelServerState) Descriptor() ([]byte, []int) {
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{76}
+}
+
+func (x *ModelServerState) GetModelState() string {
+	if x != nil {
+		return x.ModelState
+	}
+	return ""
+}
+
+func (x *ModelServerState) GetSlots() []*LlamaSlot {
+	if x != nil {
+		return x.Slots
+	}
+	return nil
+}
+
+func (x *ModelServerState) GetPinnedSlot() int32 {
+	if x != nil && x.PinnedSlot != nil {
+		return *x.PinnedSlot
+	}
+	return 0
+}
+
+func (x *ModelServerState) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+func (x *ModelServerState) GetSampleMs() int64 {
+	if x != nil {
+		return x.SampleMs
+	}
+	return 0
+}
+
+func (x *ModelServerState) GetSlotsError() string {
+	if x != nil {
+		return x.SlotsError
+	}
+	return ""
+}
+
+// LlamaSlot is one llama.cpp slot as GET /slots reports it.
+type LlamaSlot struct {
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	Id           int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	IsProcessing bool                   `protobuf:"varint,2,opt,name=is_processing,json=isProcessing,proto3" json:"is_processing,omitempty"`
+	// The server's task id of the request in the slot (or the last one).
+	IdTask int64 `protobuf:"varint,3,opt,name=id_task,json=idTask,proto3" json:"id_task,omitempty"`
+	NCtx   int64 `protobuf:"varint,4,opt,name=n_ctx,json=nCtx,proto3" json:"n_ctx,omitempty"`
+	// The request's prompt: tokens in all, read so far, and from the cache.
+	PromptTokens    int64 `protobuf:"varint,5,opt,name=prompt_tokens,json=promptTokens,proto3" json:"prompt_tokens,omitempty"`
+	PromptProcessed int64 `protobuf:"varint,6,opt,name=prompt_processed,json=promptProcessed,proto3" json:"prompt_processed,omitempty"`
+	PromptCached    int64 `protobuf:"varint,7,opt,name=prompt_cached,json=promptCached,proto3" json:"prompt_cached,omitempty"`
+	// Tokens generated so far.
+	Decoded int64 `protobuf:"varint,8,opt,name=decoded,proto3" json:"decoded,omitempty"`
+	// Between the two samples (ModelServerState.sample_ms) of the same
+	// task: prompt tokens read and tokens generated. Both 0 while
+	// processing means llama.cpp itself made no progress.
+	PromptProcessedDelta int64 `protobuf:"varint,9,opt,name=prompt_processed_delta,json=promptProcessedDelta,proto3" json:"prompt_processed_delta,omitempty"`
+	DecodedDelta         int64 `protobuf:"varint,10,opt,name=decoded_delta,json=decodedDelta,proto3" json:"decoded_delta,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *LlamaSlot) Reset() {
+	*x = LlamaSlot{}
+	mi := &file_flit_v1_session_proto_msgTypes[77]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LlamaSlot) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LlamaSlot) ProtoMessage() {}
+
+func (x *LlamaSlot) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_session_proto_msgTypes[77]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LlamaSlot.ProtoReflect.Descriptor instead.
+func (*LlamaSlot) Descriptor() ([]byte, []int) {
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{77}
+}
+
+func (x *LlamaSlot) GetId() int32 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *LlamaSlot) GetIsProcessing() bool {
+	if x != nil {
+		return x.IsProcessing
+	}
+	return false
+}
+
+func (x *LlamaSlot) GetIdTask() int64 {
+	if x != nil {
+		return x.IdTask
+	}
+	return 0
+}
+
+func (x *LlamaSlot) GetNCtx() int64 {
+	if x != nil {
+		return x.NCtx
+	}
+	return 0
+}
+
+func (x *LlamaSlot) GetPromptTokens() int64 {
+	if x != nil {
+		return x.PromptTokens
+	}
+	return 0
+}
+
+func (x *LlamaSlot) GetPromptProcessed() int64 {
+	if x != nil {
+		return x.PromptProcessed
+	}
+	return 0
+}
+
+func (x *LlamaSlot) GetPromptCached() int64 {
+	if x != nil {
+		return x.PromptCached
+	}
+	return 0
+}
+
+func (x *LlamaSlot) GetDecoded() int64 {
+	if x != nil {
+		return x.Decoded
+	}
+	return 0
+}
+
+func (x *LlamaSlot) GetPromptProcessedDelta() int64 {
+	if x != nil {
+		return x.PromptProcessedDelta
+	}
+	return 0
+}
+
+func (x *LlamaSlot) GetDecodedDelta() int64 {
+	if x != nil {
+		return x.DecodedDelta
+	}
+	return 0
+}
+
 // MessageQueued is a user message sent while a turn was running. It waits
 // for the turn's next step (see Send); QueuedMessageUpdated edits or
 // cancels it and QueuedMessageDelivered turns it into a user message.
@@ -6347,7 +6609,7 @@ type MessageQueued struct {
 
 func (x *MessageQueued) Reset() {
 	*x = MessageQueued{}
-	mi := &file_flit_v1_session_proto_msgTypes[76]
+	mi := &file_flit_v1_session_proto_msgTypes[78]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6359,7 +6621,7 @@ func (x *MessageQueued) String() string {
 func (*MessageQueued) ProtoMessage() {}
 
 func (x *MessageQueued) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_session_proto_msgTypes[76]
+	mi := &file_flit_v1_session_proto_msgTypes[78]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6372,7 +6634,7 @@ func (x *MessageQueued) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MessageQueued.ProtoReflect.Descriptor instead.
 func (*MessageQueued) Descriptor() ([]byte, []int) {
-	return file_flit_v1_session_proto_rawDescGZIP(), []int{76}
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{78}
 }
 
 func (x *MessageQueued) GetQueueId() string {
@@ -6409,7 +6671,7 @@ type QueuedMessageUpdated struct {
 
 func (x *QueuedMessageUpdated) Reset() {
 	*x = QueuedMessageUpdated{}
-	mi := &file_flit_v1_session_proto_msgTypes[77]
+	mi := &file_flit_v1_session_proto_msgTypes[79]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6421,7 +6683,7 @@ func (x *QueuedMessageUpdated) String() string {
 func (*QueuedMessageUpdated) ProtoMessage() {}
 
 func (x *QueuedMessageUpdated) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_session_proto_msgTypes[77]
+	mi := &file_flit_v1_session_proto_msgTypes[79]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6434,7 +6696,7 @@ func (x *QueuedMessageUpdated) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueuedMessageUpdated.ProtoReflect.Descriptor instead.
 func (*QueuedMessageUpdated) Descriptor() ([]byte, []int) {
-	return file_flit_v1_session_proto_rawDescGZIP(), []int{77}
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{79}
 }
 
 func (x *QueuedMessageUpdated) GetQueueId() string {
@@ -6470,7 +6732,7 @@ type QueuedMessageDelivered struct {
 
 func (x *QueuedMessageDelivered) Reset() {
 	*x = QueuedMessageDelivered{}
-	mi := &file_flit_v1_session_proto_msgTypes[78]
+	mi := &file_flit_v1_session_proto_msgTypes[80]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6482,7 +6744,7 @@ func (x *QueuedMessageDelivered) String() string {
 func (*QueuedMessageDelivered) ProtoMessage() {}
 
 func (x *QueuedMessageDelivered) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_session_proto_msgTypes[78]
+	mi := &file_flit_v1_session_proto_msgTypes[80]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6495,7 +6757,7 @@ func (x *QueuedMessageDelivered) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueuedMessageDelivered.ProtoReflect.Descriptor instead.
 func (*QueuedMessageDelivered) Descriptor() ([]byte, []int) {
-	return file_flit_v1_session_proto_rawDescGZIP(), []int{78}
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{80}
 }
 
 func (x *QueuedMessageDelivered) GetQueueId() string {
@@ -6531,7 +6793,7 @@ type ModelCallWaiting struct {
 
 func (x *ModelCallWaiting) Reset() {
 	*x = ModelCallWaiting{}
-	mi := &file_flit_v1_session_proto_msgTypes[79]
+	mi := &file_flit_v1_session_proto_msgTypes[81]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6543,7 +6805,7 @@ func (x *ModelCallWaiting) String() string {
 func (*ModelCallWaiting) ProtoMessage() {}
 
 func (x *ModelCallWaiting) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_session_proto_msgTypes[79]
+	mi := &file_flit_v1_session_proto_msgTypes[81]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6556,7 +6818,7 @@ func (x *ModelCallWaiting) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ModelCallWaiting.ProtoReflect.Descriptor instead.
 func (*ModelCallWaiting) Descriptor() ([]byte, []int) {
-	return file_flit_v1_session_proto_rawDescGZIP(), []int{79}
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{81}
 }
 
 func (x *ModelCallWaiting) GetMessageId() string {
@@ -6607,7 +6869,7 @@ type PromptCache struct {
 
 func (x *PromptCache) Reset() {
 	*x = PromptCache{}
-	mi := &file_flit_v1_session_proto_msgTypes[80]
+	mi := &file_flit_v1_session_proto_msgTypes[82]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6619,7 +6881,7 @@ func (x *PromptCache) String() string {
 func (*PromptCache) ProtoMessage() {}
 
 func (x *PromptCache) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_session_proto_msgTypes[80]
+	mi := &file_flit_v1_session_proto_msgTypes[82]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6632,7 +6894,7 @@ func (x *PromptCache) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PromptCache.ProtoReflect.Descriptor instead.
 func (*PromptCache) Descriptor() ([]byte, []int) {
-	return file_flit_v1_session_proto_rawDescGZIP(), []int{80}
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{82}
 }
 
 func (x *PromptCache) GetAction() PromptCacheAction {
@@ -6696,7 +6958,7 @@ type ReasoningEndRequested struct {
 
 func (x *ReasoningEndRequested) Reset() {
 	*x = ReasoningEndRequested{}
-	mi := &file_flit_v1_session_proto_msgTypes[81]
+	mi := &file_flit_v1_session_proto_msgTypes[83]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6708,7 +6970,7 @@ func (x *ReasoningEndRequested) String() string {
 func (*ReasoningEndRequested) ProtoMessage() {}
 
 func (x *ReasoningEndRequested) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_session_proto_msgTypes[81]
+	mi := &file_flit_v1_session_proto_msgTypes[83]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6721,7 +6983,7 @@ func (x *ReasoningEndRequested) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReasoningEndRequested.ProtoReflect.Descriptor instead.
 func (*ReasoningEndRequested) Descriptor() ([]byte, []int) {
-	return file_flit_v1_session_proto_rawDescGZIP(), []int{81}
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{83}
 }
 
 func (x *ReasoningEndRequested) GetMessageId() string {
@@ -6750,7 +7012,7 @@ type ReasoningEndIgnored struct {
 
 func (x *ReasoningEndIgnored) Reset() {
 	*x = ReasoningEndIgnored{}
-	mi := &file_flit_v1_session_proto_msgTypes[82]
+	mi := &file_flit_v1_session_proto_msgTypes[84]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6762,7 +7024,7 @@ func (x *ReasoningEndIgnored) String() string {
 func (*ReasoningEndIgnored) ProtoMessage() {}
 
 func (x *ReasoningEndIgnored) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_session_proto_msgTypes[82]
+	mi := &file_flit_v1_session_proto_msgTypes[84]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6775,7 +7037,7 @@ func (x *ReasoningEndIgnored) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReasoningEndIgnored.ProtoReflect.Descriptor instead.
 func (*ReasoningEndIgnored) Descriptor() ([]byte, []int) {
-	return file_flit_v1_session_proto_rawDescGZIP(), []int{82}
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{84}
 }
 
 func (x *ReasoningEndIgnored) GetMessageId() string {
@@ -6808,7 +7070,7 @@ type CompactionStarted struct {
 
 func (x *CompactionStarted) Reset() {
 	*x = CompactionStarted{}
-	mi := &file_flit_v1_session_proto_msgTypes[83]
+	mi := &file_flit_v1_session_proto_msgTypes[85]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6820,7 +7082,7 @@ func (x *CompactionStarted) String() string {
 func (*CompactionStarted) ProtoMessage() {}
 
 func (x *CompactionStarted) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_session_proto_msgTypes[83]
+	mi := &file_flit_v1_session_proto_msgTypes[85]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6833,7 +7095,7 @@ func (x *CompactionStarted) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompactionStarted.ProtoReflect.Descriptor instead.
 func (*CompactionStarted) Descriptor() ([]byte, []int) {
-	return file_flit_v1_session_proto_rawDescGZIP(), []int{83}
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{85}
 }
 
 func (x *CompactionStarted) GetCompactionId() string {
@@ -6921,7 +7183,7 @@ type CompactionDone struct {
 
 func (x *CompactionDone) Reset() {
 	*x = CompactionDone{}
-	mi := &file_flit_v1_session_proto_msgTypes[84]
+	mi := &file_flit_v1_session_proto_msgTypes[86]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6933,7 +7195,7 @@ func (x *CompactionDone) String() string {
 func (*CompactionDone) ProtoMessage() {}
 
 func (x *CompactionDone) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_session_proto_msgTypes[84]
+	mi := &file_flit_v1_session_proto_msgTypes[86]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6946,7 +7208,7 @@ func (x *CompactionDone) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompactionDone.ProtoReflect.Descriptor instead.
 func (*CompactionDone) Descriptor() ([]byte, []int) {
-	return file_flit_v1_session_proto_rawDescGZIP(), []int{84}
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{86}
 }
 
 func (x *CompactionDone) GetCompactionId() string {
@@ -7069,7 +7331,7 @@ type BranchCreated struct {
 
 func (x *BranchCreated) Reset() {
 	*x = BranchCreated{}
-	mi := &file_flit_v1_session_proto_msgTypes[85]
+	mi := &file_flit_v1_session_proto_msgTypes[87]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7081,7 +7343,7 @@ func (x *BranchCreated) String() string {
 func (*BranchCreated) ProtoMessage() {}
 
 func (x *BranchCreated) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_session_proto_msgTypes[85]
+	mi := &file_flit_v1_session_proto_msgTypes[87]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7094,7 +7356,7 @@ func (x *BranchCreated) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BranchCreated.ProtoReflect.Descriptor instead.
 func (*BranchCreated) Descriptor() ([]byte, []int) {
-	return file_flit_v1_session_proto_rawDescGZIP(), []int{85}
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{87}
 }
 
 func (x *BranchCreated) GetBranchId() string {
@@ -7151,7 +7413,7 @@ type BranchSwitched struct {
 
 func (x *BranchSwitched) Reset() {
 	*x = BranchSwitched{}
-	mi := &file_flit_v1_session_proto_msgTypes[86]
+	mi := &file_flit_v1_session_proto_msgTypes[88]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7163,7 +7425,7 @@ func (x *BranchSwitched) String() string {
 func (*BranchSwitched) ProtoMessage() {}
 
 func (x *BranchSwitched) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_session_proto_msgTypes[86]
+	mi := &file_flit_v1_session_proto_msgTypes[88]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7176,7 +7438,7 @@ func (x *BranchSwitched) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BranchSwitched.ProtoReflect.Descriptor instead.
 func (*BranchSwitched) Descriptor() ([]byte, []int) {
-	return file_flit_v1_session_proto_rawDescGZIP(), []int{86}
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{88}
 }
 
 func (x *BranchSwitched) GetBranchId() string {
@@ -7202,7 +7464,7 @@ type GitStatusRequest struct {
 
 func (x *GitStatusRequest) Reset() {
 	*x = GitStatusRequest{}
-	mi := &file_flit_v1_session_proto_msgTypes[87]
+	mi := &file_flit_v1_session_proto_msgTypes[89]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7214,7 +7476,7 @@ func (x *GitStatusRequest) String() string {
 func (*GitStatusRequest) ProtoMessage() {}
 
 func (x *GitStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_session_proto_msgTypes[87]
+	mi := &file_flit_v1_session_proto_msgTypes[89]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7227,7 +7489,7 @@ func (x *GitStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GitStatusRequest.ProtoReflect.Descriptor instead.
 func (*GitStatusRequest) Descriptor() ([]byte, []int) {
-	return file_flit_v1_session_proto_rawDescGZIP(), []int{87}
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{89}
 }
 
 func (x *GitStatusRequest) GetSessionId() string {
@@ -7260,7 +7522,7 @@ type GitFileChange struct {
 
 func (x *GitFileChange) Reset() {
 	*x = GitFileChange{}
-	mi := &file_flit_v1_session_proto_msgTypes[88]
+	mi := &file_flit_v1_session_proto_msgTypes[90]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7272,7 +7534,7 @@ func (x *GitFileChange) String() string {
 func (*GitFileChange) ProtoMessage() {}
 
 func (x *GitFileChange) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_session_proto_msgTypes[88]
+	mi := &file_flit_v1_session_proto_msgTypes[90]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7285,7 +7547,7 @@ func (x *GitFileChange) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GitFileChange.ProtoReflect.Descriptor instead.
 func (*GitFileChange) Descriptor() ([]byte, []int) {
-	return file_flit_v1_session_proto_rawDescGZIP(), []int{88}
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{90}
 }
 
 func (x *GitFileChange) GetPath() string {
@@ -7390,7 +7652,7 @@ type GitStatusResponse struct {
 
 func (x *GitStatusResponse) Reset() {
 	*x = GitStatusResponse{}
-	mi := &file_flit_v1_session_proto_msgTypes[89]
+	mi := &file_flit_v1_session_proto_msgTypes[91]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7402,7 +7664,7 @@ func (x *GitStatusResponse) String() string {
 func (*GitStatusResponse) ProtoMessage() {}
 
 func (x *GitStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_session_proto_msgTypes[89]
+	mi := &file_flit_v1_session_proto_msgTypes[91]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7415,7 +7677,7 @@ func (x *GitStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GitStatusResponse.ProtoReflect.Descriptor instead.
 func (*GitStatusResponse) Descriptor() ([]byte, []int) {
-	return file_flit_v1_session_proto_rawDescGZIP(), []int{89}
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{91}
 }
 
 func (x *GitStatusResponse) GetIsRepo() bool {
@@ -7551,7 +7813,7 @@ type GitDiffRequest struct {
 
 func (x *GitDiffRequest) Reset() {
 	*x = GitDiffRequest{}
-	mi := &file_flit_v1_session_proto_msgTypes[90]
+	mi := &file_flit_v1_session_proto_msgTypes[92]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7563,7 +7825,7 @@ func (x *GitDiffRequest) String() string {
 func (*GitDiffRequest) ProtoMessage() {}
 
 func (x *GitDiffRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_session_proto_msgTypes[90]
+	mi := &file_flit_v1_session_proto_msgTypes[92]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7576,7 +7838,7 @@ func (x *GitDiffRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GitDiffRequest.ProtoReflect.Descriptor instead.
 func (*GitDiffRequest) Descriptor() ([]byte, []int) {
-	return file_flit_v1_session_proto_rawDescGZIP(), []int{90}
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{92}
 }
 
 func (x *GitDiffRequest) GetSessionId() string {
@@ -7616,7 +7878,7 @@ type GitDiffResponse struct {
 
 func (x *GitDiffResponse) Reset() {
 	*x = GitDiffResponse{}
-	mi := &file_flit_v1_session_proto_msgTypes[91]
+	mi := &file_flit_v1_session_proto_msgTypes[93]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7628,7 +7890,7 @@ func (x *GitDiffResponse) String() string {
 func (*GitDiffResponse) ProtoMessage() {}
 
 func (x *GitDiffResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_session_proto_msgTypes[91]
+	mi := &file_flit_v1_session_proto_msgTypes[93]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7641,7 +7903,7 @@ func (x *GitDiffResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GitDiffResponse.ProtoReflect.Descriptor instead.
 func (*GitDiffResponse) Descriptor() ([]byte, []int) {
-	return file_flit_v1_session_proto_rawDescGZIP(), []int{91}
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{93}
 }
 
 func (x *GitDiffResponse) GetIsRepo() bool {
@@ -7702,7 +7964,7 @@ type CronRunStarted struct {
 
 func (x *CronRunStarted) Reset() {
 	*x = CronRunStarted{}
-	mi := &file_flit_v1_session_proto_msgTypes[92]
+	mi := &file_flit_v1_session_proto_msgTypes[94]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7714,7 +7976,7 @@ func (x *CronRunStarted) String() string {
 func (*CronRunStarted) ProtoMessage() {}
 
 func (x *CronRunStarted) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_session_proto_msgTypes[92]
+	mi := &file_flit_v1_session_proto_msgTypes[94]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7727,7 +7989,7 @@ func (x *CronRunStarted) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CronRunStarted.ProtoReflect.Descriptor instead.
 func (*CronRunStarted) Descriptor() ([]byte, []int) {
-	return file_flit_v1_session_proto_rawDescGZIP(), []int{92}
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{94}
 }
 
 func (x *CronRunStarted) GetJob() string {
@@ -7822,7 +8084,7 @@ type WebhookRunStarted struct {
 
 func (x *WebhookRunStarted) Reset() {
 	*x = WebhookRunStarted{}
-	mi := &file_flit_v1_session_proto_msgTypes[93]
+	mi := &file_flit_v1_session_proto_msgTypes[95]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7834,7 +8096,7 @@ func (x *WebhookRunStarted) String() string {
 func (*WebhookRunStarted) ProtoMessage() {}
 
 func (x *WebhookRunStarted) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_session_proto_msgTypes[93]
+	mi := &file_flit_v1_session_proto_msgTypes[95]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7847,7 +8109,7 @@ func (x *WebhookRunStarted) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WebhookRunStarted.ProtoReflect.Descriptor instead.
 func (*WebhookRunStarted) Descriptor() ([]byte, []int) {
-	return file_flit_v1_session_proto_rawDescGZIP(), []int{93}
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{95}
 }
 
 func (x *WebhookRunStarted) GetHook() string {
@@ -7949,7 +8211,7 @@ type SubagentStarted struct {
 
 func (x *SubagentStarted) Reset() {
 	*x = SubagentStarted{}
-	mi := &file_flit_v1_session_proto_msgTypes[94]
+	mi := &file_flit_v1_session_proto_msgTypes[96]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7961,7 +8223,7 @@ func (x *SubagentStarted) String() string {
 func (*SubagentStarted) ProtoMessage() {}
 
 func (x *SubagentStarted) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_session_proto_msgTypes[94]
+	mi := &file_flit_v1_session_proto_msgTypes[96]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7974,7 +8236,7 @@ func (x *SubagentStarted) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubagentStarted.ProtoReflect.Descriptor instead.
 func (*SubagentStarted) Descriptor() ([]byte, []int) {
-	return file_flit_v1_session_proto_rawDescGZIP(), []int{94}
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{96}
 }
 
 func (x *SubagentStarted) GetToolCallId() string {
@@ -8044,7 +8306,7 @@ type SubagentEvent struct {
 
 func (x *SubagentEvent) Reset() {
 	*x = SubagentEvent{}
-	mi := &file_flit_v1_session_proto_msgTypes[95]
+	mi := &file_flit_v1_session_proto_msgTypes[97]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8056,7 +8318,7 @@ func (x *SubagentEvent) String() string {
 func (*SubagentEvent) ProtoMessage() {}
 
 func (x *SubagentEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_session_proto_msgTypes[95]
+	mi := &file_flit_v1_session_proto_msgTypes[97]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8069,7 +8331,7 @@ func (x *SubagentEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubagentEvent.ProtoReflect.Descriptor instead.
 func (*SubagentEvent) Descriptor() ([]byte, []int) {
-	return file_flit_v1_session_proto_rawDescGZIP(), []int{95}
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{97}
 }
 
 func (x *SubagentEvent) GetToolCallId() string {
@@ -8102,7 +8364,7 @@ type SubagentDone struct {
 
 func (x *SubagentDone) Reset() {
 	*x = SubagentDone{}
-	mi := &file_flit_v1_session_proto_msgTypes[96]
+	mi := &file_flit_v1_session_proto_msgTypes[98]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8114,7 +8376,7 @@ func (x *SubagentDone) String() string {
 func (*SubagentDone) ProtoMessage() {}
 
 func (x *SubagentDone) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_session_proto_msgTypes[96]
+	mi := &file_flit_v1_session_proto_msgTypes[98]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8127,7 +8389,7 @@ func (x *SubagentDone) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubagentDone.ProtoReflect.Descriptor instead.
 func (*SubagentDone) Descriptor() ([]byte, []int) {
-	return file_flit_v1_session_proto_rawDescGZIP(), []int{96}
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{98}
 }
 
 func (x *SubagentDone) GetToolCallId() string {
@@ -8182,7 +8444,7 @@ type WorktreeCreated struct {
 
 func (x *WorktreeCreated) Reset() {
 	*x = WorktreeCreated{}
-	mi := &file_flit_v1_session_proto_msgTypes[97]
+	mi := &file_flit_v1_session_proto_msgTypes[99]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8194,7 +8456,7 @@ func (x *WorktreeCreated) String() string {
 func (*WorktreeCreated) ProtoMessage() {}
 
 func (x *WorktreeCreated) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_session_proto_msgTypes[97]
+	mi := &file_flit_v1_session_proto_msgTypes[99]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8207,7 +8469,7 @@ func (x *WorktreeCreated) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorktreeCreated.ProtoReflect.Descriptor instead.
 func (*WorktreeCreated) Descriptor() ([]byte, []int) {
-	return file_flit_v1_session_proto_rawDescGZIP(), []int{97}
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{99}
 }
 
 func (x *WorktreeCreated) GetPath() string {
@@ -8259,7 +8521,7 @@ type WorktreeCopy struct {
 
 func (x *WorktreeCopy) Reset() {
 	*x = WorktreeCopy{}
-	mi := &file_flit_v1_session_proto_msgTypes[98]
+	mi := &file_flit_v1_session_proto_msgTypes[100]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8271,7 +8533,7 @@ func (x *WorktreeCopy) String() string {
 func (*WorktreeCopy) ProtoMessage() {}
 
 func (x *WorktreeCopy) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_session_proto_msgTypes[98]
+	mi := &file_flit_v1_session_proto_msgTypes[100]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8284,7 +8546,7 @@ func (x *WorktreeCopy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorktreeCopy.ProtoReflect.Descriptor instead.
 func (*WorktreeCopy) Descriptor() ([]byte, []int) {
-	return file_flit_v1_session_proto_rawDescGZIP(), []int{98}
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{100}
 }
 
 func (x *WorktreeCopy) GetPath() string {
@@ -8320,7 +8582,7 @@ type WorktreeSkipped struct {
 
 func (x *WorktreeSkipped) Reset() {
 	*x = WorktreeSkipped{}
-	mi := &file_flit_v1_session_proto_msgTypes[99]
+	mi := &file_flit_v1_session_proto_msgTypes[101]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8332,7 +8594,7 @@ func (x *WorktreeSkipped) String() string {
 func (*WorktreeSkipped) ProtoMessage() {}
 
 func (x *WorktreeSkipped) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_session_proto_msgTypes[99]
+	mi := &file_flit_v1_session_proto_msgTypes[101]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8345,7 +8607,7 @@ func (x *WorktreeSkipped) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorktreeSkipped.ProtoReflect.Descriptor instead.
 func (*WorktreeSkipped) Descriptor() ([]byte, []int) {
-	return file_flit_v1_session_proto_rawDescGZIP(), []int{99}
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{101}
 }
 
 func (x *WorktreeSkipped) GetReason() string {
@@ -8370,7 +8632,7 @@ type WorktreeRemoved struct {
 
 func (x *WorktreeRemoved) Reset() {
 	*x = WorktreeRemoved{}
-	mi := &file_flit_v1_session_proto_msgTypes[100]
+	mi := &file_flit_v1_session_proto_msgTypes[102]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8382,7 +8644,7 @@ func (x *WorktreeRemoved) String() string {
 func (*WorktreeRemoved) ProtoMessage() {}
 
 func (x *WorktreeRemoved) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_session_proto_msgTypes[100]
+	mi := &file_flit_v1_session_proto_msgTypes[102]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8395,7 +8657,7 @@ func (x *WorktreeRemoved) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorktreeRemoved.ProtoReflect.Descriptor instead.
 func (*WorktreeRemoved) Descriptor() ([]byte, []int) {
-	return file_flit_v1_session_proto_rawDescGZIP(), []int{100}
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{102}
 }
 
 func (x *WorktreeRemoved) GetPath() string {
@@ -8440,7 +8702,7 @@ type WorktreeKept struct {
 
 func (x *WorktreeKept) Reset() {
 	*x = WorktreeKept{}
-	mi := &file_flit_v1_session_proto_msgTypes[101]
+	mi := &file_flit_v1_session_proto_msgTypes[103]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8452,7 +8714,7 @@ func (x *WorktreeKept) String() string {
 func (*WorktreeKept) ProtoMessage() {}
 
 func (x *WorktreeKept) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_session_proto_msgTypes[101]
+	mi := &file_flit_v1_session_proto_msgTypes[103]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8465,7 +8727,7 @@ func (x *WorktreeKept) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorktreeKept.ProtoReflect.Descriptor instead.
 func (*WorktreeKept) Descriptor() ([]byte, []int) {
-	return file_flit_v1_session_proto_rawDescGZIP(), []int{101}
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{103}
 }
 
 func (x *WorktreeKept) GetPath() string {
@@ -8498,7 +8760,7 @@ type RemoveWorktreeRequest struct {
 
 func (x *RemoveWorktreeRequest) Reset() {
 	*x = RemoveWorktreeRequest{}
-	mi := &file_flit_v1_session_proto_msgTypes[102]
+	mi := &file_flit_v1_session_proto_msgTypes[104]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8510,7 +8772,7 @@ func (x *RemoveWorktreeRequest) String() string {
 func (*RemoveWorktreeRequest) ProtoMessage() {}
 
 func (x *RemoveWorktreeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_session_proto_msgTypes[102]
+	mi := &file_flit_v1_session_proto_msgTypes[104]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8523,7 +8785,7 @@ func (x *RemoveWorktreeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveWorktreeRequest.ProtoReflect.Descriptor instead.
 func (*RemoveWorktreeRequest) Descriptor() ([]byte, []int) {
-	return file_flit_v1_session_proto_rawDescGZIP(), []int{102}
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{104}
 }
 
 func (x *RemoveWorktreeRequest) GetSessionId() string {
@@ -8545,7 +8807,7 @@ type RemoveWorktreeResponse struct {
 
 func (x *RemoveWorktreeResponse) Reset() {
 	*x = RemoveWorktreeResponse{}
-	mi := &file_flit_v1_session_proto_msgTypes[103]
+	mi := &file_flit_v1_session_proto_msgTypes[105]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8557,7 +8819,7 @@ func (x *RemoveWorktreeResponse) String() string {
 func (*RemoveWorktreeResponse) ProtoMessage() {}
 
 func (x *RemoveWorktreeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_session_proto_msgTypes[103]
+	mi := &file_flit_v1_session_proto_msgTypes[105]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8570,7 +8832,7 @@ func (x *RemoveWorktreeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveWorktreeResponse.ProtoReflect.Descriptor instead.
 func (*RemoveWorktreeResponse) Descriptor() ([]byte, []int) {
-	return file_flit_v1_session_proto_rawDescGZIP(), []int{103}
+	return file_flit_v1_session_proto_rawDescGZIP(), []int{105}
 }
 
 func (x *RemoveWorktreeResponse) GetSession() *Session {
@@ -8993,7 +9255,7 @@ const file_flit_v1_session_proto_rawDesc = "" +
 	"\x05total\x18\x04 \x01(\x03R\x05total\x12\x16\n" +
 	"\x06cached\x18\x05 \x01(\x03R\x06cached\x12\x1d\n" +
 	"\n" +
-	"elapsed_ms\x18\x06 \x01(\x03R\telapsedMs\"\x93\x05\n" +
+	"elapsed_ms\x18\x06 \x01(\x03R\telapsedMs\"\xbd\x06\n" +
 	"\x0eModelCallEnded\x12\x1d\n" +
 	"\n" +
 	"message_id\x18\x01 \x01(\tR\tmessageId\x12\x18\n" +
@@ -9017,7 +9279,34 @@ const file_flit_v1_session_proto_rawDesc = "" +
 	"\fpredicted_ms\x18\x11 \x01(\x03R\vpredictedMs\x12\x1d\n" +
 	"\n" +
 	"will_retry\x18\x12 \x01(\bR\twillRetry\x12#\n" +
-	"\rcached_tokens\x18\x13 \x01(\x03R\fcachedTokens\"V\n" +
+	"\rcached_tokens\x18\x13 \x01(\x03R\fcachedTokens\x12'\n" +
+	"\x0fstreamed_tokens\x18\x14 \x01(\x03R\x0estreamedTokens\x12)\n" +
+	"\x10prompt_processed\x18\x15 \x01(\x03R\x0fpromptProcessed\x12!\n" +
+	"\fprompt_total\x18\x16 \x01(\x03R\vpromptTotal\x121\n" +
+	"\x06server\x18\x17 \x01(\v2\x19.flit.v1.ModelServerStateR\x06server\"\xe7\x01\n" +
+	"\x10ModelServerState\x12\x1f\n" +
+	"\vmodel_state\x18\x01 \x01(\tR\n" +
+	"modelState\x12(\n" +
+	"\x05slots\x18\x02 \x03(\v2\x12.flit.v1.LlamaSlotR\x05slots\x12$\n" +
+	"\vpinned_slot\x18\x03 \x01(\x05H\x00R\n" +
+	"pinnedSlot\x88\x01\x01\x12\x14\n" +
+	"\x05error\x18\x04 \x01(\tR\x05error\x12\x1b\n" +
+	"\tsample_ms\x18\x05 \x01(\x03R\bsampleMs\x12\x1f\n" +
+	"\vslots_error\x18\x06 \x01(\tR\n" +
+	"slotsErrorB\x0e\n" +
+	"\f_pinned_slot\"\xd8\x02\n" +
+	"\tLlamaSlot\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x05R\x02id\x12#\n" +
+	"\ris_processing\x18\x02 \x01(\bR\fisProcessing\x12\x17\n" +
+	"\aid_task\x18\x03 \x01(\x03R\x06idTask\x12\x13\n" +
+	"\x05n_ctx\x18\x04 \x01(\x03R\x04nCtx\x12#\n" +
+	"\rprompt_tokens\x18\x05 \x01(\x03R\fpromptTokens\x12)\n" +
+	"\x10prompt_processed\x18\x06 \x01(\x03R\x0fpromptProcessed\x12#\n" +
+	"\rprompt_cached\x18\a \x01(\x03R\fpromptCached\x12\x18\n" +
+	"\adecoded\x18\b \x01(\x03R\adecoded\x124\n" +
+	"\x16prompt_processed_delta\x18\t \x01(\x03R\x14promptProcessedDelta\x12#\n" +
+	"\rdecoded_delta\x18\n" +
+	" \x01(\x03R\fdecodedDelta\"V\n" +
 	"\rMessageQueued\x12\x19\n" +
 	"\bqueue_id\x18\x01 \x01(\tR\aqueueId\x12\x12\n" +
 	"\x04text\x18\x02 \x01(\tR\x04text\x12\x16\n" +
@@ -9341,7 +9630,7 @@ func file_flit_v1_session_proto_rawDescGZIP() []byte {
 }
 
 var file_flit_v1_session_proto_enumTypes = make([]protoimpl.EnumInfo, 15)
-var file_flit_v1_session_proto_msgTypes = make([]protoimpl.MessageInfo, 104)
+var file_flit_v1_session_proto_msgTypes = make([]protoimpl.MessageInfo, 106)
 var file_flit_v1_session_proto_goTypes = []any{
 	(TaskState)(0),                      // 0: flit.v1.TaskState
 	(RatingTarget)(0),                   // 1: flit.v1.RatingTarget
@@ -9434,42 +9723,44 @@ var file_flit_v1_session_proto_goTypes = []any{
 	(*ModelCallStarted)(nil),            // 88: flit.v1.ModelCallStarted
 	(*PromptProgress)(nil),              // 89: flit.v1.PromptProgress
 	(*ModelCallEnded)(nil),              // 90: flit.v1.ModelCallEnded
-	(*MessageQueued)(nil),               // 91: flit.v1.MessageQueued
-	(*QueuedMessageUpdated)(nil),        // 92: flit.v1.QueuedMessageUpdated
-	(*QueuedMessageDelivered)(nil),      // 93: flit.v1.QueuedMessageDelivered
-	(*ModelCallWaiting)(nil),            // 94: flit.v1.ModelCallWaiting
-	(*PromptCache)(nil),                 // 95: flit.v1.PromptCache
-	(*ReasoningEndRequested)(nil),       // 96: flit.v1.ReasoningEndRequested
-	(*ReasoningEndIgnored)(nil),         // 97: flit.v1.ReasoningEndIgnored
-	(*CompactionStarted)(nil),           // 98: flit.v1.CompactionStarted
-	(*CompactionDone)(nil),              // 99: flit.v1.CompactionDone
-	(*BranchCreated)(nil),               // 100: flit.v1.BranchCreated
-	(*BranchSwitched)(nil),              // 101: flit.v1.BranchSwitched
-	(*GitStatusRequest)(nil),            // 102: flit.v1.GitStatusRequest
-	(*GitFileChange)(nil),               // 103: flit.v1.GitFileChange
-	(*GitStatusResponse)(nil),           // 104: flit.v1.GitStatusResponse
-	(*GitDiffRequest)(nil),              // 105: flit.v1.GitDiffRequest
-	(*GitDiffResponse)(nil),             // 106: flit.v1.GitDiffResponse
-	(*CronRunStarted)(nil),              // 107: flit.v1.CronRunStarted
-	(*WebhookRunStarted)(nil),           // 108: flit.v1.WebhookRunStarted
-	(*SubagentStarted)(nil),             // 109: flit.v1.SubagentStarted
-	(*SubagentEvent)(nil),               // 110: flit.v1.SubagentEvent
-	(*SubagentDone)(nil),                // 111: flit.v1.SubagentDone
-	(*WorktreeCreated)(nil),             // 112: flit.v1.WorktreeCreated
-	(*WorktreeCopy)(nil),                // 113: flit.v1.WorktreeCopy
-	(*WorktreeSkipped)(nil),             // 114: flit.v1.WorktreeSkipped
-	(*WorktreeRemoved)(nil),             // 115: flit.v1.WorktreeRemoved
-	(*WorktreeKept)(nil),                // 116: flit.v1.WorktreeKept
-	(*RemoveWorktreeRequest)(nil),       // 117: flit.v1.RemoveWorktreeRequest
-	(*RemoveWorktreeResponse)(nil),      // 118: flit.v1.RemoveWorktreeResponse
-	(*timestamppb.Timestamp)(nil),       // 119: google.protobuf.Timestamp
-	(CronTrigger)(0),                    // 120: flit.v1.CronTrigger
-	(CronAsk)(0),                        // 121: flit.v1.CronAsk
+	(*ModelServerState)(nil),            // 91: flit.v1.ModelServerState
+	(*LlamaSlot)(nil),                   // 92: flit.v1.LlamaSlot
+	(*MessageQueued)(nil),               // 93: flit.v1.MessageQueued
+	(*QueuedMessageUpdated)(nil),        // 94: flit.v1.QueuedMessageUpdated
+	(*QueuedMessageDelivered)(nil),      // 95: flit.v1.QueuedMessageDelivered
+	(*ModelCallWaiting)(nil),            // 96: flit.v1.ModelCallWaiting
+	(*PromptCache)(nil),                 // 97: flit.v1.PromptCache
+	(*ReasoningEndRequested)(nil),       // 98: flit.v1.ReasoningEndRequested
+	(*ReasoningEndIgnored)(nil),         // 99: flit.v1.ReasoningEndIgnored
+	(*CompactionStarted)(nil),           // 100: flit.v1.CompactionStarted
+	(*CompactionDone)(nil),              // 101: flit.v1.CompactionDone
+	(*BranchCreated)(nil),               // 102: flit.v1.BranchCreated
+	(*BranchSwitched)(nil),              // 103: flit.v1.BranchSwitched
+	(*GitStatusRequest)(nil),            // 104: flit.v1.GitStatusRequest
+	(*GitFileChange)(nil),               // 105: flit.v1.GitFileChange
+	(*GitStatusResponse)(nil),           // 106: flit.v1.GitStatusResponse
+	(*GitDiffRequest)(nil),              // 107: flit.v1.GitDiffRequest
+	(*GitDiffResponse)(nil),             // 108: flit.v1.GitDiffResponse
+	(*CronRunStarted)(nil),              // 109: flit.v1.CronRunStarted
+	(*WebhookRunStarted)(nil),           // 110: flit.v1.WebhookRunStarted
+	(*SubagentStarted)(nil),             // 111: flit.v1.SubagentStarted
+	(*SubagentEvent)(nil),               // 112: flit.v1.SubagentEvent
+	(*SubagentDone)(nil),                // 113: flit.v1.SubagentDone
+	(*WorktreeCreated)(nil),             // 114: flit.v1.WorktreeCreated
+	(*WorktreeCopy)(nil),                // 115: flit.v1.WorktreeCopy
+	(*WorktreeSkipped)(nil),             // 116: flit.v1.WorktreeSkipped
+	(*WorktreeRemoved)(nil),             // 117: flit.v1.WorktreeRemoved
+	(*WorktreeKept)(nil),                // 118: flit.v1.WorktreeKept
+	(*RemoveWorktreeRequest)(nil),       // 119: flit.v1.RemoveWorktreeRequest
+	(*RemoveWorktreeResponse)(nil),      // 120: flit.v1.RemoveWorktreeResponse
+	(*timestamppb.Timestamp)(nil),       // 121: google.protobuf.Timestamp
+	(CronTrigger)(0),                    // 122: flit.v1.CronTrigger
+	(CronAsk)(0),                        // 123: flit.v1.CronAsk
 }
 var file_flit_v1_session_proto_depIdxs = []int32{
 	0,   // 0: flit.v1.Session.state:type_name -> flit.v1.TaskState
-	119, // 1: flit.v1.Session.create_time:type_name -> google.protobuf.Timestamp
-	119, // 2: flit.v1.Session.update_time:type_name -> google.protobuf.Timestamp
+	121, // 1: flit.v1.Session.create_time:type_name -> google.protobuf.Timestamp
+	121, // 2: flit.v1.Session.update_time:type_name -> google.protobuf.Timestamp
 	15,  // 3: flit.v1.CreateSessionResponse.session:type_name -> flit.v1.Session
 	15,  // 4: flit.v1.ListSessionsResponse.sessions:type_name -> flit.v1.Session
 	15,  // 5: flit.v1.GetSessionResponse.session:type_name -> flit.v1.Session
@@ -9486,7 +9777,7 @@ var file_flit_v1_session_proto_depIdxs = []int32{
 	15,  // 16: flit.v1.SetEffortResponse.session:type_name -> flit.v1.Session
 	15,  // 17: flit.v1.SetRoleResponse.session:type_name -> flit.v1.Session
 	15,  // 18: flit.v1.SetYoloResponse.session:type_name -> flit.v1.Session
-	119, // 19: flit.v1.Event.time:type_name -> google.protobuf.Timestamp
+	121, // 19: flit.v1.Event.time:type_name -> google.protobuf.Timestamp
 	67,  // 20: flit.v1.Event.message_started:type_name -> flit.v1.MessageStarted
 	68,  // 21: flit.v1.Event.text_delta:type_name -> flit.v1.TextDelta
 	69,  // 22: flit.v1.Event.reasoning_delta:type_name -> flit.v1.ReasoningDelta
@@ -9509,26 +9800,26 @@ var file_flit_v1_session_proto_depIdxs = []int32{
 	88,  // 39: flit.v1.Event.model_call_started:type_name -> flit.v1.ModelCallStarted
 	89,  // 40: flit.v1.Event.prompt_progress:type_name -> flit.v1.PromptProgress
 	90,  // 41: flit.v1.Event.model_call_ended:type_name -> flit.v1.ModelCallEnded
-	91,  // 42: flit.v1.Event.message_queued:type_name -> flit.v1.MessageQueued
-	92,  // 43: flit.v1.Event.queued_message_updated:type_name -> flit.v1.QueuedMessageUpdated
-	93,  // 44: flit.v1.Event.queued_message_delivered:type_name -> flit.v1.QueuedMessageDelivered
-	94,  // 45: flit.v1.Event.model_call_waiting:type_name -> flit.v1.ModelCallWaiting
-	95,  // 46: flit.v1.Event.prompt_cache:type_name -> flit.v1.PromptCache
-	96,  // 47: flit.v1.Event.reasoning_end_requested:type_name -> flit.v1.ReasoningEndRequested
-	97,  // 48: flit.v1.Event.reasoning_end_ignored:type_name -> flit.v1.ReasoningEndIgnored
-	98,  // 49: flit.v1.Event.compaction_started:type_name -> flit.v1.CompactionStarted
-	99,  // 50: flit.v1.Event.compaction_done:type_name -> flit.v1.CompactionDone
-	100, // 51: flit.v1.Event.branch_created:type_name -> flit.v1.BranchCreated
-	101, // 52: flit.v1.Event.branch_switched:type_name -> flit.v1.BranchSwitched
-	107, // 53: flit.v1.Event.cron_run:type_name -> flit.v1.CronRunStarted
-	109, // 54: flit.v1.Event.subagent_started:type_name -> flit.v1.SubagentStarted
-	110, // 55: flit.v1.Event.subagent_event:type_name -> flit.v1.SubagentEvent
-	111, // 56: flit.v1.Event.subagent_done:type_name -> flit.v1.SubagentDone
-	112, // 57: flit.v1.Event.worktree_created:type_name -> flit.v1.WorktreeCreated
-	114, // 58: flit.v1.Event.worktree_skipped:type_name -> flit.v1.WorktreeSkipped
-	115, // 59: flit.v1.Event.worktree_removed:type_name -> flit.v1.WorktreeRemoved
-	116, // 60: flit.v1.Event.worktree_kept:type_name -> flit.v1.WorktreeKept
-	108, // 61: flit.v1.Event.webhook_run:type_name -> flit.v1.WebhookRunStarted
+	93,  // 42: flit.v1.Event.message_queued:type_name -> flit.v1.MessageQueued
+	94,  // 43: flit.v1.Event.queued_message_updated:type_name -> flit.v1.QueuedMessageUpdated
+	95,  // 44: flit.v1.Event.queued_message_delivered:type_name -> flit.v1.QueuedMessageDelivered
+	96,  // 45: flit.v1.Event.model_call_waiting:type_name -> flit.v1.ModelCallWaiting
+	97,  // 46: flit.v1.Event.prompt_cache:type_name -> flit.v1.PromptCache
+	98,  // 47: flit.v1.Event.reasoning_end_requested:type_name -> flit.v1.ReasoningEndRequested
+	99,  // 48: flit.v1.Event.reasoning_end_ignored:type_name -> flit.v1.ReasoningEndIgnored
+	100, // 49: flit.v1.Event.compaction_started:type_name -> flit.v1.CompactionStarted
+	101, // 50: flit.v1.Event.compaction_done:type_name -> flit.v1.CompactionDone
+	102, // 51: flit.v1.Event.branch_created:type_name -> flit.v1.BranchCreated
+	103, // 52: flit.v1.Event.branch_switched:type_name -> flit.v1.BranchSwitched
+	109, // 53: flit.v1.Event.cron_run:type_name -> flit.v1.CronRunStarted
+	111, // 54: flit.v1.Event.subagent_started:type_name -> flit.v1.SubagentStarted
+	112, // 55: flit.v1.Event.subagent_event:type_name -> flit.v1.SubagentEvent
+	113, // 56: flit.v1.Event.subagent_done:type_name -> flit.v1.SubagentDone
+	114, // 57: flit.v1.Event.worktree_created:type_name -> flit.v1.WorktreeCreated
+	116, // 58: flit.v1.Event.worktree_skipped:type_name -> flit.v1.WorktreeSkipped
+	117, // 59: flit.v1.Event.worktree_removed:type_name -> flit.v1.WorktreeRemoved
+	118, // 60: flit.v1.Event.worktree_kept:type_name -> flit.v1.WorktreeKept
+	110, // 61: flit.v1.Event.webhook_run:type_name -> flit.v1.WebhookRunStarted
 	78,  // 62: flit.v1.Event.role_changed:type_name -> flit.v1.RoleChanged
 	3,   // 63: flit.v1.MessageStarted.role:type_name -> flit.v1.Role
 	4,   // 64: flit.v1.PromptResolved.decision:type_name -> flit.v1.PromptDecision
@@ -9539,81 +9830,83 @@ var file_flit_v1_session_proto_depIdxs = []int32{
 	2,   // 69: flit.v1.Feedback.rating:type_name -> flit.v1.Rating
 	6,   // 70: flit.v1.PermissionCheck.verdict:type_name -> flit.v1.PermissionVerdict
 	7,   // 71: flit.v1.ModelCallEnded.outcome:type_name -> flit.v1.ModelCallOutcome
-	8,   // 72: flit.v1.ModelCallWaiting.reason:type_name -> flit.v1.ModelWaitReason
-	9,   // 73: flit.v1.PromptCache.action:type_name -> flit.v1.PromptCacheAction
-	10,  // 74: flit.v1.BranchCreated.kind:type_name -> flit.v1.BranchKind
-	12,  // 75: flit.v1.GitFileChange.status:type_name -> flit.v1.GitFileStatus
-	11,  // 76: flit.v1.GitStatusResponse.diff_base_kind:type_name -> flit.v1.GitDiffBase
-	103, // 77: flit.v1.GitStatusResponse.files:type_name -> flit.v1.GitFileChange
-	11,  // 78: flit.v1.GitDiffResponse.diff_base_kind:type_name -> flit.v1.GitDiffBase
-	120, // 79: flit.v1.CronRunStarted.trigger:type_name -> flit.v1.CronTrigger
-	119, // 80: flit.v1.CronRunStarted.scheduled_time:type_name -> google.protobuf.Timestamp
-	121, // 81: flit.v1.CronRunStarted.ask:type_name -> flit.v1.CronAsk
-	121, // 82: flit.v1.WebhookRunStarted.ask:type_name -> flit.v1.CronAsk
-	13,  // 83: flit.v1.SubagentStarted.kind:type_name -> flit.v1.SubagentKind
-	66,  // 84: flit.v1.SubagentEvent.event:type_name -> flit.v1.Event
-	14,  // 85: flit.v1.SubagentDone.outcome:type_name -> flit.v1.SubagentOutcome
-	113, // 86: flit.v1.WorktreeCreated.copies:type_name -> flit.v1.WorktreeCopy
-	15,  // 87: flit.v1.RemoveWorktreeResponse.session:type_name -> flit.v1.Session
-	16,  // 88: flit.v1.SessionService.CreateSession:input_type -> flit.v1.CreateSessionRequest
-	18,  // 89: flit.v1.SessionService.ListSessions:input_type -> flit.v1.ListSessionsRequest
-	20,  // 90: flit.v1.SessionService.GetSession:input_type -> flit.v1.GetSessionRequest
-	22,  // 91: flit.v1.SessionService.Attach:input_type -> flit.v1.AttachRequest
-	24,  // 92: flit.v1.SessionService.Send:input_type -> flit.v1.SendRequest
-	26,  // 93: flit.v1.SessionService.EditQueuedMessage:input_type -> flit.v1.EditQueuedMessageRequest
-	28,  // 94: flit.v1.SessionService.CancelQueuedMessage:input_type -> flit.v1.CancelQueuedMessageRequest
-	30,  // 95: flit.v1.SessionService.Interrupt:input_type -> flit.v1.InterruptRequest
-	32,  // 96: flit.v1.SessionService.RetryModelCall:input_type -> flit.v1.RetryModelCallRequest
-	34,  // 97: flit.v1.SessionService.EndReasoning:input_type -> flit.v1.EndReasoningRequest
-	36,  // 98: flit.v1.SessionService.Compact:input_type -> flit.v1.CompactRequest
-	38,  // 99: flit.v1.SessionService.AnswerPrompt:input_type -> flit.v1.AnswerPromptRequest
-	40,  // 100: flit.v1.SessionService.SetModel:input_type -> flit.v1.SetModelRequest
-	60,  // 101: flit.v1.SessionService.SetEffort:input_type -> flit.v1.SetEffortRequest
-	62,  // 102: flit.v1.SessionService.SetRole:input_type -> flit.v1.SetRoleRequest
-	64,  // 103: flit.v1.SessionService.SetYolo:input_type -> flit.v1.SetYoloRequest
-	42,  // 104: flit.v1.SessionService.MoveSession:input_type -> flit.v1.MoveSessionRequest
-	44,  // 105: flit.v1.SessionService.Rate:input_type -> flit.v1.RateRequest
-	47,  // 106: flit.v1.SessionService.ListMcpServers:input_type -> flit.v1.ListMcpServersRequest
-	52,  // 107: flit.v1.SessionService.SetMcpServer:input_type -> flit.v1.SetMcpServerRequest
-	50,  // 108: flit.v1.SessionService.ListSkills:input_type -> flit.v1.ListSkillsRequest
-	53,  // 109: flit.v1.SessionService.RetryFromMessage:input_type -> flit.v1.RetryFromMessageRequest
-	55,  // 110: flit.v1.SessionService.EditMessage:input_type -> flit.v1.EditMessageRequest
-	57,  // 111: flit.v1.SessionService.SwitchBranch:input_type -> flit.v1.SwitchBranchRequest
-	102, // 112: flit.v1.SessionService.GitStatus:input_type -> flit.v1.GitStatusRequest
-	105, // 113: flit.v1.SessionService.GitDiff:input_type -> flit.v1.GitDiffRequest
-	117, // 114: flit.v1.SessionService.RemoveWorktree:input_type -> flit.v1.RemoveWorktreeRequest
-	17,  // 115: flit.v1.SessionService.CreateSession:output_type -> flit.v1.CreateSessionResponse
-	19,  // 116: flit.v1.SessionService.ListSessions:output_type -> flit.v1.ListSessionsResponse
-	21,  // 117: flit.v1.SessionService.GetSession:output_type -> flit.v1.GetSessionResponse
-	23,  // 118: flit.v1.SessionService.Attach:output_type -> flit.v1.AttachResponse
-	25,  // 119: flit.v1.SessionService.Send:output_type -> flit.v1.SendResponse
-	27,  // 120: flit.v1.SessionService.EditQueuedMessage:output_type -> flit.v1.EditQueuedMessageResponse
-	29,  // 121: flit.v1.SessionService.CancelQueuedMessage:output_type -> flit.v1.CancelQueuedMessageResponse
-	31,  // 122: flit.v1.SessionService.Interrupt:output_type -> flit.v1.InterruptResponse
-	33,  // 123: flit.v1.SessionService.RetryModelCall:output_type -> flit.v1.RetryModelCallResponse
-	35,  // 124: flit.v1.SessionService.EndReasoning:output_type -> flit.v1.EndReasoningResponse
-	37,  // 125: flit.v1.SessionService.Compact:output_type -> flit.v1.CompactResponse
-	39,  // 126: flit.v1.SessionService.AnswerPrompt:output_type -> flit.v1.AnswerPromptResponse
-	41,  // 127: flit.v1.SessionService.SetModel:output_type -> flit.v1.SetModelResponse
-	61,  // 128: flit.v1.SessionService.SetEffort:output_type -> flit.v1.SetEffortResponse
-	63,  // 129: flit.v1.SessionService.SetRole:output_type -> flit.v1.SetRoleResponse
-	65,  // 130: flit.v1.SessionService.SetYolo:output_type -> flit.v1.SetYoloResponse
-	43,  // 131: flit.v1.SessionService.MoveSession:output_type -> flit.v1.MoveSessionResponse
-	45,  // 132: flit.v1.SessionService.Rate:output_type -> flit.v1.RateResponse
-	48,  // 133: flit.v1.SessionService.ListMcpServers:output_type -> flit.v1.ListMcpServersResponse
-	59,  // 134: flit.v1.SessionService.SetMcpServer:output_type -> flit.v1.SetMcpServerResponse
-	51,  // 135: flit.v1.SessionService.ListSkills:output_type -> flit.v1.ListSkillsResponse
-	54,  // 136: flit.v1.SessionService.RetryFromMessage:output_type -> flit.v1.RetryFromMessageResponse
-	56,  // 137: flit.v1.SessionService.EditMessage:output_type -> flit.v1.EditMessageResponse
-	58,  // 138: flit.v1.SessionService.SwitchBranch:output_type -> flit.v1.SwitchBranchResponse
-	104, // 139: flit.v1.SessionService.GitStatus:output_type -> flit.v1.GitStatusResponse
-	106, // 140: flit.v1.SessionService.GitDiff:output_type -> flit.v1.GitDiffResponse
-	118, // 141: flit.v1.SessionService.RemoveWorktree:output_type -> flit.v1.RemoveWorktreeResponse
-	115, // [115:142] is the sub-list for method output_type
-	88,  // [88:115] is the sub-list for method input_type
-	88,  // [88:88] is the sub-list for extension type_name
-	88,  // [88:88] is the sub-list for extension extendee
-	0,   // [0:88] is the sub-list for field type_name
+	91,  // 72: flit.v1.ModelCallEnded.server:type_name -> flit.v1.ModelServerState
+	92,  // 73: flit.v1.ModelServerState.slots:type_name -> flit.v1.LlamaSlot
+	8,   // 74: flit.v1.ModelCallWaiting.reason:type_name -> flit.v1.ModelWaitReason
+	9,   // 75: flit.v1.PromptCache.action:type_name -> flit.v1.PromptCacheAction
+	10,  // 76: flit.v1.BranchCreated.kind:type_name -> flit.v1.BranchKind
+	12,  // 77: flit.v1.GitFileChange.status:type_name -> flit.v1.GitFileStatus
+	11,  // 78: flit.v1.GitStatusResponse.diff_base_kind:type_name -> flit.v1.GitDiffBase
+	105, // 79: flit.v1.GitStatusResponse.files:type_name -> flit.v1.GitFileChange
+	11,  // 80: flit.v1.GitDiffResponse.diff_base_kind:type_name -> flit.v1.GitDiffBase
+	122, // 81: flit.v1.CronRunStarted.trigger:type_name -> flit.v1.CronTrigger
+	121, // 82: flit.v1.CronRunStarted.scheduled_time:type_name -> google.protobuf.Timestamp
+	123, // 83: flit.v1.CronRunStarted.ask:type_name -> flit.v1.CronAsk
+	123, // 84: flit.v1.WebhookRunStarted.ask:type_name -> flit.v1.CronAsk
+	13,  // 85: flit.v1.SubagentStarted.kind:type_name -> flit.v1.SubagentKind
+	66,  // 86: flit.v1.SubagentEvent.event:type_name -> flit.v1.Event
+	14,  // 87: flit.v1.SubagentDone.outcome:type_name -> flit.v1.SubagentOutcome
+	115, // 88: flit.v1.WorktreeCreated.copies:type_name -> flit.v1.WorktreeCopy
+	15,  // 89: flit.v1.RemoveWorktreeResponse.session:type_name -> flit.v1.Session
+	16,  // 90: flit.v1.SessionService.CreateSession:input_type -> flit.v1.CreateSessionRequest
+	18,  // 91: flit.v1.SessionService.ListSessions:input_type -> flit.v1.ListSessionsRequest
+	20,  // 92: flit.v1.SessionService.GetSession:input_type -> flit.v1.GetSessionRequest
+	22,  // 93: flit.v1.SessionService.Attach:input_type -> flit.v1.AttachRequest
+	24,  // 94: flit.v1.SessionService.Send:input_type -> flit.v1.SendRequest
+	26,  // 95: flit.v1.SessionService.EditQueuedMessage:input_type -> flit.v1.EditQueuedMessageRequest
+	28,  // 96: flit.v1.SessionService.CancelQueuedMessage:input_type -> flit.v1.CancelQueuedMessageRequest
+	30,  // 97: flit.v1.SessionService.Interrupt:input_type -> flit.v1.InterruptRequest
+	32,  // 98: flit.v1.SessionService.RetryModelCall:input_type -> flit.v1.RetryModelCallRequest
+	34,  // 99: flit.v1.SessionService.EndReasoning:input_type -> flit.v1.EndReasoningRequest
+	36,  // 100: flit.v1.SessionService.Compact:input_type -> flit.v1.CompactRequest
+	38,  // 101: flit.v1.SessionService.AnswerPrompt:input_type -> flit.v1.AnswerPromptRequest
+	40,  // 102: flit.v1.SessionService.SetModel:input_type -> flit.v1.SetModelRequest
+	60,  // 103: flit.v1.SessionService.SetEffort:input_type -> flit.v1.SetEffortRequest
+	62,  // 104: flit.v1.SessionService.SetRole:input_type -> flit.v1.SetRoleRequest
+	64,  // 105: flit.v1.SessionService.SetYolo:input_type -> flit.v1.SetYoloRequest
+	42,  // 106: flit.v1.SessionService.MoveSession:input_type -> flit.v1.MoveSessionRequest
+	44,  // 107: flit.v1.SessionService.Rate:input_type -> flit.v1.RateRequest
+	47,  // 108: flit.v1.SessionService.ListMcpServers:input_type -> flit.v1.ListMcpServersRequest
+	52,  // 109: flit.v1.SessionService.SetMcpServer:input_type -> flit.v1.SetMcpServerRequest
+	50,  // 110: flit.v1.SessionService.ListSkills:input_type -> flit.v1.ListSkillsRequest
+	53,  // 111: flit.v1.SessionService.RetryFromMessage:input_type -> flit.v1.RetryFromMessageRequest
+	55,  // 112: flit.v1.SessionService.EditMessage:input_type -> flit.v1.EditMessageRequest
+	57,  // 113: flit.v1.SessionService.SwitchBranch:input_type -> flit.v1.SwitchBranchRequest
+	104, // 114: flit.v1.SessionService.GitStatus:input_type -> flit.v1.GitStatusRequest
+	107, // 115: flit.v1.SessionService.GitDiff:input_type -> flit.v1.GitDiffRequest
+	119, // 116: flit.v1.SessionService.RemoveWorktree:input_type -> flit.v1.RemoveWorktreeRequest
+	17,  // 117: flit.v1.SessionService.CreateSession:output_type -> flit.v1.CreateSessionResponse
+	19,  // 118: flit.v1.SessionService.ListSessions:output_type -> flit.v1.ListSessionsResponse
+	21,  // 119: flit.v1.SessionService.GetSession:output_type -> flit.v1.GetSessionResponse
+	23,  // 120: flit.v1.SessionService.Attach:output_type -> flit.v1.AttachResponse
+	25,  // 121: flit.v1.SessionService.Send:output_type -> flit.v1.SendResponse
+	27,  // 122: flit.v1.SessionService.EditQueuedMessage:output_type -> flit.v1.EditQueuedMessageResponse
+	29,  // 123: flit.v1.SessionService.CancelQueuedMessage:output_type -> flit.v1.CancelQueuedMessageResponse
+	31,  // 124: flit.v1.SessionService.Interrupt:output_type -> flit.v1.InterruptResponse
+	33,  // 125: flit.v1.SessionService.RetryModelCall:output_type -> flit.v1.RetryModelCallResponse
+	35,  // 126: flit.v1.SessionService.EndReasoning:output_type -> flit.v1.EndReasoningResponse
+	37,  // 127: flit.v1.SessionService.Compact:output_type -> flit.v1.CompactResponse
+	39,  // 128: flit.v1.SessionService.AnswerPrompt:output_type -> flit.v1.AnswerPromptResponse
+	41,  // 129: flit.v1.SessionService.SetModel:output_type -> flit.v1.SetModelResponse
+	61,  // 130: flit.v1.SessionService.SetEffort:output_type -> flit.v1.SetEffortResponse
+	63,  // 131: flit.v1.SessionService.SetRole:output_type -> flit.v1.SetRoleResponse
+	65,  // 132: flit.v1.SessionService.SetYolo:output_type -> flit.v1.SetYoloResponse
+	43,  // 133: flit.v1.SessionService.MoveSession:output_type -> flit.v1.MoveSessionResponse
+	45,  // 134: flit.v1.SessionService.Rate:output_type -> flit.v1.RateResponse
+	48,  // 135: flit.v1.SessionService.ListMcpServers:output_type -> flit.v1.ListMcpServersResponse
+	59,  // 136: flit.v1.SessionService.SetMcpServer:output_type -> flit.v1.SetMcpServerResponse
+	51,  // 137: flit.v1.SessionService.ListSkills:output_type -> flit.v1.ListSkillsResponse
+	54,  // 138: flit.v1.SessionService.RetryFromMessage:output_type -> flit.v1.RetryFromMessageResponse
+	56,  // 139: flit.v1.SessionService.EditMessage:output_type -> flit.v1.EditMessageResponse
+	58,  // 140: flit.v1.SessionService.SwitchBranch:output_type -> flit.v1.SwitchBranchResponse
+	106, // 141: flit.v1.SessionService.GitStatus:output_type -> flit.v1.GitStatusResponse
+	108, // 142: flit.v1.SessionService.GitDiff:output_type -> flit.v1.GitDiffResponse
+	120, // 143: flit.v1.SessionService.RemoveWorktree:output_type -> flit.v1.RemoveWorktreeResponse
+	117, // [117:144] is the sub-list for method output_type
+	90,  // [90:117] is the sub-list for method input_type
+	90,  // [90:90] is the sub-list for extension type_name
+	90,  // [90:90] is the sub-list for extension extendee
+	0,   // [0:90] is the sub-list for field type_name
 }
 
 func init() { file_flit_v1_session_proto_init() }
@@ -9668,13 +9961,14 @@ func file_flit_v1_session_proto_init() {
 		(*Event_WebhookRun)(nil),
 		(*Event_RoleChanged)(nil),
 	}
+	file_flit_v1_session_proto_msgTypes[76].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_flit_v1_session_proto_rawDesc), len(file_flit_v1_session_proto_rawDesc)),
 			NumEnums:      15,
-			NumMessages:   104,
+			NumMessages:   106,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

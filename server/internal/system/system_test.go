@@ -107,6 +107,7 @@ func TestPairingFlow(t *testing.T) {
 		"CreatePairingCode": second(sys(url, devTok).CreatePairingCode(ctx, &flitv1.CreatePairingCodeRequest{})),
 		"ListDevices":       second(sys(url, devTok).ListDevices(ctx, &flitv1.ListDevicesRequest{})),
 		"RevokeDevice":      second(sys(url, devTok).RevokeDevice(ctx, &flitv1.RevokeDeviceRequest{DeviceId: "x"})),
+		"DebugDump":         second(sys(url, devTok).DebugDump(ctx, &flitv1.DebugDumpRequest{})),
 	} {
 		if connect.CodeOf(err) != connect.CodePermissionDenied {
 			t.Errorf("device %s: %v", name, err)
@@ -115,6 +116,11 @@ func TestPairingFlow(t *testing.T) {
 	// Admin-only calls also reject no token at all.
 	if _, err := sys(url, "").ListDevices(ctx, &flitv1.ListDevicesRequest{}); connect.CodeOf(err) != connect.CodeUnauthenticated {
 		t.Fatalf("anonymous ListDevices: %v", err)
+	}
+
+	dump, err := sys(url, admin).DebugDump(ctx, &flitv1.DebugDumpRequest{Goroutines: true})
+	if err != nil || !strings.Contains(dump.Goroutines, "goroutine ") || !dump.SessionsLockFree || strings.Contains(dump.Goroutines, admin) {
+		t.Fatalf("admin DebugDump: %v", err)
 	}
 
 	list, err := sys(url, admin).ListDevices(ctx, &flitv1.ListDevicesRequest{})

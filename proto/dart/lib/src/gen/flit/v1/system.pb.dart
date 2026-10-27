@@ -13,10 +13,12 @@
 import 'dart:async' as $async;
 import 'dart:core' as $core;
 
+import 'package:fixnum/fixnum.dart' as $fixnum;
 import 'package:protobuf/protobuf.dart' as $pb;
 import 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart'
     as $0;
 
+import 'session.pbenum.dart' as $1;
 import 'system.pbenum.dart';
 
 export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
@@ -904,6 +906,771 @@ class RevokeDeviceResponse extends $pb.GeneratedMessage {
   static RevokeDeviceResponse? _defaultInstance;
 }
 
+class DebugDumpRequest extends $pb.GeneratedMessage {
+  factory DebugDumpRequest({
+    $core.bool? goroutines,
+  }) {
+    final result = DebugDumpRequest._();
+    if (goroutines != null) result.goroutines = goroutines;
+    return result;
+  }
+
+  DebugDumpRequest._();
+
+  factory DebugDumpRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      DebugDumpRequest()..mergeFromBuffer(data, registry);
+  factory DebugDumpRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      DebugDumpRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DebugDumpRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: DebugDumpRequest.$_createMessage)
+    ..aOB(1, _omitFieldNames ? '' : 'goroutines')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DebugDumpRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DebugDumpRequest copyWith(void Function(DebugDumpRequest) updates) =>
+      super.copyWith((message) => updates(message as DebugDumpRequest))
+          as DebugDumpRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use DebugDumpRequest() / DebugDumpRequest.new instead')
+  static DebugDumpRequest create() => DebugDumpRequest._();
+  static $pb.GeneratedMessage $_createMessage() => DebugDumpRequest._();
+  @$core.override
+  DebugDumpRequest createEmptyInstance() => DebugDumpRequest._();
+  @$core.pragma('dart2js:noInline')
+  static DebugDumpRequest getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<DebugDumpRequest>(
+          DebugDumpRequest.$_createMessage);
+  static DebugDumpRequest? _defaultInstance;
+
+  /// Include every goroutine's stack (can be large).
+  @$pb.TagNumber(1)
+  $core.bool get goroutines => $_getBF(0);
+  @$pb.TagNumber(1)
+  set goroutines($core.bool value) => $_setBool(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasGoroutines() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearGoroutines() => $_clearField(1);
+}
+
+class DebugDumpResponse extends $pb.GeneratedMessage {
+  factory DebugDumpResponse({
+    $0.Timestamp? time,
+    $core.Iterable<SessionDebug>? sessions,
+    $core.Iterable<ModelLimitDebug>? limits,
+    $core.String? goroutines,
+    $core.bool? sessionsLockFree,
+  }) {
+    final result = DebugDumpResponse._();
+    if (time != null) result.time = time;
+    if (sessions != null) result.sessions.addAll(sessions);
+    if (limits != null) result.limits.addAll(limits);
+    if (goroutines != null) result.goroutines = goroutines;
+    if (sessionsLockFree != null) result.sessionsLockFree = sessionsLockFree;
+    return result;
+  }
+
+  DebugDumpResponse._();
+
+  factory DebugDumpResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      DebugDumpResponse()..mergeFromBuffer(data, registry);
+  factory DebugDumpResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      DebugDumpResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'DebugDumpResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: DebugDumpResponse.$_createMessage)
+    ..aOM<$0.Timestamp>(1, _omitFieldNames ? '' : 'time',
+        subBuilder: $0.Timestamp.$_createMessage)
+    ..pPM<SessionDebug>(2, _omitFieldNames ? '' : 'sessions',
+        subBuilder: SessionDebug.$_createMessage)
+    ..pPM<ModelLimitDebug>(3, _omitFieldNames ? '' : 'limits',
+        subBuilder: ModelLimitDebug.$_createMessage)
+    ..aOS(4, _omitFieldNames ? '' : 'goroutines')
+    ..aOB(5, _omitFieldNames ? '' : 'sessionsLockFree')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DebugDumpResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  DebugDumpResponse copyWith(void Function(DebugDumpResponse) updates) =>
+      super.copyWith((message) => updates(message as DebugDumpResponse))
+          as DebugDumpResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use DebugDumpResponse() / DebugDumpResponse.new instead')
+  static DebugDumpResponse create() => DebugDumpResponse._();
+  static $pb.GeneratedMessage $_createMessage() => DebugDumpResponse._();
+  @$core.override
+  DebugDumpResponse createEmptyInstance() => DebugDumpResponse._();
+  @$core.pragma('dart2js:noInline')
+  static DebugDumpResponse getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<DebugDumpResponse>(
+          DebugDumpResponse.$_createMessage);
+  static DebugDumpResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $0.Timestamp get time => $_getN(0);
+  @$pb.TagNumber(1)
+  set time($0.Timestamp value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasTime() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearTime() => $_clearField(1);
+  @$pb.TagNumber(1)
+  $0.Timestamp ensureTime() => $_ensure(0);
+
+  /// The sessions loaded in memory (any used since the server started).
+  @$pb.TagNumber(2)
+  $pb.PbList<SessionDebug> get sessions => $_getList(1);
+
+  /// Model calls holding or waiting for a concurrency slot
+  /// (providers[].concurrency), per provider and model.
+  @$pb.TagNumber(3)
+  $pb.PbList<ModelLimitDebug> get limits => $_getList(2);
+
+  /// Every goroutine's stack, as Go prints them, if asked for.
+  @$pb.TagNumber(4)
+  $core.String get goroutines => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set goroutines($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasGoroutines() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearGoroutines() => $_clearField(4);
+
+  /// Whether the session table itself could be locked; false means the
+  /// sessions list is empty because something holds it (see goroutines).
+  @$pb.TagNumber(5)
+  $core.bool get sessionsLockFree => $_getBF(4);
+  @$pb.TagNumber(5)
+  set sessionsLockFree($core.bool value) => $_setBool(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasSessionsLockFree() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearSessionsLockFree() => $_clearField(5);
+}
+
+/// SessionDebug is one session's live state.
+class SessionDebug extends $pb.GeneratedMessage {
+  factory SessionDebug({
+    $core.String? sessionId,
+    $core.String? title,
+    $core.bool? lockFree,
+    $1.TaskState? state,
+    $core.bool? turnRunning,
+    $fixnum.Int64? lastSeq,
+    $0.Timestamp? lastEventTime,
+    $core.int? queuedMessages,
+    $core.int? pendingPrompts,
+    ModelCallDebug? call,
+    ToolDebug? tool,
+    $core.Iterable<ModelCallDebug>? subagentCalls,
+  }) {
+    final result = SessionDebug._();
+    if (sessionId != null) result.sessionId = sessionId;
+    if (title != null) result.title = title;
+    if (lockFree != null) result.lockFree = lockFree;
+    if (state != null) result.state = state;
+    if (turnRunning != null) result.turnRunning = turnRunning;
+    if (lastSeq != null) result.lastSeq = lastSeq;
+    if (lastEventTime != null) result.lastEventTime = lastEventTime;
+    if (queuedMessages != null) result.queuedMessages = queuedMessages;
+    if (pendingPrompts != null) result.pendingPrompts = pendingPrompts;
+    if (call != null) result.call = call;
+    if (tool != null) result.tool = tool;
+    if (subagentCalls != null) result.subagentCalls.addAll(subagentCalls);
+    return result;
+  }
+
+  SessionDebug._();
+
+  factory SessionDebug.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SessionDebug()..mergeFromBuffer(data, registry);
+  factory SessionDebug.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SessionDebug()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SessionDebug',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: SessionDebug.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'sessionId')
+    ..aOS(2, _omitFieldNames ? '' : 'title')
+    ..aOB(3, _omitFieldNames ? '' : 'lockFree')
+    ..aE<$1.TaskState>(4, _omitFieldNames ? '' : 'state',
+        enumValues: $1.TaskState.values)
+    ..aOB(5, _omitFieldNames ? '' : 'turnRunning')
+    ..aInt64(6, _omitFieldNames ? '' : 'lastSeq')
+    ..aOM<$0.Timestamp>(7, _omitFieldNames ? '' : 'lastEventTime',
+        subBuilder: $0.Timestamp.$_createMessage)
+    ..aI(8, _omitFieldNames ? '' : 'queuedMessages')
+    ..aI(9, _omitFieldNames ? '' : 'pendingPrompts')
+    ..aOM<ModelCallDebug>(10, _omitFieldNames ? '' : 'call',
+        subBuilder: ModelCallDebug.$_createMessage)
+    ..aOM<ToolDebug>(11, _omitFieldNames ? '' : 'tool',
+        subBuilder: ToolDebug.$_createMessage)
+    ..pPM<ModelCallDebug>(12, _omitFieldNames ? '' : 'subagentCalls',
+        subBuilder: ModelCallDebug.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SessionDebug clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SessionDebug copyWith(void Function(SessionDebug) updates) =>
+      super.copyWith((message) => updates(message as SessionDebug))
+          as SessionDebug;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use SessionDebug() / SessionDebug.new instead')
+  static SessionDebug create() => SessionDebug._();
+  static $pb.GeneratedMessage $_createMessage() => SessionDebug._();
+  @$core.override
+  SessionDebug createEmptyInstance() => SessionDebug._();
+  @$core.pragma('dart2js:noInline')
+  static SessionDebug getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SessionDebug>(
+          SessionDebug.$_createMessage);
+  static SessionDebug? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get sessionId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set sessionId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSessionId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSessionId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get title => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set title($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasTitle() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearTitle() => $_clearField(2);
+
+  /// False when the session's lock couldn't be taken within a couple of
+  /// seconds: something holds it (a stuck event log write, or a deadlock;
+  /// the goroutine stacks show what). The fields below are then unset.
+  @$pb.TagNumber(3)
+  $core.bool get lockFree => $_getBF(2);
+  @$pb.TagNumber(3)
+  set lockFree($core.bool value) => $_setBool(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasLockFree() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearLockFree() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $1.TaskState get state => $_getN(3);
+  @$pb.TagNumber(4)
+  set state($1.TaskState value) => $_setField(4, value);
+  @$pb.TagNumber(4)
+  $core.bool hasState() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearState() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.bool get turnRunning => $_getBF(4);
+  @$pb.TagNumber(5)
+  set turnRunning($core.bool value) => $_setBool(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasTurnRunning() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearTurnRunning() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $fixnum.Int64 get lastSeq => $_getI64(5);
+  @$pb.TagNumber(6)
+  set lastSeq($fixnum.Int64 value) => $_setInt64(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasLastSeq() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearLastSeq() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $0.Timestamp get lastEventTime => $_getN(6);
+  @$pb.TagNumber(7)
+  set lastEventTime($0.Timestamp value) => $_setField(7, value);
+  @$pb.TagNumber(7)
+  $core.bool hasLastEventTime() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearLastEventTime() => $_clearField(7);
+  @$pb.TagNumber(7)
+  $0.Timestamp ensureLastEventTime() => $_ensure(6);
+
+  @$pb.TagNumber(8)
+  $core.int get queuedMessages => $_getIZ(7);
+  @$pb.TagNumber(8)
+  set queuedMessages($core.int value) => $_setSignedInt32(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasQueuedMessages() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearQueuedMessages() => $_clearField(8);
+
+  /// Prompts waiting for the user.
+  @$pb.TagNumber(9)
+  $core.int get pendingPrompts => $_getIZ(8);
+  @$pb.TagNumber(9)
+  set pendingPrompts($core.int value) => $_setSignedInt32(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasPendingPrompts() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearPendingPrompts() => $_clearField(9);
+
+  /// The model call in flight, if any.
+  @$pb.TagNumber(10)
+  ModelCallDebug get call => $_getN(9);
+  @$pb.TagNumber(10)
+  set call(ModelCallDebug value) => $_setField(10, value);
+  @$pb.TagNumber(10)
+  $core.bool hasCall() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearCall() => $_clearField(10);
+  @$pb.TagNumber(10)
+  ModelCallDebug ensureCall() => $_ensure(9);
+
+  /// The tool the turn is running, if any.
+  @$pb.TagNumber(11)
+  ToolDebug get tool => $_getN(10);
+  @$pb.TagNumber(11)
+  set tool(ToolDebug value) => $_setField(11, value);
+  @$pb.TagNumber(11)
+  $core.bool hasTool() => $_has(10);
+  @$pb.TagNumber(11)
+  void clearTool() => $_clearField(11);
+  @$pb.TagNumber(11)
+  ToolDebug ensureTool() => $_ensure(10);
+
+  /// Model calls of subagents (the agent tool) in flight.
+  @$pb.TagNumber(12)
+  $pb.PbList<ModelCallDebug> get subagentCalls => $_getList(11);
+}
+
+/// ToolDebug is a tool run in progress.
+class ToolDebug extends $pb.GeneratedMessage {
+  factory ToolDebug({
+    $core.String? toolCallId,
+    $core.String? name,
+    $0.Timestamp? startTime,
+  }) {
+    final result = ToolDebug._();
+    if (toolCallId != null) result.toolCallId = toolCallId;
+    if (name != null) result.name = name;
+    if (startTime != null) result.startTime = startTime;
+    return result;
+  }
+
+  ToolDebug._();
+
+  factory ToolDebug.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ToolDebug()..mergeFromBuffer(data, registry);
+  factory ToolDebug.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ToolDebug()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ToolDebug',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: ToolDebug.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'toolCallId')
+    ..aOS(2, _omitFieldNames ? '' : 'name')
+    ..aOM<$0.Timestamp>(3, _omitFieldNames ? '' : 'startTime',
+        subBuilder: $0.Timestamp.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ToolDebug clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ToolDebug copyWith(void Function(ToolDebug) updates) =>
+      super.copyWith((message) => updates(message as ToolDebug)) as ToolDebug;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ToolDebug() / ToolDebug.new instead')
+  static ToolDebug create() => ToolDebug._();
+  static $pb.GeneratedMessage $_createMessage() => ToolDebug._();
+  @$core.override
+  ToolDebug createEmptyInstance() => ToolDebug._();
+  @$core.pragma('dart2js:noInline')
+  static ToolDebug getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ToolDebug>(ToolDebug.$_createMessage);
+  static ToolDebug? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get toolCallId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set toolCallId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasToolCallId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearToolCallId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get name => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set name($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasName() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearName() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $0.Timestamp get startTime => $_getN(2);
+  @$pb.TagNumber(3)
+  set startTime($0.Timestamp value) => $_setField(3, value);
+  @$pb.TagNumber(3)
+  $core.bool hasStartTime() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearStartTime() => $_clearField(3);
+  @$pb.TagNumber(3)
+  $0.Timestamp ensureStartTime() => $_ensure(2);
+}
+
+/// ModelCallDebug is a model call in flight.
+class ModelCallDebug extends $pb.GeneratedMessage {
+  factory ModelCallDebug({
+    $core.String? messageId,
+    $core.String? provider,
+    $core.String? model,
+    $core.bool? queued,
+    $core.String? phase,
+    $0.Timestamp? sentTime,
+    $fixnum.Int64? idleMs,
+    $fixnum.Int64? watchdogMs,
+    $fixnum.Int64? bytes,
+    $fixnum.Int64? streamedTokens,
+    $fixnum.Int64? promptProcessed,
+    $fixnum.Int64? promptTotal,
+    $core.String? completionId,
+  }) {
+    final result = ModelCallDebug._();
+    if (messageId != null) result.messageId = messageId;
+    if (provider != null) result.provider = provider;
+    if (model != null) result.model = model;
+    if (queued != null) result.queued = queued;
+    if (phase != null) result.phase = phase;
+    if (sentTime != null) result.sentTime = sentTime;
+    if (idleMs != null) result.idleMs = idleMs;
+    if (watchdogMs != null) result.watchdogMs = watchdogMs;
+    if (bytes != null) result.bytes = bytes;
+    if (streamedTokens != null) result.streamedTokens = streamedTokens;
+    if (promptProcessed != null) result.promptProcessed = promptProcessed;
+    if (promptTotal != null) result.promptTotal = promptTotal;
+    if (completionId != null) result.completionId = completionId;
+    return result;
+  }
+
+  ModelCallDebug._();
+
+  factory ModelCallDebug.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ModelCallDebug()..mergeFromBuffer(data, registry);
+  factory ModelCallDebug.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ModelCallDebug()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ModelCallDebug',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: ModelCallDebug.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'messageId')
+    ..aOS(2, _omitFieldNames ? '' : 'provider')
+    ..aOS(3, _omitFieldNames ? '' : 'model')
+    ..aOB(4, _omitFieldNames ? '' : 'queued')
+    ..aOS(5, _omitFieldNames ? '' : 'phase')
+    ..aOM<$0.Timestamp>(6, _omitFieldNames ? '' : 'sentTime',
+        subBuilder: $0.Timestamp.$_createMessage)
+    ..aInt64(7, _omitFieldNames ? '' : 'idleMs')
+    ..aInt64(8, _omitFieldNames ? '' : 'watchdogMs')
+    ..aInt64(9, _omitFieldNames ? '' : 'bytes')
+    ..aInt64(10, _omitFieldNames ? '' : 'streamedTokens')
+    ..aInt64(11, _omitFieldNames ? '' : 'promptProcessed')
+    ..aInt64(12, _omitFieldNames ? '' : 'promptTotal')
+    ..aOS(13, _omitFieldNames ? '' : 'completionId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ModelCallDebug clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ModelCallDebug copyWith(void Function(ModelCallDebug) updates) =>
+      super.copyWith((message) => updates(message as ModelCallDebug))
+          as ModelCallDebug;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ModelCallDebug() / ModelCallDebug.new instead')
+  static ModelCallDebug create() => ModelCallDebug._();
+  static $pb.GeneratedMessage $_createMessage() => ModelCallDebug._();
+  @$core.override
+  ModelCallDebug createEmptyInstance() => ModelCallDebug._();
+  @$core.pragma('dart2js:noInline')
+  static ModelCallDebug getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ModelCallDebug>(
+          ModelCallDebug.$_createMessage);
+  static ModelCallDebug? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get messageId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set messageId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasMessageId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearMessageId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get provider => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set provider($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasProvider() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearProvider() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get model => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set model($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasModel() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearModel() => $_clearField(3);
+
+  /// Waiting for flit's concurrency limit (not sent yet).
+  @$pb.TagNumber(4)
+  $core.bool get queued => $_getBF(3);
+  @$pb.TagNumber(4)
+  set queued($core.bool value) => $_setBool(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasQueued() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearQueued() => $_clearField(4);
+
+  /// Where the call is: "connecting", "waiting_for_first_byte",
+  /// "processing_prompt", "waiting_for_first_token" or "streaming";
+  /// "" while queued.
+  @$pb.TagNumber(5)
+  $core.String get phase => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set phase($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasPhase() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearPhase() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $0.Timestamp get sentTime => $_getN(5);
+  @$pb.TagNumber(6)
+  set sentTime($0.Timestamp value) => $_setField(6, value);
+  @$pb.TagNumber(6)
+  $core.bool hasSentTime() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearSentTime() => $_clearField(6);
+  @$pb.TagNumber(6)
+  $0.Timestamp ensureSentTime() => $_ensure(5);
+
+  /// Since the last sign of life (bytes, prompt progress), and the
+  /// watchdog's limit for the current phase (0: off).
+  @$pb.TagNumber(7)
+  $fixnum.Int64 get idleMs => $_getI64(6);
+  @$pb.TagNumber(7)
+  set idleMs($fixnum.Int64 value) => $_setInt64(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasIdleMs() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearIdleMs() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $fixnum.Int64 get watchdogMs => $_getI64(7);
+  @$pb.TagNumber(8)
+  set watchdogMs($fixnum.Int64 value) => $_setInt64(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasWatchdogMs() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearWatchdogMs() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $fixnum.Int64 get bytes => $_getI64(8);
+  @$pb.TagNumber(9)
+  set bytes($fixnum.Int64 value) => $_setInt64(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasBytes() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearBytes() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $fixnum.Int64 get streamedTokens => $_getI64(9);
+  @$pb.TagNumber(10)
+  set streamedTokens($fixnum.Int64 value) => $_setInt64(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasStreamedTokens() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearStreamedTokens() => $_clearField(10);
+
+  @$pb.TagNumber(11)
+  $fixnum.Int64 get promptProcessed => $_getI64(10);
+  @$pb.TagNumber(11)
+  set promptProcessed($fixnum.Int64 value) => $_setInt64(10, value);
+  @$pb.TagNumber(11)
+  $core.bool hasPromptProcessed() => $_has(10);
+  @$pb.TagNumber(11)
+  void clearPromptProcessed() => $_clearField(11);
+
+  @$pb.TagNumber(12)
+  $fixnum.Int64 get promptTotal => $_getI64(11);
+  @$pb.TagNumber(12)
+  set promptTotal($fixnum.Int64 value) => $_setInt64(11, value);
+  @$pb.TagNumber(12)
+  $core.bool hasPromptTotal() => $_has(11);
+  @$pb.TagNumber(12)
+  void clearPromptTotal() => $_clearField(12);
+
+  /// The completion id, once the server named it.
+  @$pb.TagNumber(13)
+  $core.String get completionId => $_getSZ(12);
+  @$pb.TagNumber(13)
+  set completionId($core.String value) => $_setString(12, value);
+  @$pb.TagNumber(13)
+  $core.bool hasCompletionId() => $_has(12);
+  @$pb.TagNumber(13)
+  void clearCompletionId() => $_clearField(13);
+}
+
+/// ModelLimitDebug is one provider and model's concurrency slots.
+class ModelLimitDebug extends $pb.GeneratedMessage {
+  factory ModelLimitDebug({
+    $core.String? provider,
+    $core.String? model,
+    $core.int? limit,
+    $core.int? inUse,
+    $core.int? waiting,
+  }) {
+    final result = ModelLimitDebug._();
+    if (provider != null) result.provider = provider;
+    if (model != null) result.model = model;
+    if (limit != null) result.limit = limit;
+    if (inUse != null) result.inUse = inUse;
+    if (waiting != null) result.waiting = waiting;
+    return result;
+  }
+
+  ModelLimitDebug._();
+
+  factory ModelLimitDebug.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ModelLimitDebug()..mergeFromBuffer(data, registry);
+  factory ModelLimitDebug.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ModelLimitDebug()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ModelLimitDebug',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: ModelLimitDebug.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'provider')
+    ..aOS(2, _omitFieldNames ? '' : 'model')
+    ..aI(3, _omitFieldNames ? '' : 'limit')
+    ..aI(4, _omitFieldNames ? '' : 'inUse')
+    ..aI(5, _omitFieldNames ? '' : 'waiting')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ModelLimitDebug clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ModelLimitDebug copyWith(void Function(ModelLimitDebug) updates) =>
+      super.copyWith((message) => updates(message as ModelLimitDebug))
+          as ModelLimitDebug;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ModelLimitDebug() / ModelLimitDebug.new instead')
+  static ModelLimitDebug create() => ModelLimitDebug._();
+  static $pb.GeneratedMessage $_createMessage() => ModelLimitDebug._();
+  @$core.override
+  ModelLimitDebug createEmptyInstance() => ModelLimitDebug._();
+  @$core.pragma('dart2js:noInline')
+  static ModelLimitDebug getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ModelLimitDebug>(
+          ModelLimitDebug.$_createMessage);
+  static ModelLimitDebug? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get provider => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set provider($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasProvider() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearProvider() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get model => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set model($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasModel() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearModel() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.int get limit => $_getIZ(2);
+  @$pb.TagNumber(3)
+  set limit($core.int value) => $_setSignedInt32(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasLimit() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearLimit() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.int get inUse => $_getIZ(3);
+  @$pb.TagNumber(4)
+  set inUse($core.int value) => $_setSignedInt32(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasInUse() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearInUse() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.int get waiting => $_getIZ(4);
+  @$pb.TagNumber(5)
+  set waiting($core.int value) => $_setSignedInt32(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasWaiting() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearWaiting() => $_clearField(5);
+}
+
 /// SystemService reports on the flit server itself and manages the devices
 /// allowed to use it. Every RPC requires a token, even on localhost, except
 /// Pair, which takes a pairing code instead.
@@ -955,6 +1722,16 @@ class SystemServiceApi {
           $pb.ClientContext? ctx, RevokeDeviceRequest request) =>
       _client.invoke<RevokeDeviceResponse>(ctx, 'SystemService', 'RevokeDevice',
           request, RevokeDeviceResponse());
+
+  /// DebugDump reports what the server is doing right now, for working out
+  /// where a frozen turn is stuck: each loaded session's turn, lock and
+  /// model call in flight, the model concurrency limits in use, and
+  /// optionally every goroutine's stack. Admin only. "flit debug dump"
+  /// calls this.
+  $async.Future<DebugDumpResponse> debugDump(
+          $pb.ClientContext? ctx, DebugDumpRequest request) =>
+      _client.invoke<DebugDumpResponse>(
+          ctx, 'SystemService', 'DebugDump', request, DebugDumpResponse());
 }
 
 const $core.bool _omitFieldNames =

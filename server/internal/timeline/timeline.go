@@ -336,6 +336,12 @@ func (p *printer) callEnded(at time.Time, e *flitv1.ModelCallEnded) {
 		fmt.Fprintf(&b, " (%s)", strings.Join(marks, ", "))
 	}
 	fmt.Fprintf(&b, ", %d bytes", e.Bytes)
+	if e.StreamedTokens > 0 {
+		fmt.Fprintf(&b, ", %d output chunks", e.StreamedTokens)
+	}
+	if e.PromptTotal > 0 && e.Outcome != flitv1.ModelCallOutcome_MODEL_CALL_OUTCOME_OK {
+		fmt.Fprintf(&b, ", prompt progress %d/%d", e.PromptProcessed, e.PromptTotal)
+	}
 	if e.InputTokens > 0 || e.OutputTokens > 0 {
 		fmt.Fprintf(&b, ", %d in / %d out", e.InputTokens, e.OutputTokens)
 	}
@@ -353,6 +359,41 @@ func (p *printer) callEnded(at time.Time, e *flitv1.ModelCallEnded) {
 	if e.Error != "" && e.Outcome != flitv1.ModelCallOutcome_MODEL_CALL_OUTCOME_RETRIED {
 		p.line(at, 2, "%s", e.Error)
 	}
+	if st := e.Server; st != nil {
+		p.line(at, 2, "llama.cpp then: %s", serverText(st))
+		if d := Diagnose(e); d != "" {
+			p.line(at, 2, "=> %s", d)
+		}
+	}
+}
+
+// serverText is a one-line summary of a llama.cpp server's state.
+func serverText(st *flitv1.ModelServerState) string {
+	var parts []string
+	switch {
+	case st.Error != "":
+		parts = append(parts, "model state unknown ("+st.Error+")")
+	case st.ModelState != "":
+		parts = append(parts, "model "+st.ModelState)
+	}
+	if st.PinnedSlot != nil {
+		parts = append(parts, fmt.Sprintf("call pinned to slot %d", st.GetPinnedSlot()))
+	}
+	if st.SlotsError != "" {
+		parts = append(parts, "slots unknown ("+st.SlotsError+")")
+	}
+	for _, sl := range st.Slots {
+		if !sl.IsProcessing {
+			parts = append(parts, fmt.Sprintf("slot %d idle", sl.Id))
+			continue
+		}
+		t := fmt.Sprintf("slot %d busy (task %d: %s", sl.Id, sl.IdTask, slotText(sl))
+		if st.SampleMs > 0 {
+			t += fmt.Sprintf("; +%d prompt, +%d generated in %s", sl.PromptProcessedDelta, sl.DecodedDelta, dur(ms(st.SampleMs)))
+		}
+		parts = append(parts, t+")")
+	}
+	return strings.Join(parts, ", ")
 }
 
 // open reports what never finished: where a frozen turn is.

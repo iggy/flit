@@ -298,8 +298,9 @@ func (s *session) summaryCall(ctx context.Context, cfg config.Config, p config.P
 		var appendErr error
 		output := 0
 		callCtx, cancelCall := context.WithCancelCause(ctx)
-		live := &liveCall{msgID: callID, provider: p, model: model, router: router}
+		live := &liveCall{msgID: callID, provider: p, model: model, router: router, llama: llama}
 		s.setCall(cancelCall, live)
+		client.OnStall = s.stallProbe(callCtx, live)
 		stopWait := func() {}
 		if llama {
 			stopWait = s.watchWait(callCtx, s.m.llamaClient(p, router), live, attempt, nil)
@@ -313,6 +314,7 @@ func (s *session) summaryCall(ctx context.Context, cfg config.Config, p config.P
 			Text:      func(d string) { s.callActivity(len(d), 0); output += len(d) },
 			Reasoning: func(d string) { s.callActivity(0, len(d)); output += len(d) },
 			Progress:  s.progress(callID, attempt, &appendErr),
+			Live:      func(snap func() llm.Trace) { s.setLive(live, snap) },
 		})
 		stopWait()
 		userRetry := callErr != nil && ctx.Err() == nil && errors.Is(context.Cause(callCtx), errUserRetry)
@@ -328,6 +330,7 @@ func (s *session) summaryCall(ctx context.Context, cfg config.Config, p config.P
 			e := ended.GetModelCallEnded()
 			e.Outcome, e.Error = flitv1.ModelCallOutcome_MODEL_CALL_OUTCOME_RETRIED, "retried by request"
 		}
+		s.diagnoseEnd(ctx, ended, callErr, live)
 		if _, err := s.append(ended); err != nil {
 			return nil, nil, err
 		}

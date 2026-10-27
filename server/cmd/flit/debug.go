@@ -26,13 +26,24 @@ runs and prompts with how long each took, and at the end anything that
 never finished, which is where a frozen turn is stuck. ID may be a unique
 prefix; without one, lists the most recent sessions.
 
+       flit debug dump [--stacks] [--json]
+
+Asks the running server (with the admin token) what it is doing right
+now: each loaded session's turn, model call in flight (phase, time since
+the last sign of life), running tool and whether its lock is free, and
+the model concurrency limits in use. Prints every goroutine's stack with
+--stacks, or by itself when a lock is held.
+
 Flags:
 `
 
 func debugCmd(ctx context.Context, stdout, stderr io.Writer, args []string, defaultConfig string) error {
+	if len(args) > 0 && args[0] == "dump" {
+		return debugDumpCmd(ctx, stdout, stderr, args[1:], defaultConfig)
+	}
 	if len(args) == 0 || args[0] != "session" {
 		fmt.Fprint(stderr, debugUsage)
-		return errors.New("usage: flit debug session [ID]")
+		return errors.New("usage: flit debug session [ID] | flit debug dump")
 	}
 	fs := flag.NewFlagSet("debug session", flag.ContinueOnError)
 	fs.SetOutput(stderr)

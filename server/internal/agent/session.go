@@ -42,6 +42,10 @@ type session struct {
 	// call is the model call in flight, for EndReasoning and the waiting
 	// watcher (see llamacpp.go).
 	call *liveCall
+	// subCalls are subagents' model calls in flight, and tool the tool
+	// the turn runs, for Debug.
+	subCalls map[*liveCall]struct{}
+	tool     *liveTool
 	// lastSlot is the llama.cpp slot this turn's last call was pinned to;
 	// only the turn's goroutine uses it.
 	lastSlot *slotRef
@@ -358,7 +362,24 @@ func (s *session) retryCall() error {
 	if s.callOutput {
 		return fmt.Errorf("%w: the model is already answering; interrupt the turn instead", ErrNoCallToRetry)
 	}
-	s.cancelCall(errUserRetry)
+	c, cancel := s.call, s.cancelCall
+	if c == nil || !c.llama {
+		cancel(errUserRetry)
+		return nil
+	}
+	if c.retrying {
+		return nil // already on it
+	}
+	// Ask llama.cpp what it is doing while it still has the request, then
+	// give up on it (see diagnoseEnd).
+	c.retrying = true
+	go func() {
+		st := s.m.serverState(context.Background(), c.provider, c.router, c.model, c.slot)
+		s.mu.Lock()
+		c.server = st
+		s.mu.Unlock()
+		cancel(errUserRetry)
+	}()
 	return nil
 }
 
