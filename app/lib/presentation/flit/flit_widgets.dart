@@ -93,8 +93,16 @@ class FlitStatusStrip extends StatelessWidget {
     this.timeToFirstTokenMs,
     this.inputTokens = 0,
     this.cachedTokens = 0,
+    this.role = '',
+    this.onRoleTap,
+    this.roleButtonKey,
     super.key,
   });
+
+  /// The session's role ('' = none), shown when [onRoleTap] is set.
+  final String role;
+  final VoidCallback? onRoleTap;
+  final Key? roleButtonKey;
 
   /// The last call's prompt and how much llama.cpp had cached.
   final int inputTokens;
@@ -148,6 +156,33 @@ class FlitStatusStrip extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (onRoleTap != null) ...<Widget>[
+                  InkWell(
+                    key: roleButtonKey,
+                    onTap: onRoleTap,
+                    child: Tooltip(
+                      message: 'Change role',
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          const Icon(Icons.badge_outlined, size: 14),
+                          const SizedBox(width: 4),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 140),
+                            child: Text(
+                              role.isEmpty ? 'no role' : role,
+                              style: small,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const Icon(Icons.arrow_drop_down, size: 16),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
                 FlitTaskStateChip(state: state),
               ],
             ),

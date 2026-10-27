@@ -265,6 +265,18 @@ func (s *Service) SetEffort(ctx context.Context, req *flitv1.SetEffortRequest) (
 	return &flitv1.SetEffortResponse{Session: toProto(sess)}, nil
 }
 
+// SetRole implements flitv1connect.SessionServiceHandler.
+func (s *Service) SetRole(ctx context.Context, req *flitv1.SetRoleRequest) (*flitv1.SetRoleResponse, error) {
+	if err := required("session_id", req.SessionId); err != nil {
+		return nil, err
+	}
+	sess, err := s.M.SetRole(ctx, req.SessionId, req.Role, clientName(ctx))
+	if err != nil {
+		return nil, connectErr(err)
+	}
+	return &flitv1.SetRoleResponse{Session: toProto(sess)}, nil
+}
+
 // SetYolo implements flitv1connect.SessionServiceHandler.
 func (s *Service) SetYolo(ctx context.Context, req *flitv1.SetYoloRequest) (*flitv1.SetYoloResponse, error) {
 	if err := required("session_id", req.SessionId); err != nil {

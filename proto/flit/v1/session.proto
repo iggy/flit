@@ -83,6 +83,14 @@ service SessionService {
   // SetEffort changes the reasoning effort used from the next model call.
   rpc SetEffort(SetEffortRequest) returns (SetEffortResponse);
 
+  // SetRole switches the session's role (see RoleService); empty means
+  // none. It logs a RoleChanged event, and from the next model call the
+  // system prompt uses the new role. The model and effort follow the new
+  // role's defaults, unless the session's were changed away from the old
+  // role's defaults (then they stay); a change logs a ModelChanged too.
+  // Earlier messages are kept as they are.
+  rpc SetRole(SetRoleRequest) returns (SetRoleResponse);
+
   // SetYolo turns yolo mode on or off for the session: every shell command
   // runs unless a deny rule matches. Effective from the next command.
   rpc SetYolo(SetYoloRequest) returns (SetYoloResponse);
@@ -187,7 +195,8 @@ message Session {
   // Reasoning effort ("low", "medium", "high", ...); empty means the
   // model's default.
   string effort = 12;
-  // The role the session was created with; empty for none.
+  // The session's current role (see SetRole and RoleChanged); empty for
+  // none.
   string role = 13;
   // Context use after the last model call: tokens in the prompt plus the
   // reply, and the model's context window (0 if unknown).
@@ -500,6 +509,16 @@ message SetEffortResponse {
   Session session = 1;
 }
 
+message SetRoleRequest {
+  string session_id = 1;
+  // Role name (see RoleService); empty for none.
+  string role = 2;
+}
+
+message SetRoleResponse {
+  Session session = 1;
+}
+
 message SetYoloRequest {
   string session_id = 1;
   bool yolo = 2;
@@ -519,7 +538,7 @@ message Event {
   // was recorded. Empty is the root branch (every event of a session that
   // never forked). A branch's history is its ancestors' events up to each
   // fork point plus its own events. Session-wide events (task state,
-  // model, yolo, MCP servers, project, queue, branches) apply whatever
+  // model, role, yolo, MCP servers, project, queue, branches) apply whatever
   // their branch_id.
   string branch_id = 4;
 
@@ -566,6 +585,7 @@ message Event {
     WorktreeRemoved worktree_removed = 49;
     WorktreeKept worktree_kept = 50;
     WebhookRunStarted webhook_run = 51;
+    RoleChanged role_changed = 52;
   }
 }
 
@@ -687,6 +707,17 @@ message ModelChanged {
   string effort = 3;
   // The model's context window, if known.
   int64 context_length = 4;
+}
+
+// RoleChanged switched the session's role (SetRole), effective from the
+// next model call. Session-wide.
+message RoleChanged {
+  // The new role; empty for none.
+  string role = 1;
+  // The role before; empty for none.
+  string previous_role = 2;
+  // Client that changed it (its device name), if known.
+  string client = 3;
 }
 
 // Usage is token usage and speed for one model call.

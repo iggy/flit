@@ -318,6 +318,16 @@ final class FlitRepositoryImpl implements FlitRepository {
   }
 
   @override
+  Future<FlitSession> setRole(String sessionId, String role) {
+    return flitCall(() async {
+      final res = await _sessions.setRole(
+        pb.SetRoleRequest(sessionId: sessionId, role: role),
+      );
+      return sessionFromProto(res.session);
+    });
+  }
+
+  @override
   Future<FlitSession> setYolo(String sessionId, {required bool yolo}) {
     return flitCall(() async {
       final res = await _sessions.setYolo(

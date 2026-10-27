@@ -359,6 +359,49 @@ final class FlitCompactionMarker {
       'FlitCompactionMarker($compactionId before $beforeIndex: $summary)';
 }
 
+/// Where the session's role was switched, shown as a divider in the chat.
+final class FlitRoleMarker {
+  const FlitRoleMarker({
+    required this.seq,
+    required this.beforeIndex,
+    required this.role,
+    this.previousRole = '',
+    this.client = '',
+    this.time,
+  });
+
+  /// The RoleChanged event's seq.
+  final int seq;
+
+  /// The divider goes before this entry of [FlitFoldState.messages] (at the
+  /// end when it equals their length).
+  final int beforeIndex;
+
+  /// The new role; '' for none.
+  final String role;
+  final String previousRole;
+  final String client;
+  final DateTime? time;
+
+  @override
+  bool operator ==(Object other) =>
+      other is FlitRoleMarker &&
+      other.seq == seq &&
+      other.beforeIndex == beforeIndex &&
+      other.role == role &&
+      other.previousRole == previousRole &&
+      other.client == client &&
+      other.time == time;
+
+  @override
+  int get hashCode =>
+      Object.hash(seq, beforeIndex, role, previousRole, client, time);
+
+  @override
+  String toString() =>
+      'FlitRoleMarker($seq before $beforeIndex: $previousRole -> $role)';
+}
+
 final class FlitFoldState {
   const FlitFoldState({
     this.messages = const <ChatMessage>[],
@@ -380,6 +423,8 @@ final class FlitFoldState {
     this.mcpServers,
     this.projectId,
     this.yolo,
+    this.role,
+    this.roleChanges = const <FlitRoleMarker>[],
     this.safety = const <String, String>{},
     this.call,
     this.queued = const <FlitQueuedMessage>[],
@@ -466,6 +511,13 @@ final class FlitFoldState {
   /// session's).
   final bool? yolo;
 
+  /// The session's role, once a switch is logged (null until then: fall
+  /// back to the session's); '' is none.
+  final String? role;
+
+  /// Role switches on the active path, oldest first.
+  final List<FlitRoleMarker> roleChanges;
+
   /// tool call id → the safety check's verdict on it, as shown on the tool
   /// card (e.g. "safety check: safe, only reads").
   final Map<String, String> safety;
@@ -547,6 +599,8 @@ final class FlitFoldState {
     List<String>? mcpServers,
     String? projectId,
     bool? yolo,
+    String? role,
+    List<FlitRoleMarker>? roleChanges,
     Map<String, String>? safety,
     FlitPendingCall? call,
     bool clearCall = false,
@@ -593,6 +647,8 @@ final class FlitFoldState {
       mcpServers: mcpServers ?? this.mcpServers,
       projectId: projectId ?? this.projectId,
       yolo: yolo ?? this.yolo,
+      role: role ?? this.role,
+      roleChanges: roleChanges ?? this.roleChanges,
       safety: safety ?? this.safety,
       call: clearCall ? null : (call ?? this.call),
       queued: queued ?? this.queued,
@@ -634,6 +690,8 @@ final class FlitFoldState {
         (other.mcpServers == null) == (mcpServers == null) &&
         other.projectId == projectId &&
         other.yolo == yolo &&
+        other.role == role &&
+        deepListEquals(other.roleChanges, roleChanges) &&
         shallowMapEquals(other.safety, safety) &&
         other.call == call &&
         deepListEquals(other.queued, queued) &&
@@ -1008,6 +1066,20 @@ FlitFoldState _apply(FlitFoldState state, FlitEvent event) {
     FlitMcpServersChanged() => s.copyWith(mcpServers: event.enabled),
     FlitSessionMoved() => s.copyWith(projectId: event.projectId),
     FlitYoloChanged() => s.copyWith(yolo: event.yolo),
+    FlitRoleChanged() => s.copyWith(
+      role: event.role,
+      roleChanges: <FlitRoleMarker>[
+        ...s.roleChanges,
+        FlitRoleMarker(
+          seq: event.seq,
+          beforeIndex: s.messages.length,
+          role: event.role,
+          previousRole: event.previousRole,
+          client: event.client,
+          time: event.time,
+        ),
+      ],
+    ),
     FlitPermissionCheck() => _permissionCheck(s, event),
     FlitTurnError() => s.copyWith(
       messageIds: <String?>[...s.messageIds, null],
