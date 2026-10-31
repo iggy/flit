@@ -332,6 +332,7 @@ const Session$json = {
     {'1': 'worktree_path', '3': 23, '4': 1, '5': 9, '10': 'worktreePath'},
     {'1': 'worktree_branch', '3': 24, '4': 1, '5': 9, '10': 'worktreeBranch'},
     {'1': 'worktree_removed', '3': 25, '4': 1, '5': 8, '10': 'worktreeRemoved'},
+    {'1': 'webhook', '3': 26, '4': 1, '5': 9, '10': 'webhook'},
   ],
 };
 
@@ -351,7 +352,8 @@ final $typed_data.Uint8List sessionDescriptor = $convert.base64Decode(
     '1taXQSGQoIY3Jvbl9qb2IYFCABKAlSB2Nyb25Kb2ISGgoIYXJjaGl2ZWQYFSABKAhSCGFyY2hp'
     'dmVkEh0KCnNvdXJjZV9kaXIYFiABKAlSCXNvdXJjZURpchIjCg13b3JrdHJlZV9wYXRoGBcgAS'
     'gJUgx3b3JrdHJlZVBhdGgSJwoPd29ya3RyZWVfYnJhbmNoGBggASgJUg53b3JrdHJlZUJyYW5j'
-    'aBIpChB3b3JrdHJlZV9yZW1vdmVkGBkgASgIUg93b3JrdHJlZVJlbW92ZWQ=');
+    'aBIpChB3b3JrdHJlZV9yZW1vdmVkGBkgASgIUg93b3JrdHJlZVJlbW92ZWQSGAoHd2ViaG9vax'
+    'gaIAEoCVIHd2ViaG9vaw==');
 
 @$core.Deprecated('Use createSessionRequestDescriptor instead')
 const CreateSessionRequest$json = {
@@ -1500,6 +1502,15 @@ const Event$json = {
       '9': 0,
       '10': 'worktreeKept'
     },
+    {
+      '1': 'webhook_run',
+      '3': 51,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.WebhookRunStarted',
+      '9': 0,
+      '10': 'webhookRun'
+    },
   ],
   '8': [
     {'1': 'payload'},
@@ -1559,8 +1570,9 @@ final $typed_data.Uint8List eventDescriptor = $convert.base64Decode(
     'a3RyZWVDcmVhdGVkEkUKEHdvcmt0cmVlX3NraXBwZWQYMCABKAsyGC5mbGl0LnYxLldvcmt0cm'
     'VlU2tpcHBlZEgAUg93b3JrdHJlZVNraXBwZWQSRQoQd29ya3RyZWVfcmVtb3ZlZBgxIAEoCzIY'
     'LmZsaXQudjEuV29ya3RyZWVSZW1vdmVkSABSD3dvcmt0cmVlUmVtb3ZlZBI8Cg13b3JrdHJlZV'
-    '9rZXB0GDIgASgLMhUuZmxpdC52MS5Xb3JrdHJlZUtlcHRIAFIMd29ya3RyZWVLZXB0QgkKB3Bh'
-    'eWxvYWQ=');
+    '9rZXB0GDIgASgLMhUuZmxpdC52MS5Xb3JrdHJlZUtlcHRIAFIMd29ya3RyZWVLZXB0Ej0KC3dl'
+    'Ymhvb2tfcnVuGDMgASgLMhouZmxpdC52MS5XZWJob29rUnVuU3RhcnRlZEgAUgp3ZWJob29rUn'
+    'VuQgkKB3BheWxvYWQ=');
 
 @$core.Deprecated('Use messageStartedDescriptor instead')
 const MessageStarted$json = {
@@ -2461,6 +2473,39 @@ final $typed_data.Uint8List cronRunStartedDescriptor = $convert.base64Decode(
     'Fza190aW1lb3V0X3NlY29uZHMYCCABKANSEWFza1RpbWVvdXRTZWNvbmRzEhIKBHlvbG8YCSAB'
     'KAhSBHlvbG8=');
 
+@$core.Deprecated('Use webhookRunStartedDescriptor instead')
+const WebhookRunStarted$json = {
+  '1': 'WebhookRunStarted',
+  '2': [
+    {'1': 'hook', '3': 1, '4': 1, '5': 9, '10': 'hook'},
+    {'1': 'source', '3': 2, '4': 1, '5': 9, '10': 'source'},
+    {'1': 'event', '3': 3, '4': 1, '5': 9, '10': 'event'},
+    {'1': 'action', '3': 4, '4': 1, '5': 9, '10': 'action'},
+    {'1': 'delivery_id', '3': 5, '4': 1, '5': 9, '10': 'deliveryId'},
+    {'1': 'summary', '3': 6, '4': 1, '5': 9, '10': 'summary'},
+    {'1': 'run_id', '3': 7, '4': 1, '5': 9, '10': 'runId'},
+    {'1': 'url', '3': 8, '4': 1, '5': 9, '10': 'url'},
+    {'1': 'ask', '3': 9, '4': 1, '5': 14, '6': '.flit.v1.CronAsk', '10': 'ask'},
+    {
+      '1': 'ask_timeout_seconds',
+      '3': 10,
+      '4': 1,
+      '5': 3,
+      '10': 'askTimeoutSeconds'
+    },
+    {'1': 'yolo', '3': 11, '4': 1, '5': 8, '10': 'yolo'},
+  ],
+};
+
+/// Descriptor for `WebhookRunStarted`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List webhookRunStartedDescriptor = $convert.base64Decode(
+    'ChFXZWJob29rUnVuU3RhcnRlZBISCgRob29rGAEgASgJUgRob29rEhYKBnNvdXJjZRgCIAEoCV'
+    'IGc291cmNlEhQKBWV2ZW50GAMgASgJUgVldmVudBIWCgZhY3Rpb24YBCABKAlSBmFjdGlvbhIf'
+    'CgtkZWxpdmVyeV9pZBgFIAEoCVIKZGVsaXZlcnlJZBIYCgdzdW1tYXJ5GAYgASgJUgdzdW1tYX'
+    'J5EhUKBnJ1bl9pZBgHIAEoCVIFcnVuSWQSEAoDdXJsGAggASgJUgN1cmwSIgoDYXNrGAkgASgO'
+    'MhAuZmxpdC52MS5Dcm9uQXNrUgNhc2sSLgoTYXNrX3RpbWVvdXRfc2Vjb25kcxgKIAEoA1IRYX'
+    'NrVGltZW91dFNlY29uZHMSEgoEeW9sbxgLIAEoCFIEeW9sbw==');
+
 @$core.Deprecated('Use subagentStartedDescriptor instead')
 const SubagentStarted$json = {
   '1': 'SubagentStarted',
@@ -2848,6 +2893,7 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.flit.v1.WorktreeSkipped': WorktreeSkipped$json,
   '.flit.v1.WorktreeRemoved': WorktreeRemoved$json,
   '.flit.v1.WorktreeKept': WorktreeKept$json,
+  '.flit.v1.WebhookRunStarted': WebhookRunStarted$json,
   '.flit.v1.SendRequest': SendRequest$json,
   '.flit.v1.SendResponse': SendResponse$json,
   '.flit.v1.EditQueuedMessageRequest': EditQueuedMessageRequest$json,

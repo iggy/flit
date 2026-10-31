@@ -52,6 +52,7 @@ class Session extends $pb.GeneratedMessage {
     $core.String? worktreePath,
     $core.String? worktreeBranch,
     $core.bool? worktreeRemoved,
+    $core.String? webhook,
   }) {
     final result = Session._();
     if (id != null) result.id = id;
@@ -79,6 +80,7 @@ class Session extends $pb.GeneratedMessage {
     if (worktreePath != null) result.worktreePath = worktreePath;
     if (worktreeBranch != null) result.worktreeBranch = worktreeBranch;
     if (worktreeRemoved != null) result.worktreeRemoved = worktreeRemoved;
+    if (webhook != null) result.webhook = webhook;
     return result;
   }
 
@@ -123,6 +125,7 @@ class Session extends $pb.GeneratedMessage {
     ..aOS(23, _omitFieldNames ? '' : 'worktreePath')
     ..aOS(24, _omitFieldNames ? '' : 'worktreeBranch')
     ..aOB(25, _omitFieldNames ? '' : 'worktreeRemoved')
+    ..aOS(26, _omitFieldNames ? '' : 'webhook')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -390,6 +393,17 @@ class Session extends $pb.GeneratedMessage {
   $core.bool hasWorktreeRemoved() => $_has(24);
   @$pb.TagNumber(25)
   void clearWorktreeRemoved() => $_clearField(25);
+
+  /// The webhook whose delivery started this session (see
+  /// docs/webhooks.md); empty for other sessions.
+  @$pb.TagNumber(26)
+  $core.String get webhook => $_getSZ(25);
+  @$pb.TagNumber(26)
+  set webhook($core.String value) => $_setString(25, value);
+  @$pb.TagNumber(26)
+  $core.bool hasWebhook() => $_has(25);
+  @$pb.TagNumber(26)
+  void clearWebhook() => $_clearField(26);
 }
 
 class CreateSessionRequest extends $pb.GeneratedMessage {
@@ -3772,6 +3786,7 @@ enum Event_Payload {
   worktreeSkipped,
   worktreeRemoved,
   worktreeKept,
+  webhookRun,
   notSet
 }
 
@@ -3823,6 +3838,7 @@ class Event extends $pb.GeneratedMessage {
     WorktreeSkipped? worktreeSkipped,
     WorktreeRemoved? worktreeRemoved,
     WorktreeKept? worktreeKept,
+    WebhookRunStarted? webhookRun,
   }) {
     final result = Event._();
     if (sessionId != null) result.sessionId = sessionId;
@@ -3874,6 +3890,7 @@ class Event extends $pb.GeneratedMessage {
     if (worktreeSkipped != null) result.worktreeSkipped = worktreeSkipped;
     if (worktreeRemoved != null) result.worktreeRemoved = worktreeRemoved;
     if (worktreeKept != null) result.worktreeKept = worktreeKept;
+    if (webhookRun != null) result.webhookRun = webhookRun;
     return result;
   }
 
@@ -3928,6 +3945,7 @@ class Event extends $pb.GeneratedMessage {
     48: Event_Payload.worktreeSkipped,
     49: Event_Payload.worktreeRemoved,
     50: Event_Payload.worktreeKept,
+    51: Event_Payload.webhookRun,
     0: Event_Payload.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
@@ -3975,7 +3993,8 @@ class Event extends $pb.GeneratedMessage {
       47,
       48,
       49,
-      50
+      50,
+      51
     ])
     ..aOS(1, _omitFieldNames ? '' : 'sessionId')
     ..aInt64(2, _omitFieldNames ? '' : 'seq')
@@ -4067,6 +4086,8 @@ class Event extends $pb.GeneratedMessage {
         subBuilder: WorktreeRemoved.$_createMessage)
     ..aOM<WorktreeKept>(50, _omitFieldNames ? '' : 'worktreeKept',
         subBuilder: WorktreeKept.$_createMessage)
+    ..aOM<WebhookRunStarted>(51, _omitFieldNames ? '' : 'webhookRun',
+        subBuilder: WebhookRunStarted.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -4130,6 +4151,7 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(48)
   @$pb.TagNumber(49)
   @$pb.TagNumber(50)
+  @$pb.TagNumber(51)
   Event_Payload whichPayload() => _Event_PayloadByTag[$_whichOneof(0)]!;
   @$pb.TagNumber(10)
   @$pb.TagNumber(11)
@@ -4172,6 +4194,7 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(48)
   @$pb.TagNumber(49)
   @$pb.TagNumber(50)
+  @$pb.TagNumber(51)
   void clearPayload() => $_clearField($_whichOneof(0));
 
   @$pb.TagNumber(1)
@@ -4671,6 +4694,17 @@ class Event extends $pb.GeneratedMessage {
   void clearWorktreeKept() => $_clearField(50);
   @$pb.TagNumber(50)
   WorktreeKept ensureWorktreeKept() => $_ensure(44);
+
+  @$pb.TagNumber(51)
+  WebhookRunStarted get webhookRun => $_getN(45);
+  @$pb.TagNumber(51)
+  set webhookRun(WebhookRunStarted value) => $_setField(51, value);
+  @$pb.TagNumber(51)
+  $core.bool hasWebhookRun() => $_has(45);
+  @$pb.TagNumber(51)
+  void clearWebhookRun() => $_clearField(51);
+  @$pb.TagNumber(51)
+  WebhookRunStarted ensureWebhookRun() => $_ensure(45);
 }
 
 /// MessageStarted opens a message. Its text arrives as TextDelta events and
@@ -9017,6 +9051,194 @@ class CronRunStarted extends $pb.GeneratedMessage {
   $core.bool hasYolo() => $_has(8);
   @$pb.TagNumber(9)
   void clearYolo() => $_clearField(9);
+}
+
+/// WebhookRunStarted opens a session started by a webhook delivery: which
+/// hook received what. It comes before the run's prompt (the first user
+/// message).
+class WebhookRunStarted extends $pb.GeneratedMessage {
+  factory WebhookRunStarted({
+    $core.String? hook,
+    $core.String? source,
+    $core.String? event,
+    $core.String? action,
+    $core.String? deliveryId,
+    $core.String? summary,
+    $core.String? runId,
+    $core.String? url,
+    $1.CronAsk? ask,
+    $fixnum.Int64? askTimeoutSeconds,
+    $core.bool? yolo,
+  }) {
+    final result = WebhookRunStarted._();
+    if (hook != null) result.hook = hook;
+    if (source != null) result.source = source;
+    if (event != null) result.event = event;
+    if (action != null) result.action = action;
+    if (deliveryId != null) result.deliveryId = deliveryId;
+    if (summary != null) result.summary = summary;
+    if (runId != null) result.runId = runId;
+    if (url != null) result.url = url;
+    if (ask != null) result.ask = ask;
+    if (askTimeoutSeconds != null) result.askTimeoutSeconds = askTimeoutSeconds;
+    if (yolo != null) result.yolo = yolo;
+    return result;
+  }
+
+  WebhookRunStarted._();
+
+  factory WebhookRunStarted.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      WebhookRunStarted()..mergeFromBuffer(data, registry);
+  factory WebhookRunStarted.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      WebhookRunStarted()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'WebhookRunStarted',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: WebhookRunStarted.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'hook')
+    ..aOS(2, _omitFieldNames ? '' : 'source')
+    ..aOS(3, _omitFieldNames ? '' : 'event')
+    ..aOS(4, _omitFieldNames ? '' : 'action')
+    ..aOS(5, _omitFieldNames ? '' : 'deliveryId')
+    ..aOS(6, _omitFieldNames ? '' : 'summary')
+    ..aOS(7, _omitFieldNames ? '' : 'runId')
+    ..aOS(8, _omitFieldNames ? '' : 'url')
+    ..aE<$1.CronAsk>(9, _omitFieldNames ? '' : 'ask',
+        enumValues: $1.CronAsk.values)
+    ..aInt64(10, _omitFieldNames ? '' : 'askTimeoutSeconds')
+    ..aOB(11, _omitFieldNames ? '' : 'yolo')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  WebhookRunStarted clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  WebhookRunStarted copyWith(void Function(WebhookRunStarted) updates) =>
+      super.copyWith((message) => updates(message as WebhookRunStarted))
+          as WebhookRunStarted;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use WebhookRunStarted() / WebhookRunStarted.new instead')
+  static WebhookRunStarted create() => WebhookRunStarted._();
+  static $pb.GeneratedMessage $_createMessage() => WebhookRunStarted._();
+  @$core.override
+  WebhookRunStarted createEmptyInstance() => WebhookRunStarted._();
+  @$core.pragma('dart2js:noInline')
+  static WebhookRunStarted getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<WebhookRunStarted>(
+          WebhookRunStarted.$_createMessage);
+  static WebhookRunStarted? _defaultInstance;
+
+  /// The hook's name (its file name without .md) and source ("github").
+  @$pb.TagNumber(1)
+  $core.String get hook => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set hook($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasHook() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearHook() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get source => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set source($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasSource() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearSource() => $_clearField(2);
+
+  /// The event and its action, e.g. "pull_request" and "opened"; action is
+  /// empty for events without one.
+  @$pb.TagNumber(3)
+  $core.String get event => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set event($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasEvent() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearEvent() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get action => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set action($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasAction() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearAction() => $_clearField(4);
+
+  /// The sender's delivery id (GitHub's X-GitHub-Delivery).
+  @$pb.TagNumber(5)
+  $core.String get deliveryId => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set deliveryId($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasDeliveryId() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearDeliveryId() => $_clearField(5);
+
+  /// One line on what happened, e.g. "PR #12 opened in iggy/flit: Fix x".
+  @$pb.TagNumber(6)
+  $core.String get summary => $_getSZ(5);
+  @$pb.TagNumber(6)
+  set summary($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasSummary() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearSummary() => $_clearField(6);
+
+  /// The run's id, and a link to what the event is about, if any.
+  @$pb.TagNumber(7)
+  $core.String get runId => $_getSZ(6);
+  @$pb.TagNumber(7)
+  set runId($core.String value) => $_setString(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasRunId() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearRunId() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.String get url => $_getSZ(7);
+  @$pb.TagNumber(8)
+  set url($core.String value) => $_setString(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasUrl() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearUrl() => $_clearField(8);
+
+  /// How prompts nobody can answer are handled, and yolo mode.
+  @$pb.TagNumber(9)
+  $1.CronAsk get ask => $_getN(8);
+  @$pb.TagNumber(9)
+  set ask($1.CronAsk value) => $_setField(9, value);
+  @$pb.TagNumber(9)
+  $core.bool hasAsk() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearAsk() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $fixnum.Int64 get askTimeoutSeconds => $_getI64(9);
+  @$pb.TagNumber(10)
+  set askTimeoutSeconds($fixnum.Int64 value) => $_setInt64(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasAskTimeoutSeconds() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearAskTimeoutSeconds() => $_clearField(10);
+
+  @$pb.TagNumber(11)
+  $core.bool get yolo => $_getBF(10);
+  @$pb.TagNumber(11)
+  set yolo($core.bool value) => $_setBool(10, value);
+  @$pb.TagNumber(11)
+  $core.bool hasYolo() => $_has(10);
+  @$pb.TagNumber(11)
+  void clearYolo() => $_clearField(11);
 }
 
 /// SubagentStarted opens the run of a subagent for the agent tool call

@@ -44,6 +44,7 @@ import (
 	"github.com/iggy/flit/server/internal/scheduler"
 	"github.com/iggy/flit/server/internal/server"
 	"github.com/iggy/flit/server/internal/store"
+	"github.com/iggy/flit/server/internal/webhooksvc"
 )
 
 const usage = `flit is an open source coding agent.
@@ -295,8 +296,13 @@ func serve(ctx context.Context, stderr io.Writer, configPath, dataDirFlag string
 		Notify: func(ctx context.Context, m notify.Message) { _ = ntfy.Send(ctx, m) },
 	}
 	sessions.Crons = crons
+	webhooks := &webhooksvc.Service{
+		M: sessions, Store: st, Dir: func() string { return relToConfig(current().WebhooksDir) }, DataDir: dataDir, Log: log,
+		Notify:    func(ctx context.Context, m notify.Message) { _ = ntfy.Send(ctx, m) },
+		PublicURL: func() string { return current().PublicURL },
+	}
 
-	srv := server.New(server.NewHandler(token, server.Deps{Sessions: sessions, Devices: devices.New(st), Config: current, Catalog: catalog, RolesDir: rolesDir, Store: st, Crons: crons, Learning: learning}), log)
+	srv := server.New(server.NewHandler(token, server.Deps{Sessions: sessions, Devices: devices.New(st), Config: current, Catalog: catalog, RolesDir: rolesDir, Store: st, Crons: crons, Learning: learning, Webhooks: webhooks}), log)
 	if err := srv.Apply(cfg); err != nil {
 		return err
 	}
@@ -306,6 +312,9 @@ func serve(ctx context.Context, stderr io.Writer, configPath, dataDirFlag string
 	defer stopCrons()
 	if err := crons.Start(cronCtx); err != nil {
 		return fmt.Errorf("start cron jobs: %w", err)
+	}
+	if err := webhooks.Start(cronCtx); err != nil {
+		return fmt.Errorf("start webhooks: %w", err)
 	}
 
 	watchErr := make(chan error, 1)
@@ -340,10 +349,11 @@ func serve(ctx context.Context, stderr io.Writer, configPath, dataDirFlag string
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	err = srv.Shutdown(shutdownCtx)
-	// Stop the turns, then let cron runs record how they ended before the
-	// database closes.
+	// Stop the turns, then let cron and webhook runs record how they ended
+	// before the database closes.
 	stopCrons()
 	sessions.Close()
 	crons.Wait()
+	webhooks.Wait()
 	return err
 }

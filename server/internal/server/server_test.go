@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -174,5 +176,27 @@ func TestTLSMissingFiles(t *testing.T) {
 	if err == nil {
 		_ = srv.Shutdown(context.Background())
 		t.Fatal("expected error for missing cert files")
+	}
+}
+
+func TestWebhooksNeedNoToken(t *testing.T) {
+	var got string
+	h := NewHandler(testToken, Deps{Webhooks: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got = r.URL.Path
+		w.WriteHeader(http.StatusAccepted)
+	})})
+	srv := httptest.NewServer(h)
+	defer srv.Close()
+	resp, err := http.Post(srv.URL+"/webhooks/gh", "application/json", strings.NewReader("{}"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusAccepted || got != "/webhooks/gh" {
+		t.Fatalf("webhook: %d %q", resp.StatusCode, got)
+	}
+	// The API still wants the token.
+	if _, err := client(srv.URL, "").Version(context.Background(), &flitv1.VersionRequest{}); connect.CodeOf(err) != connect.CodeUnauthenticated {
+		t.Fatalf("Version without a token: %v", err)
 	}
 }

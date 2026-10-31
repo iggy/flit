@@ -175,6 +175,8 @@ type CreateOptions struct {
 	Yolo *bool
 	// CronID marks the session as a run of that cron job.
 	CronID string
+	// WebhookID marks the session as started by that webhook.
+	WebhookID string
 }
 
 // contextLength is the model's context window, if the catalog knows it.
@@ -266,6 +268,7 @@ func (m *Manager) Create(ctx context.Context, o CreateOptions) (store.Session, e
 		Role:       o.Role,
 		Yolo:       m.cfg().Shell.Yolo,
 		CronID:     o.CronID,
+		WebhookID:  o.WebhookID,
 	}
 	if o.Yolo != nil {
 		info.Yolo = *o.Yolo

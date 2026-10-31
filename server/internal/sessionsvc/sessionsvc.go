@@ -56,6 +56,7 @@ func toProto(s store.Session) *flitv1.Session {
 		WorktreeBranch:  s.WorktreeBranch,
 		WorktreeRemoved: s.WorktreeRemoved,
 		CronJob:         s.CronID,
+		Webhook:         s.WebhookID,
 		Archived:        s.Archived,
 	}
 }

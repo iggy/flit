@@ -42,7 +42,9 @@ Rules:
   restart. Unknown keys are errors.
 - **Every RPC requires the token**, localhost included
   (`Authorization: Bearer <token>`, enforced by `internal/auth.Interceptor`).
-  Never log the token.
+  Never log the token. The one exception is webhook deliveries under
+  `/webhooks/` (`internal/webhooksvc`): they are checked against the hook's
+  signing secret instead, and are the only path meant to face the internet.
 - State lives in the data dir (SQLite + flat files). Data will carry team and
   project ids (default team "Personal", default project "Scratch"); don't
   design anything that assumes a single user or project.
@@ -52,7 +54,9 @@ Rules:
   Connect codes), `internal/agent` (session runtime + agent loop),
   `internal/llm` (OpenAI-compatible client; `llmtest` is a scripted fake
   endpoint), `internal/tools` (built-in tools, shell rules, truncation),
-  `internal/store` (SQLite), `gen/` (generated, don't edit).
+  `internal/store` (SQLite), `internal/cron` + `internal/scheduler` (cron
+  jobs), `internal/webhook` + `internal/webhooksvc` (webhooks), `gen/`
+  (generated, don't edit).
 - **The event log is the source of truth.** Every observable step of a
   turn is appended (persisted) and only then published to attached
   clients, under the session lock, so replay from any seq equals what a

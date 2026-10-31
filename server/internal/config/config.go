@@ -61,10 +61,14 @@ type Config struct {
 	LlamaCpp   LlamaCpp `yaml:"llamacpp"`
 	// CronsDir holds cron job files (*.md with YAML frontmatter; see
 	// docs/cron.md). Relative paths are relative to the config file.
-	CronsDir string   `yaml:"crons_dir"`
-	Notify   Notify   `yaml:"notify"`
-	Learning Learning `yaml:"learning"`
-	LSP      LSP      `yaml:"lsp"`
+	CronsDir string `yaml:"crons_dir"`
+	// WebhooksDir holds webhook files (*.md with YAML frontmatter; see
+	// docs/webhooks.md), each served at <public_url>/webhooks/<name>.
+	// Relative paths are relative to the config file.
+	WebhooksDir string   `yaml:"webhooks_dir"`
+	Notify      Notify   `yaml:"notify"`
+	Learning    Learning `yaml:"learning"`
+	LSP         LSP      `yaml:"lsp"`
 }
 
 // Notify configures notifications flit sends itself (the app shows its
@@ -423,7 +427,7 @@ func (w Worktrees) CopyIgnoredDirs() []string {
 var ProviderKinds = []string{"auto", "openai", "openrouter", "llamacpp", "gomodel"}
 
 // Tasks are the kinds of work that can have their own model.
-var Tasks = []string{"chat", "planning", "cron", "compaction", "search", "permission", "learning", "explore", "build"}
+var Tasks = []string{"chat", "planning", "cron", "webhook", "compaction", "search", "permission", "learning", "explore", "build"}
 
 // TaskModel picks a model for one kind of work.
 type TaskModel struct {
@@ -463,7 +467,8 @@ type Agent struct {
 	// flit asks the user (see docs/shell.md); compaction summarizes long
 	// conversations (see Compaction; without it the session's own model
 	// does); cron runs cron jobs that pick no model of their own (see
-	// docs/cron.md); explore and build run the agent tool's subagents of
+	// docs/cron.md); webhook runs webhook deliveries that pick none
+	// (without it, cron's; see docs/webhooks.md); explore and build run the agent tool's subagents of
 	// that kind (see Subagents; without one the session's own model does);
 	// planning and search are for those features as they arrive.
 	Tasks map[string]TaskModel `yaml:"tasks"`
@@ -611,6 +616,7 @@ func Default() Config {
 		ModelOverridesFile: "models.yaml",
 		RolesDir:           "roles",
 		CronsDir:           "crons",
+		WebhooksDir:        "webhooks",
 		Notify:             Notify{NtfyHeaders: map[string]string{}},
 		MCPServers:         []MCPServer{},
 		SkillsDirs:         []string{"skills"},
@@ -737,6 +743,9 @@ func (c *Config) fillDefaults() {
 	}
 	if c.CronsDir == "" {
 		c.CronsDir = d.CronsDir
+	}
+	if c.WebhooksDir == "" {
+		c.WebhooksDir = d.WebhooksDir
 	}
 }
 
@@ -1014,8 +1023,15 @@ roles_dir: roles
 # unattended on its schedule as a new session. See docs/cron.md.
 crons_dir: crons
 
+# Webhooks: one Markdown file per hook (YAML frontmatter with the source,
+# secret and events, the body is the prompt), relative to this file. A
+# delivery to <public_url>/webhooks/<name> starts an unattended session.
+# Only /webhooks/ needs to be reachable from the internet. See
+# docs/webhooks.md.
+webhooks_dir: webhooks
+
 # Notifications flit sends itself, for when the app isn't open. ntfy posts
-# cron run results (a report, needs attention, failed) to an ntfy topic,
+# cron and webhook run results (a report, needs attention, failed) to an ntfy topic,
 # e.g. https://ntfy.sh/<a-long-random-topic> or your own server; runs with
 # nothing to report stay quiet. Empty means off.
 notify:
@@ -1128,13 +1144,14 @@ agent:
   # Reasoning effort: low, medium, high (or a level the model names), or
   # off to turn thinking off on llama.cpp. Empty means the model's default.
   effort: ""
-  # A model per kind of work: chat, permission, planning, cron, compaction,
-  # search, learning, explore, build. chat overrides the defaults above.
+  # A model per kind of work: chat, permission, planning, cron, webhook,
+  # compaction, search, learning, explore, build. chat overrides the defaults above.
   # permission rates shell commands (safe, ask or block) before flit asks
   # you; without it, flit just asks. compaction writes the summary when a
   # long conversation is compacted; without it, the session's own model
   # does. cron runs cron jobs that don't pick a model (or get one from
-  # their role); without it, they use the chat model. learning reads a
+  # their role); without it, they use the chat model. webhook does the
+  # same for webhook runs; without it, they use cron's. learning reads a
   # finished session and proposes lessons to remember ("flit learn", or
   # "Learn from this session" in the app); without it, the chat model
   # does. explore and build run the agent tool's subagents; without them,

@@ -218,6 +218,9 @@ message Session {
   // The worktree was removed (RemoveWorktree, or archiving); its branch
   // may still hold the session's commits.
   bool worktree_removed = 25;
+  // The webhook whose delivery started this session (see
+  // docs/webhooks.md); empty for other sessions.
+  string webhook = 26;
 }
 
 message CreateSessionRequest {
@@ -562,6 +565,7 @@ message Event {
     WorktreeSkipped worktree_skipped = 48;
     WorktreeRemoved worktree_removed = 49;
     WorktreeKept worktree_kept = 50;
+    WebhookRunStarted webhook_run = 51;
   }
 }
 
@@ -1165,6 +1169,30 @@ message CronRunStarted {
   CronAsk ask = 7;
   int64 ask_timeout_seconds = 8;
   bool yolo = 9;
+}
+
+// WebhookRunStarted opens a session started by a webhook delivery: which
+// hook received what. It comes before the run's prompt (the first user
+// message).
+message WebhookRunStarted {
+  // The hook's name (its file name without .md) and source ("github").
+  string hook = 1;
+  string source = 2;
+  // The event and its action, e.g. "pull_request" and "opened"; action is
+  // empty for events without one.
+  string event = 3;
+  string action = 4;
+  // The sender's delivery id (GitHub's X-GitHub-Delivery).
+  string delivery_id = 5;
+  // One line on what happened, e.g. "PR #12 opened in iggy/flit: Fix x".
+  string summary = 6;
+  // The run's id, and a link to what the event is about, if any.
+  string run_id = 7;
+  string url = 8;
+  // How prompts nobody can answer are handled, and yolo mode.
+  CronAsk ask = 9;
+  int64 ask_timeout_seconds = 10;
+  bool yolo = 11;
 }
 
 // SubagentKind is what a subagent may do.

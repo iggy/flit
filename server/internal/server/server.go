@@ -30,6 +30,7 @@ import (
 	"github.com/iggy/flit/server/internal/sessionsvc"
 	"github.com/iggy/flit/server/internal/store"
 	"github.com/iggy/flit/server/internal/system"
+	"github.com/iggy/flit/server/internal/webhooksvc"
 )
 
 // drainTimeout bounds how long an old listener may finish in-flight requests
@@ -49,10 +50,14 @@ type Deps struct {
 	Crons *scheduler.Scheduler
 	// Learning runs learning passes; nil leaves LearningService out.
 	Learning *learn.Service
+	// Webhooks takes webhook deliveries under webhooksvc.Prefix, without
+	// the token (they are signed instead); nil leaves them out.
+	Webhooks http.Handler
 }
 
 // NewHandler returns the API handler. Every RPC requires the admin token or
-// a device token, except pairing.
+// a device token, except pairing. Webhook deliveries (webhooksvc.Prefix)
+// are the one path outside the API: they need a valid signature instead.
 func NewHandler(adminToken string, d Deps) http.Handler {
 	authOpts := auth.Options{Public: system.Public, AdminOnly: system.AdminOnly}
 	if d.Devices != nil {
@@ -89,6 +94,9 @@ func NewHandler(adminToken string, d Deps) http.Handler {
 		server := connect.NewServer(connect.ServerInterceptor(interceptor.Intercept))
 		flitv1connect.RegisterCronServiceHandler(server, &cronsvc.Service{S: d.Crons})
 		connecthttp.Mount(mux, server, connecthttp.WithReadMaxBytes(0))
+	}
+	if d.Webhooks != nil {
+		mux.Handle(webhooksvc.Prefix, d.Webhooks)
 	}
 	return mux
 }

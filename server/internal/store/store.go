@@ -248,6 +248,30 @@ ALTER TABLE sessions ADD COLUMN worktree_path TEXT NOT NULL DEFAULT '';
 ALTER TABLE sessions ADD COLUMN worktree_branch TEXT NOT NULL DEFAULT '';
 ALTER TABLE sessions ADD COLUMN worktree_removed INTEGER NOT NULL DEFAULT 0;
 `,
+	`
+ALTER TABLE sessions ADD COLUMN webhook_id TEXT NOT NULL DEFAULT '';
+CREATE INDEX sessions_by_webhook ON sessions (webhook_id, created_at) WHERE webhook_id != '';
+CREATE TABLE webhook_runs (
+	id          TEXT PRIMARY KEY,
+	team_id     TEXT NOT NULL,
+	hook        TEXT NOT NULL,
+	delivery_id TEXT NOT NULL,
+	event       TEXT NOT NULL,
+	action      TEXT NOT NULL,
+	about       TEXT NOT NULL,
+	project_id  TEXT NOT NULL,
+	session_id  TEXT NOT NULL,
+	state       TEXT NOT NULL,
+	received_at INTEGER NOT NULL,
+	started_at  INTEGER,
+	finished_at INTEGER,
+	summary     TEXT NOT NULL,
+	refused     TEXT NOT NULL,
+	quiet       INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX webhook_runs_by_delivery ON webhook_runs (team_id, hook, delivery_id) WHERE delivery_id != '';
+CREATE INDEX webhook_runs_by_hook ON webhook_runs (team_id, hook, received_at);
+`,
 }
 
 func (s *Store) migrate(ctx context.Context) error {
@@ -312,6 +336,9 @@ type Session struct {
 	BaseCommit string
 	// CronID is the cron job whose run this is; empty for other sessions.
 	CronID string
+	// WebhookID is the webhook whose delivery started this session; empty
+	// for other sessions.
+	WebhookID string
 	// Archived sessions are left out of ListSessions.
 	Archived bool
 	// SourceDir is the directory the session was asked to work in. With a
@@ -325,7 +352,7 @@ type Session struct {
 	WorktreeRemoved bool
 }
 
-const sessionCols = `id, team_id, project_id, title, working_dir, provider, model, state, last_seq, created_at, updated_at, effort, role, context_tokens, context_length, mcp_servers, yolo, branch_id, base_commit, cron_id, archived, source_dir, worktree_path, worktree_branch, worktree_removed`
+const sessionCols = `id, team_id, project_id, title, working_dir, provider, model, state, last_seq, created_at, updated_at, effort, role, context_tokens, context_length, mcp_servers, yolo, branch_id, base_commit, cron_id, archived, source_dir, worktree_path, worktree_branch, worktree_removed, webhook_id`
 
 func joinNames(names []string) string { return strings.Join(names, "\n") }
 
@@ -341,7 +368,7 @@ func scanSession(row interface{ Scan(...any) error }) (Session, error) {
 	var created, updated int64
 	var mcp string
 	err := row.Scan(&s.ID, &s.TeamID, &s.ProjectID, &s.Title, &s.WorkingDir, &s.Provider, &s.Model,
-		&s.State, &s.LastSeq, &created, &updated, &s.Effort, &s.Role, &s.ContextTokens, &s.ContextLength, &mcp, &s.Yolo, &s.BranchID, &s.BaseCommit, &s.CronID, &s.Archived, &s.SourceDir, &s.WorktreePath, &s.WorktreeBranch, &s.WorktreeRemoved)
+		&s.State, &s.LastSeq, &created, &updated, &s.Effort, &s.Role, &s.ContextTokens, &s.ContextLength, &mcp, &s.Yolo, &s.BranchID, &s.BaseCommit, &s.CronID, &s.Archived, &s.SourceDir, &s.WorktreePath, &s.WorktreeBranch, &s.WorktreeRemoved, &s.WebhookID)
 	s.MCPServers = splitNames(mcp)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Session{}, ErrNotFound
@@ -354,10 +381,10 @@ func scanSession(row interface{ Scan(...any) error }) (Session, error) {
 func (s *Store) CreateSession(ctx context.Context, sess *Session) error {
 	now := time.Now()
 	sess.CreatedAt, sess.UpdatedAt = now, now
-	_, err := s.db.ExecContext(ctx, `INSERT INTO sessions (`+sessionCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	_, err := s.db.ExecContext(ctx, `INSERT INTO sessions (`+sessionCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		sess.ID, sess.TeamID, sess.ProjectID, sess.Title, sess.WorkingDir, sess.Provider, sess.Model,
 		sess.State, sess.LastSeq, now.UnixNano(), now.UnixNano(), sess.Effort, sess.Role, sess.ContextTokens, sess.ContextLength,
-		joinNames(sess.MCPServers), sess.Yolo, sess.BranchID, sess.BaseCommit, sess.CronID, sess.Archived, sess.SourceDir, sess.WorktreePath, sess.WorktreeBranch, sess.WorktreeRemoved)
+		joinNames(sess.MCPServers), sess.Yolo, sess.BranchID, sess.BaseCommit, sess.CronID, sess.Archived, sess.SourceDir, sess.WorktreePath, sess.WorktreeBranch, sess.WorktreeRemoved, sess.WebhookID)
 	return err
 }
 
