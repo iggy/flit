@@ -6,6 +6,7 @@ import 'package:flit/core/platform/desktop_window.dart';
 import 'package:flit/core/router/app_router.dart';
 import 'package:flit/presentation/common/middle_click_paste.dart';
 import 'package:flit/presentation/common/primary_selection_sync.dart';
+import 'package:flit/presentation/flit/flit_share.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -72,8 +73,12 @@ class _FlitAppState extends ConsumerState<FlitApp> {
       routerConfig: router,
       // Linux: selecting text fills the PRIMARY selection, and middle-click
       // pastes it into any field.
-      builder: (context, child) => PrimarySelectionSync(
-        child: MiddleClickPaste(child: child ?? const SizedBox.shrink()),
+      // Shares from other apps ("Share via… flit") become new sessions.
+      builder: (context, child) => ShareRouter(
+        router: router,
+        child: PrimarySelectionSync(
+          child: MiddleClickPaste(child: child ?? const SizedBox.shrink()),
+        ),
       ),
     );
   }

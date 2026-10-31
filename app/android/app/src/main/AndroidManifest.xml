@@ -45,6 +45,14 @@
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="flit"/>
             </intent-filter>
+            <!-- "Share via… flit": shared text (a URL from a browser, say)
+                 opens a new flit session with it in the composer, unsent.
+                 Handled in MainActivity + lib/core/platform/share_intake.dart. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="text/plain"/>
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
