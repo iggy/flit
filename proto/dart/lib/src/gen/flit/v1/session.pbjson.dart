@@ -1084,6 +1084,40 @@ final $typed_data.Uint8List setEffortResponseDescriptor = $convert.base64Decode(
     'ChFTZXRFZmZvcnRSZXNwb25zZRIqCgdzZXNzaW9uGAEgASgLMhAuZmxpdC52MS5TZXNzaW9uUg'
     'dzZXNzaW9u');
 
+@$core.Deprecated('Use setRoleRequestDescriptor instead')
+const SetRoleRequest$json = {
+  '1': 'SetRoleRequest',
+  '2': [
+    {'1': 'session_id', '3': 1, '4': 1, '5': 9, '10': 'sessionId'},
+    {'1': 'role', '3': 2, '4': 1, '5': 9, '10': 'role'},
+  ],
+};
+
+/// Descriptor for `SetRoleRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List setRoleRequestDescriptor = $convert.base64Decode(
+    'Cg5TZXRSb2xlUmVxdWVzdBIdCgpzZXNzaW9uX2lkGAEgASgJUglzZXNzaW9uSWQSEgoEcm9sZR'
+    'gCIAEoCVIEcm9sZQ==');
+
+@$core.Deprecated('Use setRoleResponseDescriptor instead')
+const SetRoleResponse$json = {
+  '1': 'SetRoleResponse',
+  '2': [
+    {
+      '1': 'session',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.Session',
+      '10': 'session'
+    },
+  ],
+};
+
+/// Descriptor for `SetRoleResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List setRoleResponseDescriptor = $convert.base64Decode(
+    'Cg9TZXRSb2xlUmVzcG9uc2USKgoHc2Vzc2lvbhgBIAEoCzIQLmZsaXQudjEuU2Vzc2lvblIHc2'
+    'Vzc2lvbg==');
+
 @$core.Deprecated('Use setYoloRequestDescriptor instead')
 const SetYoloRequest$json = {
   '1': 'SetYoloRequest',
@@ -1511,6 +1545,15 @@ const Event$json = {
       '9': 0,
       '10': 'webhookRun'
     },
+    {
+      '1': 'role_changed',
+      '3': 52,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.RoleChanged',
+      '9': 0,
+      '10': 'roleChanged'
+    },
   ],
   '8': [
     {'1': 'payload'},
@@ -1572,7 +1615,8 @@ final $typed_data.Uint8List eventDescriptor = $convert.base64Decode(
     'LmZsaXQudjEuV29ya3RyZWVSZW1vdmVkSABSD3dvcmt0cmVlUmVtb3ZlZBI8Cg13b3JrdHJlZV'
     '9rZXB0GDIgASgLMhUuZmxpdC52MS5Xb3JrdHJlZUtlcHRIAFIMd29ya3RyZWVLZXB0Ej0KC3dl'
     'Ymhvb2tfcnVuGDMgASgLMhouZmxpdC52MS5XZWJob29rUnVuU3RhcnRlZEgAUgp3ZWJob29rUn'
-    'VuQgkKB3BheWxvYWQ=');
+    'VuEjkKDHJvbGVfY2hhbmdlZBg0IAEoCzIULmZsaXQudjEuUm9sZUNoYW5nZWRIAFILcm9sZUNo'
+    'YW5nZWRCCQoHcGF5bG9hZA==');
 
 @$core.Deprecated('Use messageStartedDescriptor instead')
 const MessageStarted$json = {
@@ -1769,6 +1813,21 @@ final $typed_data.Uint8List modelChangedDescriptor = $convert.base64Decode(
     'CgxNb2RlbENoYW5nZWQSGgoIcHJvdmlkZXIYASABKAlSCHByb3ZpZGVyEhQKBW1vZGVsGAIgAS'
     'gJUgVtb2RlbBIWCgZlZmZvcnQYAyABKAlSBmVmZm9ydBIlCg5jb250ZXh0X2xlbmd0aBgEIAEo'
     'A1INY29udGV4dExlbmd0aA==');
+
+@$core.Deprecated('Use roleChangedDescriptor instead')
+const RoleChanged$json = {
+  '1': 'RoleChanged',
+  '2': [
+    {'1': 'role', '3': 1, '4': 1, '5': 9, '10': 'role'},
+    {'1': 'previous_role', '3': 2, '4': 1, '5': 9, '10': 'previousRole'},
+    {'1': 'client', '3': 3, '4': 1, '5': 9, '10': 'client'},
+  ],
+};
+
+/// Descriptor for `RoleChanged`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List roleChangedDescriptor = $convert.base64Decode(
+    'CgtSb2xlQ2hhbmdlZBISCgRyb2xlGAEgASgJUgRyb2xlEiMKDXByZXZpb3VzX3JvbGUYAiABKA'
+    'lSDHByZXZpb3VzUm9sZRIWCgZjbGllbnQYAyABKAlSBmNsaWVudA==');
 
 @$core.Deprecated('Use usageDescriptor instead')
 const Usage$json = {
@@ -2774,6 +2833,11 @@ const $core.Map<$core.String, $core.dynamic> SessionServiceBase$json = {
       '3': '.flit.v1.SetEffortResponse'
     },
     {
+      '1': 'SetRole',
+      '2': '.flit.v1.SetRoleRequest',
+      '3': '.flit.v1.SetRoleResponse'
+    },
+    {
       '1': 'SetYolo',
       '2': '.flit.v1.SetYoloRequest',
       '3': '.flit.v1.SetYoloResponse'
@@ -2894,6 +2958,7 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.flit.v1.WorktreeRemoved': WorktreeRemoved$json,
   '.flit.v1.WorktreeKept': WorktreeKept$json,
   '.flit.v1.WebhookRunStarted': WebhookRunStarted$json,
+  '.flit.v1.RoleChanged': RoleChanged$json,
   '.flit.v1.SendRequest': SendRequest$json,
   '.flit.v1.SendResponse': SendResponse$json,
   '.flit.v1.EditQueuedMessageRequest': EditQueuedMessageRequest$json,
@@ -2914,6 +2979,8 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.flit.v1.SetModelResponse': SetModelResponse$json,
   '.flit.v1.SetEffortRequest': SetEffortRequest$json,
   '.flit.v1.SetEffortResponse': SetEffortResponse$json,
+  '.flit.v1.SetRoleRequest': SetRoleRequest$json,
+  '.flit.v1.SetRoleResponse': SetRoleResponse$json,
   '.flit.v1.SetYoloRequest': SetYoloRequest$json,
   '.flit.v1.SetYoloResponse': SetYoloResponse$json,
   '.flit.v1.MoveSessionRequest': MoveSessionRequest$json,
@@ -2964,20 +3031,21 @@ final $typed_data.Uint8List sessionServiceDescriptor = $convert.base64Decode(
     'ZXF1ZXN0Gh0uZmxpdC52MS5BbnN3ZXJQcm9tcHRSZXNwb25zZRI/CghTZXRNb2RlbBIYLmZsaX'
     'QudjEuU2V0TW9kZWxSZXF1ZXN0GhkuZmxpdC52MS5TZXRNb2RlbFJlc3BvbnNlEkIKCVNldEVm'
     'Zm9ydBIZLmZsaXQudjEuU2V0RWZmb3J0UmVxdWVzdBoaLmZsaXQudjEuU2V0RWZmb3J0UmVzcG'
-    '9uc2USPAoHU2V0WW9sbxIXLmZsaXQudjEuU2V0WW9sb1JlcXVlc3QaGC5mbGl0LnYxLlNldFlv'
-    'bG9SZXNwb25zZRJICgtNb3ZlU2Vzc2lvbhIbLmZsaXQudjEuTW92ZVNlc3Npb25SZXF1ZXN0Gh'
-    'wuZmxpdC52MS5Nb3ZlU2Vzc2lvblJlc3BvbnNlEjMKBFJhdGUSFC5mbGl0LnYxLlJhdGVSZXF1'
-    'ZXN0GhUuZmxpdC52MS5SYXRlUmVzcG9uc2USVgoOTGlzdE1jcFNlcnZlcnMSHi5mbGl0LnYxLk'
-    'xpc3RNY3BTZXJ2ZXJzUmVxdWVzdBofLmZsaXQudjEuTGlzdE1jcFNlcnZlcnNSZXNwb25zZSID'
-    'kAIBEksKDFNldE1jcFNlcnZlchIcLmZsaXQudjEuU2V0TWNwU2VydmVyUmVxdWVzdBodLmZsaX'
-    'QudjEuU2V0TWNwU2VydmVyUmVzcG9uc2USSgoKTGlzdFNraWxscxIaLmZsaXQudjEuTGlzdFNr'
-    'aWxsc1JlcXVlc3QaGy5mbGl0LnYxLkxpc3RTa2lsbHNSZXNwb25zZSIDkAIBElcKEFJldHJ5Rn'
-    'JvbU1lc3NhZ2USIC5mbGl0LnYxLlJldHJ5RnJvbU1lc3NhZ2VSZXF1ZXN0GiEuZmxpdC52MS5S'
-    'ZXRyeUZyb21NZXNzYWdlUmVzcG9uc2USSAoLRWRpdE1lc3NhZ2USGy5mbGl0LnYxLkVkaXRNZX'
-    'NzYWdlUmVxdWVzdBocLmZsaXQudjEuRWRpdE1lc3NhZ2VSZXNwb25zZRJLCgxTd2l0Y2hCcmFu'
-    'Y2gSHC5mbGl0LnYxLlN3aXRjaEJyYW5jaFJlcXVlc3QaHS5mbGl0LnYxLlN3aXRjaEJyYW5jaF'
-    'Jlc3BvbnNlEkcKCUdpdFN0YXR1cxIZLmZsaXQudjEuR2l0U3RhdHVzUmVxdWVzdBoaLmZsaXQu'
-    'djEuR2l0U3RhdHVzUmVzcG9uc2UiA5ACARJBCgdHaXREaWZmEhcuZmxpdC52MS5HaXREaWZmUm'
-    'VxdWVzdBoYLmZsaXQudjEuR2l0RGlmZlJlc3BvbnNlIgOQAgESUQoOUmVtb3ZlV29ya3RyZWUS'
-    'Hi5mbGl0LnYxLlJlbW92ZVdvcmt0cmVlUmVxdWVzdBofLmZsaXQudjEuUmVtb3ZlV29ya3RyZW'
-    'VSZXNwb25zZQ==');
+    '9uc2USPAoHU2V0Um9sZRIXLmZsaXQudjEuU2V0Um9sZVJlcXVlc3QaGC5mbGl0LnYxLlNldFJv'
+    'bGVSZXNwb25zZRI8CgdTZXRZb2xvEhcuZmxpdC52MS5TZXRZb2xvUmVxdWVzdBoYLmZsaXQudj'
+    'EuU2V0WW9sb1Jlc3BvbnNlEkgKC01vdmVTZXNzaW9uEhsuZmxpdC52MS5Nb3ZlU2Vzc2lvblJl'
+    'cXVlc3QaHC5mbGl0LnYxLk1vdmVTZXNzaW9uUmVzcG9uc2USMwoEUmF0ZRIULmZsaXQudjEuUm'
+    'F0ZVJlcXVlc3QaFS5mbGl0LnYxLlJhdGVSZXNwb25zZRJWCg5MaXN0TWNwU2VydmVycxIeLmZs'
+    'aXQudjEuTGlzdE1jcFNlcnZlcnNSZXF1ZXN0Gh8uZmxpdC52MS5MaXN0TWNwU2VydmVyc1Jlc3'
+    'BvbnNlIgOQAgESSwoMU2V0TWNwU2VydmVyEhwuZmxpdC52MS5TZXRNY3BTZXJ2ZXJSZXF1ZXN0'
+    'Gh0uZmxpdC52MS5TZXRNY3BTZXJ2ZXJSZXNwb25zZRJKCgpMaXN0U2tpbGxzEhouZmxpdC52MS'
+    '5MaXN0U2tpbGxzUmVxdWVzdBobLmZsaXQudjEuTGlzdFNraWxsc1Jlc3BvbnNlIgOQAgESVwoQ'
+    'UmV0cnlGcm9tTWVzc2FnZRIgLmZsaXQudjEuUmV0cnlGcm9tTWVzc2FnZVJlcXVlc3QaIS5mbG'
+    'l0LnYxLlJldHJ5RnJvbU1lc3NhZ2VSZXNwb25zZRJICgtFZGl0TWVzc2FnZRIbLmZsaXQudjEu'
+    'RWRpdE1lc3NhZ2VSZXF1ZXN0GhwuZmxpdC52MS5FZGl0TWVzc2FnZVJlc3BvbnNlEksKDFN3aX'
+    'RjaEJyYW5jaBIcLmZsaXQudjEuU3dpdGNoQnJhbmNoUmVxdWVzdBodLmZsaXQudjEuU3dpdGNo'
+    'QnJhbmNoUmVzcG9uc2USRwoJR2l0U3RhdHVzEhkuZmxpdC52MS5HaXRTdGF0dXNSZXF1ZXN0Gh'
+    'ouZmxpdC52MS5HaXRTdGF0dXNSZXNwb25zZSIDkAIBEkEKB0dpdERpZmYSFy5mbGl0LnYxLkdp'
+    'dERpZmZSZXF1ZXN0GhguZmxpdC52MS5HaXREaWZmUmVzcG9uc2UiA5ACARJRCg5SZW1vdmVXb3'
+    'JrdHJlZRIeLmZsaXQudjEuUmVtb3ZlV29ya3RyZWVSZXF1ZXN0Gh8uZmxpdC52MS5SZW1vdmVX'
+    'b3JrdHJlZVJlc3BvbnNl');

@@ -441,6 +441,15 @@ FlitEvent eventFromProto(pb.Event e) {
         yolo: e.yoloChanged.yolo,
         client: e.yoloChanged.client,
       );
+    case pb.Event_Payload.roleChanged:
+      return FlitRoleChanged(
+        seq: seq,
+        time: time,
+        branchId: branch,
+        role: e.roleChanged.role,
+        previousRole: e.roleChanged.previousRole,
+        client: e.roleChanged.client,
+      );
     case pb.Event_Payload.messageQueued:
       return FlitMessageQueued(
         seq: seq,

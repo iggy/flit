@@ -365,6 +365,56 @@ void main() {
     expect(state.yolo, isFalse);
   });
 
+  test('role switches: current role and dividers, replay-idempotent', () {
+    final events = <FlitEvent>[
+      const FlitMessageStarted(seq: 1, messageId: 'u1', role: FlitRole.user),
+      const FlitMessageStarted(
+        seq: 2,
+        messageId: 'a1',
+        role: FlitRole.assistant,
+      ),
+      const FlitRoleChanged(
+        seq: 3,
+        role: 'implementer',
+        previousRole: 'planner',
+        client: 'phone',
+      ),
+      const FlitMessageStarted(seq: 4, messageId: 'u2', role: FlitRole.user),
+      const FlitRoleChanged(seq: 5, role: '', previousRole: 'implementer'),
+    ];
+    expect(const FlitFoldState().role, isNull, reason: 'falls back');
+    final state = foldFlitEvents(const FlitFoldState(), events);
+    expect(state.role, '');
+    expect(state.roleChanges, const <FlitRoleMarker>[
+      FlitRoleMarker(
+        seq: 3,
+        beforeIndex: 2,
+        role: 'implementer',
+        previousRole: 'planner',
+        client: 'phone',
+      ),
+      FlitRoleMarker(
+        seq: 5,
+        beforeIndex: 3,
+        role: '',
+        previousRole: 'implementer',
+      ),
+    ]);
+    // Messages are untouched by a switch.
+    expect(state.messages, hasLength(3));
+    // Replaying (reattach) changes nothing; another client folding the same
+    // log converges.
+    expect(foldFlitEvents(state, events), state);
+    expect(foldFlitEvents(const FlitFoldState(), events), state);
+    // Session-wide: applies whatever branch the event names.
+    final onBranch = foldFlitEvent(
+      const FlitFoldState(),
+      const FlitRoleChanged(seq: 1, role: 'qa', branchId: 'br_other'),
+    );
+    expect(onBranch.role, 'qa');
+    expect(flitSessionWide(const FlitRoleChanged(seq: 1, role: 'qa')), isTrue);
+  });
+
   test('flitSessionNeedsRefresh', () {
     final events = turn();
     FlitFoldState at(int n) =>

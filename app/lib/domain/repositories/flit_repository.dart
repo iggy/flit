@@ -103,6 +103,10 @@ abstract interface class FlitRepository {
   /// Change the session's reasoning effort ('' = the model's default).
   Future<FlitSession> setEffort(String sessionId, String effort);
 
+  /// Switch the session's role ('' = none) from its next model call. The
+  /// model and effort follow the role's defaults unless they were changed.
+  Future<FlitSession> setRole(String sessionId, String role);
+
   /// Turn yolo mode on or off: every shell command runs unless a deny rule
   /// matches.
   Future<FlitSession> setYolo(String sessionId, {required bool yolo});

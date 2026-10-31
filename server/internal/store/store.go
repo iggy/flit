@@ -620,6 +620,9 @@ func (s *Store) AppendEvent(ctx context.Context, sess Session, ev *flitv1.Event)
 	case ev.GetBranchSwitched() != nil:
 		q = `UPDATE sessions SET last_seq = ?, updated_at = ?, branch_id = ? WHERE id = ? AND last_seq = ?`
 		args = []any{ev.Seq, at, ev.GetBranchSwitched().BranchId, ev.SessionId, ev.Seq - 1}
+	case ev.GetRoleChanged() != nil:
+		q = `UPDATE sessions SET last_seq = ?, updated_at = ?, role = ? WHERE id = ? AND last_seq = ?`
+		args = []any{ev.Seq, at, ev.GetRoleChanged().Role, ev.SessionId, ev.Seq - 1}
 	}
 	res, err := tx.ExecContext(ctx, q, args...)
 	if err != nil {

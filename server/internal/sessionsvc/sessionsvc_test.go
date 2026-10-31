@@ -169,6 +169,9 @@ func TestSessionAPI(t *testing.T) {
 		{err: second(c.EditMessage(ctx, &flitv1.EditMessageRequest{SessionId: s.Id, MessageId: "msg_nope", Text: "x"})), code: connect.CodeInvalidArgument},
 		{err: second(c.SwitchBranch(ctx, &flitv1.SwitchBranchRequest{SessionId: s.Id, BranchId: "br_nope"})), code: connect.CodeInvalidArgument},
 		{err: second(c.SwitchBranch(ctx, &flitv1.SwitchBranchRequest{})), code: connect.CodeInvalidArgument},
+		{err: second(c.SetRole(ctx, &flitv1.SetRoleRequest{})), code: connect.CodeInvalidArgument},
+		{err: second(c.SetRole(ctx, &flitv1.SetRoleRequest{SessionId: "ses_nope"})), code: connect.CodeNotFound},
+		{err: second(c.SetRole(ctx, &flitv1.SetRoleRequest{SessionId: s.Id, Role: "nope"})), code: connect.CodeInvalidArgument},
 	} {
 		if connect.CodeOf(tc.err) != tc.code {
 			t.Errorf("got %v, want %v", tc.err, tc.code)

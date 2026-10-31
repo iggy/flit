@@ -59,6 +59,8 @@ const (
 	SessionServiceSetModelProcedure = "/flit.v1.SessionService/SetModel"
 	// SessionServiceSetEffortProcedure is the procedure name of the SessionService's SetEffort RPC.
 	SessionServiceSetEffortProcedure = "/flit.v1.SessionService/SetEffort"
+	// SessionServiceSetRoleProcedure is the procedure name of the SessionService's SetRole RPC.
+	SessionServiceSetRoleProcedure = "/flit.v1.SessionService/SetRole"
 	// SessionServiceSetYoloProcedure is the procedure name of the SessionService's SetYolo RPC.
 	SessionServiceSetYoloProcedure = "/flit.v1.SessionService/SetYolo"
 	// SessionServiceMoveSessionProcedure is the procedure name of the SessionService's MoveSession RPC.
@@ -189,6 +191,13 @@ var (
 			StreamType: connect.StreamTypeUnary,
 			Schema:     v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("SetEffort"),
 			Procedure:  SessionServiceSetEffortProcedure,
+		}
+	})
+	sessionServiceSetRoleSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("SetRole"),
+			Procedure:  SessionServiceSetRoleProcedure,
 		}
 	})
 	sessionServiceSetYoloSpec = sync.OnceValue(func() connect.Spec {
@@ -337,6 +346,13 @@ type SessionServiceClient interface {
 	SetModel(context.Context, *v1.SetModelRequest) (*v1.SetModelResponse, error)
 	// SetEffort changes the reasoning effort used from the next model call.
 	SetEffort(context.Context, *v1.SetEffortRequest) (*v1.SetEffortResponse, error)
+	// SetRole switches the session's role (see RoleService); empty means
+	// none. It logs a RoleChanged event, and from the next model call the
+	// system prompt uses the new role. The model and effort follow the new
+	// role's defaults, unless the session's were changed away from the old
+	// role's defaults (then they stay); a change logs a ModelChanged too.
+	// Earlier messages are kept as they are.
+	SetRole(context.Context, *v1.SetRoleRequest) (*v1.SetRoleResponse, error)
 	// SetYolo turns yolo mode on or off for the session: every shell command
 	// runs unless a deny rule matches. Effective from the next command.
 	SetYolo(context.Context, *v1.SetYoloRequest) (*v1.SetYoloResponse, error)
@@ -472,6 +488,13 @@ type SessionServiceHandler interface {
 	SetModel(context.Context, *v1.SetModelRequest) (*v1.SetModelResponse, error)
 	// SetEffort changes the reasoning effort used from the next model call.
 	SetEffort(context.Context, *v1.SetEffortRequest) (*v1.SetEffortResponse, error)
+	// SetRole switches the session's role (see RoleService); empty means
+	// none. It logs a RoleChanged event, and from the next model call the
+	// system prompt uses the new role. The model and effort follow the new
+	// role's defaults, unless the session's were changed away from the old
+	// role's defaults (then they stay); a change logs a ModelChanged too.
+	// Earlier messages are kept as they are.
+	SetRole(context.Context, *v1.SetRoleRequest) (*v1.SetRoleResponse, error)
 	// SetYolo turns yolo mode on or off for the session: every shell command
 	// runs unless a deny rule matches. Effective from the next command.
 	SetYolo(context.Context, *v1.SetYoloRequest) (*v1.SetYoloResponse, error)
@@ -544,6 +567,7 @@ func RegisterSessionServiceHandler(server *connect.Server, svc SessionServiceHan
 		connect.Method{Spec: sessionServiceAnswerPromptSpec(), Handler: adapter.answerPrompt},
 		connect.Method{Spec: sessionServiceSetModelSpec(), Handler: adapter.setModel},
 		connect.Method{Spec: sessionServiceSetEffortSpec(), Handler: adapter.setEffort},
+		connect.Method{Spec: sessionServiceSetRoleSpec(), Handler: adapter.setRole},
 		connect.Method{Spec: sessionServiceSetYoloSpec(), Handler: adapter.setYolo},
 		connect.Method{Spec: sessionServiceMoveSessionSpec(), Handler: adapter.moveSession},
 		connect.Method{Spec: sessionServiceRateSpec(), Handler: adapter.rate},
@@ -631,6 +655,10 @@ func (UnimplementedSessionServiceHandler) SetModel(context.Context, *v1.SetModel
 
 func (UnimplementedSessionServiceHandler) SetEffort(context.Context, *v1.SetEffortRequest) (*v1.SetEffortResponse, error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.SetEffort is not implemented")
+}
+
+func (UnimplementedSessionServiceHandler) SetRole(context.Context, *v1.SetRoleRequest) (*v1.SetRoleResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.SetRole is not implemented")
 }
 
 func (UnimplementedSessionServiceHandler) SetYolo(context.Context, *v1.SetYoloRequest) (*v1.SetYoloResponse, error) {
@@ -792,6 +820,14 @@ func (c *sessionServiceClient) SetModel(ctx context.Context, req *v1.SetModelReq
 func (c *sessionServiceClient) SetEffort(ctx context.Context, req *v1.SetEffortRequest) (*v1.SetEffortResponse, error) {
 	var res v1.SetEffortResponse
 	if err := c.client.CallUnary(ctx, sessionServiceSetEffortSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *sessionServiceClient) SetRole(ctx context.Context, req *v1.SetRoleRequest) (*v1.SetRoleResponse, error) {
+	var res v1.SetRoleResponse
+	if err := c.client.CallUnary(ctx, sessionServiceSetRoleSpec(), req, &res); err != nil {
 		return nil, err
 	}
 	return &res, nil
@@ -1053,6 +1089,18 @@ func (h sessionServiceHandler) setEffort(ctx context.Context, _ connect.Spec, st
 		return err
 	}
 	res, err := h.svc.SetEffort(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h sessionServiceHandler) setRole(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.SetRoleRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.SetRole(ctx, &req)
 	if err != nil {
 		return err
 	}

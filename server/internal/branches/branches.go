@@ -153,7 +153,7 @@ func SessionWide(ev *flitv1.Event) bool {
 	case *flitv1.Event_TaskStateChanged, *flitv1.Event_ModelChanged, *flitv1.Event_McpServersChanged,
 		*flitv1.Event_SessionMoved, *flitv1.Event_YoloChanged, *flitv1.Event_MessageQueued,
 		*flitv1.Event_QueuedMessageUpdated, *flitv1.Event_QueuedMessageDelivered,
-		*flitv1.Event_BranchCreated, *flitv1.Event_BranchSwitched:
+		*flitv1.Event_BranchCreated, *flitv1.Event_BranchSwitched, *flitv1.Event_RoleChanged:
 		return true
 	}
 	return false

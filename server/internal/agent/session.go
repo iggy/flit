@@ -158,6 +158,8 @@ func (s *session) appendLocked(ev *flitv1.Event) (*flitv1.Event, error) {
 		s.tree.Add(ev)
 	case ev.GetBranchSwitched() != nil:
 		s.info.BranchID = ev.GetBranchSwitched().BranchId
+	case ev.GetRoleChanged() != nil:
+		s.info.Role = ev.GetRoleChanged().Role
 	}
 	for sub := range s.subs {
 		select {

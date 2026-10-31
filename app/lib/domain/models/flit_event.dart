@@ -377,6 +377,23 @@ final class FlitYoloChanged extends FlitEvent {
   final String client;
 }
 
+/// The session's role was switched ('' = none), effective from the next
+/// model call. Earlier messages stay as they were.
+final class FlitRoleChanged extends FlitEvent {
+  const FlitRoleChanged({
+    required super.seq,
+    required this.role,
+    this.previousRole = '',
+    this.client = '',
+    super.time,
+    super.branchId,
+  });
+
+  final String role;
+  final String previousRole;
+  final String client;
+}
+
 /// The safety check's rating of a shell command (flit.v1
 /// `PermissionVerdict`).
 enum FlitPermissionVerdict {
@@ -688,6 +705,7 @@ bool flitSessionWide(FlitEvent e) => switch (e) {
   FlitMcpServersChanged() ||
   FlitSessionMoved() ||
   FlitYoloChanged() ||
+  FlitRoleChanged() ||
   FlitMessageQueued() ||
   FlitQueuedMessageUpdated() ||
   FlitQueuedMessageDelivered() ||

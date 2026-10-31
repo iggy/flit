@@ -22,6 +22,7 @@ import 'package:flit/presentation/flit/flit_nav.dart';
 import 'package:flit/presentation/flit/flit_prompt_card.dart';
 import 'package:flit/presentation/flit/flit_queued_message.dart';
 import 'package:flit/presentation/flit/flit_rating.dart';
+import 'package:flit/presentation/flit/flit_role_picker.dart';
 import 'package:flit/presentation/flit/flit_slash_menu.dart';
 import 'package:flit/presentation/flit/flit_widgets.dart';
 import 'package:flutter/material.dart';
@@ -117,6 +118,11 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
     if (flitIsLearnCommand(text)) {
       _input.clear();
       return showFlitLearnSheet(context, widget.sessionId);
+    }
+    final role = flitRoleCommandArg(text);
+    if (role != null) {
+      _input.clear();
+      return role.isEmpty ? _pickRole() : _setRole(role);
     }
     final fold = ref.read(flitChatProvider(widget.sessionId)).fold;
     // Empty text sends what's queued (after a Stop), if anything is.
@@ -245,6 +251,37 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
     } on GatewayException catch (error) {
       if (mounted) {
         _snack('Could not change the model: ${error.message}');
+      }
+    }
+  }
+
+  /// The session's role: the latest logged switch, else the session's.
+  String _currentRole() {
+    final fold = ref.read(flitChatProvider(widget.sessionId)).fold;
+    return fold.role ??
+        ref.read(flitSessionProvider(widget.sessionId)).value?.role ??
+        '';
+  }
+
+  Future<void> _pickRole() async {
+    final role = await showFlitRolePicker(context, current: _currentRole());
+    if (role == null || role == _currentRole()) {
+      return;
+    }
+    return _setRole(role);
+  }
+
+  Future<void> _setRole(String role) async {
+    final repository = ref.read(flitRepositoryProvider);
+    if (repository == null) {
+      return;
+    }
+    try {
+      await repository.setRole(widget.sessionId, role);
+      ref.invalidate(flitSessionProvider(widget.sessionId));
+    } on GatewayException catch (error) {
+      if (mounted) {
+        _snack('Could not change the role: ${error.message}');
       }
     }
   }
@@ -455,6 +492,8 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
           (prev?.fold.queued.length ?? 0) != next.fold.queued.length ||
           (prev?.fold.compactions.length ?? 0) !=
               next.fold.compactions.length ||
+          (prev?.fold.roleChanges.length ?? 0) !=
+              next.fold.roleChanges.length ||
           (prev?.fold.compacting == null) != (next.fold.compacting == null) ||
           (next.fold.messages.isNotEmpty && next.fold.messages.last.streaming);
       if (grew) {
@@ -490,6 +529,7 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
         : (session?.state ?? FlitTaskState.idle);
     final effort = fold.effort ?? session?.effort ?? '';
     final yolo = fold.yolo ?? session?.yolo ?? false;
+    final role = fold.role ?? session?.role ?? '';
     final contextLength = fold.contextLength > 0
         ? fold.contextLength
         : (session?.contextLength ?? 0);
@@ -547,6 +587,9 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
               inputTokens: fold.speed?.inputTokens ?? 0,
               cachedTokens: fold.speed?.cachedTokens ?? 0,
               onModelTap: () => _changeModel(provider, model, effort),
+              role: role,
+              onRoleTap: _pickRole,
+              roleButtonKey: flitRoleButtonKey,
             ),
             if (chat.link == FlitLink.reconnecting)
               MaterialBanner(
@@ -641,6 +684,7 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
               skills: <FlitSkill>[
                 flitCompactSkill,
                 flitLearnSkill,
+                flitRoleSkill,
                 ...?ref.watch(flitSkillsProvider(widget.sessionId)).value,
               ],
             ),
@@ -667,6 +711,12 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
       padding: const EdgeInsets.all(12),
       children: <Widget>[
         for (var i = 0; i < fold.messages.length; i++) ...<Widget>[
+          for (final r in fold.roleChanges)
+            if (r.beforeIndex == i)
+              FlitRoleMarkerView(
+                key: Key('$flitRoleMarkerKeyPrefix${r.seq}'),
+                marker: r,
+              ),
           for (final c in fold.compactions)
             if (c.beforeIndex == i)
               FlitCompactionMarkerView(
@@ -686,6 +736,12 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
             ),
           ),
         ],
+        for (final r in fold.roleChanges)
+          if (r.beforeIndex >= fold.messages.length)
+            FlitRoleMarkerView(
+              key: Key('$flitRoleMarkerKeyPrefix${r.seq}'),
+              marker: r,
+            ),
         for (final c in fold.compactions)
           if (c.beforeIndex >= fold.messages.length)
             FlitCompactionMarkerView(

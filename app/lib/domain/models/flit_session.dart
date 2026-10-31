@@ -78,7 +78,7 @@ final class FlitSession {
   /// Reasoning effort; empty means the model's default.
   final String effort;
 
-  /// The role the session was created with; empty for none.
+  /// The session's current role (it can be switched); empty for none.
   final String role;
 
   /// Context use after the last model call, and the model's window (0 if

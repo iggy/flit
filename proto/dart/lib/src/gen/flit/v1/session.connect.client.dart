@@ -290,6 +290,29 @@ extension type SessionServiceClient (connect.Transport _transport) {
     );
   }
 
+  /// SetRole switches the session's role (see RoleService); empty means
+  /// none. It logs a RoleChanged event, and from the next model call the
+  /// system prompt uses the new role. The model and effort follow the new
+  /// role's defaults, unless the session's were changed away from the old
+  /// role's defaults (then they stay); a change logs a ModelChanged too.
+  /// Earlier messages are kept as they are.
+  Future<flitv1session.SetRoleResponse> setRole(
+    flitv1session.SetRoleRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.SessionService.setRole,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
+
   /// SetYolo turns yolo mode on or off for the session: every shell command
   /// runs unless a deny rule matches. Effective from the next command.
   Future<flitv1session.SetYoloResponse> setYolo(

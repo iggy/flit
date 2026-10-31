@@ -173,6 +173,13 @@ flit ships four roles: `frontend-dev`, `backend-dev`, `pm` and `qa`. They set
 no model, so sessions use the configured one. A file in `roles/` with the
 same name (e.g. `roles/qa.md`) replaces the built-in role.
 
+A session's role can be switched while it runs (e.g. plan as `pm`, then
+build as `backend-dev`): tap the role in the chat's status strip, or type
+`/role name` (`/role` alone opens the picker). From the next model call the
+system prompt and memory file are the new role's; the model and effort follow
+the new role's defaults unless you changed them in the session. Earlier
+messages stay as they are, and the chat marks where the role changed.
+
 Every model call reports context use, time to first token, and prompt and
 generation speed (llama.cpp's own timings when it sends them, otherwise
 measured by flit). The app shows these along with the model, effort and task

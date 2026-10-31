@@ -265,7 +265,8 @@ class Session extends $pb.GeneratedMessage {
   @$pb.TagNumber(12)
   void clearEffort() => $_clearField(12);
 
-  /// The role the session was created with; empty for none.
+  /// The session's current role (see SetRole and RoleChanged); empty for
+  /// none.
   @$pb.TagNumber(13)
   $core.String get role => $_getSZ(12);
   @$pb.TagNumber(13)
@@ -3615,6 +3616,136 @@ class SetEffortResponse extends $pb.GeneratedMessage {
   Session ensureSession() => $_ensure(0);
 }
 
+class SetRoleRequest extends $pb.GeneratedMessage {
+  factory SetRoleRequest({
+    $core.String? sessionId,
+    $core.String? role,
+  }) {
+    final result = SetRoleRequest._();
+    if (sessionId != null) result.sessionId = sessionId;
+    if (role != null) result.role = role;
+    return result;
+  }
+
+  SetRoleRequest._();
+
+  factory SetRoleRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetRoleRequest()..mergeFromBuffer(data, registry);
+  factory SetRoleRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetRoleRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SetRoleRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: SetRoleRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'sessionId')
+    ..aOS(2, _omitFieldNames ? '' : 'role')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetRoleRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetRoleRequest copyWith(void Function(SetRoleRequest) updates) =>
+      super.copyWith((message) => updates(message as SetRoleRequest))
+          as SetRoleRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use SetRoleRequest() / SetRoleRequest.new instead')
+  static SetRoleRequest create() => SetRoleRequest._();
+  static $pb.GeneratedMessage $_createMessage() => SetRoleRequest._();
+  @$core.override
+  SetRoleRequest createEmptyInstance() => SetRoleRequest._();
+  @$core.pragma('dart2js:noInline')
+  static SetRoleRequest getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SetRoleRequest>(
+          SetRoleRequest.$_createMessage);
+  static SetRoleRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get sessionId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set sessionId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSessionId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSessionId() => $_clearField(1);
+
+  /// Role name (see RoleService); empty for none.
+  @$pb.TagNumber(2)
+  $core.String get role => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set role($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasRole() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearRole() => $_clearField(2);
+}
+
+class SetRoleResponse extends $pb.GeneratedMessage {
+  factory SetRoleResponse({
+    Session? session,
+  }) {
+    final result = SetRoleResponse._();
+    if (session != null) result.session = session;
+    return result;
+  }
+
+  SetRoleResponse._();
+
+  factory SetRoleResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetRoleResponse()..mergeFromBuffer(data, registry);
+  factory SetRoleResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      SetRoleResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'SetRoleResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: SetRoleResponse.$_createMessage)
+    ..aOM<Session>(1, _omitFieldNames ? '' : 'session',
+        subBuilder: Session.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetRoleResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  SetRoleResponse copyWith(void Function(SetRoleResponse) updates) =>
+      super.copyWith((message) => updates(message as SetRoleResponse))
+          as SetRoleResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use SetRoleResponse() / SetRoleResponse.new instead')
+  static SetRoleResponse create() => SetRoleResponse._();
+  static $pb.GeneratedMessage $_createMessage() => SetRoleResponse._();
+  @$core.override
+  SetRoleResponse createEmptyInstance() => SetRoleResponse._();
+  @$core.pragma('dart2js:noInline')
+  static SetRoleResponse getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SetRoleResponse>(
+          SetRoleResponse.$_createMessage);
+  static SetRoleResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  Session get session => $_getN(0);
+  @$pb.TagNumber(1)
+  set session(Session value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSession() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSession() => $_clearField(1);
+  @$pb.TagNumber(1)
+  Session ensureSession() => $_ensure(0);
+}
+
 class SetYoloRequest extends $pb.GeneratedMessage {
   factory SetYoloRequest({
     $core.String? sessionId,
@@ -3787,6 +3918,7 @@ enum Event_Payload {
   worktreeRemoved,
   worktreeKept,
   webhookRun,
+  roleChanged,
   notSet
 }
 
@@ -3839,6 +3971,7 @@ class Event extends $pb.GeneratedMessage {
     WorktreeRemoved? worktreeRemoved,
     WorktreeKept? worktreeKept,
     WebhookRunStarted? webhookRun,
+    RoleChanged? roleChanged,
   }) {
     final result = Event._();
     if (sessionId != null) result.sessionId = sessionId;
@@ -3891,6 +4024,7 @@ class Event extends $pb.GeneratedMessage {
     if (worktreeRemoved != null) result.worktreeRemoved = worktreeRemoved;
     if (worktreeKept != null) result.worktreeKept = worktreeKept;
     if (webhookRun != null) result.webhookRun = webhookRun;
+    if (roleChanged != null) result.roleChanged = roleChanged;
     return result;
   }
 
@@ -3946,6 +4080,7 @@ class Event extends $pb.GeneratedMessage {
     49: Event_Payload.worktreeRemoved,
     50: Event_Payload.worktreeKept,
     51: Event_Payload.webhookRun,
+    52: Event_Payload.roleChanged,
     0: Event_Payload.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
@@ -3994,7 +4129,8 @@ class Event extends $pb.GeneratedMessage {
       48,
       49,
       50,
-      51
+      51,
+      52
     ])
     ..aOS(1, _omitFieldNames ? '' : 'sessionId')
     ..aInt64(2, _omitFieldNames ? '' : 'seq')
@@ -4088,6 +4224,8 @@ class Event extends $pb.GeneratedMessage {
         subBuilder: WorktreeKept.$_createMessage)
     ..aOM<WebhookRunStarted>(51, _omitFieldNames ? '' : 'webhookRun',
         subBuilder: WebhookRunStarted.$_createMessage)
+    ..aOM<RoleChanged>(52, _omitFieldNames ? '' : 'roleChanged',
+        subBuilder: RoleChanged.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -4152,6 +4290,7 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(49)
   @$pb.TagNumber(50)
   @$pb.TagNumber(51)
+  @$pb.TagNumber(52)
   Event_Payload whichPayload() => _Event_PayloadByTag[$_whichOneof(0)]!;
   @$pb.TagNumber(10)
   @$pb.TagNumber(11)
@@ -4195,6 +4334,7 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(49)
   @$pb.TagNumber(50)
   @$pb.TagNumber(51)
+  @$pb.TagNumber(52)
   void clearPayload() => $_clearField($_whichOneof(0));
 
   @$pb.TagNumber(1)
@@ -4231,7 +4371,7 @@ class Event extends $pb.GeneratedMessage {
   /// was recorded. Empty is the root branch (every event of a session that
   /// never forked). A branch's history is its ancestors' events up to each
   /// fork point plus its own events. Session-wide events (task state,
-  /// model, yolo, MCP servers, project, queue, branches) apply whatever
+  /// model, role, yolo, MCP servers, project, queue, branches) apply whatever
   /// their branch_id.
   @$pb.TagNumber(4)
   $core.String get branchId => $_getSZ(3);
@@ -4705,6 +4845,17 @@ class Event extends $pb.GeneratedMessage {
   void clearWebhookRun() => $_clearField(51);
   @$pb.TagNumber(51)
   WebhookRunStarted ensureWebhookRun() => $_ensure(45);
+
+  @$pb.TagNumber(52)
+  RoleChanged get roleChanged => $_getN(46);
+  @$pb.TagNumber(52)
+  set roleChanged(RoleChanged value) => $_setField(52, value);
+  @$pb.TagNumber(52)
+  $core.bool hasRoleChanged() => $_has(46);
+  @$pb.TagNumber(52)
+  void clearRoleChanged() => $_clearField(52);
+  @$pb.TagNumber(52)
+  RoleChanged ensureRoleChanged() => $_ensure(46);
 }
 
 /// MessageStarted opens a message. Its text arrives as TextDelta events and
@@ -5697,6 +5848,92 @@ class ModelChanged extends $pb.GeneratedMessage {
   $core.bool hasContextLength() => $_has(3);
   @$pb.TagNumber(4)
   void clearContextLength() => $_clearField(4);
+}
+
+/// RoleChanged switched the session's role (SetRole), effective from the
+/// next model call. Session-wide.
+class RoleChanged extends $pb.GeneratedMessage {
+  factory RoleChanged({
+    $core.String? role,
+    $core.String? previousRole,
+    $core.String? client,
+  }) {
+    final result = RoleChanged._();
+    if (role != null) result.role = role;
+    if (previousRole != null) result.previousRole = previousRole;
+    if (client != null) result.client = client;
+    return result;
+  }
+
+  RoleChanged._();
+
+  factory RoleChanged.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RoleChanged()..mergeFromBuffer(data, registry);
+  factory RoleChanged.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      RoleChanged()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'RoleChanged',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: RoleChanged.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'role')
+    ..aOS(2, _omitFieldNames ? '' : 'previousRole')
+    ..aOS(3, _omitFieldNames ? '' : 'client')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RoleChanged clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  RoleChanged copyWith(void Function(RoleChanged) updates) =>
+      super.copyWith((message) => updates(message as RoleChanged))
+          as RoleChanged;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use RoleChanged() / RoleChanged.new instead')
+  static RoleChanged create() => RoleChanged._();
+  static $pb.GeneratedMessage $_createMessage() => RoleChanged._();
+  @$core.override
+  RoleChanged createEmptyInstance() => RoleChanged._();
+  @$core.pragma('dart2js:noInline')
+  static RoleChanged getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<RoleChanged>(
+          RoleChanged.$_createMessage);
+  static RoleChanged? _defaultInstance;
+
+  /// The new role; empty for none.
+  @$pb.TagNumber(1)
+  $core.String get role => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set role($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasRole() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearRole() => $_clearField(1);
+
+  /// The role before; empty for none.
+  @$pb.TagNumber(2)
+  $core.String get previousRole => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set previousRole($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasPreviousRole() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearPreviousRole() => $_clearField(2);
+
+  /// Client that changed it (its device name), if known.
+  @$pb.TagNumber(3)
+  $core.String get client => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set client($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasClient() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearClient() => $_clearField(3);
 }
 
 /// Usage is token usage and speed for one model call.
@@ -10258,6 +10495,17 @@ class SessionServiceApi {
           $pb.ClientContext? ctx, SetEffortRequest request) =>
       _client.invoke<SetEffortResponse>(
           ctx, 'SessionService', 'SetEffort', request, SetEffortResponse());
+
+  /// SetRole switches the session's role (see RoleService); empty means
+  /// none. It logs a RoleChanged event, and from the next model call the
+  /// system prompt uses the new role. The model and effort follow the new
+  /// role's defaults, unless the session's were changed away from the old
+  /// role's defaults (then they stay); a change logs a ModelChanged too.
+  /// Earlier messages are kept as they are.
+  $async.Future<SetRoleResponse> setRole(
+          $pb.ClientContext? ctx, SetRoleRequest request) =>
+      _client.invoke<SetRoleResponse>(
+          ctx, 'SessionService', 'SetRole', request, SetRoleResponse());
 
   /// SetYolo turns yolo mode on or off for the session: every shell command
   /// runs unless a deny rule matches. Effective from the next command.
