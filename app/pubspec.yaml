@@ -77,7 +77,7 @@ dependencies:
   protobuf: 6.1.0
   fixnum: 1.1.1
   # QR scanning for flit pairing (Android/iOS only).
-  mobile_scanner: 7.4.2
+  mobile_scanner: 7.4.3
 
 dev_dependencies:
   flutter_test:
