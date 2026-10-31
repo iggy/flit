@@ -15,39 +15,43 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
-import 'system.pb.dart' as $1;
+import 'system.pb.dart' as $2;
 import 'system.pbjson.dart';
 
 export 'system.pb.dart';
 
 abstract class SystemServiceBase extends $pb.GeneratedService {
-  $async.Future<$1.VersionResponse> version(
-      $pb.ServerContext ctx, $1.VersionRequest request);
-  $async.Future<$1.HealthResponse> health(
-      $pb.ServerContext ctx, $1.HealthRequest request);
-  $async.Future<$1.CreatePairingCodeResponse> createPairingCode(
-      $pb.ServerContext ctx, $1.CreatePairingCodeRequest request);
-  $async.Future<$1.PairResponse> pair(
-      $pb.ServerContext ctx, $1.PairRequest request);
-  $async.Future<$1.ListDevicesResponse> listDevices(
-      $pb.ServerContext ctx, $1.ListDevicesRequest request);
-  $async.Future<$1.RevokeDeviceResponse> revokeDevice(
-      $pb.ServerContext ctx, $1.RevokeDeviceRequest request);
+  $async.Future<$2.VersionResponse> version(
+      $pb.ServerContext ctx, $2.VersionRequest request);
+  $async.Future<$2.HealthResponse> health(
+      $pb.ServerContext ctx, $2.HealthRequest request);
+  $async.Future<$2.CreatePairingCodeResponse> createPairingCode(
+      $pb.ServerContext ctx, $2.CreatePairingCodeRequest request);
+  $async.Future<$2.PairResponse> pair(
+      $pb.ServerContext ctx, $2.PairRequest request);
+  $async.Future<$2.ListDevicesResponse> listDevices(
+      $pb.ServerContext ctx, $2.ListDevicesRequest request);
+  $async.Future<$2.RevokeDeviceResponse> revokeDevice(
+      $pb.ServerContext ctx, $2.RevokeDeviceRequest request);
+  $async.Future<$2.DebugDumpResponse> debugDump(
+      $pb.ServerContext ctx, $2.DebugDumpRequest request);
 
   $pb.GeneratedMessage createRequest($core.String methodName) {
     switch (methodName) {
       case 'Version':
-        return $1.VersionRequest();
+        return $2.VersionRequest();
       case 'Health':
-        return $1.HealthRequest();
+        return $2.HealthRequest();
       case 'CreatePairingCode':
-        return $1.CreatePairingCodeRequest();
+        return $2.CreatePairingCodeRequest();
       case 'Pair':
-        return $1.PairRequest();
+        return $2.PairRequest();
       case 'ListDevices':
-        return $1.ListDevicesRequest();
+        return $2.ListDevicesRequest();
       case 'RevokeDevice':
-        return $1.RevokeDeviceRequest();
+        return $2.RevokeDeviceRequest();
+      case 'DebugDump':
+        return $2.DebugDumpRequest();
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }
@@ -57,17 +61,19 @@ abstract class SystemServiceBase extends $pb.GeneratedService {
       $core.String methodName, $pb.GeneratedMessage request) {
     switch (methodName) {
       case 'Version':
-        return version(ctx, request as $1.VersionRequest);
+        return version(ctx, request as $2.VersionRequest);
       case 'Health':
-        return health(ctx, request as $1.HealthRequest);
+        return health(ctx, request as $2.HealthRequest);
       case 'CreatePairingCode':
-        return createPairingCode(ctx, request as $1.CreatePairingCodeRequest);
+        return createPairingCode(ctx, request as $2.CreatePairingCodeRequest);
       case 'Pair':
-        return pair(ctx, request as $1.PairRequest);
+        return pair(ctx, request as $2.PairRequest);
       case 'ListDevices':
-        return listDevices(ctx, request as $1.ListDevicesRequest);
+        return listDevices(ctx, request as $2.ListDevicesRequest);
       case 'RevokeDevice':
-        return revokeDevice(ctx, request as $1.RevokeDeviceRequest);
+        return revokeDevice(ctx, request as $2.RevokeDeviceRequest);
+      case 'DebugDump':
+        return debugDump(ctx, request as $2.DebugDumpRequest);
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }

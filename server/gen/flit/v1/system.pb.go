@@ -740,11 +740,564 @@ func (*RevokeDeviceResponse) Descriptor() ([]byte, []int) {
 	return file_flit_v1_system_proto_rawDescGZIP(), []int{12}
 }
 
+type DebugDumpRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Include every goroutine's stack (can be large).
+	Goroutines    bool `protobuf:"varint,1,opt,name=goroutines,proto3" json:"goroutines,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DebugDumpRequest) Reset() {
+	*x = DebugDumpRequest{}
+	mi := &file_flit_v1_system_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DebugDumpRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DebugDumpRequest) ProtoMessage() {}
+
+func (x *DebugDumpRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_system_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DebugDumpRequest.ProtoReflect.Descriptor instead.
+func (*DebugDumpRequest) Descriptor() ([]byte, []int) {
+	return file_flit_v1_system_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *DebugDumpRequest) GetGoroutines() bool {
+	if x != nil {
+		return x.Goroutines
+	}
+	return false
+}
+
+type DebugDumpResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Time  *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=time,proto3" json:"time,omitempty"`
+	// The sessions loaded in memory (any used since the server started).
+	Sessions []*SessionDebug `protobuf:"bytes,2,rep,name=sessions,proto3" json:"sessions,omitempty"`
+	// Model calls holding or waiting for a concurrency slot
+	// (providers[].concurrency), per provider and model.
+	Limits []*ModelLimitDebug `protobuf:"bytes,3,rep,name=limits,proto3" json:"limits,omitempty"`
+	// Every goroutine's stack, as Go prints them, if asked for.
+	Goroutines string `protobuf:"bytes,4,opt,name=goroutines,proto3" json:"goroutines,omitempty"`
+	// Whether the session table itself could be locked; false means the
+	// sessions list is empty because something holds it (see goroutines).
+	SessionsLockFree bool `protobuf:"varint,5,opt,name=sessions_lock_free,json=sessionsLockFree,proto3" json:"sessions_lock_free,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *DebugDumpResponse) Reset() {
+	*x = DebugDumpResponse{}
+	mi := &file_flit_v1_system_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DebugDumpResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DebugDumpResponse) ProtoMessage() {}
+
+func (x *DebugDumpResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_system_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DebugDumpResponse.ProtoReflect.Descriptor instead.
+func (*DebugDumpResponse) Descriptor() ([]byte, []int) {
+	return file_flit_v1_system_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *DebugDumpResponse) GetTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.Time
+	}
+	return nil
+}
+
+func (x *DebugDumpResponse) GetSessions() []*SessionDebug {
+	if x != nil {
+		return x.Sessions
+	}
+	return nil
+}
+
+func (x *DebugDumpResponse) GetLimits() []*ModelLimitDebug {
+	if x != nil {
+		return x.Limits
+	}
+	return nil
+}
+
+func (x *DebugDumpResponse) GetGoroutines() string {
+	if x != nil {
+		return x.Goroutines
+	}
+	return ""
+}
+
+func (x *DebugDumpResponse) GetSessionsLockFree() bool {
+	if x != nil {
+		return x.SessionsLockFree
+	}
+	return false
+}
+
+// SessionDebug is one session's live state.
+type SessionDebug struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	SessionId string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	Title     string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	// False when the session's lock couldn't be taken within a couple of
+	// seconds: something holds it (a stuck event log write, or a deadlock;
+	// the goroutine stacks show what). The fields below are then unset.
+	LockFree       bool                   `protobuf:"varint,3,opt,name=lock_free,json=lockFree,proto3" json:"lock_free,omitempty"`
+	State          TaskState              `protobuf:"varint,4,opt,name=state,proto3,enum=flit.v1.TaskState" json:"state,omitempty"`
+	TurnRunning    bool                   `protobuf:"varint,5,opt,name=turn_running,json=turnRunning,proto3" json:"turn_running,omitempty"`
+	LastSeq        int64                  `protobuf:"varint,6,opt,name=last_seq,json=lastSeq,proto3" json:"last_seq,omitempty"`
+	LastEventTime  *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=last_event_time,json=lastEventTime,proto3" json:"last_event_time,omitempty"`
+	QueuedMessages int32                  `protobuf:"varint,8,opt,name=queued_messages,json=queuedMessages,proto3" json:"queued_messages,omitempty"`
+	// Prompts waiting for the user.
+	PendingPrompts int32 `protobuf:"varint,9,opt,name=pending_prompts,json=pendingPrompts,proto3" json:"pending_prompts,omitempty"`
+	// The model call in flight, if any.
+	Call *ModelCallDebug `protobuf:"bytes,10,opt,name=call,proto3" json:"call,omitempty"`
+	// The tool the turn is running, if any.
+	Tool *ToolDebug `protobuf:"bytes,11,opt,name=tool,proto3" json:"tool,omitempty"`
+	// Model calls of subagents (the agent tool) in flight.
+	SubagentCalls []*ModelCallDebug `protobuf:"bytes,12,rep,name=subagent_calls,json=subagentCalls,proto3" json:"subagent_calls,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SessionDebug) Reset() {
+	*x = SessionDebug{}
+	mi := &file_flit_v1_system_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SessionDebug) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SessionDebug) ProtoMessage() {}
+
+func (x *SessionDebug) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_system_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SessionDebug.ProtoReflect.Descriptor instead.
+func (*SessionDebug) Descriptor() ([]byte, []int) {
+	return file_flit_v1_system_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *SessionDebug) GetSessionId() string {
+	if x != nil {
+		return x.SessionId
+	}
+	return ""
+}
+
+func (x *SessionDebug) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *SessionDebug) GetLockFree() bool {
+	if x != nil {
+		return x.LockFree
+	}
+	return false
+}
+
+func (x *SessionDebug) GetState() TaskState {
+	if x != nil {
+		return x.State
+	}
+	return TaskState_TASK_STATE_UNSPECIFIED
+}
+
+func (x *SessionDebug) GetTurnRunning() bool {
+	if x != nil {
+		return x.TurnRunning
+	}
+	return false
+}
+
+func (x *SessionDebug) GetLastSeq() int64 {
+	if x != nil {
+		return x.LastSeq
+	}
+	return 0
+}
+
+func (x *SessionDebug) GetLastEventTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LastEventTime
+	}
+	return nil
+}
+
+func (x *SessionDebug) GetQueuedMessages() int32 {
+	if x != nil {
+		return x.QueuedMessages
+	}
+	return 0
+}
+
+func (x *SessionDebug) GetPendingPrompts() int32 {
+	if x != nil {
+		return x.PendingPrompts
+	}
+	return 0
+}
+
+func (x *SessionDebug) GetCall() *ModelCallDebug {
+	if x != nil {
+		return x.Call
+	}
+	return nil
+}
+
+func (x *SessionDebug) GetTool() *ToolDebug {
+	if x != nil {
+		return x.Tool
+	}
+	return nil
+}
+
+func (x *SessionDebug) GetSubagentCalls() []*ModelCallDebug {
+	if x != nil {
+		return x.SubagentCalls
+	}
+	return nil
+}
+
+// ToolDebug is a tool run in progress.
+type ToolDebug struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ToolCallId    string                 `protobuf:"bytes,1,opt,name=tool_call_id,json=toolCallId,proto3" json:"tool_call_id,omitempty"`
+	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	StartTime     *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ToolDebug) Reset() {
+	*x = ToolDebug{}
+	mi := &file_flit_v1_system_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ToolDebug) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ToolDebug) ProtoMessage() {}
+
+func (x *ToolDebug) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_system_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ToolDebug.ProtoReflect.Descriptor instead.
+func (*ToolDebug) Descriptor() ([]byte, []int) {
+	return file_flit_v1_system_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *ToolDebug) GetToolCallId() string {
+	if x != nil {
+		return x.ToolCallId
+	}
+	return ""
+}
+
+func (x *ToolDebug) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ToolDebug) GetStartTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.StartTime
+	}
+	return nil
+}
+
+// ModelCallDebug is a model call in flight.
+type ModelCallDebug struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	MessageId string                 `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	Provider  string                 `protobuf:"bytes,2,opt,name=provider,proto3" json:"provider,omitempty"`
+	Model     string                 `protobuf:"bytes,3,opt,name=model,proto3" json:"model,omitempty"`
+	// Waiting for flit's concurrency limit (not sent yet).
+	Queued bool `protobuf:"varint,4,opt,name=queued,proto3" json:"queued,omitempty"`
+	// Where the call is: "connecting", "waiting_for_first_byte",
+	// "processing_prompt", "waiting_for_first_token" or "streaming";
+	// "" while queued.
+	Phase    string                 `protobuf:"bytes,5,opt,name=phase,proto3" json:"phase,omitempty"`
+	SentTime *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=sent_time,json=sentTime,proto3" json:"sent_time,omitempty"`
+	// Since the last sign of life (bytes, prompt progress), and the
+	// watchdog's limit for the current phase (0: off).
+	IdleMs          int64 `protobuf:"varint,7,opt,name=idle_ms,json=idleMs,proto3" json:"idle_ms,omitempty"`
+	WatchdogMs      int64 `protobuf:"varint,8,opt,name=watchdog_ms,json=watchdogMs,proto3" json:"watchdog_ms,omitempty"`
+	Bytes           int64 `protobuf:"varint,9,opt,name=bytes,proto3" json:"bytes,omitempty"`
+	StreamedTokens  int64 `protobuf:"varint,10,opt,name=streamed_tokens,json=streamedTokens,proto3" json:"streamed_tokens,omitempty"`
+	PromptProcessed int64 `protobuf:"varint,11,opt,name=prompt_processed,json=promptProcessed,proto3" json:"prompt_processed,omitempty"`
+	PromptTotal     int64 `protobuf:"varint,12,opt,name=prompt_total,json=promptTotal,proto3" json:"prompt_total,omitempty"`
+	// The completion id, once the server named it.
+	CompletionId  string `protobuf:"bytes,13,opt,name=completion_id,json=completionId,proto3" json:"completion_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ModelCallDebug) Reset() {
+	*x = ModelCallDebug{}
+	mi := &file_flit_v1_system_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ModelCallDebug) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ModelCallDebug) ProtoMessage() {}
+
+func (x *ModelCallDebug) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_system_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ModelCallDebug.ProtoReflect.Descriptor instead.
+func (*ModelCallDebug) Descriptor() ([]byte, []int) {
+	return file_flit_v1_system_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *ModelCallDebug) GetMessageId() string {
+	if x != nil {
+		return x.MessageId
+	}
+	return ""
+}
+
+func (x *ModelCallDebug) GetProvider() string {
+	if x != nil {
+		return x.Provider
+	}
+	return ""
+}
+
+func (x *ModelCallDebug) GetModel() string {
+	if x != nil {
+		return x.Model
+	}
+	return ""
+}
+
+func (x *ModelCallDebug) GetQueued() bool {
+	if x != nil {
+		return x.Queued
+	}
+	return false
+}
+
+func (x *ModelCallDebug) GetPhase() string {
+	if x != nil {
+		return x.Phase
+	}
+	return ""
+}
+
+func (x *ModelCallDebug) GetSentTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.SentTime
+	}
+	return nil
+}
+
+func (x *ModelCallDebug) GetIdleMs() int64 {
+	if x != nil {
+		return x.IdleMs
+	}
+	return 0
+}
+
+func (x *ModelCallDebug) GetWatchdogMs() int64 {
+	if x != nil {
+		return x.WatchdogMs
+	}
+	return 0
+}
+
+func (x *ModelCallDebug) GetBytes() int64 {
+	if x != nil {
+		return x.Bytes
+	}
+	return 0
+}
+
+func (x *ModelCallDebug) GetStreamedTokens() int64 {
+	if x != nil {
+		return x.StreamedTokens
+	}
+	return 0
+}
+
+func (x *ModelCallDebug) GetPromptProcessed() int64 {
+	if x != nil {
+		return x.PromptProcessed
+	}
+	return 0
+}
+
+func (x *ModelCallDebug) GetPromptTotal() int64 {
+	if x != nil {
+		return x.PromptTotal
+	}
+	return 0
+}
+
+func (x *ModelCallDebug) GetCompletionId() string {
+	if x != nil {
+		return x.CompletionId
+	}
+	return ""
+}
+
+// ModelLimitDebug is one provider and model's concurrency slots.
+type ModelLimitDebug struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Provider      string                 `protobuf:"bytes,1,opt,name=provider,proto3" json:"provider,omitempty"`
+	Model         string                 `protobuf:"bytes,2,opt,name=model,proto3" json:"model,omitempty"`
+	Limit         int32                  `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
+	InUse         int32                  `protobuf:"varint,4,opt,name=in_use,json=inUse,proto3" json:"in_use,omitempty"`
+	Waiting       int32                  `protobuf:"varint,5,opt,name=waiting,proto3" json:"waiting,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ModelLimitDebug) Reset() {
+	*x = ModelLimitDebug{}
+	mi := &file_flit_v1_system_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ModelLimitDebug) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ModelLimitDebug) ProtoMessage() {}
+
+func (x *ModelLimitDebug) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_system_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ModelLimitDebug.ProtoReflect.Descriptor instead.
+func (*ModelLimitDebug) Descriptor() ([]byte, []int) {
+	return file_flit_v1_system_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *ModelLimitDebug) GetProvider() string {
+	if x != nil {
+		return x.Provider
+	}
+	return ""
+}
+
+func (x *ModelLimitDebug) GetModel() string {
+	if x != nil {
+		return x.Model
+	}
+	return ""
+}
+
+func (x *ModelLimitDebug) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *ModelLimitDebug) GetInUse() int32 {
+	if x != nil {
+		return x.InUse
+	}
+	return 0
+}
+
+func (x *ModelLimitDebug) GetWaiting() int32 {
+	if x != nil {
+		return x.Waiting
+	}
+	return 0
+}
+
 var File_flit_v1_system_proto protoreflect.FileDescriptor
 
 const file_flit_v1_system_proto_rawDesc = "" +
 	"\n" +
-	"\x14flit/v1/system.proto\x12\aflit.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x10\n" +
+	"\x14flit/v1/system.proto\x12\aflit.v1\x1a\x15flit/v1/session.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x10\n" +
 	"\x0eVersionRequest\"\xc6\x01\n" +
 	"\x0fVersionResponse\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\tR\aversion\x12\x16\n" +
@@ -792,14 +1345,71 @@ const file_flit_v1_system_proto_rawDesc = "" +
 	"\adevices\x18\x01 \x03(\v2\x0f.flit.v1.DeviceR\adevices\"2\n" +
 	"\x13RevokeDeviceRequest\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\"\x16\n" +
-	"\x14RevokeDeviceResponse2\xbf\x03\n" +
+	"\x14RevokeDeviceResponse\"2\n" +
+	"\x10DebugDumpRequest\x12\x1e\n" +
+	"\n" +
+	"goroutines\x18\x01 \x01(\bR\n" +
+	"goroutines\"\xf6\x01\n" +
+	"\x11DebugDumpResponse\x12.\n" +
+	"\x04time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\x04time\x121\n" +
+	"\bsessions\x18\x02 \x03(\v2\x15.flit.v1.SessionDebugR\bsessions\x120\n" +
+	"\x06limits\x18\x03 \x03(\v2\x18.flit.v1.ModelLimitDebugR\x06limits\x12\x1e\n" +
+	"\n" +
+	"goroutines\x18\x04 \x01(\tR\n" +
+	"goroutines\x12,\n" +
+	"\x12sessions_lock_free\x18\x05 \x01(\bR\x10sessionsLockFree\"\xf3\x03\n" +
+	"\fSessionDebug\x12\x1d\n" +
+	"\n" +
+	"session_id\x18\x01 \x01(\tR\tsessionId\x12\x14\n" +
+	"\x05title\x18\x02 \x01(\tR\x05title\x12\x1b\n" +
+	"\tlock_free\x18\x03 \x01(\bR\blockFree\x12(\n" +
+	"\x05state\x18\x04 \x01(\x0e2\x12.flit.v1.TaskStateR\x05state\x12!\n" +
+	"\fturn_running\x18\x05 \x01(\bR\vturnRunning\x12\x19\n" +
+	"\blast_seq\x18\x06 \x01(\x03R\alastSeq\x12B\n" +
+	"\x0flast_event_time\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\rlastEventTime\x12'\n" +
+	"\x0fqueued_messages\x18\b \x01(\x05R\x0equeuedMessages\x12'\n" +
+	"\x0fpending_prompts\x18\t \x01(\x05R\x0ependingPrompts\x12+\n" +
+	"\x04call\x18\n" +
+	" \x01(\v2\x17.flit.v1.ModelCallDebugR\x04call\x12&\n" +
+	"\x04tool\x18\v \x01(\v2\x12.flit.v1.ToolDebugR\x04tool\x12>\n" +
+	"\x0esubagent_calls\x18\f \x03(\v2\x17.flit.v1.ModelCallDebugR\rsubagentCalls\"|\n" +
+	"\tToolDebug\x12 \n" +
+	"\ftool_call_id\x18\x01 \x01(\tR\n" +
+	"toolCallId\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x129\n" +
+	"\n" +
+	"start_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\"\xb4\x03\n" +
+	"\x0eModelCallDebug\x12\x1d\n" +
+	"\n" +
+	"message_id\x18\x01 \x01(\tR\tmessageId\x12\x1a\n" +
+	"\bprovider\x18\x02 \x01(\tR\bprovider\x12\x14\n" +
+	"\x05model\x18\x03 \x01(\tR\x05model\x12\x16\n" +
+	"\x06queued\x18\x04 \x01(\bR\x06queued\x12\x14\n" +
+	"\x05phase\x18\x05 \x01(\tR\x05phase\x127\n" +
+	"\tsent_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\bsentTime\x12\x17\n" +
+	"\aidle_ms\x18\a \x01(\x03R\x06idleMs\x12\x1f\n" +
+	"\vwatchdog_ms\x18\b \x01(\x03R\n" +
+	"watchdogMs\x12\x14\n" +
+	"\x05bytes\x18\t \x01(\x03R\x05bytes\x12'\n" +
+	"\x0fstreamed_tokens\x18\n" +
+	" \x01(\x03R\x0estreamedTokens\x12)\n" +
+	"\x10prompt_processed\x18\v \x01(\x03R\x0fpromptProcessed\x12!\n" +
+	"\fprompt_total\x18\f \x01(\x03R\vpromptTotal\x12#\n" +
+	"\rcompletion_id\x18\r \x01(\tR\fcompletionId\"\x8a\x01\n" +
+	"\x0fModelLimitDebug\x12\x1a\n" +
+	"\bprovider\x18\x01 \x01(\tR\bprovider\x12\x14\n" +
+	"\x05model\x18\x02 \x01(\tR\x05model\x12\x14\n" +
+	"\x05limit\x18\x03 \x01(\x05R\x05limit\x12\x15\n" +
+	"\x06in_use\x18\x04 \x01(\x05R\x05inUse\x12\x18\n" +
+	"\awaiting\x18\x05 \x01(\x05R\awaiting2\x88\x04\n" +
 	"\rSystemService\x12A\n" +
 	"\aVersion\x12\x17.flit.v1.VersionRequest\x1a\x18.flit.v1.VersionResponse\"\x03\x90\x02\x01\x12>\n" +
 	"\x06Health\x12\x16.flit.v1.HealthRequest\x1a\x17.flit.v1.HealthResponse\"\x03\x90\x02\x01\x12Z\n" +
 	"\x11CreatePairingCode\x12!.flit.v1.CreatePairingCodeRequest\x1a\".flit.v1.CreatePairingCodeResponse\x123\n" +
 	"\x04Pair\x12\x14.flit.v1.PairRequest\x1a\x15.flit.v1.PairResponse\x12M\n" +
 	"\vListDevices\x12\x1b.flit.v1.ListDevicesRequest\x1a\x1c.flit.v1.ListDevicesResponse\"\x03\x90\x02\x01\x12K\n" +
-	"\fRevokeDevice\x12\x1c.flit.v1.RevokeDeviceRequest\x1a\x1d.flit.v1.RevokeDeviceResponseB0Z.github.com/iggy/flit/server/gen/flit/v1;flitv1b\x06proto3"
+	"\fRevokeDevice\x12\x1c.flit.v1.RevokeDeviceRequest\x1a\x1d.flit.v1.RevokeDeviceResponse\x12G\n" +
+	"\tDebugDump\x12\x19.flit.v1.DebugDumpRequest\x1a\x1a.flit.v1.DebugDumpResponse\"\x03\x90\x02\x01B0Z.github.com/iggy/flit/server/gen/flit/v1;flitv1b\x06proto3"
 
 var (
 	file_flit_v1_system_proto_rawDescOnce sync.Once
@@ -814,7 +1424,7 @@ func file_flit_v1_system_proto_rawDescGZIP() []byte {
 }
 
 var file_flit_v1_system_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_flit_v1_system_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_flit_v1_system_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_flit_v1_system_proto_goTypes = []any{
 	(HealthResponse_Status)(0),        // 0: flit.v1.HealthResponse.Status
 	(*VersionRequest)(nil),            // 1: flit.v1.VersionRequest
@@ -830,33 +1440,52 @@ var file_flit_v1_system_proto_goTypes = []any{
 	(*ListDevicesResponse)(nil),       // 11: flit.v1.ListDevicesResponse
 	(*RevokeDeviceRequest)(nil),       // 12: flit.v1.RevokeDeviceRequest
 	(*RevokeDeviceResponse)(nil),      // 13: flit.v1.RevokeDeviceResponse
-	(*timestamppb.Timestamp)(nil),     // 14: google.protobuf.Timestamp
+	(*DebugDumpRequest)(nil),          // 14: flit.v1.DebugDumpRequest
+	(*DebugDumpResponse)(nil),         // 15: flit.v1.DebugDumpResponse
+	(*SessionDebug)(nil),              // 16: flit.v1.SessionDebug
+	(*ToolDebug)(nil),                 // 17: flit.v1.ToolDebug
+	(*ModelCallDebug)(nil),            // 18: flit.v1.ModelCallDebug
+	(*ModelLimitDebug)(nil),           // 19: flit.v1.ModelLimitDebug
+	(*timestamppb.Timestamp)(nil),     // 20: google.protobuf.Timestamp
+	(TaskState)(0),                    // 21: flit.v1.TaskState
 }
 var file_flit_v1_system_proto_depIdxs = []int32{
 	0,  // 0: flit.v1.HealthResponse.status:type_name -> flit.v1.HealthResponse.Status
-	14, // 1: flit.v1.CreatePairingCodeResponse.expire_time:type_name -> google.protobuf.Timestamp
+	20, // 1: flit.v1.CreatePairingCodeResponse.expire_time:type_name -> google.protobuf.Timestamp
 	9,  // 2: flit.v1.PairResponse.device:type_name -> flit.v1.Device
-	14, // 3: flit.v1.Device.create_time:type_name -> google.protobuf.Timestamp
-	14, // 4: flit.v1.Device.last_seen_time:type_name -> google.protobuf.Timestamp
-	14, // 5: flit.v1.Device.revoke_time:type_name -> google.protobuf.Timestamp
+	20, // 3: flit.v1.Device.create_time:type_name -> google.protobuf.Timestamp
+	20, // 4: flit.v1.Device.last_seen_time:type_name -> google.protobuf.Timestamp
+	20, // 5: flit.v1.Device.revoke_time:type_name -> google.protobuf.Timestamp
 	9,  // 6: flit.v1.ListDevicesResponse.devices:type_name -> flit.v1.Device
-	1,  // 7: flit.v1.SystemService.Version:input_type -> flit.v1.VersionRequest
-	3,  // 8: flit.v1.SystemService.Health:input_type -> flit.v1.HealthRequest
-	5,  // 9: flit.v1.SystemService.CreatePairingCode:input_type -> flit.v1.CreatePairingCodeRequest
-	7,  // 10: flit.v1.SystemService.Pair:input_type -> flit.v1.PairRequest
-	10, // 11: flit.v1.SystemService.ListDevices:input_type -> flit.v1.ListDevicesRequest
-	12, // 12: flit.v1.SystemService.RevokeDevice:input_type -> flit.v1.RevokeDeviceRequest
-	2,  // 13: flit.v1.SystemService.Version:output_type -> flit.v1.VersionResponse
-	4,  // 14: flit.v1.SystemService.Health:output_type -> flit.v1.HealthResponse
-	6,  // 15: flit.v1.SystemService.CreatePairingCode:output_type -> flit.v1.CreatePairingCodeResponse
-	8,  // 16: flit.v1.SystemService.Pair:output_type -> flit.v1.PairResponse
-	11, // 17: flit.v1.SystemService.ListDevices:output_type -> flit.v1.ListDevicesResponse
-	13, // 18: flit.v1.SystemService.RevokeDevice:output_type -> flit.v1.RevokeDeviceResponse
-	13, // [13:19] is the sub-list for method output_type
-	7,  // [7:13] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	20, // 7: flit.v1.DebugDumpResponse.time:type_name -> google.protobuf.Timestamp
+	16, // 8: flit.v1.DebugDumpResponse.sessions:type_name -> flit.v1.SessionDebug
+	19, // 9: flit.v1.DebugDumpResponse.limits:type_name -> flit.v1.ModelLimitDebug
+	21, // 10: flit.v1.SessionDebug.state:type_name -> flit.v1.TaskState
+	20, // 11: flit.v1.SessionDebug.last_event_time:type_name -> google.protobuf.Timestamp
+	18, // 12: flit.v1.SessionDebug.call:type_name -> flit.v1.ModelCallDebug
+	17, // 13: flit.v1.SessionDebug.tool:type_name -> flit.v1.ToolDebug
+	18, // 14: flit.v1.SessionDebug.subagent_calls:type_name -> flit.v1.ModelCallDebug
+	20, // 15: flit.v1.ToolDebug.start_time:type_name -> google.protobuf.Timestamp
+	20, // 16: flit.v1.ModelCallDebug.sent_time:type_name -> google.protobuf.Timestamp
+	1,  // 17: flit.v1.SystemService.Version:input_type -> flit.v1.VersionRequest
+	3,  // 18: flit.v1.SystemService.Health:input_type -> flit.v1.HealthRequest
+	5,  // 19: flit.v1.SystemService.CreatePairingCode:input_type -> flit.v1.CreatePairingCodeRequest
+	7,  // 20: flit.v1.SystemService.Pair:input_type -> flit.v1.PairRequest
+	10, // 21: flit.v1.SystemService.ListDevices:input_type -> flit.v1.ListDevicesRequest
+	12, // 22: flit.v1.SystemService.RevokeDevice:input_type -> flit.v1.RevokeDeviceRequest
+	14, // 23: flit.v1.SystemService.DebugDump:input_type -> flit.v1.DebugDumpRequest
+	2,  // 24: flit.v1.SystemService.Version:output_type -> flit.v1.VersionResponse
+	4,  // 25: flit.v1.SystemService.Health:output_type -> flit.v1.HealthResponse
+	6,  // 26: flit.v1.SystemService.CreatePairingCode:output_type -> flit.v1.CreatePairingCodeResponse
+	8,  // 27: flit.v1.SystemService.Pair:output_type -> flit.v1.PairResponse
+	11, // 28: flit.v1.SystemService.ListDevices:output_type -> flit.v1.ListDevicesResponse
+	13, // 29: flit.v1.SystemService.RevokeDevice:output_type -> flit.v1.RevokeDeviceResponse
+	15, // 30: flit.v1.SystemService.DebugDump:output_type -> flit.v1.DebugDumpResponse
+	24, // [24:31] is the sub-list for method output_type
+	17, // [17:24] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_flit_v1_system_proto_init() }
@@ -864,13 +1493,14 @@ func file_flit_v1_system_proto_init() {
 	if File_flit_v1_system_proto != nil {
 		return
 	}
+	file_flit_v1_session_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_flit_v1_system_proto_rawDesc), len(file_flit_v1_system_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   13,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

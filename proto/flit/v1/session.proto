@@ -901,6 +901,62 @@ message ModelCallEnded {
   bool will_retry = 18;
   // Prompt tokens llama.cpp reused from its cache.
   int64 cached_tokens = 19;
+  // Output chunks (text, reasoning or tool call deltas) that arrived; on
+  // llama.cpp about one per token (more tokens per chunk with speculative
+  // decoding).
+  int64 streamed_tokens = 20;
+  // The last prompt progress llama.cpp reported (return_progress), 0 if
+  // none: how far it had got reading the prompt.
+  int64 prompt_processed = 21;
+  int64 prompt_total = 22;
+  // For a llama.cpp call that stalled, failed or was retried: what the
+  // server said it was doing right after, which tells a model or
+  // llama.cpp hang from a reply that stopped reaching flit. Unset
+  // otherwise.
+  ModelServerState server = 23;
+}
+
+// ModelServerState is a llama.cpp server's view of a model, sampled when a
+// call to it stalled, failed or was retried.
+message ModelServerState {
+  // The model's state: "loaded", "loading", "sleeping", "unloaded"
+  // (router), or "" when the server doesn't say.
+  string model_state = 1;
+  // The model's slots (GET /slots), from the second sample if there were
+  // two.
+  repeated LlamaSlot slots = 2;
+  // The slot the call was pinned to (id_slot), if it was.
+  optional int32 pinned_slot = 3;
+  // Why the model's state couldn't be read, if it couldn't: the server
+  // (or router) is unreachable or failing.
+  string error = 4;
+  // When a slot was busy the slots are sampled twice, this far apart, and
+  // each LlamaSlot says how far it got in between; 0 for one sample.
+  int64 sample_ms = 5;
+  // Why the slots couldn't be read, if they couldn't. llama.cpp answers
+  // GET /slots between batches, so a timeout here while the model state
+  // was readable means its main loop is stuck in (or slow at) a batch.
+  string slots_error = 6;
+}
+
+// LlamaSlot is one llama.cpp slot as GET /slots reports it.
+message LlamaSlot {
+  int32 id = 1;
+  bool is_processing = 2;
+  // The server's task id of the request in the slot (or the last one).
+  int64 id_task = 3;
+  int64 n_ctx = 4;
+  // The request's prompt: tokens in all, read so far, and from the cache.
+  int64 prompt_tokens = 5;
+  int64 prompt_processed = 6;
+  int64 prompt_cached = 7;
+  // Tokens generated so far.
+  int64 decoded = 8;
+  // Between the two samples (ModelServerState.sample_ms) of the same
+  // task: prompt tokens read and tokens generated. Both 0 while
+  // processing means llama.cpp itself made no progress.
+  int64 prompt_processed_delta = 9;
+  int64 decoded_delta = 10;
 }
 
 // MessageQueued is a user message sent while a turn was running. It waits

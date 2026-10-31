@@ -2,10 +2,12 @@
 package system
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"net"
 	"net/url"
+	"runtime/pprof"
 	"strings"
 
 	"connectrpc.com/connect/v2"
@@ -25,6 +27,8 @@ type Service struct {
 	Devices *devices.Registry
 	// Config returns the current config (for the server URL).
 	Config func() config.Config
+	// Debug, if set, reports the sessions' live state for DebugDump.
+	Debug func() *flitv1.DebugDumpResponse
 }
 
 var _ flitv1connect.SystemServiceHandler = (*Service)(nil)
@@ -34,6 +38,7 @@ var AdminOnly = []string{
 	flitv1connect.SystemServiceCreatePairingCodeProcedure,
 	flitv1connect.SystemServiceListDevicesProcedure,
 	flitv1connect.SystemServiceRevokeDeviceProcedure,
+	flitv1connect.SystemServiceDebugDumpProcedure,
 }
 
 // Public lists the procedures that need no token.
@@ -120,6 +125,24 @@ func (s *Service) RevokeDevice(ctx context.Context, req *flitv1.RevokeDeviceRequ
 		return nil, connect.NewError(connect.CodeInternal, err.Error())
 	}
 	return &flitv1.RevokeDeviceResponse{}, nil
+}
+
+// DebugDump implements flitv1connect.SystemServiceHandler. The stacks
+// are taken first, so they show the server as it was before DebugDump
+// waited on any lock.
+func (s *Service) DebugDump(_ context.Context, req *flitv1.DebugDumpRequest) (*flitv1.DebugDumpResponse, error) {
+	var stacks bytes.Buffer
+	if req.Goroutines {
+		if err := pprof.Lookup("goroutine").WriteTo(&stacks, 2); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err.Error())
+		}
+	}
+	res := &flitv1.DebugDumpResponse{Time: timestamppb.Now()}
+	if s.Debug != nil {
+		res = s.Debug()
+	}
+	res.Goroutines = stacks.String()
+	return res, nil
 }
 
 func deviceProto(d store.Device) *flitv1.Device {

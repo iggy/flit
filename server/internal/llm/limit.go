@@ -2,6 +2,7 @@ package llm
 
 import (
 	"context"
+	"sort"
 	"sync"
 )
 
@@ -110,6 +111,33 @@ func (l *Limiter) InUse(provider, model string) (inUse, waiting int) {
 		return g.inUse, len(g.waiting)
 	}
 	return 0, 0
+}
+
+// LimitState is one provider and model's slots in use and calls waiting.
+type LimitState struct {
+	Provider, Model string
+	InUse, Waiting  int
+}
+
+// Snapshot reports every provider and model with calls in flight or
+// waiting.
+func (l *Limiter) Snapshot() []LimitState {
+	if l == nil {
+		return nil
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	out := make([]LimitState, 0, len(l.gates))
+	for k, g := range l.gates {
+		out = append(out, LimitState{Provider: k.provider, Model: k.model, InUse: g.inUse, Waiting: len(g.waiting)})
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Provider != out[j].Provider {
+			return out[i].Provider < out[j].Provider
+		}
+		return out[i].Model < out[j].Model
+	})
+	return out
 }
 
 func (l *Limiter) releaser(key limitKey) func() {

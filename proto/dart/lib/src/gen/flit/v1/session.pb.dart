@@ -7023,6 +7023,10 @@ class ModelCallEnded extends $pb.GeneratedMessage {
     $fixnum.Int64? predictedMs,
     $core.bool? willRetry,
     $fixnum.Int64? cachedTokens,
+    $fixnum.Int64? streamedTokens,
+    $fixnum.Int64? promptProcessed,
+    $fixnum.Int64? promptTotal,
+    ModelServerState? server,
   }) {
     final result = ModelCallEnded._();
     if (messageId != null) result.messageId = messageId;
@@ -7044,6 +7048,10 @@ class ModelCallEnded extends $pb.GeneratedMessage {
     if (predictedMs != null) result.predictedMs = predictedMs;
     if (willRetry != null) result.willRetry = willRetry;
     if (cachedTokens != null) result.cachedTokens = cachedTokens;
+    if (streamedTokens != null) result.streamedTokens = streamedTokens;
+    if (promptProcessed != null) result.promptProcessed = promptProcessed;
+    if (promptTotal != null) result.promptTotal = promptTotal;
+    if (server != null) result.server = server;
     return result;
   }
 
@@ -7080,6 +7088,11 @@ class ModelCallEnded extends $pb.GeneratedMessage {
     ..aInt64(17, _omitFieldNames ? '' : 'predictedMs')
     ..aOB(18, _omitFieldNames ? '' : 'willRetry')
     ..aInt64(19, _omitFieldNames ? '' : 'cachedTokens')
+    ..aInt64(20, _omitFieldNames ? '' : 'streamedTokens')
+    ..aInt64(21, _omitFieldNames ? '' : 'promptProcessed')
+    ..aInt64(22, _omitFieldNames ? '' : 'promptTotal')
+    ..aOM<ModelServerState>(23, _omitFieldNames ? '' : 'server',
+        subBuilder: ModelServerState.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -7282,6 +7295,350 @@ class ModelCallEnded extends $pb.GeneratedMessage {
   $core.bool hasCachedTokens() => $_has(18);
   @$pb.TagNumber(19)
   void clearCachedTokens() => $_clearField(19);
+
+  /// Output chunks (text, reasoning or tool call deltas) that arrived; on
+  /// llama.cpp about one per token (more tokens per chunk with speculative
+  /// decoding).
+  @$pb.TagNumber(20)
+  $fixnum.Int64 get streamedTokens => $_getI64(19);
+  @$pb.TagNumber(20)
+  set streamedTokens($fixnum.Int64 value) => $_setInt64(19, value);
+  @$pb.TagNumber(20)
+  $core.bool hasStreamedTokens() => $_has(19);
+  @$pb.TagNumber(20)
+  void clearStreamedTokens() => $_clearField(20);
+
+  /// The last prompt progress llama.cpp reported (return_progress), 0 if
+  /// none: how far it had got reading the prompt.
+  @$pb.TagNumber(21)
+  $fixnum.Int64 get promptProcessed => $_getI64(20);
+  @$pb.TagNumber(21)
+  set promptProcessed($fixnum.Int64 value) => $_setInt64(20, value);
+  @$pb.TagNumber(21)
+  $core.bool hasPromptProcessed() => $_has(20);
+  @$pb.TagNumber(21)
+  void clearPromptProcessed() => $_clearField(21);
+
+  @$pb.TagNumber(22)
+  $fixnum.Int64 get promptTotal => $_getI64(21);
+  @$pb.TagNumber(22)
+  set promptTotal($fixnum.Int64 value) => $_setInt64(21, value);
+  @$pb.TagNumber(22)
+  $core.bool hasPromptTotal() => $_has(21);
+  @$pb.TagNumber(22)
+  void clearPromptTotal() => $_clearField(22);
+
+  /// For a llama.cpp call that stalled, failed or was retried: what the
+  /// server said it was doing right after, which tells a model or
+  /// llama.cpp hang from a reply that stopped reaching flit. Unset
+  /// otherwise.
+  @$pb.TagNumber(23)
+  ModelServerState get server => $_getN(22);
+  @$pb.TagNumber(23)
+  set server(ModelServerState value) => $_setField(23, value);
+  @$pb.TagNumber(23)
+  $core.bool hasServer() => $_has(22);
+  @$pb.TagNumber(23)
+  void clearServer() => $_clearField(23);
+  @$pb.TagNumber(23)
+  ModelServerState ensureServer() => $_ensure(22);
+}
+
+/// ModelServerState is a llama.cpp server's view of a model, sampled when a
+/// call to it stalled, failed or was retried.
+class ModelServerState extends $pb.GeneratedMessage {
+  factory ModelServerState({
+    $core.String? modelState,
+    $core.Iterable<LlamaSlot>? slots,
+    $core.int? pinnedSlot,
+    $core.String? error,
+    $fixnum.Int64? sampleMs,
+    $core.String? slotsError,
+  }) {
+    final result = ModelServerState._();
+    if (modelState != null) result.modelState = modelState;
+    if (slots != null) result.slots.addAll(slots);
+    if (pinnedSlot != null) result.pinnedSlot = pinnedSlot;
+    if (error != null) result.error = error;
+    if (sampleMs != null) result.sampleMs = sampleMs;
+    if (slotsError != null) result.slotsError = slotsError;
+    return result;
+  }
+
+  ModelServerState._();
+
+  factory ModelServerState.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ModelServerState()..mergeFromBuffer(data, registry);
+  factory ModelServerState.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ModelServerState()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ModelServerState',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: ModelServerState.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'modelState')
+    ..pPM<LlamaSlot>(2, _omitFieldNames ? '' : 'slots',
+        subBuilder: LlamaSlot.$_createMessage)
+    ..aI(3, _omitFieldNames ? '' : 'pinnedSlot')
+    ..aOS(4, _omitFieldNames ? '' : 'error')
+    ..aInt64(5, _omitFieldNames ? '' : 'sampleMs')
+    ..aOS(6, _omitFieldNames ? '' : 'slotsError')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ModelServerState clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ModelServerState copyWith(void Function(ModelServerState) updates) =>
+      super.copyWith((message) => updates(message as ModelServerState))
+          as ModelServerState;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use ModelServerState() / ModelServerState.new instead')
+  static ModelServerState create() => ModelServerState._();
+  static $pb.GeneratedMessage $_createMessage() => ModelServerState._();
+  @$core.override
+  ModelServerState createEmptyInstance() => ModelServerState._();
+  @$core.pragma('dart2js:noInline')
+  static ModelServerState getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ModelServerState>(
+          ModelServerState.$_createMessage);
+  static ModelServerState? _defaultInstance;
+
+  /// The model's state: "loaded", "loading", "sleeping", "unloaded"
+  /// (router), or "" when the server doesn't say.
+  @$pb.TagNumber(1)
+  $core.String get modelState => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set modelState($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasModelState() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearModelState() => $_clearField(1);
+
+  /// The model's slots (GET /slots), from the second sample if there were
+  /// two.
+  @$pb.TagNumber(2)
+  $pb.PbList<LlamaSlot> get slots => $_getList(1);
+
+  /// The slot the call was pinned to (id_slot), if it was.
+  @$pb.TagNumber(3)
+  $core.int get pinnedSlot => $_getIZ(2);
+  @$pb.TagNumber(3)
+  set pinnedSlot($core.int value) => $_setSignedInt32(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasPinnedSlot() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearPinnedSlot() => $_clearField(3);
+
+  /// Why the model's state couldn't be read, if it couldn't: the server
+  /// (or router) is unreachable or failing.
+  @$pb.TagNumber(4)
+  $core.String get error => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set error($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasError() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearError() => $_clearField(4);
+
+  /// When a slot was busy the slots are sampled twice, this far apart, and
+  /// each LlamaSlot says how far it got in between; 0 for one sample.
+  @$pb.TagNumber(5)
+  $fixnum.Int64 get sampleMs => $_getI64(4);
+  @$pb.TagNumber(5)
+  set sampleMs($fixnum.Int64 value) => $_setInt64(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasSampleMs() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearSampleMs() => $_clearField(5);
+
+  /// Why the slots couldn't be read, if they couldn't. llama.cpp answers
+  /// GET /slots between batches, so a timeout here while the model state
+  /// was readable means its main loop is stuck in (or slow at) a batch.
+  @$pb.TagNumber(6)
+  $core.String get slotsError => $_getSZ(5);
+  @$pb.TagNumber(6)
+  set slotsError($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasSlotsError() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearSlotsError() => $_clearField(6);
+}
+
+/// LlamaSlot is one llama.cpp slot as GET /slots reports it.
+class LlamaSlot extends $pb.GeneratedMessage {
+  factory LlamaSlot({
+    $core.int? id,
+    $core.bool? isProcessing,
+    $fixnum.Int64? idTask,
+    $fixnum.Int64? nCtx,
+    $fixnum.Int64? promptTokens,
+    $fixnum.Int64? promptProcessed,
+    $fixnum.Int64? promptCached,
+    $fixnum.Int64? decoded,
+    $fixnum.Int64? promptProcessedDelta,
+    $fixnum.Int64? decodedDelta,
+  }) {
+    final result = LlamaSlot._();
+    if (id != null) result.id = id;
+    if (isProcessing != null) result.isProcessing = isProcessing;
+    if (idTask != null) result.idTask = idTask;
+    if (nCtx != null) result.nCtx = nCtx;
+    if (promptTokens != null) result.promptTokens = promptTokens;
+    if (promptProcessed != null) result.promptProcessed = promptProcessed;
+    if (promptCached != null) result.promptCached = promptCached;
+    if (decoded != null) result.decoded = decoded;
+    if (promptProcessedDelta != null)
+      result.promptProcessedDelta = promptProcessedDelta;
+    if (decodedDelta != null) result.decodedDelta = decodedDelta;
+    return result;
+  }
+
+  LlamaSlot._();
+
+  factory LlamaSlot.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      LlamaSlot()..mergeFromBuffer(data, registry);
+  factory LlamaSlot.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      LlamaSlot()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'LlamaSlot',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: LlamaSlot.$_createMessage)
+    ..aI(1, _omitFieldNames ? '' : 'id')
+    ..aOB(2, _omitFieldNames ? '' : 'isProcessing')
+    ..aInt64(3, _omitFieldNames ? '' : 'idTask')
+    ..aInt64(4, _omitFieldNames ? '' : 'nCtx')
+    ..aInt64(5, _omitFieldNames ? '' : 'promptTokens')
+    ..aInt64(6, _omitFieldNames ? '' : 'promptProcessed')
+    ..aInt64(7, _omitFieldNames ? '' : 'promptCached')
+    ..aInt64(8, _omitFieldNames ? '' : 'decoded')
+    ..aInt64(9, _omitFieldNames ? '' : 'promptProcessedDelta')
+    ..aInt64(10, _omitFieldNames ? '' : 'decodedDelta')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  LlamaSlot clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  LlamaSlot copyWith(void Function(LlamaSlot) updates) =>
+      super.copyWith((message) => updates(message as LlamaSlot)) as LlamaSlot;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use LlamaSlot() / LlamaSlot.new instead')
+  static LlamaSlot create() => LlamaSlot._();
+  static $pb.GeneratedMessage $_createMessage() => LlamaSlot._();
+  @$core.override
+  LlamaSlot createEmptyInstance() => LlamaSlot._();
+  @$core.pragma('dart2js:noInline')
+  static LlamaSlot getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<LlamaSlot>(LlamaSlot.$_createMessage);
+  static LlamaSlot? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get id => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set id($core.int value) => $_setSignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.bool get isProcessing => $_getBF(1);
+  @$pb.TagNumber(2)
+  set isProcessing($core.bool value) => $_setBool(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasIsProcessing() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearIsProcessing() => $_clearField(2);
+
+  /// The server's task id of the request in the slot (or the last one).
+  @$pb.TagNumber(3)
+  $fixnum.Int64 get idTask => $_getI64(2);
+  @$pb.TagNumber(3)
+  set idTask($fixnum.Int64 value) => $_setInt64(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasIdTask() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearIdTask() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $fixnum.Int64 get nCtx => $_getI64(3);
+  @$pb.TagNumber(4)
+  set nCtx($fixnum.Int64 value) => $_setInt64(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasNCtx() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearNCtx() => $_clearField(4);
+
+  /// The request's prompt: tokens in all, read so far, and from the cache.
+  @$pb.TagNumber(5)
+  $fixnum.Int64 get promptTokens => $_getI64(4);
+  @$pb.TagNumber(5)
+  set promptTokens($fixnum.Int64 value) => $_setInt64(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasPromptTokens() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearPromptTokens() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $fixnum.Int64 get promptProcessed => $_getI64(5);
+  @$pb.TagNumber(6)
+  set promptProcessed($fixnum.Int64 value) => $_setInt64(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasPromptProcessed() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearPromptProcessed() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $fixnum.Int64 get promptCached => $_getI64(6);
+  @$pb.TagNumber(7)
+  set promptCached($fixnum.Int64 value) => $_setInt64(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasPromptCached() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearPromptCached() => $_clearField(7);
+
+  /// Tokens generated so far.
+  @$pb.TagNumber(8)
+  $fixnum.Int64 get decoded => $_getI64(7);
+  @$pb.TagNumber(8)
+  set decoded($fixnum.Int64 value) => $_setInt64(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasDecoded() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearDecoded() => $_clearField(8);
+
+  /// Between the two samples (ModelServerState.sample_ms) of the same
+  /// task: prompt tokens read and tokens generated. Both 0 while
+  /// processing means llama.cpp itself made no progress.
+  @$pb.TagNumber(9)
+  $fixnum.Int64 get promptProcessedDelta => $_getI64(8);
+  @$pb.TagNumber(9)
+  set promptProcessedDelta($fixnum.Int64 value) => $_setInt64(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasPromptProcessedDelta() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearPromptProcessedDelta() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $fixnum.Int64 get decodedDelta => $_getI64(9);
+  @$pb.TagNumber(10)
+  set decodedDelta($fixnum.Int64 value) => $_setInt64(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasDecodedDelta() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearDecodedDelta() => $_clearField(10);
 }
 
 /// MessageQueued is a user message sent while a turn was running. It waits

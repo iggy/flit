@@ -205,8 +205,9 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 			}
 			var trace *llm.Trace
 			callCtx, cancelCall := context.WithCancelCause(ctx)
-			live := &liveCall{msgID: msgID, provider: provider, model: info.Model, router: router}
+			live := &liveCall{msgID: msgID, provider: provider, model: info.Model, router: router, llama: llama, slot: slot}
 			s.setCall(cancelCall, live)
+			client.OnStall = s.stallProbe(callCtx, live)
 			stopWait := func() {}
 			if llama {
 				stopWait = s.watchWait(callCtx, s.m.llamaClient(provider, router), live, attempt, slot)
@@ -231,6 +232,7 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 					}
 				},
 				Progress: s.progress(msgID, attempt, &appendErr),
+				Live:     func(snap func() llm.Trace) { s.setLive(live, snap) },
 			})
 			stopWait()
 			lastTrace = trace
@@ -249,6 +251,7 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 				e := ended.GetModelCallEnded()
 				e.Outcome, e.Error = flitv1.ModelCallOutcome_MODEL_CALL_OUTCOME_RETRIED, "retried by request"
 			}
+			s.diagnoseEnd(ctx, ended, err, live)
 			if _, err := s.append(ended); err != nil {
 				return end{}, err
 			}
@@ -441,6 +444,7 @@ func callEnded(msgID string, attempt int32, tr *llm.Trace, res *llm.Result, err 
 		MessageId: msgID, Attempt: attempt, Outcome: flitv1.ModelCallOutcome_MODEL_CALL_OUTCOME_OK, WillRetry: retry,
 		ResponseHeadersMs: ms(tr.Headers), FirstByteMs: ms(tr.FirstByte), FirstTokenMs: ms(tr.FirstToken),
 		LastByteMs: ms(tr.LastByte), TotalMs: ms(time.Now()), Bytes: tr.Bytes,
+		StreamedTokens: tr.Tokens, PromptProcessed: tr.PromptProcessed, PromptTotal: tr.PromptTotal,
 	}
 	var stall *llm.StallError
 	switch {
@@ -510,7 +514,9 @@ func (s *session) runTool(ctx context.Context, turnID string, set []tools.Tool, 
 			return res
 		},
 	}
+	s.setTool(&liveTool{id: tc.ID, name: tc.Function.Name, start: time.Now()})
 	res := tools.Run(ctx, env, set, tc.Function.Name, tc.Function.Arguments)
+	s.setTool(nil)
 	if appendErr != nil && !errors.Is(appendErr, errInterrupted) {
 		return res, appendErr
 	}

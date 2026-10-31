@@ -64,6 +64,15 @@ type Server struct {
 	responses []Response
 	requests  []llm.Request
 	auth      []string
+	open      int
+}
+
+// Open is how many chat completion requests are in progress (the client
+// hasn't gone away and the reply hasn't ended).
+func (s *Server) Open() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.open
 }
 
 // New starts a fake server that is closed when the test ends.
@@ -121,7 +130,13 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 	}
 	resp := s.responses[0]
 	s.responses = s.responses[1:]
+	s.open++
 	s.mu.Unlock()
+	defer func() {
+		s.mu.Lock()
+		s.open--
+		s.mu.Unlock()
+	}()
 
 	if resp.Status != 0 && resp.Status != http.StatusOK {
 		w.WriteHeader(resp.Status)
@@ -268,6 +283,19 @@ type Llama struct {
 	Saved int
 	// NCtx is each slot's context size (default 4096).
 	NCtx int
+	// Decoded is each slot's generated token count; every GET /slots adds
+	// DecodePerPoll to the busy ones. PromptTokens is each busy slot's
+	// prompt size (all processed).
+	Decoded       map[int]int64
+	DecodePerPoll int64
+	PromptTokens  int64
+	// SlotsDelay holds GET /slots this long (or until the client gives
+	// up), as a server stuck in a batch does.
+	SlotsDelay time.Duration
+	// OnSlots, if set, is called on every GET /slots (with the Llama's
+	// lock held: it must not call its methods).
+	OnSlots   func()
+	slotPolls int
 	// InputTokens counts a request's prompt for
 	// /v1/chat/completions/input_tokens; nil counts a token per 4 bytes
 	// of the request body.
@@ -281,6 +309,20 @@ func (l *Llama) Calls() []string {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	return append([]string(nil), l.calls...)
+}
+
+// SetSlotsDelay sets SlotsDelay.
+func (l *Llama) SetSlotsDelay(d time.Duration) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.SlotsDelay = d
+}
+
+// SlotPolls is how many GET /slots requests came.
+func (l *Llama) SlotPolls() int {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.slotPolls
 }
 
 // TokenCounts is how many input_tokens requests came (they aren't in
@@ -318,13 +360,36 @@ func (l *Llama) handle(w http.ResponseWriter, r *http.Request) bool {
 			http.Error(w, `{"error":{"code":501,"message":"This server does not support slots endpoint."}}`, http.StatusNotImplemented)
 			return true
 		}
+		l.slotPolls++
+		if l.OnSlots != nil {
+			l.OnSlots()
+		}
+		if d := l.SlotsDelay; d > 0 {
+			// Other endpoints (the router's /models) still answer.
+			l.mu.Unlock()
+			ok := wait(r, d)
+			l.mu.Lock()
+			if !ok {
+				return true
+			}
+		}
+		if l.Decoded == nil {
+			l.Decoded = map[int]int64{}
+		}
 		var out []map[string]any
 		for i := range max(l.NSlots, 1) {
 			nctx := l.NCtx
 			if nctx == 0 {
 				nctx = 4096
 			}
-			out = append(out, map[string]any{"id": i, "n_ctx": nctx, "is_processing": l.Busy[i]})
+			slot := map[string]any{"id": i, "n_ctx": nctx, "is_processing": l.Busy[i], "id_task": 100 + i}
+			if l.Busy[i] {
+				l.Decoded[i] += l.DecodePerPoll
+				slot["n_prompt_tokens"], slot["n_prompt_tokens_processed"] = l.PromptTokens, l.PromptTokens
+			}
+			// Newer servers send a list (one per sequence).
+			slot["next_token"] = []any{map[string]any{"has_next_token": l.Busy[i], "n_decoded": l.Decoded[i]}}
+			out = append(out, slot)
 		}
 		_ = json.NewEncoder(w).Encode(out)
 		return true

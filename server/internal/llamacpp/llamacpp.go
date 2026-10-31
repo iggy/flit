@@ -144,6 +144,41 @@ type Slot struct {
 	ID           int  `json:"id"`
 	NCtx         int  `json:"n_ctx"`
 	IsProcessing bool `json:"is_processing"`
+	// IDTask is the server's id of the request in the slot (or the last
+	// one).
+	IDTask int64 `json:"id_task"`
+	// The request's prompt: tokens in all, read so far, from the cache.
+	NPromptTokens          int64 `json:"n_prompt_tokens"`
+	NPromptTokensProcessed int64 `json:"n_prompt_tokens_processed"`
+	NPromptTokensCache     int64 `json:"n_prompt_tokens_cache"`
+	// NDecoded is how many tokens the request has generated.
+	NDecoded int64 `json:"-"`
+}
+
+// UnmarshalJSON reads next_token, an object in older servers and a list of
+// one (per sequence) in newer ones.
+func (s *Slot) UnmarshalJSON(b []byte) error {
+	type plain Slot
+	var v struct {
+		plain
+		NextToken json.RawMessage `json:"next_token"`
+	}
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	*s = Slot(v.plain)
+	type next struct {
+		NDecoded int64 `json:"n_decoded"`
+	}
+	var one next
+	var list []next
+	switch {
+	case json.Unmarshal(v.NextToken, &list) == nil && len(list) > 0:
+		s.NDecoded = list[0].NDecoded
+	case json.Unmarshal(v.NextToken, &one) == nil:
+		s.NDecoded = one.NDecoded
+	}
+	return nil
 }
 
 // Slots lists the model's slots.

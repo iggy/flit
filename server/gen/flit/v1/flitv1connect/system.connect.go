@@ -37,6 +37,8 @@ const (
 	SystemServiceListDevicesProcedure = "/flit.v1.SystemService/ListDevices"
 	// SystemServiceRevokeDeviceProcedure is the procedure name of the SystemService's RevokeDevice RPC.
 	SystemServiceRevokeDeviceProcedure = "/flit.v1.SystemService/RevokeDevice"
+	// SystemServiceDebugDumpProcedure is the procedure name of the SystemService's DebugDump RPC.
+	SystemServiceDebugDumpProcedure = "/flit.v1.SystemService/DebugDump"
 )
 
 var (
@@ -85,6 +87,14 @@ var (
 			Procedure:  SystemServiceRevokeDeviceProcedure,
 		}
 	})
+	systemServiceDebugDumpSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType:       connect.StreamTypeUnary,
+			Schema:           v1.File_flit_v1_system_proto.Services().ByName("SystemService").Methods().ByName("DebugDump"),
+			Procedure:        SystemServiceDebugDumpProcedure,
+			IdempotencyLevel: connect.IdempotencyNoSideEffects,
+		}
+	})
 )
 
 // SystemServiceClient is a client for the flit.v1.SystemService service.
@@ -104,6 +114,12 @@ type SystemServiceClient interface {
 	ListDevices(context.Context, *v1.ListDevicesRequest) (*v1.ListDevicesResponse, error)
 	// RevokeDevice revokes a device's token immediately. Admin only.
 	RevokeDevice(context.Context, *v1.RevokeDeviceRequest) (*v1.RevokeDeviceResponse, error)
+	// DebugDump reports what the server is doing right now, for working out
+	// where a frozen turn is stuck: each loaded session's turn, lock and
+	// model call in flight, the model concurrency limits in use, and
+	// optionally every goroutine's stack. Admin only. "flit debug dump"
+	// calls this.
+	DebugDump(context.Context, *v1.DebugDumpRequest) (*v1.DebugDumpResponse, error)
 }
 
 // NewSystemServiceClient constructs a client for the flit.v1.SystemService service. Multiple
@@ -129,6 +145,12 @@ type SystemServiceHandler interface {
 	ListDevices(context.Context, *v1.ListDevicesRequest) (*v1.ListDevicesResponse, error)
 	// RevokeDevice revokes a device's token immediately. Admin only.
 	RevokeDevice(context.Context, *v1.RevokeDeviceRequest) (*v1.RevokeDeviceResponse, error)
+	// DebugDump reports what the server is doing right now, for working out
+	// where a frozen turn is stuck: each loaded session's turn, lock and
+	// model call in flight, the model concurrency limits in use, and
+	// optionally every goroutine's stack. Admin only. "flit debug dump"
+	// calls this.
+	DebugDump(context.Context, *v1.DebugDumpRequest) (*v1.DebugDumpResponse, error)
 }
 
 // RegisterSystemServiceHandler registers svc as the flit.v1.SystemService implementation on server.
@@ -141,6 +163,7 @@ func RegisterSystemServiceHandler(server *connect.Server, svc SystemServiceHandl
 		connect.Method{Spec: systemServicePairSpec(), Handler: adapter.pair},
 		connect.Method{Spec: systemServiceListDevicesSpec(), Handler: adapter.listDevices},
 		connect.Method{Spec: systemServiceRevokeDeviceSpec(), Handler: adapter.revokeDevice},
+		connect.Method{Spec: systemServiceDebugDumpSpec(), Handler: adapter.debugDump},
 	)
 }
 
@@ -169,6 +192,10 @@ func (UnimplementedSystemServiceHandler) ListDevices(context.Context, *v1.ListDe
 
 func (UnimplementedSystemServiceHandler) RevokeDevice(context.Context, *v1.RevokeDeviceRequest) (*v1.RevokeDeviceResponse, error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SystemService.RevokeDevice is not implemented")
+}
+
+func (UnimplementedSystemServiceHandler) DebugDump(context.Context, *v1.DebugDumpRequest) (*v1.DebugDumpResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SystemService.DebugDump is not implemented")
 }
 
 type systemServiceClient struct {
@@ -218,6 +245,14 @@ func (c *systemServiceClient) ListDevices(ctx context.Context, req *v1.ListDevic
 func (c *systemServiceClient) RevokeDevice(ctx context.Context, req *v1.RevokeDeviceRequest) (*v1.RevokeDeviceResponse, error) {
 	var res v1.RevokeDeviceResponse
 	if err := c.client.CallUnary(ctx, systemServiceRevokeDeviceSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *systemServiceClient) DebugDump(ctx context.Context, req *v1.DebugDumpRequest) (*v1.DebugDumpResponse, error) {
+	var res v1.DebugDumpResponse
+	if err := c.client.CallUnary(ctx, systemServiceDebugDumpSpec(), req, &res); err != nil {
 		return nil, err
 	}
 	return &res, nil
@@ -291,6 +326,18 @@ func (h systemServiceHandler) revokeDevice(ctx context.Context, _ connect.Spec, 
 		return err
 	}
 	res, err := h.svc.RevokeDevice(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h systemServiceHandler) debugDump(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.DebugDumpRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.DebugDump(ctx, &req)
 	if err != nil {
 		return err
 	}

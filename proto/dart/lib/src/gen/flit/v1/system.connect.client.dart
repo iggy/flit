@@ -125,4 +125,26 @@ extension type SystemServiceClient (connect.Transport _transport) {
       onTrailer: onTrailer,
     );
   }
+
+  /// DebugDump reports what the server is doing right now, for working out
+  /// where a frozen turn is stuck: each loaded session's turn, lock and
+  /// model call in flight, the model concurrency limits in use, and
+  /// optionally every goroutine's stack. Admin only. "flit debug dump"
+  /// calls this.
+  Future<flitv1system.DebugDumpResponse> debugDump(
+    flitv1system.DebugDumpRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.SystemService.debugDump,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
 }

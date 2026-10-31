@@ -2114,6 +2114,17 @@ const ModelCallEnded$json = {
     {'1': 'predicted_ms', '3': 17, '4': 1, '5': 3, '10': 'predictedMs'},
     {'1': 'will_retry', '3': 18, '4': 1, '5': 8, '10': 'willRetry'},
     {'1': 'cached_tokens', '3': 19, '4': 1, '5': 3, '10': 'cachedTokens'},
+    {'1': 'streamed_tokens', '3': 20, '4': 1, '5': 3, '10': 'streamedTokens'},
+    {'1': 'prompt_processed', '3': 21, '4': 1, '5': 3, '10': 'promptProcessed'},
+    {'1': 'prompt_total', '3': 22, '4': 1, '5': 3, '10': 'promptTotal'},
+    {
+      '1': 'server',
+      '3': 23,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.ModelServerState',
+      '10': 'server'
+    },
   ],
 };
 
@@ -2130,7 +2141,82 @@ final $typed_data.Uint8List modelCallEndedDescriptor = $convert.base64Decode(
     'ZW5zEiMKDXByb21wdF90b2tlbnMYDiABKANSDHByb21wdFRva2VucxIbCglwcm9tcHRfbXMYDy'
     'ABKANSCHByb21wdE1zEikKEHByZWRpY3RlZF90b2tlbnMYECABKANSD3ByZWRpY3RlZFRva2Vu'
     'cxIhCgxwcmVkaWN0ZWRfbXMYESABKANSC3ByZWRpY3RlZE1zEh0KCndpbGxfcmV0cnkYEiABKA'
-    'hSCXdpbGxSZXRyeRIjCg1jYWNoZWRfdG9rZW5zGBMgASgDUgxjYWNoZWRUb2tlbnM=');
+    'hSCXdpbGxSZXRyeRIjCg1jYWNoZWRfdG9rZW5zGBMgASgDUgxjYWNoZWRUb2tlbnMSJwoPc3Ry'
+    'ZWFtZWRfdG9rZW5zGBQgASgDUg5zdHJlYW1lZFRva2VucxIpChBwcm9tcHRfcHJvY2Vzc2VkGB'
+    'UgASgDUg9wcm9tcHRQcm9jZXNzZWQSIQoMcHJvbXB0X3RvdGFsGBYgASgDUgtwcm9tcHRUb3Rh'
+    'bBIxCgZzZXJ2ZXIYFyABKAsyGS5mbGl0LnYxLk1vZGVsU2VydmVyU3RhdGVSBnNlcnZlcg==');
+
+@$core.Deprecated('Use modelServerStateDescriptor instead')
+const ModelServerState$json = {
+  '1': 'ModelServerState',
+  '2': [
+    {'1': 'model_state', '3': 1, '4': 1, '5': 9, '10': 'modelState'},
+    {
+      '1': 'slots',
+      '3': 2,
+      '4': 3,
+      '5': 11,
+      '6': '.flit.v1.LlamaSlot',
+      '10': 'slots'
+    },
+    {
+      '1': 'pinned_slot',
+      '3': 3,
+      '4': 1,
+      '5': 5,
+      '9': 0,
+      '10': 'pinnedSlot',
+      '17': true
+    },
+    {'1': 'error', '3': 4, '4': 1, '5': 9, '10': 'error'},
+    {'1': 'sample_ms', '3': 5, '4': 1, '5': 3, '10': 'sampleMs'},
+    {'1': 'slots_error', '3': 6, '4': 1, '5': 9, '10': 'slotsError'},
+  ],
+  '8': [
+    {'1': '_pinned_slot'},
+  ],
+};
+
+/// Descriptor for `ModelServerState`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List modelServerStateDescriptor = $convert.base64Decode(
+    'ChBNb2RlbFNlcnZlclN0YXRlEh8KC21vZGVsX3N0YXRlGAEgASgJUgptb2RlbFN0YXRlEigKBX'
+    'Nsb3RzGAIgAygLMhIuZmxpdC52MS5MbGFtYVNsb3RSBXNsb3RzEiQKC3Bpbm5lZF9zbG90GAMg'
+    'ASgFSABSCnBpbm5lZFNsb3SIAQESFAoFZXJyb3IYBCABKAlSBWVycm9yEhsKCXNhbXBsZV9tcx'
+    'gFIAEoA1IIc2FtcGxlTXMSHwoLc2xvdHNfZXJyb3IYBiABKAlSCnNsb3RzRXJyb3JCDgoMX3Bp'
+    'bm5lZF9zbG90');
+
+@$core.Deprecated('Use llamaSlotDescriptor instead')
+const LlamaSlot$json = {
+  '1': 'LlamaSlot',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 5, '10': 'id'},
+    {'1': 'is_processing', '3': 2, '4': 1, '5': 8, '10': 'isProcessing'},
+    {'1': 'id_task', '3': 3, '4': 1, '5': 3, '10': 'idTask'},
+    {'1': 'n_ctx', '3': 4, '4': 1, '5': 3, '10': 'nCtx'},
+    {'1': 'prompt_tokens', '3': 5, '4': 1, '5': 3, '10': 'promptTokens'},
+    {'1': 'prompt_processed', '3': 6, '4': 1, '5': 3, '10': 'promptProcessed'},
+    {'1': 'prompt_cached', '3': 7, '4': 1, '5': 3, '10': 'promptCached'},
+    {'1': 'decoded', '3': 8, '4': 1, '5': 3, '10': 'decoded'},
+    {
+      '1': 'prompt_processed_delta',
+      '3': 9,
+      '4': 1,
+      '5': 3,
+      '10': 'promptProcessedDelta'
+    },
+    {'1': 'decoded_delta', '3': 10, '4': 1, '5': 3, '10': 'decodedDelta'},
+  ],
+};
+
+/// Descriptor for `LlamaSlot`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List llamaSlotDescriptor = $convert.base64Decode(
+    'CglMbGFtYVNsb3QSDgoCaWQYASABKAVSAmlkEiMKDWlzX3Byb2Nlc3NpbmcYAiABKAhSDGlzUH'
+    'JvY2Vzc2luZxIXCgdpZF90YXNrGAMgASgDUgZpZFRhc2sSEwoFbl9jdHgYBCABKANSBG5DdHgS'
+    'IwoNcHJvbXB0X3Rva2VucxgFIAEoA1IMcHJvbXB0VG9rZW5zEikKEHByb21wdF9wcm9jZXNzZW'
+    'QYBiABKANSD3Byb21wdFByb2Nlc3NlZBIjCg1wcm9tcHRfY2FjaGVkGAcgASgDUgxwcm9tcHRD'
+    'YWNoZWQSGAoHZGVjb2RlZBgIIAEoA1IHZGVjb2RlZBI0ChZwcm9tcHRfcHJvY2Vzc2VkX2RlbH'
+    'RhGAkgASgDUhRwcm9tcHRQcm9jZXNzZWREZWx0YRIjCg1kZWNvZGVkX2RlbHRhGAogASgDUgxk'
+    'ZWNvZGVkRGVsdGE=');
 
 @$core.Deprecated('Use messageQueuedDescriptor instead')
 const MessageQueued$json = {
@@ -2937,6 +3023,8 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.flit.v1.ModelCallStarted': ModelCallStarted$json,
   '.flit.v1.PromptProgress': PromptProgress$json,
   '.flit.v1.ModelCallEnded': ModelCallEnded$json,
+  '.flit.v1.ModelServerState': ModelServerState$json,
+  '.flit.v1.LlamaSlot': LlamaSlot$json,
   '.flit.v1.MessageQueued': MessageQueued$json,
   '.flit.v1.QueuedMessageUpdated': QueuedMessageUpdated$json,
   '.flit.v1.QueuedMessageDelivered': QueuedMessageDelivered$json,

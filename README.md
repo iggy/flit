@@ -362,6 +362,17 @@ it ended) is in the log; `flit debug session ID` prints a session's
 timeline and what never finished, to see whether a stuck turn was waiting
 on the model, cut off mid-reply, or stuck in a tool.
 
+When a llama.cpp call stalls, fails or is retried, flit asks the server
+what it was doing before giving up on the request (model state, and each
+slot sampled twice, 2s apart) and logs it with the call, so the timeline
+says which layer was stuck: llama.cpp still generating while nothing
+reached flit (router, proxy, network), llama.cpp itself making no progress
+(model, GPU), or the model reloaded or gone. `flit debug dump` asks the
+running server (admin token) what it is doing right now: each session's
+model call in flight and its phase, the running tool, the concurrency
+limits in use, whether each session's lock can be taken, and, with
+`--stacks` or when a lock is held, every goroutine's stack.
+
 The API schema lives in [`proto/`](proto/); `buf generate` there produces the
 Go server code and the Dart client. See [`AGENTS.md`](AGENTS.md) for the
 full workflow.

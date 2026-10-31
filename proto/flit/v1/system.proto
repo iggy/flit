@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package flit.v1;
 
+import "flit/v1/session.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/iggy/flit/server/gen/flit/v1;flitv1";
@@ -41,6 +42,15 @@ service SystemService {
 
   // RevokeDevice revokes a device's token immediately. Admin only.
   rpc RevokeDevice(RevokeDeviceRequest) returns (RevokeDeviceResponse);
+
+  // DebugDump reports what the server is doing right now, for working out
+  // where a frozen turn is stuck: each loaded session's turn, lock and
+  // model call in flight, the model concurrency limits in use, and
+  // optionally every goroutine's stack. Admin only. "flit debug dump"
+  // calls this.
+  rpc DebugDump(DebugDumpRequest) returns (DebugDumpResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
 }
 
 message VersionRequest {}
@@ -123,3 +133,85 @@ message RevokeDeviceRequest {
 }
 
 message RevokeDeviceResponse {}
+
+message DebugDumpRequest {
+  // Include every goroutine's stack (can be large).
+  bool goroutines = 1;
+}
+
+message DebugDumpResponse {
+  google.protobuf.Timestamp time = 1;
+  // The sessions loaded in memory (any used since the server started).
+  repeated SessionDebug sessions = 2;
+  // Model calls holding or waiting for a concurrency slot
+  // (providers[].concurrency), per provider and model.
+  repeated ModelLimitDebug limits = 3;
+  // Every goroutine's stack, as Go prints them, if asked for.
+  string goroutines = 4;
+  // Whether the session table itself could be locked; false means the
+  // sessions list is empty because something holds it (see goroutines).
+  bool sessions_lock_free = 5;
+}
+
+// SessionDebug is one session's live state.
+message SessionDebug {
+  string session_id = 1;
+  string title = 2;
+  // False when the session's lock couldn't be taken within a couple of
+  // seconds: something holds it (a stuck event log write, or a deadlock;
+  // the goroutine stacks show what). The fields below are then unset.
+  bool lock_free = 3;
+  TaskState state = 4;
+  bool turn_running = 5;
+  int64 last_seq = 6;
+  google.protobuf.Timestamp last_event_time = 7;
+  int32 queued_messages = 8;
+  // Prompts waiting for the user.
+  int32 pending_prompts = 9;
+  // The model call in flight, if any.
+  ModelCallDebug call = 10;
+  // The tool the turn is running, if any.
+  ToolDebug tool = 11;
+  // Model calls of subagents (the agent tool) in flight.
+  repeated ModelCallDebug subagent_calls = 12;
+}
+
+// ToolDebug is a tool run in progress.
+message ToolDebug {
+  string tool_call_id = 1;
+  string name = 2;
+  google.protobuf.Timestamp start_time = 3;
+}
+
+// ModelCallDebug is a model call in flight.
+message ModelCallDebug {
+  string message_id = 1;
+  string provider = 2;
+  string model = 3;
+  // Waiting for flit's concurrency limit (not sent yet).
+  bool queued = 4;
+  // Where the call is: "connecting", "waiting_for_first_byte",
+  // "processing_prompt", "waiting_for_first_token" or "streaming";
+  // "" while queued.
+  string phase = 5;
+  google.protobuf.Timestamp sent_time = 6;
+  // Since the last sign of life (bytes, prompt progress), and the
+  // watchdog's limit for the current phase (0: off).
+  int64 idle_ms = 7;
+  int64 watchdog_ms = 8;
+  int64 bytes = 9;
+  int64 streamed_tokens = 10;
+  int64 prompt_processed = 11;
+  int64 prompt_total = 12;
+  // The completion id, once the server named it.
+  string completion_id = 13;
+}
+
+// ModelLimitDebug is one provider and model's concurrency slots.
+message ModelLimitDebug {
+  string provider = 1;
+  string model = 2;
+  int32 limit = 3;
+  int32 in_use = 4;
+  int32 waiting = 5;
+}

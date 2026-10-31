@@ -300,10 +300,16 @@ func (r *subagentRun) call(ctx context.Context, cfg config.Config, info store.Se
 			return nil, logErr(err)
 		}
 		var trace *llm.Trace
-		queued, admitted := r.s.limitHandlers(msgID, attempt, task.Provider, task.Model, nil, r.append, &appendErr)
+		prov, _ := cfg.Provider(task.Provider)
+		llama, router := r.s.m.isLlamaCpp(task.Provider)
+		live := &liveCall{msgID: msgID, provider: prov, model: task.Model, router: router, llama: llama}
+		removeLive := r.s.addSubCall(live)
+		client.OnStall = r.s.stallProbe(ctx, live)
+		queued, admitted := r.s.limitHandlers(msgID, attempt, task.Provider, task.Model, live, r.append, &appendErr)
 		res, trace, err = client.StreamTrace(ctx, req, llm.Handler{
 			Queued:   queued,
 			Admitted: admitted,
+			Live:     func(snap func() llm.Trace) { r.s.setLive(live, snap) },
 			Text: func(d string) {
 				text.WriteString(d)
 				if err := r.append(&flitv1.Event{Payload: &flitv1.Event_TextDelta{TextDelta: &flitv1.TextDelta{MessageId: msgID, Text: d}}}); err != nil {
@@ -317,12 +323,15 @@ func (r *subagentRun) call(ctx context.Context, cfg config.Config, info store.Se
 				}
 			},
 		})
+		removeLive()
 		if appendErr != nil {
 			return nil, logErr(appendErr)
 		}
 		retry := err != nil && ctx.Err() == nil && llm.Retryable(err) &&
 			text.Len() == 0 && reasoning.Len() == 0 && int(attempt) <= cfg.Agent.ModelRetries
-		if err := r.append(callEnded(msgID, attempt, trace, res, err, ctx.Err() != nil, retry)); err != nil {
+		ended := callEnded(msgID, attempt, trace, res, err, ctx.Err() != nil, retry)
+		r.s.diagnoseEnd(ctx, ended, err, live)
+		if err := r.append(ended); err != nil {
 			return nil, logErr(err)
 		}
 		if !retry {

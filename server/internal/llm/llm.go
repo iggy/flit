@@ -141,6 +141,11 @@ type Handler struct {
 	// gets its turn (not if the context ends first).
 	Queued   func(limit int)
 	Admitted func()
+	// Live, if set, is called once the call has its concurrency slot,
+	// before the request is sent, with a func returning the call's trace
+	// so far (Phase is where it is now). The func is safe to call from
+	// any goroutine, also after the call ends.
+	Live func(snapshot func() Trace)
 }
 
 // PromptProgress is how far the server has got reading the prompt.
@@ -165,7 +170,18 @@ type Trace struct {
 	Sent, Headers, FirstByte, FirstToken, LastByte time.Time
 	// Bytes is how much of the response body arrived.
 	Bytes int64
-	// Phase is where the call was when it ended.
+	// Tokens is how many chunks carried output (text, reasoning or tool
+	// call deltas): about one per token on llama.cpp.
+	Tokens int64
+	// PromptProcessed and PromptTotal are the last prompt progress the
+	// server reported (llama.cpp with ReturnProgress).
+	PromptProcessed, PromptTotal int64
+	// LastActivity is the last sign of life: headers, bytes or progress.
+	LastActivity time.Time
+	// Watchdog is the watchdog's limit for the current phase (0: off).
+	Watchdog time.Duration
+	// Phase is where the call was when it ended (for a live snapshot,
+	// where it is now).
 	Phase string
 	// Timings are llama.cpp's own, when it sent them.
 	Timings *Timings
@@ -247,6 +263,10 @@ type Client struct {
 	// for one comes before the watchdog starts.
 	Limiter  *Limiter
 	Provider string
+	// OnStall, if set, is called when the watchdog gives up on a call,
+	// with its trace, before the request is cancelled: the server still
+	// has the request while it runs, so it can be asked what it is doing.
+	OnStall func(Trace)
 }
 
 // Stream sends req with streaming enabled, calls h for each delta and
@@ -260,7 +280,7 @@ func (c *Client) Stream(ctx context.Context, req Request, h Handler) (*Result, e
 // non-nil even when err isn't. A call the watchdog stops fails with a
 // *StallError.
 func (c *Client) StreamTrace(ctx context.Context, req Request, h Handler) (*Result, *Trace, error) {
-	w := &watch{first: c.FirstTokenTimeout, stall: c.StallTimeout, trace: &Trace{Phase: PhaseConnecting}}
+	w := &watch{first: c.FirstTokenTimeout, stall: c.StallTimeout, onStall: c.OnStall, trace: &Trace{Phase: PhaseConnecting}}
 	queued := false
 	release, err := c.Limiter.Acquire(ctx, c.Provider, req.Model, func(limit int) {
 		queued = true
@@ -274,6 +294,9 @@ func (c *Client) StreamTrace(ctx context.Context, req Request, h Handler) (*Resu
 	defer release()
 	if queued && h.Admitted != nil {
 		h.Admitted()
+	}
+	if h.Live != nil {
+		h.Live(w.snapshot)
 	}
 	res, err := c.stream(ctx, req, h, w)
 	return res, w.finish(err), err
@@ -338,6 +361,7 @@ func stallCause(ctx context.Context, err error) error {
 // byte of the response; how long it waits depends on the phase.
 type watch struct {
 	first, stall time.Duration
+	onStall      func(Trace)
 
 	mu       sync.Mutex
 	cancel   context.CancelCauseFunc
@@ -345,6 +369,24 @@ type watch struct {
 	progress bool // prompt progress seen
 	timer    *time.Timer
 	last     time.Time // last sign of life
+	started  bool      // the request was sent
+	ended    bool
+	stalled  bool // the watchdog gave up
+}
+
+// snapshot is the trace so far, with the current phase.
+func (w *watch) snapshot() Trace {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	t := *w.trace
+	if w.started {
+		t.LastActivity = w.last
+	}
+	if !w.ended {
+		t.Phase = w.phaseLocked()
+		t.Watchdog = w.limitLocked()
+	}
+	return t
 }
 
 func (w *watch) start(cancel context.CancelCauseFunc) time.Time {
@@ -352,6 +394,7 @@ func (w *watch) start(cancel context.CancelCauseFunc) time.Time {
 	defer w.mu.Unlock()
 	now := time.Now()
 	w.trace.Sent, w.last, w.cancel = now, now, cancel
+	w.started = true
 	w.armLocked()
 	return now
 }
@@ -360,7 +403,7 @@ func (w *watch) start(cancel context.CancelCauseFunc) time.Time {
 func (w *watch) armLocked() {
 	limit := w.limitLocked()
 	switch {
-	case limit <= 0 || w.cancel == nil:
+	case limit <= 0 || w.cancel == nil || w.stalled:
 	case w.timer == nil:
 		w.timer = time.AfterFunc(limit, w.fire)
 	default:
@@ -391,7 +434,22 @@ func (w *watch) fire() {
 		w.timer.Reset(limit - idle)
 		return
 	}
-	w.cancel(&StallError{Phase: w.phaseLocked(), Waited: limit})
+	if w.stalled {
+		return
+	}
+	w.stalled = true
+	stall := &StallError{Phase: w.phaseLocked(), Waited: limit}
+	cancel := w.cancel
+	if w.onStall == nil {
+		cancel(stall)
+		return
+	}
+	t := *w.trace
+	t.Phase, t.LastActivity = stall.Phase, w.last
+	go func() {
+		w.onStall(t)
+		cancel(stall)
+	}()
 }
 
 func (w *watch) phaseLocked() string {
@@ -435,10 +493,16 @@ func (w *watch) token() {
 		if w.trace.FirstToken.IsZero() {
 			w.trace.FirstToken = now
 		}
+		w.trace.Tokens++
 	})
 }
 
-func (w *watch) promptProgress() { w.alive(func(time.Time) { w.progress = true }) }
+func (w *watch) promptProgress(processed, total int64) {
+	w.alive(func(time.Time) {
+		w.progress = true
+		w.trace.PromptProcessed, w.trace.PromptTotal = processed, total
+	})
+}
 
 func (w *watch) timings(t *Timings) {
 	w.mu.Lock()
@@ -454,6 +518,10 @@ func (w *watch) finish(err error) *Trace {
 		w.timer.Stop()
 	}
 	w.cancel = nil // no re-arming after the call
+	w.ended = true
+	if w.started {
+		w.trace.LastActivity = w.last
+	}
 	var stall *StallError
 	switch {
 	case err == nil:
@@ -560,7 +628,7 @@ func readStream(r io.Reader, h Handler, start time.Time, w *watch) (*Result, err
 			w.timings(c.Timings)
 		}
 		if p := c.PromptProgress; p != nil {
-			w.promptProgress()
+			w.promptProgress(p.Processed, p.Total)
 			if h.Progress != nil {
 				h.Progress(PromptProgress{
 					Processed: p.Processed, Total: p.Total, Cached: p.Cache,
