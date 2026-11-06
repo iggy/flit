@@ -321,9 +321,11 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 			return endDone, nil
 		}
 
+		repeats := newRepeatCounter(cr.history)
 		for _, tc := range res.ToolCalls {
+			n := repeats.add(tc.Function.Name, tc.Function.Arguments)
 			if ctx.Err() != nil {
-				if err := s.toolDone(tc.ID, tools.Result{Text: notRun, IsError: true}, cfg.Agent.ToolOutputMaxBytes, cfg.Agent.ToolOutputMaxLines); err != nil {
+				if err := s.toolDone(cfg, tc.ID, tools.Result{Text: notRun, IsError: true}, 0); err != nil {
 					return end{}, err
 				}
 				continue
@@ -333,7 +335,7 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 				return end{}, err
 			}
 			cfg = s.m.cfg()
-			if err := s.toolDone(tc.ID, res, cfg.Agent.ToolOutputMaxBytes, cfg.Agent.ToolOutputMaxLines); err != nil {
+			if err := s.toolDone(cfg, tc.ID, res, n); err != nil {
 				return end{}, err
 			}
 		}
@@ -506,6 +508,8 @@ func (s *session) runTool(ctx context.Context, turnID string, set []tools.Tool, 
 				appendErr = err
 			}
 		},
+		ReadDirs: s.readDirs(),
+		Files:    s.fileTracker(),
 		Subagent: func(ctx context.Context, raw json.RawMessage) tools.Result {
 			res, err := s.runSubagent(ctx, turnID, tc.ID, raw)
 			if err != nil {
@@ -523,8 +527,10 @@ func (s *session) runTool(ctx context.Context, turnID string, set []tools.Tool, 
 	return res, nil
 }
 
-func (s *session) toolDone(id string, res tools.Result, maxBytes, maxLines int) error {
-	text, omitted, cut := tools.Truncate(res.Text, maxBytes, maxLines)
+// toolDone records a tool call's result; repeats is how many times the
+// call has been made (see repeatCounter).
+func (s *session) toolDone(cfg config.Config, id string, res tools.Result, repeats int) error {
+	text, omitted, cut := s.shapeResult(cfg, id, res, repeats)
 	_, err := s.append(&flitv1.Event{Payload: &flitv1.Event_ToolCallDone{ToolCallDone: &flitv1.ToolCallDone{
 		ToolCallId: id, Result: text, IsError: res.IsError, Truncated: cut, OmittedBytes: omitted,
 	}}})

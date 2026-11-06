@@ -11,6 +11,12 @@ import (
 // was cut. Long output usually matters most at the start (what ran) and the
 // end (how it finished). A limit of 0 means no limit.
 func Truncate(s string, maxBytes, maxLines int) (out string, omittedBytes int64, truncated bool) {
+	return TruncateSaved(s, maxBytes, maxLines, "")
+}
+
+// TruncateSaved is Truncate for output whose full text was saved to the
+// file savedPath (none if ""): the note tells the model where it is.
+func TruncateSaved(s string, maxBytes, maxLines int, savedPath string) (out string, omittedBytes int64, truncated bool) {
 	lineCount := strings.Count(s, "\n") + 1
 	if (maxBytes <= 0 || len(s) <= maxBytes) && (maxLines <= 0 || lineCount <= maxLines) {
 		return s, 0, false
@@ -36,6 +42,10 @@ func Truncate(s string, maxBytes, maxLines int) (out string, omittedBytes int64,
 	mid := s[headEnd:tailStart]
 	omittedLines := strings.Count(mid, "\n")
 	note := fmt.Sprintf("\n[... %d bytes, %d lines omitted ...]\n", len(mid), omittedLines)
+	if savedPath != "" {
+		note = fmt.Sprintf("\n[... %d bytes, %d lines omitted; the full output is saved in %s (read it with offset/limit, or grep it) ...]\n",
+			len(mid), omittedLines, savedPath)
+	}
 	return s[:headEnd] + note + s[tailStart:], int64(len(mid)), true
 }
 

@@ -46,6 +46,29 @@ type Env struct {
 	// Subagent runs the agent tool's subagent. Nil inside a subagent, so
 	// subagents can't start subagents.
 	Subagent func(ctx context.Context, args json.RawMessage) Result
+	// ReadDirs are directories outside Dir that read and grep may read
+	// (absolute paths), such as where long tool output was saved.
+	ReadDirs []string
+	// Files, if set, makes write and patch refuse to change an existing
+	// file the read tool hasn't read, or that changed since it did.
+	Files *FileTracker
+}
+
+// resolveRead is resolve for tools that only read: a path in one of
+// env.ReadDirs is allowed too.
+func resolveRead(env *Env, p string) (string, error) {
+	abs, err := resolve(env.Dir, p)
+	if err == nil || !filepath.IsAbs(p) {
+		return abs, err
+	}
+	for _, d := range env.ReadDirs {
+		if c := filepath.Clean(p); within(d, c) {
+			if r, rerr := resolve(d, c); rerr == nil {
+				return r, nil
+			}
+		}
+	}
+	return abs, err
 }
 
 // withDiagnostics adds env.Diagnose's report on p to a successful edit's
@@ -228,9 +251,10 @@ func within(dir, p string) bool {
 	return err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) && !filepath.IsAbs(rel)
 }
 
-// rel shows p relative to dir for output.
+// rel shows p relative to dir for output; paths outside dir (see
+// Env.ReadDirs) stay absolute.
 func rel(dir, p string) string {
-	if r, err := filepath.Rel(dir, p); err == nil {
+	if r, err := filepath.Rel(dir, p); err == nil && within(dir, p) {
 		return filepath.ToSlash(r)
 	}
 	return p

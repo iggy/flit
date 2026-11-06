@@ -479,8 +479,20 @@ type Agent struct {
 	MaxSteps int `yaml:"max_steps"`
 	// Tool output longer than this is cut down to its head and tail before
 	// the model sees it.
+	// The full output is saved under the data dir (sessions/<id>/
+	// tool-output/) and the note says where, so the model can read it.
 	ToolOutputMaxBytes int `yaml:"tool_output_max_bytes"`
 	ToolOutputMaxLines int `yaml:"tool_output_max_lines"`
+	// RepeatCallNudges: when the model makes the same tool call (same
+	// tool, same arguments) for the n-th time since the user's last
+	// message, and n is in this list, a note telling it to change course
+	// is added to the result. The call still runs. Empty turns it off.
+	// Default [3, 5, 8].
+	RepeatCallNudges []int `yaml:"repeat_call_nudges"`
+	// ReadBeforeWrite makes patch, and write over an existing file, refuse
+	// files the agent hasn't read with the read tool in this session (or
+	// its own earlier edits), or that changed since. Default true.
+	ReadBeforeWrite *bool `yaml:"read_before_write"`
 	// The model call watchdog. ModelFirstTokenTimeout is the longest a
 	// call may go quiet before the model starts answering (connecting,
 	// reading the prompt); ModelStallTimeout is the longest once it has
@@ -497,6 +509,9 @@ type Agent struct {
 	// pick the models).
 	Subagents Subagents `yaml:"subagents"`
 }
+
+// ReadBeforeWriteOn reports whether the read-before-write check is on.
+func (a Agent) ReadBeforeWriteOn() bool { return a.ReadBeforeWrite == nil || *a.ReadBeforeWrite }
 
 // Subagents configures the agent tool, which runs a task in a fresh
 // context (read-only "explore", or "build" with the session's tools and
@@ -639,6 +654,8 @@ func Default() Config {
 			MaxSteps:           50,
 			ToolOutputMaxBytes: 32 * 1024,
 			ToolOutputMaxLines: 500,
+			RepeatCallNudges:   []int{3, 5, 8},
+			ReadBeforeWrite:    ptr(true),
 			// A big prompt on local hardware can take minutes to read;
 			// llama.cpp's progress reports keep the shorter stall limit
 			// in force while it does.
@@ -868,6 +885,9 @@ func (c Config) Validate() error {
 	if c.Agent.MaxSteps < 0 || c.Agent.ToolOutputMaxBytes < 0 || c.Agent.ToolOutputMaxLines < 0 ||
 		c.Agent.ModelFirstTokenTimeout < 0 || c.Agent.ModelStallTimeout < 0 {
 		return errors.New("agent: limits must not be negative")
+	}
+	if slices.ContainsFunc(c.Agent.RepeatCallNudges, func(n int) bool { return n < 2 }) {
+		return errors.New("agent.repeat_call_nudges: counts must be 2 or more")
 	}
 	if c.LlamaCpp.KVCacheFiles < 0 || c.LlamaCpp.KVCacheFiles > 64 {
 		return errors.New("llamacpp.kv_cache_files must be 1-64")
@@ -1168,9 +1188,17 @@ agent:
   model_prompt_appends: {}
   # Maximum model calls in one turn.
   max_steps: 50
-  # Longer tool output is cut to its head and tail before the model sees it.
+  # Longer tool output is cut to its head and tail before the model sees it;
+  # the full output is saved under the data dir and the note says where.
   tool_output_max_bytes: 32768
   tool_output_max_lines: 500
+  # When the model makes the same tool call (same arguments) for the n-th
+  # time since the user's last message, and n is listed here, a note asking
+  # it to change course is added to the result. [] turns it off.
+  repeat_call_nudges: [3, 5, 8]
+  # patch, and write over an existing file, refuse files the agent hasn't
+  # read in this session, or that changed since it did.
+  read_before_write: true
   # The model call watchdog stops a call that goes quiet: for
   # model_first_token_timeout before the model starts answering (sending
   # the request, reading the prompt), model_stall_timeout once it has. With

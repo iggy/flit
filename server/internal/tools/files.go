@@ -46,7 +46,7 @@ var readTool = Tool{
 		if err := decode(raw, &a); err != nil {
 			return errorf("%v", err)
 		}
-		p, err := resolve(env.Dir, a.Path)
+		p, err := resolveRead(env, a.Path)
 		if err != nil {
 			return errorf("%v", err)
 		}
@@ -57,6 +57,7 @@ var readTool = Tool{
 		if isBinary(b) {
 			return errorf("%s looks like a binary file", rel(env.Dir, p))
 		}
+		env.Files.Seen(p, b)
 		if a.Offset < 1 {
 			a.Offset = 1
 		}
@@ -84,7 +85,7 @@ var readTool = Tool{
 
 var writeTool = Tool{
 	Name:        "write",
-	Description: "Write a file, replacing it if it exists. Creates parent directories. Prefer patch for changing part of an existing file.",
+	Description: "Write a file, replacing it if it exists. Creates parent directories. Read an existing file before replacing it. Prefer patch for changing part of an existing file.",
 	Schema: `{"type":"object","properties":{
 "path":{"type":"string","description":"File path, relative to the working directory"},
 "content":{"type":"string","description":"The complete new file content"}
@@ -101,9 +102,15 @@ var writeTool = Tool{
 		if err != nil {
 			return errorf("%v", err)
 		}
+		if old, err := os.ReadFile(p); err == nil {
+			if err := env.Files.Check(p, rel(env.Dir, p), old); err != nil {
+				return errorf("%v", err)
+			}
+		}
 		if err := writeFile(p, []byte(a.Content)); err != nil {
 			return errorf("%v", err)
 		}
+		env.Files.Seen(p, []byte(a.Content))
 		return withDiagnostics(ctx, env, p, Result{Text: fmt.Sprintf("wrote %d bytes to %s", len(a.Content), rel(env.Dir, p))})
 	},
 }
@@ -125,7 +132,7 @@ func writeFile(p string, data []byte) error {
 
 var patchTool = Tool{
 	Name: "patch",
-	Description: "Edit a file with exact search/replace edits, applied in order. Each old_string must match the file exactly " +
+	Description: "Edit a file with exact search/replace edits, applied in order. Read the file first. Each old_string must match the file exactly " +
 		"(including whitespace) and exactly once, unless replace_all is set. Include enough surrounding lines to make it unique. " +
 		"If any edit fails, the file is left unchanged.",
 	Schema: `{"type":"object","properties":{
@@ -159,6 +166,9 @@ var patchTool = Tool{
 		if err != nil {
 			return errorf("%v", err)
 		}
+		if err := env.Files.Check(p, rel(env.Dir, p), b); err != nil {
+			return errorf("%v", err)
+		}
 		s := string(b)
 		for i, e := range a.Edits {
 			if e.Old == "" {
@@ -183,6 +193,7 @@ var patchTool = Tool{
 		if err := writeFile(p, []byte(s)); err != nil {
 			return errorf("%v", err)
 		}
+		env.Files.Seen(p, []byte(s))
 		return withDiagnostics(ctx, env, p, Result{Text: fmt.Sprintf("applied %d edit(s) to %s", len(a.Edits), rel(env.Dir, p))})
 	},
 }

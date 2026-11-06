@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -370,5 +371,29 @@ func TestLSPServerMergesIntoBuiltin(t *testing.T) {
 	// Merging can't make a built-in invalid; a bad extension still fails.
 	if _, err := Parse([]byte("lsp: {servers: [{name: gopls, languages: {go: [go]}}]}")); err == nil {
 		t.Fatal("bad extension in a built-in override: no error")
+	}
+}
+
+func TestRepeatCallNudgesAndReadBeforeWrite(t *testing.T) {
+	cfg, err := Parse(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(cfg.Agent.RepeatCallNudges, []int{3, 5, 8}) || !cfg.Agent.ReadBeforeWriteOn() {
+		t.Fatalf("defaults: %v %v", cfg.Agent.RepeatCallNudges, cfg.Agent.ReadBeforeWrite)
+	}
+	cfg, err = Parse([]byte("agent:\n  repeat_call_nudges: []\n  read_before_write: false\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cfg.Agent.RepeatCallNudges) != 0 || cfg.Agent.ReadBeforeWriteOn() {
+		t.Fatalf("off: %v %v", cfg.Agent.RepeatCallNudges, cfg.Agent.ReadBeforeWriteOn())
+	}
+	cfg, err = Parse([]byte("agent:\n  repeat_call_nudges: [4]\n"))
+	if err != nil || !slices.Equal(cfg.Agent.RepeatCallNudges, []int{4}) {
+		t.Fatalf("[4]: %v %v", cfg.Agent.RepeatCallNudges, err)
+	}
+	if _, err := Parse([]byte("agent:\n  repeat_call_nudges: [1]\n")); err == nil {
+		t.Fatal("[1] accepted")
 	}
 }

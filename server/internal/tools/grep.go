@@ -71,7 +71,7 @@ var grepTool = Tool{
 				return errorf("bad glob: %v", err)
 			}
 		}
-		root, err := resolve(env.Dir, a.Path)
+		root, err := resolveRead(env, a.Path)
 		if err != nil {
 			return errorf("%v", err)
 		}
