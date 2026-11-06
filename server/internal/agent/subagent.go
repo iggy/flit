@@ -97,6 +97,9 @@ type subagentRun struct {
 	// events are its own events, unwrapped, in order: the model's context
 	// is rebuilt from them, as the session's is from its log.
 	events []*flitv1.Event
+	// files is its own read-before-write state: it starts with a fresh
+	// context, so it has to read files itself (nil when the check is off).
+	files *tools.FileTracker
 }
 
 // append records ev as one of the subagent's events.
@@ -137,6 +140,9 @@ func (s *session) runSubagent(ctx context.Context, turnID, callID string, raw js
 		return tools.Result{}, err
 	}
 	r := &subagentRun{s: s, turnID: turnID, callID: callID, kind: kind}
+	if cfg.Agent.ReadBeforeWriteOn() {
+		r.files = tools.NewFileTracker()
+	}
 	done := &flitv1.SubagentDone{ToolCallId: callID}
 	finish := func(res tools.Result) (tools.Result, error) {
 		if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_SubagentDone{SubagentDone: done}}); err != nil {
@@ -194,6 +200,7 @@ func (s *session) runSubagent(ctx context.Context, turnID, callID string, raw js
 			FirstTokenTimeout: cfg.Agent.ModelFirstTokenTimeout, StallTimeout: cfg.Agent.ModelStallTimeout,
 			Limiter: s.m.limiter, Provider: provider.Name,
 		}
+		repeats := newRepeatCounter(r.events)
 		res, err := r.call(ctx, cfg, info, task, client, req)
 		done.Steps = int32(step + 1)
 		if err != nil {
@@ -215,14 +222,17 @@ func (s *session) runSubagent(ctx context.Context, turnID, callID string, raw js
 			break
 		}
 		for _, tc := range res.ToolCalls {
+			n := repeats.add(tc.Function.Name, tc.Function.Arguments)
 			out := tools.Result{Text: notRun, IsError: true}
 			if ctx.Err() == nil {
 				if out, err = r.runTool(ctx, set, tc); err != nil {
 					return tools.Result{}, err
 				}
+			} else {
+				n = 0
 			}
 			cfg = s.m.cfg()
-			text, omitted, cut := tools.Truncate(out.Text, cfg.Agent.ToolOutputMaxBytes, cfg.Agent.ToolOutputMaxLines)
+			text, omitted, cut := s.shapeResult(cfg, callID+"/"+tc.ID, out, n)
 			if err := r.append(&flitv1.Event{Payload: &flitv1.Event_ToolCallDone{ToolCallDone: &flitv1.ToolCallDone{
 				ToolCallId: tc.ID, Result: text, IsError: out.IsError, Truncated: cut, OmittedBytes: omitted,
 			}}}); err != nil {
@@ -397,8 +407,10 @@ func (r *subagentRun) runTool(ctx context.Context, set []tools.Tool, tc llm.Tool
 	var appendErr error
 	cfg, info := r.s.m.cfg(), r.s.snapshot()
 	env := &tools.Env{
-		Dir:   info.WorkingDir,
-		Shell: cfg.Shell,
+		Dir:      info.WorkingDir,
+		Shell:    cfg.Shell,
+		ReadDirs: r.s.readDirs(),
+		Files:    r.files,
 		Output: func(out string) {
 			if live >= maxLiveToolOutput {
 				return

@@ -63,6 +63,10 @@ type session struct {
 	tree *branches.Tree
 	// unattended is set while a cron run's turn runs (see cron.go).
 	unattended *unattended
+	// files is what the agent has read on branch filesBranch, for the
+	// write and patch tools' read-before-write check (see fileTracker).
+	files       *tools.FileTracker
+	filesBranch string
 }
 
 type pendingPrompt struct {
