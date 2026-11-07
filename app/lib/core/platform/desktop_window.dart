@@ -10,7 +10,12 @@ import 'dart:ui' as ui;
 
 import 'package:flit/data/storage/preferences_store.dart';
 import 'package:flutter/foundation.dart';
-import 'package:window_manager/window_manager.dart';
+// window_manager 0.6 moved the 0.5.x API (windowManager, WindowListener) to
+// legacy.dart. Migrating to the native Window/WindowManager API is a follow-up.
+import 'package:window_manager/legacy.dart';
+
+// The legacy bridge is deprecated; silence those infos until the native migration.
+// ignore_for_file: deprecated_member_use
 
 /// Minimum window dimensions to ensure the app is usable.
 const double _kMinWindowWidth = 480.0;
