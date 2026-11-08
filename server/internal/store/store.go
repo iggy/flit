@@ -272,6 +272,35 @@ CREATE TABLE webhook_runs (
 CREATE INDEX webhook_runs_by_delivery ON webhook_runs (team_id, hook, delivery_id) WHERE delivery_id != '';
 CREATE INDEX webhook_runs_by_hook ON webhook_runs (team_id, hook, received_at);
 `,
+	`
+CREATE TABLE learned_facts (
+	id           TEXT PRIMARY KEY,
+	team_id      TEXT NOT NULL,
+	project_id   TEXT NOT NULL,
+	scope        TEXT NOT NULL,
+	family       TEXT NOT NULL,
+	detail       TEXT NOT NULL,
+	created_at   INTEGER NOT NULL,
+	forgotten_at INTEGER
+);
+CREATE INDEX learned_facts_by_project ON learned_facts (project_id, scope);
+CREATE TABLE learned_fact_sessions (
+	fact_id            TEXT NOT NULL,
+	session_id         TEXT NOT NULL,
+	session_created_at INTEGER NOT NULL,
+	confirmed          INTEGER NOT NULL,
+	contradicted       INTEGER NOT NULL,
+	fired              INTEGER NOT NULL,
+	turns              TEXT NOT NULL,
+	PRIMARY KEY (fact_id, session_id)
+);
+CREATE INDEX learned_fact_sessions_by_session ON learned_fact_sessions (session_id);
+CREATE TABLE learned_fact_injections (
+	fact_id    TEXT NOT NULL,
+	session_id TEXT NOT NULL,
+	PRIMARY KEY (fact_id, session_id)
+);
+`,
 }
 
 func (s *Store) migrate(ctx context.Context) error {

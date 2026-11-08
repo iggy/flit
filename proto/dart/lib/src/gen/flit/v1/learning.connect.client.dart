@@ -86,4 +86,41 @@ extension type LearningServiceClient (connect.Transport _transport) {
       onTrailer: onTrailer,
     );
   }
+
+  /// ListLearnedFacts lists the facts flit worked out from the event log,
+  /// with no model calls: active, forming, retired and forgotten.
+  Future<flitv1learning.ListLearnedFactsResponse> listLearnedFacts(
+    flitv1learning.ListLearnedFactsRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.LearningService.listLearnedFacts,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
+
+  /// ForgetLearnedFact retires a fact for good. A unique id prefix will do.
+  Future<flitv1learning.ForgetLearnedFactResponse> forgetLearnedFact(
+    flitv1learning.ForgetLearnedFactRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.LearningService.forgetLearnedFact,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
 }

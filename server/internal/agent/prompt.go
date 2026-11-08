@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,6 +12,7 @@ import (
 	"github.com/iggy/flit/server/internal/config"
 	"github.com/iggy/flit/server/internal/memory"
 	"github.com/iggy/flit/server/internal/roles"
+	"github.com/iggy/flit/server/internal/store"
 )
 
 // instructionFiles are read from the session's working directory, in this
@@ -64,6 +66,17 @@ func systemPrompt(dir string, role *roles.Role, layers []memory.Layer) string {
 			what, l.Path, l.Kind, l.Content, l.Kind)
 	}
 	return b.String()
+}
+
+// factsBlock is the facts learned for the session's project, for the
+// system prompt, right after the memory layers.
+func (s *session) factsBlock(ctx context.Context, info store.Session) string {
+	block, err := s.m.facts.Prompt(ctx, info)
+	if err != nil {
+		s.m.log.Warn("could not read learned facts", "session", info.ID, "err", err)
+		return ""
+	}
+	return block
 }
 
 // writeEnvironment adds the working directory, OS and date.

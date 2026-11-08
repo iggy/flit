@@ -35,6 +35,12 @@ const (
 	// LearningServiceRejectLearnProposalProcedure is the procedure name of the LearningService's
 	// RejectLearnProposal RPC.
 	LearningServiceRejectLearnProposalProcedure = "/flit.v1.LearningService/RejectLearnProposal"
+	// LearningServiceListLearnedFactsProcedure is the procedure name of the LearningService's
+	// ListLearnedFacts RPC.
+	LearningServiceListLearnedFactsProcedure = "/flit.v1.LearningService/ListLearnedFacts"
+	// LearningServiceForgetLearnedFactProcedure is the procedure name of the LearningService's
+	// ForgetLearnedFact RPC.
+	LearningServiceForgetLearnedFactProcedure = "/flit.v1.LearningService/ForgetLearnedFact"
 )
 
 var (
@@ -67,6 +73,21 @@ var (
 			Procedure:  LearningServiceRejectLearnProposalProcedure,
 		}
 	})
+	learningServiceListLearnedFactsSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType:       connect.StreamTypeUnary,
+			Schema:           v1.File_flit_v1_learning_proto.Services().ByName("LearningService").Methods().ByName("ListLearnedFacts"),
+			Procedure:        LearningServiceListLearnedFactsProcedure,
+			IdempotencyLevel: connect.IdempotencyNoSideEffects,
+		}
+	})
+	learningServiceForgetLearnedFactSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_learning_proto.Services().ByName("LearningService").Methods().ByName("ForgetLearnedFact"),
+			Procedure:  LearningServiceForgetLearnedFactProcedure,
+		}
+	})
 )
 
 // LearningServiceClient is a client for the flit.v1.LearningService service.
@@ -82,6 +103,11 @@ type LearningServiceClient interface {
 	// decided or the file changed underneath it.
 	AcceptLearnProposal(context.Context, *v1.AcceptLearnProposalRequest) (*v1.AcceptLearnProposalResponse, error)
 	RejectLearnProposal(context.Context, *v1.RejectLearnProposalRequest) (*v1.RejectLearnProposalResponse, error)
+	// ListLearnedFacts lists the facts flit worked out from the event log,
+	// with no model calls: active, forming, retired and forgotten.
+	ListLearnedFacts(context.Context, *v1.ListLearnedFactsRequest) (*v1.ListLearnedFactsResponse, error)
+	// ForgetLearnedFact retires a fact for good. A unique id prefix will do.
+	ForgetLearnedFact(context.Context, *v1.ForgetLearnedFactRequest) (*v1.ForgetLearnedFactResponse, error)
 }
 
 // NewLearningServiceClient constructs a client for the flit.v1.LearningService service. Multiple
@@ -103,6 +129,11 @@ type LearningServiceHandler interface {
 	// decided or the file changed underneath it.
 	AcceptLearnProposal(context.Context, *v1.AcceptLearnProposalRequest) (*v1.AcceptLearnProposalResponse, error)
 	RejectLearnProposal(context.Context, *v1.RejectLearnProposalRequest) (*v1.RejectLearnProposalResponse, error)
+	// ListLearnedFacts lists the facts flit worked out from the event log,
+	// with no model calls: active, forming, retired and forgotten.
+	ListLearnedFacts(context.Context, *v1.ListLearnedFactsRequest) (*v1.ListLearnedFactsResponse, error)
+	// ForgetLearnedFact retires a fact for good. A unique id prefix will do.
+	ForgetLearnedFact(context.Context, *v1.ForgetLearnedFactRequest) (*v1.ForgetLearnedFactResponse, error)
 }
 
 // RegisterLearningServiceHandler registers svc as the flit.v1.LearningService implementation on
@@ -114,6 +145,8 @@ func RegisterLearningServiceHandler(server *connect.Server, svc LearningServiceH
 		connect.Method{Spec: learningServiceListLearnProposalsSpec(), Handler: adapter.listLearnProposals},
 		connect.Method{Spec: learningServiceAcceptLearnProposalSpec(), Handler: adapter.acceptLearnProposal},
 		connect.Method{Spec: learningServiceRejectLearnProposalSpec(), Handler: adapter.rejectLearnProposal},
+		connect.Method{Spec: learningServiceListLearnedFactsSpec(), Handler: adapter.listLearnedFacts},
+		connect.Method{Spec: learningServiceForgetLearnedFactSpec(), Handler: adapter.forgetLearnedFact},
 	)
 }
 
@@ -134,6 +167,14 @@ func (UnimplementedLearningServiceHandler) AcceptLearnProposal(context.Context, 
 
 func (UnimplementedLearningServiceHandler) RejectLearnProposal(context.Context, *v1.RejectLearnProposalRequest) (*v1.RejectLearnProposalResponse, error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.LearningService.RejectLearnProposal is not implemented")
+}
+
+func (UnimplementedLearningServiceHandler) ListLearnedFacts(context.Context, *v1.ListLearnedFactsRequest) (*v1.ListLearnedFactsResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.LearningService.ListLearnedFacts is not implemented")
+}
+
+func (UnimplementedLearningServiceHandler) ForgetLearnedFact(context.Context, *v1.ForgetLearnedFactRequest) (*v1.ForgetLearnedFactResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.LearningService.ForgetLearnedFact is not implemented")
 }
 
 type learningServiceClient struct {
@@ -167,6 +208,22 @@ func (c *learningServiceClient) AcceptLearnProposal(ctx context.Context, req *v1
 func (c *learningServiceClient) RejectLearnProposal(ctx context.Context, req *v1.RejectLearnProposalRequest) (*v1.RejectLearnProposalResponse, error) {
 	var res v1.RejectLearnProposalResponse
 	if err := c.client.CallUnary(ctx, learningServiceRejectLearnProposalSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *learningServiceClient) ListLearnedFacts(ctx context.Context, req *v1.ListLearnedFactsRequest) (*v1.ListLearnedFactsResponse, error) {
+	var res v1.ListLearnedFactsResponse
+	if err := c.client.CallUnary(ctx, learningServiceListLearnedFactsSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *learningServiceClient) ForgetLearnedFact(ctx context.Context, req *v1.ForgetLearnedFactRequest) (*v1.ForgetLearnedFactResponse, error) {
+	var res v1.ForgetLearnedFactResponse
+	if err := c.client.CallUnary(ctx, learningServiceForgetLearnedFactSpec(), req, &res); err != nil {
 		return nil, err
 	}
 	return &res, nil
@@ -216,6 +273,30 @@ func (h learningServiceHandler) rejectLearnProposal(ctx context.Context, _ conne
 		return err
 	}
 	res, err := h.svc.RejectLearnProposal(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h learningServiceHandler) listLearnedFacts(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.ListLearnedFactsRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.ListLearnedFacts(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h learningServiceHandler) forgetLearnedFact(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.ForgetLearnedFactRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.ForgetLearnedFact(ctx, &req)
 	if err != nil {
 		return err
 	}

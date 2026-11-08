@@ -87,6 +87,70 @@ stored as pending, replacing the session's earlier pending proposals.
   (a built-in skill is overridden by a new one in the repo). flit never
   deletes skills; a proposal to remove one is dropped with a note.
 
+## Learned facts
+
+Separately from `flit learn`, flit works out small facts about a project's
+environment by itself. There are no model calls and no proposals to review:
+after each turn it reads that session's shell commands from the event log.
+
+Each command is split into its parts (with the same splitter the shell rules
+use), and each part is classified by what it is for (running tests, building
+or checking, a package tool, an interpreter, fetching) and how it was spelled,
+without its arguments. Its outcome comes from the exit code and the output:
+command not found, a missing module, a missing variable, a refused host.
+
+| Family | A session confirms it when | Example |
+|--------|----------------------------|---------|
+| `form_repair` | a spelling fails with command not found, a missing module or permission denied, and another spelling of the same thing works later in the same turn | `pytest` → `python -m pytest`, `tsc` → `npx tsc` |
+| `boundary` | every fetch to a host fails with a network error (localhost doesn't count) | `pypi.internal` refuses connections |
+| `env_value` | a run fails asking for a variable, and a later run that sets it works | `DJANGO_ENV=test` |
+
+An error only counts against a part it can be pinned on: the part is the only
+real command in the chain, or the error names it. `make` failing because a
+recipe's `cc` is missing says nothing about `make`.
+
+Values of variables that might be secret (by name or by shape) are never kept:
+the fact then only says the variable must be set.
+
+### Lifecycle
+
+A fact is *forming* until 3 different sessions confirm it, then *active*.
+
+An active fact goes into the system prompt only while it is still useful: the
+failure must have occurred, or been prevented, in at least 40% of the sessions
+that exercised it, over at least 4 sessions. "Prevented" means the session
+carried the fact and used the working spelling. So a new fact is usually first
+injected on the fourth session, and one nobody needs any more drops out.
+
+A spelling or variable fact *retires* after 2 contradicting sessions in a row
+(the "wrong" spelling works now); a session that says nothing either way breaks
+the streak. A boundary retires as soon as its host answers. A retired fact
+starts over if the failure comes back. A fact you forget stays forgotten.
+
+Facts are stored per project. The Scratch project holds unrelated directories,
+so there they apply per directory. Only the per-session verdicts are stored and
+the state is worked out from them, so config changes apply right away.
+
+Injected facts sit right after the memory layers, as cue and lesson, without
+their evidence:
+
+```markdown
+- **When running the tests:** use `python -m pytest`; `pytest` fails here with a missing module error.
+```
+
+They only ever state what works here, never that something can be skipped or
+is finished.
+
+### Commands
+
+```sh
+flit facts [--project X]   # active, forming and retired facts, with evidence
+flit facts forget <id>     # retire one for good (a unique id prefix works)
+flit facts --rebuild       # work everything out again from the event logs
+```
+
+`flit.v1.LearningService` has `ListLearnedFacts` and `ForgetLearnedFact`.
+
 ## Configuration
 
 ```yaml
@@ -103,6 +167,20 @@ learning:
   # Longest transcript sent to the learning model. 0 means about half the
   # model's context window, or 24000 bytes when that is unknown.
   transcript_max_bytes: 0
+  # on: learn facts and add them to the prompt. propose: learn and list
+  # them only. off: neither.
+  facts: on
+  # Caps on the facts in the prompt. 0 means no cap.
+  facts_max: 10
+  facts_max_bytes: 1500
+  # Sessions that must confirm a fact before it is active.
+  facts_promote_sessions: 3
+  # Contradicting sessions in a row that retire a spelling or variable fact.
+  facts_retire_sessions: 2
+  # The injection gate: the share of exercising sessions in which the
+  # failure occurred or was prevented, and the fewest to measure it over.
+  facts_fire_rate: 0.4
+  facts_fire_min_sessions: 4
 ```
 
 The learning call is recorded with the session's other model calls (task
@@ -119,4 +197,8 @@ The learning call is recorded with the session's other model calls (task
 
 - Only relevant entries could be chosen per session, instead of the whole
   file within a budget.
-- Learning runs only when you ask for it.
+- `flit learn` runs only when you ask for it.
+- Learned facts read only the main agent's shell calls, not subagents'.
+- Learned facts have no families yet for empty probes (a repo with no remote)
+  or argument repairs (test labels of the wrong shape).
+- The app has no screen for learned facts.

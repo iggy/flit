@@ -12,6 +12,7 @@
 //	flit cron list | flit cron run NAME
 //	flit worktree remove SESSION
 //	flit learn [--yes] [--dry-run] [--pending] ID
+//	flit facts [--project X] [--rebuild] | flit facts forget ID
 //	flit version
 package main
 
@@ -68,6 +69,8 @@ Usage:
   flit cron run NAME          run a cron job now and wait for its result
   flit worktree remove ID     remove a session's git worktree, keeping its history (see docs/git.md)
   flit learn ID               propose lessons from a session to remember (see docs/learning.md)
+  flit facts [--project X]    list the facts flit learned from its sessions (see docs/learning.md)
+  flit facts forget ID        retire a learned fact for good
   flit version                print version information
 
 Flags for serve, token, pair and devices:
@@ -144,6 +147,8 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		return worktreeCmd(ctx, stdout, stderr, args, defaultConfig)
 	case "learn":
 		return learnCmd(ctx, stdout, stderr, args, defaultConfig)
+	case "facts":
+		return factsCmd(ctx, stdout, stderr, args, defaultConfig)
 	case "help", "-h", "--help":
 		fmt.Fprintf(stdout, usage, defaultConfig)
 		return nil
