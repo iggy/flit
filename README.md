@@ -1,96 +1,251 @@
-# Flit
+<p align="center"><img src="icon.png" alt="flit" width="96" /></p>
 
-An open source coding agent. flit is a **Go server** (`flit serve`) that runs
-the agent, plus a cross-platform **Flutter app** (iOS, Android, macOS,
-Windows, Linux, web) as its main front end.
+# flit
 
-> **Status:** early. The server runs agent sessions (milestone M1): an
-> OpenAI-compatible model client with streaming and tool calls, built-in
-> file and shell tools, and a persistent, replayable event log per session,
-> all over a versioned protobuf/Connect API with token auth. The app talks
-> to flit (pair it with `flit pair`) and still works with Hermes Agent
-> gateways too.
+**A coding agent you host yourself, that you can reach from any device.**
 
-## Repository layout
+flit runs an AI coding agent on your own machine, with whatever model you
+choose (a local one on your GPU, or a cloud one), and gives you a native app
+for your phone, tablet and desktop to talk to it. Start a task at your desk,
+answer its questions from the couch.
+
+<p align="center">
+  <img src="docs/screenshots/android-chat.png" alt="Chat on Android" width="220" />
+  <img src="docs/screenshots/android-sessions.png" alt="Sessions on Android" width="220" />
+  <img src="docs/screenshots/android-menu.png" alt="Menu on Android" width="220" />
+</p>
+<p align="center">
+  <img src="docs/screenshots/linux-chat.jpg" alt="Chat on Linux" width="400" />
+  <img src="docs/screenshots/linux-sessions.jpg" alt="Sessions on Linux" width="400" />
+</p>
+
+> **Status: early (0.0.x).** Expect rough edges and changes between
+> releases. App builds are unsigned (see [Install](#install)).
+
+**On this page:** [Features](#features) · [Use cases](#use-cases) ·
+[Install](#install) · [Quick start](#quick-start) · [Configuration](#configuration) ·
+[Integrations](#integrations) · [Safety](#safety-and-privacy) ·
+[Command reference](#command-reference) · [More docs](#more-docs)
+
+## Features
+
+**Bring your own model**
+- Works with any OpenAI-compatible endpoint: llama.cpp, vLLM, Ollama, OpenAI,
+  OpenRouter and more. Configure several at once and switch per session.
+- Models are discovered automatically (context window, tool and reasoning
+  support). Favorites and recents sync across your devices.
+- Reasoning effort, model and role can all change mid-session.
+- Extra care for local models: llama.cpp prompt-cache reuse, per-model
+  concurrency limits, "Answer now" to cut thinking short.
+
+**One conversation, every device**
+- Native app for Android, iOS, macOS, Windows and Linux, plus a web build.
+- Pair a phone by scanning a QR code. Every device sees the same live
+  conversation, and any of them can answer a permission prompt.
+- Everything a session does is logged, so reconnecting never loses anything.
+
+**A real agent, not just chat**
+- Reads, searches, edits and patches files; runs shell commands; uses git
+  (status, diff, log, commit; it never pushes); fetches web pages; searches
+  the web through your own SearXNG.
+- Sees compile errors right after it edits, through your installed language
+  servers (Go, Rust, Python, TypeScript, C/C++ built in).
+- Keeps a visible todo list, and hands side tasks to **subagents** so its own
+  context stays small.
+- Long conversations are **compacted** automatically; nothing is deleted.
+- Keep typing while it works: messages queue and join at its next step.
+- **Retry** or **edit** any earlier message to branch the conversation.
+
+**Control and safety**
+- Shell commands run without asking only when they are on your allow list or a
+  built-in read-only list. Everything else prompts you. Deny rules always win.
+- Optional small model rates commands before you're asked. "Allow for this
+  session", and a yolo mode when you want it.
+- Each session can get its own **git worktree and branch**, and a **Changes
+  view** shows every file the agent touched, with diffs.
+
+**Extensible**
+- **Roles** (`pm`, `qa`, `backend-dev`, `frontend-dev`, or your own) set the
+  system prompt, model and memory per task.
+- **MCP servers**, local or remote, including ones that need OAuth sign-in.
+- **Skills** in the open [Agent Skills](https://agentskills.io) format, from
+  your repo or globally.
+- **Projects** group sessions by directory.
+
+**Automation**
+- **Cron jobs** run prompts on a schedule, unattended.
+- **GitHub webhooks** start a session when a PR is opened or an issue filed.
+- **ntfy** notifications tell you when a run needs you.
+
+**Learns from you**
+- Plain-Markdown **memory** at user and project level, injected into prompts.
+  flit proposes lessons after a session; nothing is saved until you approve.
+- Rate replies, then **export** sessions as JSONL (OpenAI chat format, with
+  redaction) to build your own fine-tuning or eval data.
+
+## Use cases
+
+- **Code from your phone against your own GPU.** Run llama.cpp on a home
+  machine, flit next to it, and drive both from the app anywhere you can
+  reach the server.
+- **Plan, then build, in one session.** Start as `pm` to scope the work,
+  switch to `backend-dev` to implement, then `qa` to review.
+- **Morning briefing.** A cron job checks CI on `main` and open PRs at 8:30 on
+  weekdays and notifies you (via ntfy) if something is red.
+- **First-pass PR review.** A GitHub webhook starts an unattended review
+  session whenever a PR opens; you read its verdict instead of the diff.
+- **Research from anywhere.** Use Share → flit in your browser to drop a URL
+  or text into a new session, then say what to do with it.
+- **Try risky changes safely.** Turn on worktrees: each session works on its
+  own branch and your checkout is never touched.
+- **Connect your tools.** Add an MCP server for your tracker or docs, or drop a
+  skill into `.agents/skills/` so the agent knows your team's process.
+- **Build a dataset.** Rate good turns as you go, then `flit export --rating
+  good --redact` for training or evaluation.
+
+## How it fits together
 
 ```
-flit/
-├── README.md                     ← you are here
-├── AGENTS.md / CLAUDE.md         ← build/test commands + architecture rules for agents
-├── server/                       ← Go server; builds the `flit` binary
-├── proto/                        ← API schema (protobuf, package flit.v1) + buf config
-│   └── dart/                     ← generated Dart client package (flit_api) for the app
-├── app/                          ← the Flutter app
-└── docs/
-    ├── roadmap.md                ← phase overview + sequencing
-    ├── reference/                ← the Hermes gateway contract (grounded in source)
-    ├── design/                   ← theming etc.
-    └── phases/                   ← per-phase tickets (P0-… through P9-…)
+ phone / tablet / desktop app ──┐
+                                ├──►  flit server  ──►  your model(s)
+ other devices ─────────────────┘   (runs the agent,    llama.cpp, Ollama,
+                                     tools, sessions)    OpenAI, OpenRouter…
 ```
 
-## Server
+The **server** (`flit serve`) is a single static binary that runs the agent
+and keeps all state in one data folder. The **app** is a front end for it.
+Your code and session history stay on the machine running the server.
 
-Requires Go (see `server/go.mod` for the version). No cgo: binaries are
-static and cross-compile for Linux, macOS and Windows on amd64 and arm64.
+## Install
+
+You need two things: the server, on the machine that has your code, and the app,
+wherever you want to chat.
+
+### 1. The server
+
+Download the server archive for your platform from the
+[latest release](https://github.com/iggy/flit/releases/latest)
+(`flit-server-<version>-<os>-<arch>`, for Linux, macOS and Windows on amd64 and
+arm64), unpack it, and put the `flit` binary somewhere on your `PATH`.
+It has no dependencies (no cgo, no runtime). Check it works:
 
 ```sh
-cd server
-go build -o flit ./cmd/flit
-./flit serve
+flit version
 ```
 
-On first run flit:
+You also need `git` on the server's `PATH` for the git tools and Changes view,
+and a model endpoint to talk to (see [Models](#models)).
 
-- writes a commented default config to `~/.config/flit/config.yaml` (the
-  per-user config dir on macOS/Windows; override with `--config`);
-- creates its data dir (`~/.local/share/flit` on Linux,
-  `~/Library/Application Support/flit` on macOS, `%LocalAppData%\flit` on
-  Windows; override with `data_dir` in the config or `--data-dir`);
-- generates an API token, prints it once, and stores it in the data dir.
-  Print it again with `flit token`.
+<details>
+<summary>Build from source instead</summary>
 
-The config file isn't rewritten when flit gains settings. `flit config
-update` adds the new ones, with their comments, and leaves everything you
-wrote alone (the old file is kept as `config.yaml.bak`; `--dry-run` shows
-the change as a diff). `flit config defaults` prints the full default config.
-
-Every API call needs that token, even from localhost. The API is
-[Connect](https://connectrpc.com) (so plain HTTP/JSON, gRPC and gRPC-Web all
-work), served on `127.0.0.1:7433` by default:
+Requires Go (the version in [`server/go.mod`](server/go.mod)).
 
 ```sh
-curl -H "Authorization: Bearer $(./flit token)" -H "Content-Type: application/json" \
-  -d '{}' http://127.0.0.1:7433/flit.v1.SystemService/Version
+git clone https://github.com/iggy/flit.git
+cd flit/server
+CGO_ENABLED=0 go build -trimpath -o flit ./cmd/flit
 ```
 
-Config is YAML only, and edits to the file are applied while flit runs,
-including moving to a new listen address or turning TLS on (`tls.cert_file`
-and `tls.key_file`). The one exception is `data_dir`, which is read at
-startup.
+</details>
 
-### Pairing the app
+### 2. The app
 
-The app connects with its own per-device token. On the machine running
-`flit serve`:
+Download from the [latest release](https://github.com/iggy/flit/releases/latest):
+
+| Platform | File | Notes |
+|---|---|---|
+| Android | `flit-<version>-android.apk` | Sideload. Android blocks plain-HTTP servers by default, so use HTTPS for phones. |
+| iOS | `flit-<version>-ios-unsigned.zip` | Unsigned app bundle. You must sign and install it yourself (e.g. with your own developer account); it isn't on the App Store. |
+| macOS | `flit-<version>-macos.dmg` | Not notarized: right-click → Open the first time. |
+| Windows | `flit-<version>-windows-x64.zip` | Unzip and run. SmartScreen may warn, since the build is unsigned. |
+| Linux | `flit-<version>-linux-x86_64.AppImage`, `flit-<version>-linux.deb`, or `flit-<version>-linux-x64.zip` | AppImage: `chmod +x` and run. |
+| Web | `flit-<version>-web.zip` | Static files for any web host. |
+
+## Quick start
+
+**1. Start the server.**
 
 ```sh
-flit pair            # shows a QR code plus the server URL and a one-time code
-flit devices         # list paired devices
-flit devices revoke dev_…
+flit serve
 ```
 
-On a phone, pick **flit** on the connect screen and scan the QR code; on
-desktop, type the URL and code. Codes expire after 10 minutes and work once.
-For a phone to reach the server, listen on a reachable address and set
-`public_url` (ideally HTTPS, e.g. behind a reverse proxy; Android blocks
-plain-HTTP connections by default). Every device can open the same session:
-they all see the same conversation, and any of them can answer a prompt.
+On first run flit writes a commented config, creates its data folder, and
+prints your admin API token **once** (print it again any time with `flit token`).
+
+**2. Point it at a model.** Open the config file (see
+[Configuration](#configuration) for where) and add a provider. Changes apply
+immediately, no restart.
+
+```yaml
+providers:
+  - name: local
+    base_url: http://localhost:8080/v1     # e.g. llama.cpp's llama-server
+agent:
+  provider: local
+  model: qwen3-coder
+```
+
+**3. Pair the app.**
+
+```sh
+flit pair
+```
+
+This prints a QR code, the server URL and a one-time code. In the app, choose
+**flit** on the connect screen, then scan the QR code (phone) or type the URL
+and code (desktop). Codes work once and expire after 10 minutes.
+
+**4. Start a session.** Create a project from a directory on the server (or
+use the default *Scratch* project), start a session, and describe what you
+want done.
+
+### Pairing and remote access
+
+By default flit listens on `127.0.0.1:7433`, reachable only from the server
+machine. To use it from a phone or another computer:
+
+```yaml
+listen: 0.0.0.0:7433
+public_url: https://flit.example.com    # what devices should connect to
+tls:                                     # or terminate TLS in a reverse proxy
+  cert_file: /path/to/fullchain.pem
+  key_file: /path/to/privkey.pem
+```
+
+Use HTTPS if you can; Android refuses plain HTTP by default. Run `flit pair`
+again after changing `public_url` so the QR code carries the right address.
+Keep the server on a trusted network or behind a VPN unless you've set up TLS:
+every request needs a token, but tokens travel in the clear over HTTP.
+
+```sh
+flit devices                   # list paired devices
+flit devices revoke dev_…      # cut one off
+```
+
+## Configuration
+
+flit's settings live in YAML files; there are no JSON config files. Edits
+are picked up while flit runs. Only `data_dir` needs a restart.
+
+| What | Where |
+|---|---|
+| Main config | Linux: `~/.config/flit/config.yaml`<br>macOS: `~/Library/Application Support/flit/config.yaml`<br>Windows: `%AppData%\flit\config.yaml`<br>(or `--config FILE`) |
+| Data (sessions in `flit.db`, memory, worktrees, token) | Linux: `~/.local/share/flit`<br>macOS: `~/Library/Application Support/flit`<br>Windows: `%LocalAppData%\flit`<br>(or `data_dir` / `--data-dir`) |
+| Model corrections | `models.yaml` next to the config |
+| Roles, skills, cron jobs, webhooks | `roles/`, `skills/`, `crons/`, `webhooks/` next to the config |
+
+The config file isn't rewritten when flit gains settings. Run `flit config
+update` to add new ones (with their comments) without touching what you wrote;
+it keeps the old file as `config.yaml.bak`, and `--dry-run` shows a diff.
+`flit config defaults` prints the full default config, which is the best
+reference for every setting.
 
 ### Models
 
-flit talks to any OpenAI-compatible chat completions endpoint: llama.cpp's
-`llama-server` (start it with `--jinja` so tool calls work), vLLM, Ollama's
-`/v1`, OpenAI and so on. Configure as many as you like and pick a default:
+flit talks to any OpenAI-compatible chat completions endpoint. Configure as
+many as you like and pick a default. For llama.cpp, start `llama-server` with
+`--jinja` so tool calls work.
 
 ```yaml
 providers:
@@ -98,379 +253,214 @@ providers:
     base_url: http://localhost:8080/v1
   - name: openai
     base_url: https://api.openai.com/v1
-    api_key_env: OPENAI_API_KEY
+    api_key_env: OPENAI_API_KEY             # keep keys in the environment
 agent:
   provider: local
   model: qwen3-coder
 ```
 
-flit identifies itself as `flit/<version>`. A provider's `headers:` are sent
-with every request to it and replace flit's own, e.g. a different
-`User-Agent` for an endpoint that filters on it; `${VAR}` in a value is read
-from the environment.
+Handy extras: a different (small, fast) model for command rating, summaries and
+cron jobs; per-model concurrency limits; per-model prompt tweaks; fixing a
+model's reported context window. See [docs/models.md](docs/models.md) and, for
+llama.cpp users, [docs/llamacpp.md](docs/llamacpp.md).
 
-`concurrency` caps how many requests flit sends to each of a provider's models
-at once, counted across all sessions, subagents, compaction, safety checks and
-learning; calls over the limit wait their turn (the app shows "Waiting for a
-turn on this model"), and stopping the turn stops the wait. A model under
-`models:` can set its own, which wins; unset or 0 means no limit. Changes
-apply live to the next call, without stopping calls already running.
+### Roles
 
-```yaml
-providers:
-  - name: local                 # one big model at a time...
-    base_url: http://localhost:8080/v1
-    concurrency: 1
-    models:
-      qwen3-4b:
-        concurrency: 8          # ...but a small one can take more
-  - name: openrouter            # cloud: no limit
-    base_url: https://openrouter.ai/api/v1
-    api_key_env: OPENROUTER_API_KEY
-```
-
-### Model discovery, effort and roles
-
-flit asks each provider's `/models` endpoint what it offers (with adapters for
-OpenRouter, llama.cpp, including router mode, and gomodel) to learn context
-windows and tool/reasoning support. There is no built-in model list. If a
-provider reports something wrong or nothing at all, correct it in
-`models.yaml` next to the config:
-
-```yaml
-local:                 # provider name
-  qwen3-coder:         # model id
-    context_length: 131072
-    tools: true
-    reasoning: true
-    efforts: [low, medium, high]
-```
-
-Each session has a model and a reasoning effort, both switchable mid-session.
-The model picker lists your favorites (star a model) and recently used models
-first; both are kept on the server, so every device sees the same ones. For a
-llama.cpp router, the picker can also load and unload models.
-`agent.tasks` in the config can set a model per kind of work (`chat` is used
-for new sessions, `permission` rates shell commands, `compaction` writes the
-summary when a conversation is compacted, `explore` and `build` run
-subagents; `planning`, `cron` and `search` are for features to come).
-
-Roles are Markdown files in `roles/` next to the config. The body is added to
-the system prompt; YAML frontmatter can set a default model and effort and a
-memory file whose contents are included each turn:
+A role is a Markdown file in `roles/` that adds to the system prompt and can
+set a default model, effort and a memory file:
 
 ```markdown
 ---
 description: Careful reviewer
 model: some-big-model
 effort: high
-memory_file: NOTES.md
 ---
 Review changes for correctness first, style second.
 ```
 
-flit ships four roles: `frontend-dev`, `backend-dev`, `pm` and `qa`. They set
-no model, so sessions use the configured one. A file in `roles/` with the
-same name (e.g. `roles/qa.md`) replaces the built-in role.
+`frontend-dev`, `backend-dev`, `pm` and `qa` are built in. Switch roles in a
+running session with `/role name`. See [docs/models.md](docs/models.md#roles).
 
-A session's role can be switched while it runs (e.g. plan as `pm`, then
-build as `backend-dev`): tap the role in the chat's status strip, or type
-`/role name` (`/role` alone opens the picker). From the next model call the
-system prompt and memory file are the new role's; the model and effort follow
-the new role's defaults unless you changed them in the session. Earlier
-messages stay as they are, and the chat marks where the role changed.
+### Projects
 
-Every model call reports context use, time to first token, and prompt and
-generation speed (llama.cpp's own timings when it sends them, otherwise
-measured by flit). The app shows these along with the model, effort and task
-state, and the agent's todo list.
+Projects group sessions by directory. Create one from a directory on the
+server, switch between them in the app, and move sessions out of *Scratch*.
+Each project can run its sessions in their own git worktree
+(`git.worktrees.default: true` makes that the default).
 
-### Projects, MCP, skills and more tools
+## Integrations
 
-- **Projects** group sessions by directory: create one from a directory on
-  the server, switch between them in the app, and move sessions out of
-  Scratch.
-- **MCP servers** are configured in the YAML config, never an `mcp.json`.
-  Each has either a `command` (a subprocess, over stdio) or a `url` (a
-  remote server, over streamable HTTP, falling back to legacy SSE), with
-  optional `headers` for things like auth (`${VAR}` in a header value is
-  read from the environment, so tokens needn't sit in the config):
+### MCP servers
 
-  ```yaml
-  mcp_servers:
-    - name: fetch
-      command: uvx
-      args: [mcp-server-fetch]
-      enabled: true    # on for new sessions
-    - name: docs
-      url: https://example.com/mcp
-      headers:
-        Authorization: Bearer ${DOCS_MCP_TOKEN}
-  ```
+Connect any [MCP](https://modelcontextprotocol.io) server, local (a command)
+or remote (a URL). Each session turns servers on and off; only enabled ones'
+tools are sent to the model.
 
-  Each session turns servers on or off at runtime; only enabled servers'
-  tools are sent to the model.
-
-  Remote servers that need a browser sign-in (OAuth) work too: run
-  `flit mcp login NAME` on the machine flit runs on. It registers flit with
-  the server's authorization server, opens the sign-in page, and saves the
-  token (refreshed automatically) in `mcp-oauth.yaml` in the data dir. When
-  the browser is on another machine, paste the address it lands on into
-  the terminal. Servers that don't support dynamic client registration take
-  a client you registered by hand, with redirect URL
-  `http://127.0.0.1:7434/callback` (change the port with `--port`):
-
-  ```yaml
-    - name: tracker
-      url: https://mcp.example.com/mcp
-      oauth:
-        client_id: my-client-id
-        client_secret: ${TRACKER_SECRET}   # optional; ${VAR} from the environment
-        scopes: [read]                     # optional; replaces what the server asks for
-  ```
-
-  `flit mcp list` shows which servers are signed in and `flit mcp logout
-  NAME` forgets a sign-in. flit resumes dropped event streams, reconnects
-  when a server restarts or forgets the session, picks up a server's new
-  tools when it says they changed, and logs what servers log.
-- **Skills** in the [Agent Skills](https://agentskills.io) format come from
-  the repo the session works in (`.agents/skills/`, and `.claude/skills/`
-  for compatibility, at the working directory and the git root) and from
-  `skills/` next to the config (`skills_dirs`). A repo skill wins over a
-  global one with the same name. The model sees names and descriptions and
-  loads a skill's instructions and files when needed. A message starting
-  with `/<skill>` asks for that skill (the app's composer suggests them
-  when you type `/`). flit ships two: **/init** surveys the repo and writes
-  or updates its `AGENTS.md`, asking before it changes an existing one;
-  **/grill-me** interviews you about a new project one question at a time
-  (goals, users, scope, non-goals, stack, constraints, risks, what "done"
-  means), pushes back on vague answers, and writes the agreed plan to
-  `PROJECT.md` once you confirm it.
-- **git** tools (status, diff, log, commit; nothing pushes), **web_fetch**,
-  and **web_search** through a SearXNG instance (`web.search`); paid search
-  APIs aren't supported.
-- **Changes view**: the app shows the session's branch and changed files,
-  with per-file diffs of everything since the session started; see
-  [docs/git.md](docs/git.md).
-- **Prompt appends** per provider (`providers[].prompt_append`) and per model
-  (`agent.model_prompt_appends`).
-- **Ratings and a training corpus**: mark a reply or a model choice good or
-  bad in the app, with an optional note. flit records every model call
-  exactly (messages, tool schemas, parameters, response, metrics), and
-  `flit export` writes sessions, turns and model calls as JSONL in OpenAI
-  chat format, filterable by date, project, model and rating, with
-  `--redact` for public datasets. Projects can opt out. See
-  [docs/export.md](docs/export.md).
-- **Manual self-learning**: `flit learn <session>`, `/learn` in the chat or
-  "Learn from this session" in the app asks a model (`agent.tasks.learning`)
-  what a finished session taught: lessons for the user and project memory
-  files (plain Markdown, injected into every session's prompt within a byte
-  budget), the role's memory file, or a new skill. You accept, edit or
-  reject each proposal; nothing is written until you do. See
-  [docs/learning.md](docs/learning.md).
-
-### Sessions and tools
-
-A session is a conversation with the agent in one working directory. The
-agent has `read`, `write`, `patch`, `list`, `grep` and `shell` tools; file
-tools can't leave the working directory. `AGENTS.md` and `CLAUDE.md` in the
-working directory are added to the system prompt.
-
-Shell commands are split into their parts (chains, pipes, loops) and run
-without asking when every part is allowed: by `shell.allow` patterns, the
-built-in read-only list (`ls`, `cat`, `grep`, `git log`, ...), or "allow for
-this session". `shell.deny` always wins. Anything else follows
-`shell.default` (`ask` by default), which pauses the turn until a client
-answers the prompt. A session can switch to yolo mode (everything but deny
-matches runs), and an optional small model can rate commands before you're
-asked. These rules reduce prompts; they are not a sandbox. See
-[docs/shell.md](docs/shell.md).
-
-With llama.cpp, flit also says why a call is waiting (every slot busy with
-other requests, the model asleep or loading), shows how much of each prompt
-came from llama.cpp's cache, keeps each session's prompt cache in a save
-file between turns (`llamacpp.kv_cache`, for servers started with
-`--slot-save-path`) so a long session doesn't re-read its whole prompt after
-other requests, and offers **Answer now** while a model is thinking, on
-models where llama.cpp can cut the thinking short.
-
-You can keep typing while the agent works: a message sent mid-turn is
-queued and joins the conversation at the agent's next step (after the
-current model call or tool, before the next call), or starts the next turn
-if the agent was finishing. Queued messages show in every client and can be
-edited or cancelled until then. Stop keeps them queued; they go out first
-with your next message (or press Send with an empty box).
-
-The agent can hand a self-contained task to a **subagent** with the `agent`
-tool. A subagent starts with an empty context (a short system prompt and the
-task), works until it's done or reaches `agent.subagents.max_steps` (20; at
-the cap it is told to write its report), and only its final report goes back
-into the agent's context, which keeps that context small. There are two
-kinds:
-
-- **explore** only reads: `read`, `list`, `grep`, `git_status`/`diff`/`log`,
-  `web_fetch`/`web_search`, and `shell` limited to the built-in read-only
-  commands (`shell.deny` still applies; allow patterns, "allow for this
-  session" and yolo don't widen it). Write tools and MCP tools aren't
-  offered, and it never asks you anything.
-- **build** has the session's tools (MCP servers included) and the
-  project's `AGENTS.md`. Its shell commands go through the session's rules,
-  safety check, yolo mode and prompts exactly like the agent's own; prompts
-  show in the session as usual.
-
-Subagents can't start subagents, and don't get `todo` or skills. They run on
-`agent.tasks.explore` / `agent.tasks.build` when set, otherwise on the
-session's model. Stopping the turn stops the subagent. Everything a subagent
-does is in the session's event log (`subagent_started`, its events wrapped in
-`subagent_event`, `subagent_done`), so it replays; the app shows it as a card
-with the kind, model and status that expands to its tool calls and report.
-`agent.subagents.enabled: false` turns the tool off.
-
-Long conversations are compacted so they keep fitting the model's context.
-Before a model call that would fill `agent.compaction.threshold` of the
-context window (0.8), flit has a model (`agent.tasks.compaction`, or the
-session's own) summarize the older part, and from then on sends the summary,
-in the system prompt, plus the latest `agent.compaction.keep_turns` turns
-(2) word for word. A single turn too big for that is cut between its steps
-instead, keeping the request it's working on. Token counts are exact on
-llama.cpp (its `input_tokens` endpoint, and the slots' real `n_ctx`) and
-estimated elsewhere (about 4 characters a token); a model whose window the
-catalog doesn't know isn't compacted automatically (set `context_length` in
-`models.yaml`). `/compact` in the app (or the `Compact` RPC) does it on
-demand, with optional instructions (`/compact keep the API details`). The
-summary is capped at `agent.compaction.max_summary_tokens` (4096); if it
-fails, the session carries on with its full history. Nothing is deleted:
-the log records each compaction (summary, the last event it covers, tokens
-before and after, model, automatic or not), the app marks it in the chat
-with the older messages greyed out above, and a saved llama.cpp prompt cache
-from before it is dropped instead of restored. `agent.compaction.auto:
-false` leaves only `/compact`.
-
-Everything a session does is stored as numbered events in `flit.db` in the
-data dir. A client can attach from any event number, replay, and then follow
-live, so reconnecting never loses anything.
-
-Model calls have a watchdog: a call that goes quiet for
-`agent.model_first_token_timeout` (10m) before the model starts answering,
-or `agent.model_stall_timeout` (2m) once it has, is stopped, and one that
-produced nothing yet is retried `agent.model_retries` times (1). With
-llama.cpp, flit asks for prompt progress, so a long prompt keeps the short
-limit fed and the app can show how far it has got. While a call waits, the
-app shows the elapsed time, and after a minute of silence offers Retry and
-Stop. Each call's timeline (sent, first byte, first token, last byte, how
-it ended) is in the log; `flit debug session ID` prints a session's
-timeline and what never finished, to see whether a stuck turn was waiting
-on the model, cut off mid-reply, or stuck in a tool.
-
-When a llama.cpp call stalls, fails or is retried, flit asks the server
-what it was doing before giving up on the request (model state, and each
-slot sampled twice, 2s apart) and logs it with the call, so the timeline
-says which layer was stuck: llama.cpp still generating while nothing
-reached flit (router, proxy, network), llama.cpp itself making no progress
-(model, GPU), or the model reloaded or gone. `flit debug dump` asks the
-running server (admin token) what it is doing right now: each session's
-model call in flight and its phase, the running tool, the concurrency
-limits in use, whether each session's lock can be taken, and, with
-`--stacks` or when a lock is held, every goroutine's stack.
-
-The API schema lives in [`proto/`](proto/); `buf generate` there produces the
-Go server code and the Dart client. See [`AGENTS.md`](AGENTS.md) for the
-full workflow.
-
-## App
-
-### Today: a Hermes gateway client
-
-Hermes already ships four clients: a desktop app (Electron), a web dashboard,
-a terminal UI (Ink/React), and a plain CLI. This project adds a **fifth**: a
-Flutter app that runs on iOS, Android, macOS, Windows, and Linux from one
-codebase, with mobile as a first-class target the others don't serve.
-
-The app is a **gateway client**. It does *not* embed or spawn the Python
-backend the way the Electron desktop app does — it connects to a gateway you
-point it at.
-
-#### How it talks to Hermes
-
-The app speaks the same protocol the desktop app and TUI use: **newline-delimited
-JSON-RPC 2.0 over a WebSocket** at `/api/ws`, dispatched by the gateway's
-`tui_gateway.server.dispatch()`. Some features (notably the kanban plugin) are
-served as **REST** on the same host/port.
-
-The full, source-grounded protocol contract lives in
-[`docs/reference/`](docs/reference/). Every claim there is cited to a
-`file:line` in the `hermes-agent` repo so an implementer can verify it.
-
-### Prerequisites
-
-- **Flutter SDK 3.44.8** (stable channel). The dev machine keeps it at
-  `~/flutter`; add `~/flutter/bin` to your `PATH`. See
-  [Phase 0](docs/phases/phase-0-foundation.md) for setup notes.
-- A running Hermes gateway to connect to (local `hermes dashboard`, or a remote
-  one).
-- **Linux build deps** (Debian/Ubuntu), needed for the GTK + secure-storage
-  native build:
-
-  ```sh
-  sudo apt install clang cmake ninja-build libgtk-3-dev libsecret-1-dev xz-utils
-  ```
-
-  `libsecret-1-dev` is required by `flutter_secure_storage` (used to store
-  session tokens / cookies). Without it the Linux desktop build fails at
-  CMake's `pkg_check_modules` step with `libsecret-1>=0.18.4 … not found`.
-- **macOS**: Xcode + CocoaPods (for iOS/macOS targets).
-- **Windows**: Visual Studio with the "Desktop development with C++" workload.
-- **Android**: Android Studio / Android SDK + NDK (NDK is deferred; see roadmap).
-- **Web**: no extra deps beyond Flutter.
-
-### Develop
-
-All commands run from [`app/`](app/):
-
-```sh
-cd app
-export PATH="$HOME/flutter/bin:$PATH"
-flutter pub get
-dart run build_runner build --delete-conflicting-outputs   # codegen (freezed/json/riverpod)
-flutter analyze                                            # must stay clean
-flutter test
-flutter run -d linux
+```yaml
+mcp_servers:
+  - name: fetch
+    command: uvx
+    args: [mcp-server-fetch]
+  - name: docs
+    url: https://example.com/mcp
+    headers:
+      Authorization: Bearer ${DOCS_MCP_TOKEN}   # read from the environment
 ```
 
-Builds: `task build-android|build-ios|build-web|build-macos|build-windows|build-linux`
-(override with `BUILD_MODE=debug task …`; default is `release`). See
-[`app/README.md`](app/README.md) and [`AGENTS.md`](AGENTS.md) for the full
-command reference, pinned dependencies, and architecture rules.
+Servers that need a browser sign-in: `flit mcp login NAME`. See
+[docs/mcp.md](docs/mcp.md).
 
-### Screenshots
+### Skills
 
-#### Android
+Drop a skill ([Agent Skills](https://agentskills.io) format) into your repo's
+`.agents/skills/` (or `.claude/skills/`), or into `skills/` next to the
+config. Invoke one by typing `/skill-name`. Built in: **/init** (writes your
+repo's `AGENTS.md`) and **/grill-me** (interviews you to turn an idea into a
+plan). See [docs/skills.md](docs/skills.md).
 
-<img src="docs/screenshots/android-chat.png" alt="Android chat" width="270" />
-<img src="docs/screenshots/android-sessions.png" alt="Android sessions" width="270" />
-<img src="docs/screenshots/android-menu.png" alt="Android menu" width="270" />
+### Scheduled jobs (cron)
 
-#### Linux
+A job is a Markdown file in `crons/`: the frontmatter says when, the body is
+the prompt.
 
-<img src="docs/screenshots/linux-chat.jpg" alt="Linux chat" width="480" />
-<img src="docs/screenshots/linux-sessions.jpg" alt="Linux sessions" width="480" />
+```markdown
+---
+schedule: weekdays at 8:30
+project: myapp
+---
+Check CI on main and the open PRs. Report anything red, with the failing step.
+```
 
-## For implementers (app)
+Schedules accept cron syntax, intervals (`every 2h`), natural forms (`mon, wed
+and fri at 17:30`) and one-offs. Each run is a normal session you can open and
+continue. See [docs/cron.md](docs/cron.md).
 
-The plan is written so that most tickets can be picked up and completed
-**independently**. Before implementing (or extending) any ticket:
+### GitHub webhooks
 
-1. Read [`docs/reference/05-conventions.md`](docs/reference/05-conventions.md) once.
-2. Read the ticket. Each ticket lists its **inputs** (which reference sections
-   it depends on), **deliverables** (files to create), and **acceptance
-   criteria** (how to know it's done).
-3. Ground every wire interaction in [`docs/reference/03-mvp-wire-shapes.md`](docs/reference/03-mvp-wire-shapes.md)
-   or the relevant reference section. Do not invent RPC method names or fields.
+A file in `webhooks/` turns a GitHub event into a session. Only `/webhooks/`
+needs to face the internet; deliveries are checked with the hook's signing
+secret.
 
-## Release process (app)
+```markdown
+---
+source: github
+secret: ${FLIT_GITHUB_SECRET}
+events: [pull_request.opened]
+---
+A pull request was opened. Check it out, build it and run the tests.
+Say whether it is ready to merge, and if not, what is missing.
+```
 
-Create a tag with a description (`git tag --sign`) and then push (`git push origin --tags`). CI creates the github
-release, etc.
+See [docs/webhooks.md](docs/webhooks.md).
 
-Server binaries are built by the Server workflow on every change but are not
-attached to releases yet.
+### Notifications (ntfy)
+
+Get cron and webhook results on your phone even when the app is closed:
+
+```yaml
+notify:
+  ntfy: https://ntfy.sh/a-long-random-topic
+```
+
+### Web search
+
+`web_fetch` is on by default. For `web_search`, point flit at your own
+[SearXNG](https://github.com/searxng/searxng) instance (with its JSON format
+enabled) under `web.search` in the config.
+
+### Language servers
+
+After each edit, flit asks the file's language server for errors and shows
+them to the model, so it fixes type errors without a build. `gopls`,
+`rust-analyzer`, `basedpyright`/`pyright`, `typescript-language-server` and
+`clangd` are used automatically when installed. You can add more. See
+[docs/lsp.md](docs/lsp.md).
+
+## How sessions work
+
+A session is a conversation with the agent in one working directory.
+
+- **Tools:** `read`, `write`, `patch`, `list`, `grep`, `shell`, git, web, plus
+  MCP tools and skills. File tools can't leave the working directory. An
+  `AGENTS.md` or `CLAUDE.md` there is added to the system prompt.
+- **Approvals:** safe commands run on their own; the rest wait for your OK on
+  any connected device.
+- **Subagents:** `explore` (read-only) and `build` workers keep the main
+  conversation small.
+- **Long sessions** are compacted automatically. `/compact` does it on demand.
+- **Changes view:** tap the branch chip in the session header to see every
+  file changed since the session started. See [docs/git.md](docs/git.md).
+- **Branches:** retry from or edit any earlier message. See
+  [docs/branches.md](docs/branches.md).
+
+Details: [docs/sessions.md](docs/sessions.md).
+
+## Safety and privacy
+
+- **Every API call needs a token**, localhost included. The first-run token is
+  the admin token; each paired device gets its own, stored hashed and
+  revocable.
+- **Shell rules are not a sandbox.** They cut down on prompts; they don't
+  contain a determined command. Use deny rules, leave yolo mode off for
+  projects you care about, and run flit in a container or VM if you need real
+  isolation. See [docs/shell.md](docs/shell.md).
+- **File tools stay inside the session's working directory.**
+- **Nothing pushes.** The git tools commit locally only.
+- **Your data stays on your server.** Sessions are in one SQLite file in the
+  data folder. flit sends requests only to the model providers, MCP servers
+  and web pages you configure or ask it to fetch.
+- **Self-learning is opt-in per proposal.** Nothing is written to memory
+  until you accept it. See [docs/learning.md](docs/learning.md).
+- **Training data is opt-out per project.** flit records every model call so
+  you can export it; projects can opt out. See [docs/export.md](docs/export.md).
+
+## Command reference
+
+```
+flit serve                  run the server
+flit token                  print the admin API token
+flit pair [--url URL]       pair a phone or another machine (shows a QR code)
+flit devices [--all]        list paired devices
+flit devices revoke ID      revoke a paired device
+flit config defaults        print the full default config
+flit config update          add new default settings to your config (--dry-run: diff)
+flit mcp list|login|logout  manage MCP server sign-ins
+flit cron list              list cron jobs
+flit cron run NAME          run a cron job now and wait for the result
+flit learn ID               propose lessons from a session to remember
+flit export [flags]         write sessions as JSONL for datasets
+flit worktree remove ID     remove a session's git worktree, keeping its history
+flit debug session [ID]     print a session's timeline (find where a turn got stuck)
+flit debug dump             show what the running server is doing right now
+flit version                print version information
+```
+
+`serve`, `token`, `pair` and `devices` take `--config FILE` and `--data-dir DIR`.
+
+## More docs
+
+| Topic | Page |
+|---|---|
+| Models, providers, roles | [docs/models.md](docs/models.md) |
+| Running with llama.cpp | [docs/llamacpp.md](docs/llamacpp.md) |
+| MCP servers | [docs/mcp.md](docs/mcp.md) |
+| Skills | [docs/skills.md](docs/skills.md) |
+| Sessions, subagents, compaction | [docs/sessions.md](docs/sessions.md) |
+| Shell approval rules | [docs/shell.md](docs/shell.md) |
+| Git changes and worktrees | [docs/git.md](docs/git.md) |
+| Conversation branches | [docs/branches.md](docs/branches.md) |
+| Language server diagnostics | [docs/lsp.md](docs/lsp.md) |
+| Cron jobs | [docs/cron.md](docs/cron.md) |
+| GitHub webhooks | [docs/webhooks.md](docs/webhooks.md) |
+| Memory and self-learning | [docs/learning.md](docs/learning.md) |
+| Exporting sessions | [docs/export.md](docs/export.md) |
+| Troubleshooting a stuck turn | [docs/troubleshooting.md](docs/troubleshooting.md) |
+
+## Contributing
+
+Building from source, repo layout, the API schema, and the release process are
+in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+[MIT](LICENSE)
