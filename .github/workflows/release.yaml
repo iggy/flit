@@ -12,6 +12,11 @@ name: Release
 # - All Flutter commands run in app/ (Flutter project is not at repo root).
 # - Linux produces an AppImage, macOS a DMG, Windows a ZIP, Android the APK,
 #   web a ZIP, iOS a zipped unsigned .app (no codesign in CI).
+# - The `server` job cross-compiles the static Go server (server/) for
+#   linux/darwin/windows on amd64/arm64 and packages each as
+#   `flit-server-<version>-<os>-<arch>.tar.gz` (`.zip` on Windows).
+# - The release also carries a `flit-<version>-sha256sums.txt` covering every
+#   asset.
 # - Code signing / notarization is out of scope; artifacts are unsigned.
 
 on:
@@ -272,10 +277,115 @@ jobs:
           path: app/build/windows/flit-windows-x64.zip
           if-no-files-found: error
 
+  # The flit server: a static, cgo-free Go binary, cross-compiled on one Linux
+  # runner for every OS/arch pair and packaged as
+  # `flit-server-<version>-<os>-<arch>.tar.gz` (`.zip` on Windows). The
+  # archives are already fully named, so the release job leaves them alone.
+  server:
+    name: Server - ${{ matrix.goos }}/${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: server
+
+    strategy:
+      fail-fast: false
+      matrix:
+        goos: [linux, darwin, windows]
+        goarch: [amd64, arm64]
+
+    env:
+      CGO_ENABLED: '0'
+      GOOS: ${{ matrix.goos }}
+      GOARCH: ${{ matrix.goarch }}
+      INPUT_TAG: ${{ github.event.inputs.tag }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Resolve release version from tag
+        id: ver
+        shell: bash
+        run: |
+          # Same logic as the app build job's `ver` step — keep them in lockstep.
+          tag="${INPUT_TAG:-$GITHUB_REF_NAME}"
+          ver="${tag#v}"
+          if ! printf '%s' "$ver" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([-.+].*)?$'; then
+            echo "::error::Tag '$tag' does not look like vX.Y.Z"
+            exit 1
+          fi
+          echo "version=$ver" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+
+      - name: Build static binary
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          ext=""
+          if [ "$GOOS" = windows ]; then ext=".exe"; fi
+          pkg=github.com/iggy/flit/server/internal/buildinfo
+          # Same ldflags as the Server workflow, with the version taken from
+          # the tag instead of `git describe`.
+          ldflags="-s -w -X ${pkg}.version=${VERSION} -X ${pkg}.commit=${GITHUB_SHA} -X ${pkg}.buildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          mkdir -p "dist/stage/flit-server-${VERSION}-${GOOS}-${GOARCH}"
+          go build -trimpath -ldflags "$ldflags" \
+            -o "dist/stage/flit-server-${VERSION}-${GOOS}-${GOARCH}/flit${ext}" ./cmd/flit
+          file "dist/stage/flit-server-${VERSION}-${GOOS}-${GOARCH}/flit${ext}"
+
+      - name: Check Linux binary is static
+        if: matrix.goos == 'linux'
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: file "dist/stage/flit-server-${VERSION}-linux-${GOARCH}/flit" | grep -q 'statically linked'
+
+      - name: Check binary reports the tag version
+        # Only the linux/amd64 build can run on this runner.
+        if: matrix.goos == 'linux' && matrix.goarch == 'amd64'
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          out="$("dist/stage/flit-server-${VERSION}-linux-amd64/flit" version)"
+          echo "$out"
+          case "$out" in
+            "flit ${VERSION} "*) ;;
+            *) echo "::error::'flit version' does not report ${VERSION}"; exit 1 ;;
+          esac
+
+      - name: Package archive
+        id: pkg
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          base="flit-server-${VERSION}-${GOOS}-${GOARCH}"
+          install -m 0644 ../LICENSE "dist/stage/${base}/LICENSE"
+          if [ "$GOOS" = windows ]; then
+            archive="${base}.zip"
+            (cd dist/stage && zip -qr "../${archive}" "${base}")
+          else
+            archive="${base}.tar.gz"
+            tar -C dist/stage --owner=0 --group=0 --numeric-owner -czf "dist/${archive}" "${base}"
+          fi
+          echo "archive=dist/${archive}" >> "$GITHUB_OUTPUT"
+          ls -l "dist/${archive}"
+
+      - name: Upload server artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-server-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: server/${{ steps.pkg.outputs.archive }}
+          if-no-files-found: error
+
   release:
     name: Publish GitHub Release
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build, server]
 
     steps:
       - name: Checkout repository
@@ -310,6 +420,8 @@ jobs:
           ver="${{ steps.ver.outputs.version }}"
           for f in *; do
             case "$f" in
+              # Server archives are built with their final name already.
+              flit-server-"${ver}"-*) ;;
               flit-x86_64.AppImage)  mv "$f" "flit-${ver}-linux-x86_64.AppImage" ;;
               flit-web.zip)          mv "$f" "flit-${ver}-web.zip" ;;
               flit-ios-unsigned.zip) mv "$f" "flit-${ver}-ios-unsigned.zip" ;;
@@ -323,6 +435,16 @@ jobs:
             esac
           done
           ls -la
+
+      - name: Generate checksums
+        working-directory: release-assets
+        run: |
+          # One SHA-256 line per asset; verify with `sha256sum -c` (or
+          # `shasum -a 256 -c` on macOS) next to the downloaded files.
+          ver="${{ steps.ver.outputs.version }}"
+          sha256sum -- * > "$RUNNER_TEMP/checksums.txt"
+          mv "$RUNNER_TEMP/checksums.txt" "flit-${ver}-sha256sums.txt"
+          cat "flit-${ver}-sha256sums.txt"
 
       - name: Create GitHub Release and upload assets
         uses: softprops/action-gh-release@v3
