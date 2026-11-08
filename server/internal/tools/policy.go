@@ -153,6 +153,9 @@ type segment struct {
 	text, full string
 	name       string
 	args       []arg
+	// assigns are the FOO=bar prefixes; masked is ShellPart.Masked.
+	assigns []ShellAssign
+	masked  bool
 }
 
 // arg is one argument after quote removal. lit is false when its value is
@@ -181,6 +184,11 @@ func (s segment) sessionPattern() string {
 type parsed struct {
 	segments []segment
 	unsafe   string
+	// exports are the variables set for the whole command: export FOO=bar
+	// and FOO=bar on its own.
+	exports []ShellAssign
+	// failed says the command could not be parsed at all.
+	failed bool
 }
 
 // dangerousEnv are variables that change what a command runs or loads, so
@@ -190,7 +198,7 @@ var dangerousEnv = regexp.MustCompile(`^(PATH|IFS|ENV|BASH_ENV|PS4|PROMPT_COMMAN
 func parseShell(src string) parsed {
 	f, err := syntax.NewParser(syntax.Variant(syntax.LangBash)).Parse(strings.NewReader(src), "")
 	if err != nil {
-		return parsed{unsafe: "could not parse the command"}
+		return parsed{unsafe: "could not parse the command", failed: true}
 	}
 	var p parsed
 	unsafe := func(reason string) {
@@ -215,19 +223,28 @@ func parseShell(src string) parsed {
 		return src[a.Pos().Offset():b.End().Offset()]
 	}
 
-	var stmts func([]*syntax.Stmt)
-	var command func(syntax.Command)
-	stmts = func(list []*syntax.Stmt) {
-		for _, st := range list {
+	assign := func(a *syntax.Assign) (ShellAssign, bool) {
+		if a.Name == nil || a.Naked || a.Value == nil {
+			return ShellAssign{}, false
+		}
+		v := wordValue(a.Value)
+		return ShellAssign{Name: a.Name.Value, Value: v.val, Literal: v.lit}, true
+	}
+
+	// masked says a statement's exit status doesn't become the command's.
+	var stmts func(list []*syntax.Stmt, masked bool)
+	var command func(c syntax.Command, masked bool)
+	stmts = func(list []*syntax.Stmt, masked bool) {
+		for i, st := range list {
 			if st.Coprocess {
 				unsafe("starts a coprocess")
 			}
 			if st.Cmd != nil {
-				command(st.Cmd)
+				command(st.Cmd, masked || i < len(list)-1)
 			}
 		}
 	}
-	command = func(c syntax.Command) {
+	command = func(c syntax.Command, masked bool) {
 		switch c := c.(type) {
 		case *syntax.CallExpr:
 			for _, a := range c.Assigns {
@@ -235,49 +252,76 @@ func parseShell(src string) parsed {
 					unsafe("sets an environment variable that changes what runs")
 				}
 			}
+			var assigns []ShellAssign
+			for _, a := range c.Assigns {
+				if v, ok := assign(a); ok {
+					assigns = append(assigns, v)
+				}
+			}
 			if len(c.Args) == 0 {
-				return // FOO=bar on its own
+				p.exports = append(p.exports, assigns...) // FOO=bar on its own
+				return
 			}
 			name := wordValue(c.Args[0])
 			if !name.lit || name.val == "" {
 				unsafe("the program name is only known when it runs")
 				return
 			}
-			s := segment{text: slice(c.Args[0], c.Args[len(c.Args)-1]), full: slice(c, c), name: name.val}
+			s := segment{text: slice(c.Args[0], c.Args[len(c.Args)-1]), full: slice(c, c), name: name.val, masked: masked, assigns: assigns}
 			for _, w := range c.Args[1:] {
 				s.args = append(s.args, wordValue(w))
 			}
 			p.segments = append(p.segments, s)
 		case *syntax.BinaryCmd:
-			stmts([]*syntax.Stmt{c.X, c.Y})
+			switch c.Op {
+			case syntax.OrStmt:
+				stmts([]*syntax.Stmt{c.X}, true)
+				stmts([]*syntax.Stmt{c.Y}, true)
+			case syntax.Pipe, syntax.PipeAll:
+				stmts([]*syntax.Stmt{c.X}, true)
+				stmts([]*syntax.Stmt{c.Y}, masked)
+			default:
+				// && : both must succeed for the command to.
+				stmts([]*syntax.Stmt{c.X}, masked)
+				stmts([]*syntax.Stmt{c.Y}, masked)
+			}
 		case *syntax.Block:
-			stmts(c.Stmts)
+			stmts(c.Stmts, masked)
 		case *syntax.Subshell:
-			stmts(c.Stmts)
+			stmts(c.Stmts, masked)
 		case *syntax.IfClause:
 			for ; c != nil; c = c.Else {
-				stmts(c.Cond)
-				stmts(c.Then)
+				stmts(c.Cond, true)
+				stmts(c.Then, true)
 			}
 		case *syntax.WhileClause:
-			stmts(c.Cond)
-			stmts(c.Do)
+			stmts(c.Cond, true)
+			stmts(c.Do, true)
 		case *syntax.ForClause:
-			stmts(c.Do)
+			stmts(c.Do, true)
 		case *syntax.TimeClause:
 			if c.Stmt != nil {
-				stmts([]*syntax.Stmt{c.Stmt})
+				stmts([]*syntax.Stmt{c.Stmt}, masked)
 			}
 		case *syntax.TestClause, *syntax.ArithmCmd:
 			// [[ ... ]] and (( ... )) only compute; substitutions inside
 			// were caught above.
 		case *syntax.FuncDecl:
 			unsafe("defines a function")
+		case *syntax.DeclClause:
+			if c.Variant != nil && c.Variant.Value == "export" {
+				for _, a := range c.Args {
+					if v, ok := assign(a); ok {
+						p.exports = append(p.exports, v)
+					}
+				}
+			}
+			unsafe(fmt.Sprintf("uses a shell construct flit doesn't check (%s)", strings.TrimPrefix(fmt.Sprintf("%T", c), "*syntax.")))
 		default:
 			unsafe(fmt.Sprintf("uses a shell construct flit doesn't check (%s)", strings.TrimPrefix(fmt.Sprintf("%T", c), "*syntax.")))
 		}
 	}
-	stmts(f.Stmts)
+	stmts(f.Stmts, false)
 	return p
 }
 

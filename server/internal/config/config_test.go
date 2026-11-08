@@ -397,3 +397,31 @@ func TestRepeatCallNudgesAndReadBeforeWrite(t *testing.T) {
 		t.Fatal("[1] accepted")
 	}
 }
+
+func TestLearningFacts(t *testing.T) {
+	cfg, err := Parse([]byte("{}"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	l := cfg.Learning
+	if l.Facts != "on" || l.FactsMax != 10 || l.FactsPromoteSessions != 3 || l.FactsRetireSessions != 2 || l.FactsFireRate != 0.4 || l.FactsFireMinSessions != 4 {
+		t.Fatalf("defaults: %+v", l)
+	}
+	// YAML's on and off stay strings here.
+	for _, mode := range []string{"on", "off", "propose"} {
+		cfg, err := Parse([]byte("learning:\n  facts: " + mode + "\n"))
+		if err != nil || cfg.Learning.Facts != mode {
+			t.Errorf("%s: %q, %v", mode, cfg.Learning.Facts, err)
+		}
+	}
+	for _, in := range []string{
+		"learning:\n  facts: sometimes\n",
+		"learning:\n  facts_max: -1\n",
+		"learning:\n  facts_promote_sessions: 0\n",
+		"learning:\n  facts_fire_rate: 1.5\n",
+	} {
+		if _, err := Parse([]byte(in)); err == nil {
+			t.Errorf("accepted %q", in)
+		}
+	}
+}

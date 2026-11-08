@@ -270,6 +270,93 @@ final $typed_data.Uint8List rejectLearnProposalResponseDescriptor =
         'ChtSZWplY3RMZWFyblByb3Bvc2FsUmVzcG9uc2USMgoIcHJvcG9zYWwYASABKAsyFi5mbGl0Ln'
         'YxLkxlYXJuUHJvcG9zYWxSCHByb3Bvc2Fs');
 
+@$core.Deprecated('Use learnedFactDescriptor instead')
+const LearnedFact$json = {
+  '1': 'LearnedFact',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
+    {'1': 'project_id', '3': 2, '4': 1, '5': 9, '10': 'projectId'},
+    {'1': 'scope', '3': 3, '4': 1, '5': 9, '10': 'scope'},
+    {'1': 'family', '3': 4, '4': 1, '5': 9, '10': 'family'},
+    {'1': 'state', '3': 5, '4': 1, '5': 9, '10': 'state'},
+    {'1': 'text', '3': 6, '4': 1, '5': 9, '10': 'text'},
+    {'1': 'confirmations', '3': 7, '4': 1, '5': 5, '10': 'confirmations'},
+    {'1': 'exercised', '3': 8, '4': 1, '5': 5, '10': 'exercised'},
+    {'1': 'fired', '3': 9, '4': 1, '5': 5, '10': 'fired'},
+    {'1': 'injected', '3': 10, '4': 1, '5': 8, '10': 'injected'},
+    {'1': 'evidence', '3': 11, '4': 3, '5': 9, '10': 'evidence'},
+  ],
+};
+
+/// Descriptor for `LearnedFact`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List learnedFactDescriptor = $convert.base64Decode(
+    'CgtMZWFybmVkRmFjdBIOCgJpZBgBIAEoCVICaWQSHQoKcHJvamVjdF9pZBgCIAEoCVIJcHJvam'
+    'VjdElkEhQKBXNjb3BlGAMgASgJUgVzY29wZRIWCgZmYW1pbHkYBCABKAlSBmZhbWlseRIUCgVz'
+    'dGF0ZRgFIAEoCVIFc3RhdGUSEgoEdGV4dBgGIAEoCVIEdGV4dBIkCg1jb25maXJtYXRpb25zGA'
+    'cgASgFUg1jb25maXJtYXRpb25zEhwKCWV4ZXJjaXNlZBgIIAEoBVIJZXhlcmNpc2VkEhQKBWZp'
+    'cmVkGAkgASgFUgVmaXJlZBIaCghpbmplY3RlZBgKIAEoCFIIaW5qZWN0ZWQSGgoIZXZpZGVuY2'
+    'UYCyADKAlSCGV2aWRlbmNl');
+
+@$core.Deprecated('Use listLearnedFactsRequestDescriptor instead')
+const ListLearnedFactsRequest$json = {
+  '1': 'ListLearnedFactsRequest',
+  '2': [
+    {'1': 'project_id', '3': 1, '4': 1, '5': 9, '10': 'projectId'},
+  ],
+};
+
+/// Descriptor for `ListLearnedFactsRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List listLearnedFactsRequestDescriptor =
+    $convert.base64Decode(
+        'ChdMaXN0TGVhcm5lZEZhY3RzUmVxdWVzdBIdCgpwcm9qZWN0X2lkGAEgASgJUglwcm9qZWN0SW'
+        'Q=');
+
+@$core.Deprecated('Use listLearnedFactsResponseDescriptor instead')
+const ListLearnedFactsResponse$json = {
+  '1': 'ListLearnedFactsResponse',
+  '2': [
+    {
+      '1': 'facts',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.flit.v1.LearnedFact',
+      '10': 'facts'
+    },
+  ],
+};
+
+/// Descriptor for `ListLearnedFactsResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List listLearnedFactsResponseDescriptor =
+    $convert.base64Decode(
+        'ChhMaXN0TGVhcm5lZEZhY3RzUmVzcG9uc2USKgoFZmFjdHMYASADKAsyFC5mbGl0LnYxLkxlYX'
+        'JuZWRGYWN0UgVmYWN0cw==');
+
+@$core.Deprecated('Use forgetLearnedFactRequestDescriptor instead')
+const ForgetLearnedFactRequest$json = {
+  '1': 'ForgetLearnedFactRequest',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
+  ],
+};
+
+/// Descriptor for `ForgetLearnedFactRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List forgetLearnedFactRequestDescriptor = $convert
+    .base64Decode('ChhGb3JnZXRMZWFybmVkRmFjdFJlcXVlc3QSDgoCaWQYASABKAlSAmlk');
+
+@$core.Deprecated('Use forgetLearnedFactResponseDescriptor instead')
+const ForgetLearnedFactResponse$json = {
+  '1': 'ForgetLearnedFactResponse',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
+  ],
+};
+
+/// Descriptor for `ForgetLearnedFactResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List forgetLearnedFactResponseDescriptor =
+    $convert.base64Decode(
+        'ChlGb3JnZXRMZWFybmVkRmFjdFJlc3BvbnNlEg4KAmlkGAEgASgJUgJpZA==');
+
 const $core.Map<$core.String, $core.dynamic> LearningServiceBase$json = {
   '1': 'LearningService',
   '2': [
@@ -290,6 +377,17 @@ const $core.Map<$core.String, $core.dynamic> LearningServiceBase$json = {
       '2': '.flit.v1.RejectLearnProposalRequest',
       '3': '.flit.v1.RejectLearnProposalResponse'
     },
+    {
+      '1': 'ListLearnedFacts',
+      '2': '.flit.v1.ListLearnedFactsRequest',
+      '3': '.flit.v1.ListLearnedFactsResponse',
+      '4': {'34': 1},
+    },
+    {
+      '1': 'ForgetLearnedFact',
+      '2': '.flit.v1.ForgetLearnedFactRequest',
+      '3': '.flit.v1.ForgetLearnedFactResponse'
+    },
   ],
 };
 
@@ -305,6 +403,11 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.flit.v1.AcceptLearnProposalResponse': AcceptLearnProposalResponse$json,
   '.flit.v1.RejectLearnProposalRequest': RejectLearnProposalRequest$json,
   '.flit.v1.RejectLearnProposalResponse': RejectLearnProposalResponse$json,
+  '.flit.v1.ListLearnedFactsRequest': ListLearnedFactsRequest$json,
+  '.flit.v1.ListLearnedFactsResponse': ListLearnedFactsResponse$json,
+  '.flit.v1.LearnedFact': LearnedFact$json,
+  '.flit.v1.ForgetLearnedFactRequest': ForgetLearnedFactRequest$json,
+  '.flit.v1.ForgetLearnedFactResponse': ForgetLearnedFactResponse$json,
 };
 
 /// Descriptor for `LearningService`. Decode as a `google.protobuf.ServiceDescriptorProto`.
@@ -315,4 +418,7 @@ final $typed_data.Uint8List learningServiceDescriptor = $convert.base64Decode(
     'NlIgOQAgESYAoTQWNjZXB0TGVhcm5Qcm9wb3NhbBIjLmZsaXQudjEuQWNjZXB0TGVhcm5Qcm9w'
     'b3NhbFJlcXVlc3QaJC5mbGl0LnYxLkFjY2VwdExlYXJuUHJvcG9zYWxSZXNwb25zZRJgChNSZW'
     'plY3RMZWFyblByb3Bvc2FsEiMuZmxpdC52MS5SZWplY3RMZWFyblByb3Bvc2FsUmVxdWVzdBok'
-    'LmZsaXQudjEuUmVqZWN0TGVhcm5Qcm9wb3NhbFJlc3BvbnNl');
+    'LmZsaXQudjEuUmVqZWN0TGVhcm5Qcm9wb3NhbFJlc3BvbnNlElwKEExpc3RMZWFybmVkRmFjdH'
+    'MSIC5mbGl0LnYxLkxpc3RMZWFybmVkRmFjdHNSZXF1ZXN0GiEuZmxpdC52MS5MaXN0TGVhcm5l'
+    'ZEZhY3RzUmVzcG9uc2UiA5ACARJaChFGb3JnZXRMZWFybmVkRmFjdBIhLmZsaXQudjEuRm9yZ2'
+    'V0TGVhcm5lZEZhY3RSZXF1ZXN0GiIuZmxpdC52MS5Gb3JnZXRMZWFybmVkRmFjdFJlc3BvbnNl');

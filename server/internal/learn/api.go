@@ -7,6 +7,7 @@ import (
 	"connectrpc.com/connect/v2"
 
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
+	"github.com/iggy/flit/server/internal/facts"
 	"github.com/iggy/flit/server/internal/memory"
 	"github.com/iggy/flit/server/internal/store"
 )
@@ -26,6 +27,8 @@ func apiErr(err error) error {
 		code = connect.CodeNotFound
 	case errors.Is(err, ErrDecided), errors.Is(err, memory.ErrChanged), errors.Is(err, ErrNoModel):
 		code = connect.CodeFailedPrecondition
+	case errors.Is(err, facts.ErrAmbiguous):
+		code = connect.CodeInvalidArgument
 	case errors.Is(err, context.Canceled):
 		code = connect.CodeCanceled
 	}
@@ -90,4 +93,37 @@ func (a *API) RejectLearnProposal(ctx context.Context, req *flitv1.RejectLearnPr
 		return nil, apiErr(err)
 	}
 	return &flitv1.RejectLearnProposalResponse{Proposal: ProposalProto(p)}, nil
+}
+
+func (a *API) facts() *facts.Service {
+	return &facts.Service{Store: a.S.Store, Config: a.S.Config}
+}
+
+// ListLearnedFacts implements flitv1connect.LearningServiceHandler.
+func (a *API) ListLearnedFacts(ctx context.Context, req *flitv1.ListLearnedFactsRequest) (*flitv1.ListLearnedFactsResponse, error) {
+	list, err := a.facts().List(ctx, req.ProjectId)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+	out := &flitv1.ListLearnedFactsResponse{}
+	for _, f := range list {
+		out.Facts = append(out.Facts, &flitv1.LearnedFact{
+			Id: f.ID, ProjectId: f.ProjectID, Scope: f.Scope, Family: f.Family, State: f.State, Text: f.Text,
+			Confirmations: int32(f.Confirmations), Exercised: int32(f.Exercised), Fired: int32(f.Fired),
+			Injected: f.Injected, Evidence: f.Evidence,
+		})
+	}
+	return out, nil
+}
+
+// ForgetLearnedFact implements flitv1connect.LearningServiceHandler.
+func (a *API) ForgetLearnedFact(ctx context.Context, req *flitv1.ForgetLearnedFactRequest) (*flitv1.ForgetLearnedFactResponse, error) {
+	if err := required("id", req.Id); err != nil {
+		return nil, err
+	}
+	id, err := a.facts().Forget(ctx, req.Id)
+	if err != nil {
+		return nil, apiErr(err)
+	}
+	return &flitv1.ForgetLearnedFactResponse{Id: id}, nil
 }

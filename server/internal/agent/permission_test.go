@@ -53,7 +53,9 @@ func TestYolo(t *testing.T) {
 		t.Fatalf("results %q", results)
 	}
 
+	h.mu.Lock()
 	h.cfg.Shell.Yolo = true
+	h.mu.Unlock()
 	if s := h.create(); !s.Yolo {
 		t.Fatal("shell.yolo not applied to new sessions")
 	}

@@ -762,6 +762,316 @@ func (x *RejectLearnProposalResponse) GetProposal() *LearnProposal {
 	return nil
 }
 
+// LearnedFact is a fact flit worked out from the event log.
+type LearnedFact struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	Id        string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	ProjectId string                 `protobuf:"bytes,2,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	// The directory the fact applies to, in the Scratch project; else empty.
+	Scope string `protobuf:"bytes,3,opt,name=scope,proto3" json:"scope,omitempty"`
+	// "form_repair", "boundary" or "env_value".
+	Family string `protobuf:"bytes,4,opt,name=family,proto3" json:"family,omitempty"`
+	// "forming", "active", "retired" or "forgotten".
+	State string `protobuf:"bytes,5,opt,name=state,proto3" json:"state,omitempty"`
+	// The fact as a cue and a lesson.
+	Text string `protobuf:"bytes,6,opt,name=text,proto3" json:"text,omitempty"`
+	// Sessions that confirmed it, exercised it, and in which the failure
+	// occurred or was prevented.
+	Confirmations int32 `protobuf:"varint,7,opt,name=confirmations,proto3" json:"confirmations,omitempty"`
+	Exercised     int32 `protobuf:"varint,8,opt,name=exercised,proto3" json:"exercised,omitempty"`
+	Fired         int32 `protobuf:"varint,9,opt,name=fired,proto3" json:"fired,omitempty"`
+	// Whether it goes into the system prompt now.
+	Injected bool `protobuf:"varint,10,opt,name=injected,proto3" json:"injected,omitempty"`
+	// The latest sessions and turns that show it, like "ses_01a15d96 T2".
+	Evidence      []string `protobuf:"bytes,11,rep,name=evidence,proto3" json:"evidence,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LearnedFact) Reset() {
+	*x = LearnedFact{}
+	mi := &file_flit_v1_learning_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LearnedFact) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LearnedFact) ProtoMessage() {}
+
+func (x *LearnedFact) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_learning_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LearnedFact.ProtoReflect.Descriptor instead.
+func (*LearnedFact) Descriptor() ([]byte, []int) {
+	return file_flit_v1_learning_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *LearnedFact) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *LearnedFact) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+func (x *LearnedFact) GetScope() string {
+	if x != nil {
+		return x.Scope
+	}
+	return ""
+}
+
+func (x *LearnedFact) GetFamily() string {
+	if x != nil {
+		return x.Family
+	}
+	return ""
+}
+
+func (x *LearnedFact) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *LearnedFact) GetText() string {
+	if x != nil {
+		return x.Text
+	}
+	return ""
+}
+
+func (x *LearnedFact) GetConfirmations() int32 {
+	if x != nil {
+		return x.Confirmations
+	}
+	return 0
+}
+
+func (x *LearnedFact) GetExercised() int32 {
+	if x != nil {
+		return x.Exercised
+	}
+	return 0
+}
+
+func (x *LearnedFact) GetFired() int32 {
+	if x != nil {
+		return x.Fired
+	}
+	return 0
+}
+
+func (x *LearnedFact) GetInjected() bool {
+	if x != nil {
+		return x.Injected
+	}
+	return false
+}
+
+func (x *LearnedFact) GetEvidence() []string {
+	if x != nil {
+		return x.Evidence
+	}
+	return nil
+}
+
+type ListLearnedFactsRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Empty means every project's.
+	ProjectId     string `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListLearnedFactsRequest) Reset() {
+	*x = ListLearnedFactsRequest{}
+	mi := &file_flit_v1_learning_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListLearnedFactsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListLearnedFactsRequest) ProtoMessage() {}
+
+func (x *ListLearnedFactsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_learning_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListLearnedFactsRequest.ProtoReflect.Descriptor instead.
+func (*ListLearnedFactsRequest) Descriptor() ([]byte, []int) {
+	return file_flit_v1_learning_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *ListLearnedFactsRequest) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+type ListLearnedFactsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Facts         []*LearnedFact         `protobuf:"bytes,1,rep,name=facts,proto3" json:"facts,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListLearnedFactsResponse) Reset() {
+	*x = ListLearnedFactsResponse{}
+	mi := &file_flit_v1_learning_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListLearnedFactsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListLearnedFactsResponse) ProtoMessage() {}
+
+func (x *ListLearnedFactsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_learning_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListLearnedFactsResponse.ProtoReflect.Descriptor instead.
+func (*ListLearnedFactsResponse) Descriptor() ([]byte, []int) {
+	return file_flit_v1_learning_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *ListLearnedFactsResponse) GetFacts() []*LearnedFact {
+	if x != nil {
+		return x.Facts
+	}
+	return nil
+}
+
+type ForgetLearnedFactRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ForgetLearnedFactRequest) Reset() {
+	*x = ForgetLearnedFactRequest{}
+	mi := &file_flit_v1_learning_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ForgetLearnedFactRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ForgetLearnedFactRequest) ProtoMessage() {}
+
+func (x *ForgetLearnedFactRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_learning_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ForgetLearnedFactRequest.ProtoReflect.Descriptor instead.
+func (*ForgetLearnedFactRequest) Descriptor() ([]byte, []int) {
+	return file_flit_v1_learning_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *ForgetLearnedFactRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type ForgetLearnedFactResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ForgetLearnedFactResponse) Reset() {
+	*x = ForgetLearnedFactResponse{}
+	mi := &file_flit_v1_learning_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ForgetLearnedFactResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ForgetLearnedFactResponse) ProtoMessage() {}
+
+func (x *ForgetLearnedFactResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_learning_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ForgetLearnedFactResponse.ProtoReflect.Descriptor instead.
+func (*ForgetLearnedFactResponse) Descriptor() ([]byte, []int) {
+	return file_flit_v1_learning_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *ForgetLearnedFactResponse) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
 var File_flit_v1_learning_proto protoreflect.FileDescriptor
 
 const file_flit_v1_learning_proto_rawDesc = "" +
@@ -811,7 +1121,30 @@ const file_flit_v1_learning_proto_rawDesc = "" +
 	"\x1aRejectLearnProposalRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"Q\n" +
 	"\x1bRejectLearnProposalResponse\x122\n" +
-	"\bproposal\x18\x01 \x01(\v2\x16.flit.v1.LearnProposalR\bproposal*s\n" +
+	"\bproposal\x18\x01 \x01(\v2\x16.flit.v1.LearnProposalR\bproposal\"\xa6\x02\n" +
+	"\vLearnedFact\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x02 \x01(\tR\tprojectId\x12\x14\n" +
+	"\x05scope\x18\x03 \x01(\tR\x05scope\x12\x16\n" +
+	"\x06family\x18\x04 \x01(\tR\x06family\x12\x14\n" +
+	"\x05state\x18\x05 \x01(\tR\x05state\x12\x12\n" +
+	"\x04text\x18\x06 \x01(\tR\x04text\x12$\n" +
+	"\rconfirmations\x18\a \x01(\x05R\rconfirmations\x12\x1c\n" +
+	"\texercised\x18\b \x01(\x05R\texercised\x12\x14\n" +
+	"\x05fired\x18\t \x01(\x05R\x05fired\x12\x1a\n" +
+	"\binjected\x18\n" +
+	" \x01(\bR\binjected\x12\x1a\n" +
+	"\bevidence\x18\v \x03(\tR\bevidence\"8\n" +
+	"\x17ListLearnedFactsRequest\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x01 \x01(\tR\tprojectId\"F\n" +
+	"\x18ListLearnedFactsResponse\x12*\n" +
+	"\x05facts\x18\x01 \x03(\v2\x14.flit.v1.LearnedFactR\x05facts\"*\n" +
+	"\x18ForgetLearnedFactRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"+\n" +
+	"\x19ForgetLearnedFactResponse\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id*s\n" +
 	"\vLearnAction\x12\x1c\n" +
 	"\x18LEARN_ACTION_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10LEARN_ACTION_ADD\x10\x01\x12\x17\n" +
@@ -827,12 +1160,14 @@ const file_flit_v1_learning_proto_rawDesc = "" +
 	"\x18LEARN_STATUS_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14LEARN_STATUS_PENDING\x10\x01\x12\x19\n" +
 	"\x15LEARN_STATUS_ACCEPTED\x10\x02\x12\x19\n" +
-	"\x15LEARN_STATUS_REJECTED\x10\x032\xf1\x02\n" +
+	"\x15LEARN_STATUS_REJECTED\x10\x032\xab\x04\n" +
 	"\x0fLearningService\x126\n" +
 	"\x05Learn\x12\x15.flit.v1.LearnRequest\x1a\x16.flit.v1.LearnResponse\x12b\n" +
 	"\x12ListLearnProposals\x12\".flit.v1.ListLearnProposalsRequest\x1a#.flit.v1.ListLearnProposalsResponse\"\x03\x90\x02\x01\x12`\n" +
 	"\x13AcceptLearnProposal\x12#.flit.v1.AcceptLearnProposalRequest\x1a$.flit.v1.AcceptLearnProposalResponse\x12`\n" +
-	"\x13RejectLearnProposal\x12#.flit.v1.RejectLearnProposalRequest\x1a$.flit.v1.RejectLearnProposalResponseB0Z.github.com/iggy/flit/server/gen/flit/v1;flitv1b\x06proto3"
+	"\x13RejectLearnProposal\x12#.flit.v1.RejectLearnProposalRequest\x1a$.flit.v1.RejectLearnProposalResponse\x12\\\n" +
+	"\x10ListLearnedFacts\x12 .flit.v1.ListLearnedFactsRequest\x1a!.flit.v1.ListLearnedFactsResponse\"\x03\x90\x02\x01\x12Z\n" +
+	"\x11ForgetLearnedFact\x12!.flit.v1.ForgetLearnedFactRequest\x1a\".flit.v1.ForgetLearnedFactResponseB0Z.github.com/iggy/flit/server/gen/flit/v1;flitv1b\x06proto3"
 
 var (
 	file_flit_v1_learning_proto_rawDescOnce sync.Once
@@ -847,7 +1182,7 @@ func file_flit_v1_learning_proto_rawDescGZIP() []byte {
 }
 
 var file_flit_v1_learning_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_flit_v1_learning_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_flit_v1_learning_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_flit_v1_learning_proto_goTypes = []any{
 	(LearnAction)(0),                    // 0: flit.v1.LearnAction
 	(LearnTarget)(0),                    // 1: flit.v1.LearnTarget
@@ -861,6 +1196,11 @@ var file_flit_v1_learning_proto_goTypes = []any{
 	(*AcceptLearnProposalResponse)(nil), // 9: flit.v1.AcceptLearnProposalResponse
 	(*RejectLearnProposalRequest)(nil),  // 10: flit.v1.RejectLearnProposalRequest
 	(*RejectLearnProposalResponse)(nil), // 11: flit.v1.RejectLearnProposalResponse
+	(*LearnedFact)(nil),                 // 12: flit.v1.LearnedFact
+	(*ListLearnedFactsRequest)(nil),     // 13: flit.v1.ListLearnedFactsRequest
+	(*ListLearnedFactsResponse)(nil),    // 14: flit.v1.ListLearnedFactsResponse
+	(*ForgetLearnedFactRequest)(nil),    // 15: flit.v1.ForgetLearnedFactRequest
+	(*ForgetLearnedFactResponse)(nil),   // 16: flit.v1.ForgetLearnedFactResponse
 }
 var file_flit_v1_learning_proto_depIdxs = []int32{
 	0,  // 0: flit.v1.LearnProposal.action:type_name -> flit.v1.LearnAction
@@ -870,19 +1210,24 @@ var file_flit_v1_learning_proto_depIdxs = []int32{
 	3,  // 4: flit.v1.ListLearnProposalsResponse.proposals:type_name -> flit.v1.LearnProposal
 	3,  // 5: flit.v1.AcceptLearnProposalResponse.proposal:type_name -> flit.v1.LearnProposal
 	3,  // 6: flit.v1.RejectLearnProposalResponse.proposal:type_name -> flit.v1.LearnProposal
-	4,  // 7: flit.v1.LearningService.Learn:input_type -> flit.v1.LearnRequest
-	6,  // 8: flit.v1.LearningService.ListLearnProposals:input_type -> flit.v1.ListLearnProposalsRequest
-	8,  // 9: flit.v1.LearningService.AcceptLearnProposal:input_type -> flit.v1.AcceptLearnProposalRequest
-	10, // 10: flit.v1.LearningService.RejectLearnProposal:input_type -> flit.v1.RejectLearnProposalRequest
-	5,  // 11: flit.v1.LearningService.Learn:output_type -> flit.v1.LearnResponse
-	7,  // 12: flit.v1.LearningService.ListLearnProposals:output_type -> flit.v1.ListLearnProposalsResponse
-	9,  // 13: flit.v1.LearningService.AcceptLearnProposal:output_type -> flit.v1.AcceptLearnProposalResponse
-	11, // 14: flit.v1.LearningService.RejectLearnProposal:output_type -> flit.v1.RejectLearnProposalResponse
-	11, // [11:15] is the sub-list for method output_type
-	7,  // [7:11] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	12, // 7: flit.v1.ListLearnedFactsResponse.facts:type_name -> flit.v1.LearnedFact
+	4,  // 8: flit.v1.LearningService.Learn:input_type -> flit.v1.LearnRequest
+	6,  // 9: flit.v1.LearningService.ListLearnProposals:input_type -> flit.v1.ListLearnProposalsRequest
+	8,  // 10: flit.v1.LearningService.AcceptLearnProposal:input_type -> flit.v1.AcceptLearnProposalRequest
+	10, // 11: flit.v1.LearningService.RejectLearnProposal:input_type -> flit.v1.RejectLearnProposalRequest
+	13, // 12: flit.v1.LearningService.ListLearnedFacts:input_type -> flit.v1.ListLearnedFactsRequest
+	15, // 13: flit.v1.LearningService.ForgetLearnedFact:input_type -> flit.v1.ForgetLearnedFactRequest
+	5,  // 14: flit.v1.LearningService.Learn:output_type -> flit.v1.LearnResponse
+	7,  // 15: flit.v1.LearningService.ListLearnProposals:output_type -> flit.v1.ListLearnProposalsResponse
+	9,  // 16: flit.v1.LearningService.AcceptLearnProposal:output_type -> flit.v1.AcceptLearnProposalResponse
+	11, // 17: flit.v1.LearningService.RejectLearnProposal:output_type -> flit.v1.RejectLearnProposalResponse
+	14, // 18: flit.v1.LearningService.ListLearnedFacts:output_type -> flit.v1.ListLearnedFactsResponse
+	16, // 19: flit.v1.LearningService.ForgetLearnedFact:output_type -> flit.v1.ForgetLearnedFactResponse
+	14, // [14:20] is the sub-list for method output_type
+	8,  // [8:14] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_flit_v1_learning_proto_init() }
@@ -897,7 +1242,7 @@ func file_flit_v1_learning_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_flit_v1_learning_proto_rawDesc), len(file_flit_v1_learning_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   9,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

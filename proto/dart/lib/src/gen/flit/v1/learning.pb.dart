@@ -825,6 +825,422 @@ class RejectLearnProposalResponse extends $pb.GeneratedMessage {
   LearnProposal ensureProposal() => $_ensure(0);
 }
 
+/// LearnedFact is a fact flit worked out from the event log.
+class LearnedFact extends $pb.GeneratedMessage {
+  factory LearnedFact({
+    $core.String? id,
+    $core.String? projectId,
+    $core.String? scope,
+    $core.String? family,
+    $core.String? state,
+    $core.String? text,
+    $core.int? confirmations,
+    $core.int? exercised,
+    $core.int? fired,
+    $core.bool? injected,
+    $core.Iterable<$core.String>? evidence,
+  }) {
+    final result = LearnedFact._();
+    if (id != null) result.id = id;
+    if (projectId != null) result.projectId = projectId;
+    if (scope != null) result.scope = scope;
+    if (family != null) result.family = family;
+    if (state != null) result.state = state;
+    if (text != null) result.text = text;
+    if (confirmations != null) result.confirmations = confirmations;
+    if (exercised != null) result.exercised = exercised;
+    if (fired != null) result.fired = fired;
+    if (injected != null) result.injected = injected;
+    if (evidence != null) result.evidence.addAll(evidence);
+    return result;
+  }
+
+  LearnedFact._();
+
+  factory LearnedFact.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      LearnedFact()..mergeFromBuffer(data, registry);
+  factory LearnedFact.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      LearnedFact()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'LearnedFact',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: LearnedFact.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..aOS(2, _omitFieldNames ? '' : 'projectId')
+    ..aOS(3, _omitFieldNames ? '' : 'scope')
+    ..aOS(4, _omitFieldNames ? '' : 'family')
+    ..aOS(5, _omitFieldNames ? '' : 'state')
+    ..aOS(6, _omitFieldNames ? '' : 'text')
+    ..aI(7, _omitFieldNames ? '' : 'confirmations')
+    ..aI(8, _omitFieldNames ? '' : 'exercised')
+    ..aI(9, _omitFieldNames ? '' : 'fired')
+    ..aOB(10, _omitFieldNames ? '' : 'injected')
+    ..pPS(11, _omitFieldNames ? '' : 'evidence')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  LearnedFact clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  LearnedFact copyWith(void Function(LearnedFact) updates) =>
+      super.copyWith((message) => updates(message as LearnedFact))
+          as LearnedFact;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use LearnedFact() / LearnedFact.new instead')
+  static LearnedFact create() => LearnedFact._();
+  static $pb.GeneratedMessage $_createMessage() => LearnedFact._();
+  @$core.override
+  LearnedFact createEmptyInstance() => LearnedFact._();
+  @$core.pragma('dart2js:noInline')
+  static LearnedFact getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<LearnedFact>(
+          LearnedFact.$_createMessage);
+  static LearnedFact? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get id => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set id($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get projectId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set projectId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasProjectId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearProjectId() => $_clearField(2);
+
+  /// The directory the fact applies to, in the Scratch project; else empty.
+  @$pb.TagNumber(3)
+  $core.String get scope => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set scope($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasScope() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearScope() => $_clearField(3);
+
+  /// "form_repair", "boundary" or "env_value".
+  @$pb.TagNumber(4)
+  $core.String get family => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set family($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasFamily() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearFamily() => $_clearField(4);
+
+  /// "forming", "active", "retired" or "forgotten".
+  @$pb.TagNumber(5)
+  $core.String get state => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set state($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasState() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearState() => $_clearField(5);
+
+  /// The fact as a cue and a lesson.
+  @$pb.TagNumber(6)
+  $core.String get text => $_getSZ(5);
+  @$pb.TagNumber(6)
+  set text($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasText() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearText() => $_clearField(6);
+
+  /// Sessions that confirmed it, exercised it, and in which the failure
+  /// occurred or was prevented.
+  @$pb.TagNumber(7)
+  $core.int get confirmations => $_getIZ(6);
+  @$pb.TagNumber(7)
+  set confirmations($core.int value) => $_setSignedInt32(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasConfirmations() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearConfirmations() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.int get exercised => $_getIZ(7);
+  @$pb.TagNumber(8)
+  set exercised($core.int value) => $_setSignedInt32(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasExercised() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearExercised() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $core.int get fired => $_getIZ(8);
+  @$pb.TagNumber(9)
+  set fired($core.int value) => $_setSignedInt32(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasFired() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearFired() => $_clearField(9);
+
+  /// Whether it goes into the system prompt now.
+  @$pb.TagNumber(10)
+  $core.bool get injected => $_getBF(9);
+  @$pb.TagNumber(10)
+  set injected($core.bool value) => $_setBool(9, value);
+  @$pb.TagNumber(10)
+  $core.bool hasInjected() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearInjected() => $_clearField(10);
+
+  /// The latest sessions and turns that show it, like "ses_01a15d96 T2".
+  @$pb.TagNumber(11)
+  $pb.PbList<$core.String> get evidence => $_getList(10);
+}
+
+class ListLearnedFactsRequest extends $pb.GeneratedMessage {
+  factory ListLearnedFactsRequest({
+    $core.String? projectId,
+  }) {
+    final result = ListLearnedFactsRequest._();
+    if (projectId != null) result.projectId = projectId;
+    return result;
+  }
+
+  ListLearnedFactsRequest._();
+
+  factory ListLearnedFactsRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListLearnedFactsRequest()..mergeFromBuffer(data, registry);
+  factory ListLearnedFactsRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListLearnedFactsRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListLearnedFactsRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: ListLearnedFactsRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'projectId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListLearnedFactsRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListLearnedFactsRequest copyWith(
+          void Function(ListLearnedFactsRequest) updates) =>
+      super.copyWith((message) => updates(message as ListLearnedFactsRequest))
+          as ListLearnedFactsRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ListLearnedFactsRequest() / ListLearnedFactsRequest.new instead')
+  static ListLearnedFactsRequest create() => ListLearnedFactsRequest._();
+  static $pb.GeneratedMessage $_createMessage() => ListLearnedFactsRequest._();
+  @$core.override
+  ListLearnedFactsRequest createEmptyInstance() => ListLearnedFactsRequest._();
+  @$core.pragma('dart2js:noInline')
+  static ListLearnedFactsRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListLearnedFactsRequest>(
+          ListLearnedFactsRequest.$_createMessage);
+  static ListLearnedFactsRequest? _defaultInstance;
+
+  /// Empty means every project's.
+  @$pb.TagNumber(1)
+  $core.String get projectId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set projectId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasProjectId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearProjectId() => $_clearField(1);
+}
+
+class ListLearnedFactsResponse extends $pb.GeneratedMessage {
+  factory ListLearnedFactsResponse({
+    $core.Iterable<LearnedFact>? facts,
+  }) {
+    final result = ListLearnedFactsResponse._();
+    if (facts != null) result.facts.addAll(facts);
+    return result;
+  }
+
+  ListLearnedFactsResponse._();
+
+  factory ListLearnedFactsResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListLearnedFactsResponse()..mergeFromBuffer(data, registry);
+  factory ListLearnedFactsResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ListLearnedFactsResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ListLearnedFactsResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: ListLearnedFactsResponse.$_createMessage)
+    ..pPM<LearnedFact>(1, _omitFieldNames ? '' : 'facts',
+        subBuilder: LearnedFact.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListLearnedFactsResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ListLearnedFactsResponse copyWith(
+          void Function(ListLearnedFactsResponse) updates) =>
+      super.copyWith((message) => updates(message as ListLearnedFactsResponse))
+          as ListLearnedFactsResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ListLearnedFactsResponse() / ListLearnedFactsResponse.new instead')
+  static ListLearnedFactsResponse create() => ListLearnedFactsResponse._();
+  static $pb.GeneratedMessage $_createMessage() => ListLearnedFactsResponse._();
+  @$core.override
+  ListLearnedFactsResponse createEmptyInstance() =>
+      ListLearnedFactsResponse._();
+  @$core.pragma('dart2js:noInline')
+  static ListLearnedFactsResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ListLearnedFactsResponse>(
+          ListLearnedFactsResponse.$_createMessage);
+  static ListLearnedFactsResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<LearnedFact> get facts => $_getList(0);
+}
+
+class ForgetLearnedFactRequest extends $pb.GeneratedMessage {
+  factory ForgetLearnedFactRequest({
+    $core.String? id,
+  }) {
+    final result = ForgetLearnedFactRequest._();
+    if (id != null) result.id = id;
+    return result;
+  }
+
+  ForgetLearnedFactRequest._();
+
+  factory ForgetLearnedFactRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ForgetLearnedFactRequest()..mergeFromBuffer(data, registry);
+  factory ForgetLearnedFactRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ForgetLearnedFactRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ForgetLearnedFactRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: ForgetLearnedFactRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ForgetLearnedFactRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ForgetLearnedFactRequest copyWith(
+          void Function(ForgetLearnedFactRequest) updates) =>
+      super.copyWith((message) => updates(message as ForgetLearnedFactRequest))
+          as ForgetLearnedFactRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ForgetLearnedFactRequest() / ForgetLearnedFactRequest.new instead')
+  static ForgetLearnedFactRequest create() => ForgetLearnedFactRequest._();
+  static $pb.GeneratedMessage $_createMessage() => ForgetLearnedFactRequest._();
+  @$core.override
+  ForgetLearnedFactRequest createEmptyInstance() =>
+      ForgetLearnedFactRequest._();
+  @$core.pragma('dart2js:noInline')
+  static ForgetLearnedFactRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ForgetLearnedFactRequest>(
+          ForgetLearnedFactRequest.$_createMessage);
+  static ForgetLearnedFactRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get id => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set id($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+}
+
+class ForgetLearnedFactResponse extends $pb.GeneratedMessage {
+  factory ForgetLearnedFactResponse({
+    $core.String? id,
+  }) {
+    final result = ForgetLearnedFactResponse._();
+    if (id != null) result.id = id;
+    return result;
+  }
+
+  ForgetLearnedFactResponse._();
+
+  factory ForgetLearnedFactResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ForgetLearnedFactResponse()..mergeFromBuffer(data, registry);
+  factory ForgetLearnedFactResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      ForgetLearnedFactResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ForgetLearnedFactResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: ForgetLearnedFactResponse.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'id')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ForgetLearnedFactResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  ForgetLearnedFactResponse copyWith(
+          void Function(ForgetLearnedFactResponse) updates) =>
+      super.copyWith((message) => updates(message as ForgetLearnedFactResponse))
+          as ForgetLearnedFactResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated(
+      'Use ForgetLearnedFactResponse() / ForgetLearnedFactResponse.new instead')
+  static ForgetLearnedFactResponse create() => ForgetLearnedFactResponse._();
+  static $pb.GeneratedMessage $_createMessage() =>
+      ForgetLearnedFactResponse._();
+  @$core.override
+  ForgetLearnedFactResponse createEmptyInstance() =>
+      ForgetLearnedFactResponse._();
+  @$core.pragma('dart2js:noInline')
+  static ForgetLearnedFactResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ForgetLearnedFactResponse>(
+          ForgetLearnedFactResponse.$_createMessage);
+  static ForgetLearnedFactResponse? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get id => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set id($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => $_clearField(1);
+}
+
 /// LearningService is manual self-learning: a pass over a finished session
 /// proposes lessons for the memory files (user, project, role) and skills,
 /// and nothing is written until a proposal is accepted. See
@@ -858,6 +1274,19 @@ class LearningServiceApi {
           $pb.ClientContext? ctx, RejectLearnProposalRequest request) =>
       _client.invoke<RejectLearnProposalResponse>(ctx, 'LearningService',
           'RejectLearnProposal', request, RejectLearnProposalResponse());
+
+  /// ListLearnedFacts lists the facts flit worked out from the event log,
+  /// with no model calls: active, forming, retired and forgotten.
+  $async.Future<ListLearnedFactsResponse> listLearnedFacts(
+          $pb.ClientContext? ctx, ListLearnedFactsRequest request) =>
+      _client.invoke<ListLearnedFactsResponse>(ctx, 'LearningService',
+          'ListLearnedFacts', request, ListLearnedFactsResponse());
+
+  /// ForgetLearnedFact retires a fact for good. A unique id prefix will do.
+  $async.Future<ForgetLearnedFactResponse> forgetLearnedFact(
+          $pb.ClientContext? ctx, ForgetLearnedFactRequest request) =>
+      _client.invoke<ForgetLearnedFactResponse>(ctx, 'LearningService',
+          'ForgetLearnedFact', request, ForgetLearnedFactResponse());
 }
 
 const $core.bool _omitFieldNames =

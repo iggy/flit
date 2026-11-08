@@ -22,6 +22,13 @@ service LearningService {
   // decided or the file changed underneath it.
   rpc AcceptLearnProposal(AcceptLearnProposalRequest) returns (AcceptLearnProposalResponse);
   rpc RejectLearnProposal(RejectLearnProposalRequest) returns (RejectLearnProposalResponse);
+  // ListLearnedFacts lists the facts flit worked out from the event log,
+  // with no model calls: active, forming, retired and forgotten.
+  rpc ListLearnedFacts(ListLearnedFactsRequest) returns (ListLearnedFactsResponse) {
+    option idempotency_level = NO_SIDE_EFFECTS;
+  }
+  // ForgetLearnedFact retires a fact for good. A unique id prefix will do.
+  rpc ForgetLearnedFact(ForgetLearnedFactRequest) returns (ForgetLearnedFactResponse);
 }
 
 enum LearnAction {
@@ -119,4 +126,44 @@ message RejectLearnProposalRequest {
 
 message RejectLearnProposalResponse {
   LearnProposal proposal = 1;
+}
+
+// LearnedFact is a fact flit worked out from the event log.
+message LearnedFact {
+  string id = 1;
+  string project_id = 2;
+  // The directory the fact applies to, in the Scratch project; else empty.
+  string scope = 3;
+  // "form_repair", "boundary" or "env_value".
+  string family = 4;
+  // "forming", "active", "retired" or "forgotten".
+  string state = 5;
+  // The fact as a cue and a lesson.
+  string text = 6;
+  // Sessions that confirmed it, exercised it, and in which the failure
+  // occurred or was prevented.
+  int32 confirmations = 7;
+  int32 exercised = 8;
+  int32 fired = 9;
+  // Whether it goes into the system prompt now.
+  bool injected = 10;
+  // The latest sessions and turns that show it, like "ses_01a15d96 T2".
+  repeated string evidence = 11;
+}
+
+message ListLearnedFactsRequest {
+  // Empty means every project's.
+  string project_id = 1;
+}
+
+message ListLearnedFactsResponse {
+  repeated LearnedFact facts = 1;
+}
+
+message ForgetLearnedFactRequest {
+  string id = 1;
+}
+
+message ForgetLearnedFactResponse {
+  string id = 1;
 }

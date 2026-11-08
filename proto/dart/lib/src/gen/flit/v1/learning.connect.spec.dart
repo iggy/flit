@@ -49,4 +49,22 @@ abstract final class LearningService {
     flitv1learning.RejectLearnProposalRequest.new,
     flitv1learning.RejectLearnProposalResponse.new,
   );
+
+  /// ListLearnedFacts lists the facts flit worked out from the event log,
+  /// with no model calls: active, forming, retired and forgotten.
+  static const listLearnedFacts = connect.Spec(
+    '/$name/ListLearnedFacts',
+    connect.StreamType.unary,
+    flitv1learning.ListLearnedFactsRequest.new,
+    flitv1learning.ListLearnedFactsResponse.new,
+    idempotency: connect.Idempotency.noSideEffects,
+  );
+
+  /// ForgetLearnedFact retires a fact for good. A unique id prefix will do.
+  static const forgetLearnedFact = connect.Spec(
+    '/$name/ForgetLearnedFact',
+    connect.StreamType.unary,
+    flitv1learning.ForgetLearnedFactRequest.new,
+    flitv1learning.ForgetLearnedFactResponse.new,
+  );
 }

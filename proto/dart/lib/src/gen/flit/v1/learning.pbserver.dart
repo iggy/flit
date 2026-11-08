@@ -29,6 +29,10 @@ abstract class LearningServiceBase extends $pb.GeneratedService {
       $pb.ServerContext ctx, $0.AcceptLearnProposalRequest request);
   $async.Future<$0.RejectLearnProposalResponse> rejectLearnProposal(
       $pb.ServerContext ctx, $0.RejectLearnProposalRequest request);
+  $async.Future<$0.ListLearnedFactsResponse> listLearnedFacts(
+      $pb.ServerContext ctx, $0.ListLearnedFactsRequest request);
+  $async.Future<$0.ForgetLearnedFactResponse> forgetLearnedFact(
+      $pb.ServerContext ctx, $0.ForgetLearnedFactRequest request);
 
   $pb.GeneratedMessage createRequest($core.String methodName) {
     switch (methodName) {
@@ -40,6 +44,10 @@ abstract class LearningServiceBase extends $pb.GeneratedService {
         return $0.AcceptLearnProposalRequest();
       case 'RejectLearnProposal':
         return $0.RejectLearnProposalRequest();
+      case 'ListLearnedFacts':
+        return $0.ListLearnedFactsRequest();
+      case 'ForgetLearnedFact':
+        return $0.ForgetLearnedFactRequest();
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }
@@ -58,6 +66,10 @@ abstract class LearningServiceBase extends $pb.GeneratedService {
       case 'RejectLearnProposal':
         return rejectLearnProposal(
             ctx, request as $0.RejectLearnProposalRequest);
+      case 'ListLearnedFacts':
+        return listLearnedFacts(ctx, request as $0.ListLearnedFactsRequest);
+      case 'ForgetLearnedFact':
+        return forgetLearnedFact(ctx, request as $0.ForgetLearnedFactRequest);
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }

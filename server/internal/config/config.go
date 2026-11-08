@@ -91,6 +91,25 @@ type Learning struct {
 	// model. 0 means from the model's context window (24000 when that is
 	// unknown).
 	TranscriptMaxBytes int `yaml:"transcript_max_bytes"`
+	// Facts is what to do with facts learned from the event log: "on"
+	// learns and injects them, "propose" learns and lists them only, "off"
+	// does neither.
+	Facts string `yaml:"facts"`
+	// FactsMax and FactsMaxBytes cap the facts in the system prompt. 0
+	// means no cap.
+	FactsMax      int `yaml:"facts_max"`
+	FactsMaxBytes int `yaml:"facts_max_bytes"`
+	// FactsPromoteSessions is how many distinct sessions must confirm a
+	// fact before it is active.
+	FactsPromoteSessions int `yaml:"facts_promote_sessions"`
+	// FactsRetireSessions is how many contradicting sessions in a row
+	// retire a command-spelling or variable fact.
+	FactsRetireSessions int `yaml:"facts_retire_sessions"`
+	// FactsFireRate and FactsFireMinSessions are the injection gate: the
+	// share of sessions exercising a fact in which the failure occurred or
+	// was prevented, and the fewest sessions to measure that over.
+	FactsFireRate        float64 `yaml:"facts_fire_rate"`
+	FactsFireMinSessions int     `yaml:"facts_fire_min_sessions"`
 }
 
 // MCPServer returns the MCP server named name.
@@ -638,7 +657,10 @@ func Default() Config {
 		Web:                Web{Fetch: ptr(true)},
 		Git:                Git{Enabled: ptr(true), Worktrees: Worktrees{CopyIgnored: slices.Clone(DefaultCopyIgnored)}},
 		LlamaCpp:           LlamaCpp{KVCache: ptr(true), KVCacheFiles: 4},
-		Learning:           Learning{MemoryMaxBytes: 6000},
+		Learning: Learning{
+			MemoryMaxBytes: 6000, Facts: "on", FactsMax: 10, FactsMaxBytes: 1500,
+			FactsPromoteSessions: 3, FactsRetireSessions: 2, FactsFireRate: 0.4, FactsFireMinSessions: 4,
+		},
 		LSP: LSP{
 			Enabled:     ptr(true),
 			IdleTimeout: 10 * time.Minute,
@@ -909,6 +931,18 @@ func (c Config) Validate() error {
 	}
 	if c.Learning.MemoryMaxBytes < 0 || c.Learning.TranscriptMaxBytes < 0 {
 		return errors.New("learning: limits must not be negative")
+	}
+	if f := c.Learning.Facts; f != "on" && f != "propose" && f != "off" {
+		return fmt.Errorf("learning.facts: %q is not on, propose or off", f)
+	}
+	if c.Learning.FactsMax < 0 || c.Learning.FactsMaxBytes < 0 {
+		return errors.New("learning: facts limits must not be negative")
+	}
+	if c.Learning.FactsPromoteSessions < 1 || c.Learning.FactsRetireSessions < 1 || c.Learning.FactsFireMinSessions < 1 {
+		return errors.New("learning: facts session counts must be at least 1")
+	}
+	if r := c.Learning.FactsFireRate; r < 0 || r > 1 {
+		return errors.New("learning.facts_fire_rate must be between 0 and 1")
 	}
 	if c.Agent.Compaction.MaxSummaryTokens < 0 {
 		return errors.New("agent.compaction.max_summary_tokens must not be negative")
@@ -1245,6 +1279,26 @@ learning:
   # Longest session transcript sent to the learning model; long tool
   # output is trimmed first. 0 means from the model's context window.
   transcript_max_bytes: 0
+  # Facts flit works out by itself from the shell commands in the event
+  # log, with no model calls: spellings that work here ("python -m pytest",
+  # not "pytest"), hosts that are refused, variables that must be set.
+  # "flit facts" lists them. on: learn them and add them to the system
+  # prompt. propose: learn and list them only. off: neither.
+  facts: on
+  # At most this many facts, and this many bytes of them, in the prompt.
+  # 0 means no cap.
+  facts_max: 10
+  facts_max_bytes: 1500
+  # A fact becomes active once this many different sessions confirm it.
+  facts_promote_sessions: 3
+  # A command spelling or variable fact retires after this many
+  # contradicting sessions in a row (the "wrong" form works now).
+  facts_retire_sessions: 2
+  # An active fact is injected only while the failure it prevents still
+  # occurs, or is still being prevented, in at least this share of the
+  # sessions that exercise it, measured over at least this many sessions.
+  facts_fire_rate: 0.4
+  facts_fire_min_sessions: 4
 
 shell:
   timeout: 2m

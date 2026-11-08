@@ -25,6 +25,7 @@ import (
 
 	flitv1 "github.com/iggy/flit/server/gen/flit/v1"
 	"github.com/iggy/flit/server/internal/config"
+	"github.com/iggy/flit/server/internal/facts"
 	"github.com/iggy/flit/server/internal/gitx"
 	"github.com/iggy/flit/server/internal/llm"
 	"github.com/iggy/flit/server/internal/lsp"
@@ -81,6 +82,9 @@ type Manager struct {
 	// LSP, if set, checks files the edit tools change. Set before use.
 	LSP *lsp.Manager
 
+	// facts learns environment facts from finished turns.
+	facts *facts.Service
+
 	// kv tracks llama.cpp slots and prompt cache save files.
 	kv kvPool
 	// limiter caps model calls in flight per provider and model.
@@ -99,6 +103,7 @@ type Manager struct {
 // Sessions left mid-turn by a previous run are marked stuck.
 func NewManager(ctx context.Context, st *store.Store, cfg func() config.Config, log *slog.Logger) (*Manager, error) {
 	m := &Manager{store: st, cfg: cfg, log: log, http: &http.Client{}, sessions: map[string]*session{}}
+	m.facts = &facts.Service{Store: st, Config: cfg}
 	m.limiter = llm.NewLimiter(func(provider, model string) int { return m.cfg().Concurrency(provider, model) })
 	ids, err := st.SessionIDsInStates(ctx, flitv1.TaskState_TASK_STATE_WORKING, flitv1.TaskState_TASK_STATE_WAITING)
 	if err != nil {

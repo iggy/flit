@@ -56,6 +56,11 @@ func (s *session) runTurn(ctx context.Context, turnID string) {
 		s.m.saveAfterTurn(s, ref)
 	}
 	s.endTurn(e)
+	// Off the session lock, and within the turn's goroutine so a closing
+	// manager waits for it.
+	if err := s.m.facts.Observe(context.Background(), s.snapshot().ID); err != nil {
+		s.m.log.Warn("could not learn facts from the turn", "session", s.snapshot().ID, "err", err)
+	}
 }
 
 // endTurn records how the turn (or compaction run) ended and marks the
@@ -394,7 +399,7 @@ func (s *session) chatRequest(ctx context.Context, cfg config.Config, info store
 	}
 	set, extra, skillNames := s.toolSet(ctx, cfg, info)
 	cr.set, cr.skills = set, skillNames
-	cr.system = systemPrompt(info.WorkingDir, cr.role, s.m.memoryLayers(cfg, info.ProjectID)) + extra + promptAppends(cfg, info.Provider, info.Model)
+	cr.system = systemPrompt(info.WorkingDir, cr.role, s.m.memoryLayers(cfg, info.ProjectID)) + s.factsBlock(ctx, info) + extra + promptAppends(cfg, info.Provider, info.Model)
 	cr.req = llm.Request{
 		Model:    info.Model,
 		Messages: cr.messages(history, cr.compaction),
