@@ -6,15 +6,12 @@
 library;
 
 import 'dart:async';
-import 'dart:ui' as ui;
 
 import 'package:flit/data/storage/preferences_store.dart';
 import 'package:flutter/foundation.dart';
-import 'package:window_manager/window_manager.dart';
 
-/// Minimum window dimensions to ensure the app is usable.
-const double _kMinWindowWidth = 480.0;
-const double _kMinWindowHeight = 600.0;
+export 'window_manager_controller_web.dart'
+    if (dart.library.io) 'window_manager_controller.dart';
 
 /// Default window size when no geometry is stored.
 const double _kDefaultWindowWidth = 1100.0;
@@ -62,138 +59,6 @@ abstract interface class WindowController {
   /// move, maximize, unmaximize). Only one callback is supported; a second
   /// registration replaces the first.
   void setGeometryChangedCallback(WindowGeometryChangedCallback? callback);
-}
-
-/// Real window controller delegating to package:window_manager (P9-01).
-final class WindowManagerController
-    implements WindowController, WindowListener {
-  WindowGeometryChangedCallback? _callback;
-
-  @override
-  Future<void> ensureInitialized() async {
-    await windowManager.ensureInitialized();
-    await windowManager.setMinimumSize(
-      const ui.Size(_kMinWindowWidth, _kMinWindowHeight),
-    );
-    windowManager.addListener(this);
-  }
-
-  @override
-  Future<void> applyGeometry(WindowGeometry geometry) async {
-    // Clamp size to the minimum.
-    final width = geometry.width < _kMinWindowWidth
-        ? _kMinWindowWidth
-        : geometry.width;
-    final height = geometry.height < _kMinWindowHeight
-        ? _kMinWindowHeight
-        : geometry.height;
-
-    await windowManager.setSize(ui.Size(width, height));
-
-    if (geometry.x != null && geometry.y != null) {
-      await windowManager.setPosition(ui.Offset(geometry.x!, geometry.y!));
-    }
-
-    if (geometry.maximized) {
-      await windowManager.maximize();
-    } else {
-      await windowManager.unmaximize();
-    }
-  }
-
-  @override
-  Future<WindowGeometry?> readGeometry() async {
-    try {
-      final size = await windowManager.getSize();
-      final position = await windowManager.getPosition();
-      final maximized = await windowManager.isMaximized();
-
-      return WindowGeometry(
-        width: size.width,
-        height: size.height,
-        x: position.dx,
-        y: position.dy,
-        maximized: maximized,
-      );
-    } on Object {
-      return null;
-    }
-  }
-
-  @override
-  Future<void> setTitle(String title) async {
-    await windowManager.setTitle(title);
-  }
-
-  @override
-  Future<void> show() async {
-    await windowManager.show();
-  }
-
-  @override
-  void setGeometryChangedCallback(WindowGeometryChangedCallback? callback) {
-    _callback = callback;
-  }
-
-  @override
-  void onWindowResize() {
-    _callback?.call();
-  }
-
-  @override
-  void onWindowMove() {
-    _callback?.call();
-  }
-
-  @override
-  void onWindowResized() {
-    _callback?.call();
-  }
-
-  @override
-  void onWindowMoved() {
-    _callback?.call();
-  }
-
-  @override
-  void onWindowMaximize() {
-    _callback?.call();
-  }
-
-  @override
-  void onWindowUnmaximize() {
-    _callback?.call();
-  }
-
-  @override
-  void onWindowBlur() {}
-
-  @override
-  void onWindowClose() {}
-
-  @override
-  void onWindowDocked() {}
-
-  @override
-  void onWindowEnterFullScreen() {}
-
-  @override
-  void onWindowEvent(String eventName) {}
-
-  @override
-  void onWindowFocus() {}
-
-  @override
-  void onWindowLeaveFullScreen() {}
-
-  @override
-  void onWindowMinimize() {}
-
-  @override
-  void onWindowRestore() {}
-
-  @override
-  void onWindowUndocked() {}
 }
 
 /// No-op window controller for mobile, web, and tests (P9-01).
