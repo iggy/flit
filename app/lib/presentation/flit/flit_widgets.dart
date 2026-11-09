@@ -1,7 +1,10 @@
 import 'package:flit/domain/models/flit_event.dart';
 import 'package:flit/domain/models/flit_session.dart';
+import 'package:flit/presentation/common/format_tokens.dart';
 import 'package:flit/presentation/common/middle_ellipsis_text.dart';
 import 'package:flutter/material.dart';
+
+export 'package:flit/presentation/common/format_tokens.dart' show formatTokens;
 
 /// A small chip showing what a session's agent is doing.
 class FlitTaskStateChip extends StatelessWidget {
@@ -64,18 +67,6 @@ String flitModelLabel(String provider, String model) {
     return provider.isEmpty ? 'no model' : '$provider / (no model)';
   }
   return provider.isEmpty ? model : '$provider / $model';
-}
-
-/// 262144 → "262k", 1500000 → "1.5M".
-String formatTokens(int n) {
-  if (n >= 1000000) {
-    final m = n / 1000000;
-    return '${m == m.roundToDouble() ? m.toStringAsFixed(0) : m.toStringAsFixed(1)}M';
-  }
-  if (n >= 1000) {
-    return '${(n / 1000).round()}k';
-  }
-  return '$n';
 }
 
 /// The always-visible session status: model and effort (tap to change),

@@ -1165,7 +1165,20 @@ FlitFoldState _usage(FlitFoldState s, FlitUsage e) {
     s,
     e.messageId,
     (m) => m.copyWith(
-      usage: Usage(input: e.inputTokens, output: e.outputTokens),
+      usage: Usage(
+        input: e.inputTokens,
+        output: e.outputTokens,
+        speed: e.timingSource.isEmpty
+            ? null
+            : CallSpeed(
+                timeToFirstTokenMs: e.timeToFirstTokenMs,
+                promptTokensPerSecond: e.promptTokensPerSecond,
+                generationTokensPerSecond: e.generationTokensPerSecond,
+                cachedTokens: e.cachedTokens,
+                inputTokens: e.inputTokens,
+                source: e.timingSource,
+              ),
+      ),
     ),
   );
   return withUsage.copyWith(

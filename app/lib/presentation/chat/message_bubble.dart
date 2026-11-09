@@ -8,8 +8,10 @@ library;
 import 'dart:math' as math;
 
 import 'package:flit/domain/models/chat_message.dart';
+import 'package:flit/domain/models/usage.dart';
 import 'package:flit/presentation/chat/collapse_footer.dart';
 import 'package:flit/presentation/chat/tool_call_card.dart';
+import 'package:flit/presentation/common/format_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 
@@ -22,6 +24,9 @@ const Key reasoningDisclosureKey = Key('reasoning_disclosure');
 
 /// The "Collapse" control at the bottom of long expanded thinking.
 const Key reasoningCollapseFooterKey = Key('reasoning_collapse_footer');
+
+/// Key of the per-message speed caption (prefill / generation tok/s).
+const Key messageSpeedKey = Key('message_speed');
 
 /// One message in the chat list. User messages render as plain-text
 /// bubbles; assistant/system messages render markdown plus their tool
@@ -173,6 +178,8 @@ class _AssistantMessageState extends State<_AssistantMessage> {
                 padding: EdgeInsets.only(left: 8, top: 2, bottom: 4),
                 child: TypingIndicator(key: typingIndicatorKey),
               ),
+            if (!message.streaming && message.usage?.speed?.hasSpeed == true)
+              _SpeedCaption(key: messageSpeedKey, speed: message.usage!.speed!),
             if (message.terminalStatus == MessageTerminalStatus.interrupted)
               _StatusCaption(
                 icon: Icons.stop_circle_outlined,
@@ -297,6 +304,57 @@ class _ReasoningDisclosureState extends State<_ReasoningDisclosure> {
     );
   }
 }
+
+/// "45.5 tok/s · prompt 1300 tok/s · first token 0.9s · 40k/48k cached":
+/// how fast the model call behind one message was.
+class _SpeedCaption extends StatelessWidget {
+  const _SpeedCaption({required this.speed, super.key});
+
+  final CallSpeed speed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(left: 8, top: 2, bottom: 4),
+      child: Tooltip(
+        message:
+            'Generation speed, prompt processing speed, time to the first '
+            'token and prompt tokens reused from the cache for this reply'
+            '${speed.source.isEmpty ? '' : ' (${speed.source})'}',
+        child: Text(
+          speedCaptionText(speed),
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.outline,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The speed caption's text; parts the call didn't report are left out.
+String speedCaptionText(CallSpeed speed) {
+  final parts = <String>[
+    if (speed.generationTokensPerSecond > 0)
+      '${_rate(speed.generationTokensPerSecond)} tok/s',
+    if (speed.promptTokensPerSecond > 0)
+      'prompt ${_rate(speed.promptTokensPerSecond)} tok/s',
+    if (speed.timeToFirstTokenMs > 0)
+      'first token ${_duration(speed.timeToFirstTokenMs)}',
+    if (speed.cachedTokens > 0)
+      '${formatTokens(speed.cachedTokens)}/${formatTokens(speed.inputTokens)} '
+          'cached',
+  ];
+  return parts.join(' · ');
+}
+
+String _rate(double perSecond) => perSecond >= 100
+    ? perSecond.toStringAsFixed(0)
+    : perSecond.toStringAsFixed(1);
+
+String _duration(int ms) =>
+    ms < 1000 ? '${ms}ms' : '${(ms / 1000).toStringAsFixed(1)}s';
 
 class _StatusCaption extends StatelessWidget {
   const _StatusCaption({
