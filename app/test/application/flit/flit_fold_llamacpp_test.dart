@@ -57,4 +57,42 @@ void main() {
     expect(s.speed?.cachedTokens, 40000);
     expect(s.speed?.inputTokens, 48000);
   });
+
+  test('each message keeps the speed of its own call', () {
+    final s = foldFlitEvents(const FlitFoldState(), const <FlitEvent>[
+      FlitMessageStarted(seq: 1, messageId: 'a', role: FlitRole.assistant),
+      FlitUsage(
+        seq: 2,
+        messageId: 'a',
+        inputTokens: 100,
+        outputTokens: 10,
+        timeToFirstTokenMs: 400,
+        promptTokensPerSecond: 250,
+        generationTokensPerSecond: 40.5,
+        timingSource: 'llama.cpp',
+        cachedTokens: 60,
+      ),
+      FlitMessageStarted(seq: 3, messageId: 'b', role: FlitRole.assistant),
+      FlitUsage(
+        seq: 4,
+        messageId: 'b',
+        inputTokens: 200,
+        outputTokens: 20,
+        generationTokensPerSecond: 12,
+        timingSource: 'measured',
+      ),
+      FlitMessageStarted(seq: 5, messageId: 'c', role: FlitRole.assistant),
+      FlitUsage(seq: 6, messageId: 'c', inputTokens: 5, outputTokens: 1),
+    ]);
+    final a = s.messages[0].usage?.speed;
+    expect(a?.generationTokensPerSecond, 40.5);
+    expect(a?.promptTokensPerSecond, 250);
+    expect(a?.timeToFirstTokenMs, 400);
+    expect(a?.cachedTokens, 60);
+    expect(a?.inputTokens, 100);
+    expect(a?.source, 'llama.cpp');
+    expect(s.messages[1].usage?.speed?.generationTokensPerSecond, 12);
+    expect(s.messages[1].usage?.speed?.source, 'measured');
+    expect(s.messages[2].usage?.speed, isNull, reason: 'no timings reported');
+  });
 }
