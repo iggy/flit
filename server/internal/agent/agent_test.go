@@ -497,6 +497,48 @@ func TestProviderErrors(t *testing.T) {
 	}
 }
 
+// A reply with neither an answer nor a tool call has not finished the turn.
+func TestEmptyReplyIsNotDone(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		chunks []string
+		want   string
+	}{
+		{"only reasoning", []string{llmtest.Reasoning("next I run the tests"), llmtest.Finish("stop")}, "after thinking"},
+		{"cut off thinking", []string{llmtest.Reasoning("still thinking"), llmtest.Finish("length")}, "while thinking"},
+		{"cut off", []string{llmtest.Finish("length")}, "before it wrote anything"},
+		{"nothing", llmtest.Text(""), "empty reply"},
+		{"whitespace", llmtest.Text("\n\n"), "empty reply"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := newHarness(t)
+			h.llm.Push(llmtest.Response{Chunks: tc.chunks}, text("carried on"))
+			sess := h.create()
+			w := h.watch(sess.ID, 0)
+			if _, err := h.m.Send(context.Background(), sess.ID, "hi"); err != nil {
+				t.Fatal(err)
+			}
+			ended := w.waitTurnEnd()
+			if end := ended.GetTaskStateChanged(); end.State != flitv1.TaskState_TASK_STATE_STUCK {
+				t.Fatalf("end %v", end)
+			}
+			e, _ := find(w.snapshot(), (*flitv1.Event).GetError, notNil)
+			if !e.GetTurnCanContinue() || !strings.Contains(e.GetMessage(), tc.want) {
+				t.Fatalf("error %+v, want %q", e, tc.want)
+			}
+
+			// Another message picks the session back up.
+			w2 := h.watch(sess.ID, ended.Seq+1)
+			if _, err := h.m.Send(context.Background(), sess.ID, "go on"); err != nil {
+				t.Fatal(err)
+			}
+			if end := w2.waitTurnEnd().GetTaskStateChanged(); end.State != flitv1.TaskState_TASK_STATE_DONE {
+				t.Fatalf("second turn: end %v", end)
+			}
+		})
+	}
+}
+
 func TestSetModel(t *testing.T) {
 	h := newHarness(t)
 	sess := h.create()
