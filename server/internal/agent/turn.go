@@ -322,6 +322,12 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 			}
 		}
 		if len(res.ToolCalls) == 0 {
+			// No answer and no tool call is not a finished turn: a model can
+			// stop inside its reasoning (some write their next tool call
+			// there) or fill the context while thinking.
+			if strings.TrimSpace(res.Text) == "" {
+				return s.stop(emptyReply(res), true)
+			}
 			s.noteFinal(res.Text)
 			return endDone, nil
 		}
@@ -547,6 +553,21 @@ func (s *session) messageDone(msgID, text, reasoning, finish string) error {
 		MessageId: msgID, Text: text, Reasoning: reasoning, FinishReason: finish,
 	}}})
 	return err
+}
+
+// emptyReply says how a model call ended with neither an answer nor a tool
+// call.
+func emptyReply(res *llm.Result) string {
+	cutOff, thought := res.FinishReason == "length", strings.TrimSpace(res.Reasoning) != ""
+	switch {
+	case cutOff && thought:
+		return "the model ran out of tokens or context while thinking, before it answered or called a tool"
+	case cutOff:
+		return "the model ran out of tokens or context before it wrote anything"
+	case thought:
+		return "the model stopped after thinking, without answering or calling a tool"
+	}
+	return "the model returned an empty reply"
 }
 
 // stop records an error; the turn ends stuck.
