@@ -16,6 +16,9 @@
 //	timezone: Europe/Berlin        # default the server's
 //	catch_up: 1h                   # 0 never catches up
 //	keep_runs: 50
+//	precheck: git fetch -q && test -n "$(git log HEAD..@{u})"
+//	precheck_timeout: 1m
+//	precheck_record: false
 //	---
 //	Check CI on main and the open PRs. Report anything red.
 //
@@ -48,6 +51,8 @@ const (
 	DefaultAskTimeout = time.Hour
 	DefaultCatchUp    = time.Hour
 	DefaultKeepRuns   = 50
+	// DefaultPrecheckTimeout bounds a precheck command.
+	DefaultPrecheckTimeout = time.Minute
 )
 
 // Ask modes: what happens to a prompt nobody is there to answer.
@@ -104,6 +109,12 @@ type Job struct {
 	Timezone   string    `yaml:"timezone"`
 	CatchUp    *Duration `yaml:"catch_up"`
 	KeepRuns   int       `yaml:"keep_runs"`
+	// Precheck is a shell command run before scheduled and catch-up runs; a
+	// non-zero exit skips the run. Empty means none.
+	Precheck        string    `yaml:"precheck"`
+	PrecheckTimeout *Duration `yaml:"precheck_timeout"`
+	// PrecheckRecord records a skip by the precheck as a skipped run.
+	PrecheckRecord bool `yaml:"precheck_record"`
 
 	// Prompt is the Markdown body.
 	Prompt string `yaml:"-"`
@@ -132,6 +143,14 @@ func (j Job) CatchUpWindow() time.Duration {
 		return DefaultCatchUp
 	}
 	return time.Duration(*j.CatchUp)
+}
+
+// PrecheckWaitFor is how long the precheck may take.
+func (j Job) PrecheckWaitFor() time.Duration {
+	if j.PrecheckTimeout == nil {
+		return DefaultPrecheckTimeout
+	}
+	return time.Duration(*j.PrecheckTimeout)
 }
 
 // Keep is how many runs' sessions stay in the session list.
@@ -276,6 +295,13 @@ func (j *Job) check(now time.Time) error {
 	if j.Model.Provider == "" && j.Model.Effort != "" {
 		return errors.New("model: effort needs a provider and model")
 	}
+	j.Precheck = strings.TrimSpace(j.Precheck)
+	if j.Precheck == "" && (j.PrecheckTimeout != nil || j.PrecheckRecord) {
+		return errors.New("precheck_timeout and precheck_record need a precheck command")
+	}
+	if j.PrecheckTimeout != nil && *j.PrecheckTimeout == 0 {
+		return errors.New("precheck_timeout must be more than 0")
+	}
 	if j.Dir != "" {
 		dir, err := ExpandDir(j.Dir)
 		if err != nil {
@@ -315,7 +341,12 @@ type Spec struct {
 	Timezone   string
 	CatchUp    string
 	KeepRuns   int
-	Prompt     string
+	// Precheck, PrecheckTimeout and PrecheckRecord are only ever set by
+	// hand in the file; the cron tool keeps what is there.
+	Precheck        string
+	PrecheckTimeout string
+	PrecheckRecord  bool
+	Prompt          string
 }
 
 // Format renders a job file.
@@ -351,6 +382,14 @@ func Format(s Spec) []byte {
 	if s.KeepRuns > 0 {
 		fmt.Fprintf(&b, "keep_runs: %d\n", s.KeepRuns)
 	}
+	if s.Precheck != "" {
+		out, _ := yaml.Marshal(map[string]string{"precheck": s.Precheck})
+		b.Write(out)
+	}
+	kv("precheck_timeout", s.PrecheckTimeout)
+	if s.PrecheckRecord {
+		b.WriteString("precheck_record: true\n")
+	}
 	b.WriteString("---\n")
 	b.WriteString(strings.TrimSpace(s.Prompt))
 	b.WriteString("\n")
@@ -362,6 +401,10 @@ func SpecOf(j Job) Spec {
 	s := Spec{
 		Schedule: j.Schedule, Project: j.Project, Dir: j.Dir, Role: j.Role, Model: j.Model, Enabled: j.Enabled,
 		Yolo: j.Yolo, Timezone: j.Timezone, KeepRuns: j.KeepRuns, Prompt: j.Prompt,
+		Precheck: j.Precheck, PrecheckRecord: j.PrecheckRecord,
+	}
+	if j.PrecheckTimeout != nil {
+		s.PrecheckTimeout = time.Duration(*j.PrecheckTimeout).String()
 	}
 	if j.Ask != AskDeny {
 		s.Ask = j.Ask

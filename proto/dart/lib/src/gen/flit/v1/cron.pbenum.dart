@@ -59,7 +59,8 @@ class CronRunState extends $pb.ProtobufEnum {
   static const CronRunState CRON_RUN_STATE_FAILED =
       CronRunState._(4, _omitEnumNames ? '' : 'CRON_RUN_STATE_FAILED');
 
-  /// Not run: the previous run was still going.
+  /// Not run: the previous run was still going, or the precheck said no
+  /// (with precheck_record).
   static const CronRunState CRON_RUN_STATE_SKIPPED =
       CronRunState._(5, _omitEnumNames ? '' : 'CRON_RUN_STATE_SKIPPED');
 

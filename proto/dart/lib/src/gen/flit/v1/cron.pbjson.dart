@@ -129,6 +129,23 @@ const CronJob$json = {
       '5': 9,
       '10': 'runningSessionId'
     },
+    {'1': 'precheck', '3': 23, '4': 1, '5': 9, '10': 'precheck'},
+    {
+      '1': 'precheck_timeout_seconds',
+      '3': 24,
+      '4': 1,
+      '5': 3,
+      '10': 'precheckTimeoutSeconds'
+    },
+    {'1': 'precheck_record', '3': 25, '4': 1, '5': 8, '10': 'precheckRecord'},
+    {
+      '1': 'last_precheck',
+      '3': 26,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.CronPrecheck',
+      '10': 'lastPrecheck'
+    },
   ],
 };
 
@@ -146,7 +163,34 @@ final $typed_data.Uint8List cronJobDescriptor = $convert.base64Decode(
     'RoEj4KDW5leHRfcnVuX3RpbWUYEyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wUgtu'
     'ZXh0UnVuVGltZRIrCghsYXN0X3J1bhgUIAEoCzIQLmZsaXQudjEuQ3JvblJ1blIHbGFzdFJ1bh'
     'IUCgVlcnJvchgVIAEoCVIFZXJyb3ISLAoScnVubmluZ19zZXNzaW9uX2lkGBYgASgJUhBydW5u'
-    'aW5nU2Vzc2lvbklk');
+    'aW5nU2Vzc2lvbklkEhoKCHByZWNoZWNrGBcgASgJUghwcmVjaGVjaxI4ChhwcmVjaGVja190aW'
+    '1lb3V0X3NlY29uZHMYGCABKANSFnByZWNoZWNrVGltZW91dFNlY29uZHMSJwoPcHJlY2hlY2tf'
+    'cmVjb3JkGBkgASgIUg5wcmVjaGVja1JlY29yZBI6Cg1sYXN0X3ByZWNoZWNrGBogASgLMhUuZm'
+    'xpdC52MS5Dcm9uUHJlY2hlY2tSDGxhc3RQcmVjaGVjaw==');
+
+@$core.Deprecated('Use cronPrecheckDescriptor instead')
+const CronPrecheck$json = {
+  '1': 'CronPrecheck',
+  '2': [
+    {
+      '1': 'time',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'time'
+    },
+    {'1': 'passed', '3': 2, '4': 1, '5': 8, '10': 'passed'},
+    {'1': 'exit_code', '3': 3, '4': 1, '5': 5, '10': 'exitCode'},
+    {'1': 'output', '3': 4, '4': 1, '5': 9, '10': 'output'},
+  ],
+};
+
+/// Descriptor for `CronPrecheck`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List cronPrecheckDescriptor = $convert.base64Decode(
+    'CgxDcm9uUHJlY2hlY2sSLgoEdGltZRgBIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbX'
+    'BSBHRpbWUSFgoGcGFzc2VkGAIgASgIUgZwYXNzZWQSGwoJZXhpdF9jb2RlGAMgASgFUghleGl0'
+    'Q29kZRIWCgZvdXRwdXQYBCABKAlSBm91dHB1dA==');
 
 @$core.Deprecated('Use cronRunDescriptor instead')
 const CronRun$json = {
@@ -400,6 +444,7 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.flit.v1.CronJob': CronJob$json,
   '.google.protobuf.Timestamp': $0.Timestamp$json,
   '.flit.v1.CronRun': CronRun$json,
+  '.flit.v1.CronPrecheck': CronPrecheck$json,
   '.flit.v1.GetCronJobRequest': GetCronJobRequest$json,
   '.flit.v1.GetCronJobResponse': GetCronJobResponse$json,
   '.flit.v1.RunCronJobRequest': RunCronJobRequest$json,

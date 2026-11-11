@@ -48,6 +48,13 @@ final class _Repo extends Fake implements FlitRepository {
       enabled: enabled,
       projectName: 'Scratch',
       prompt: 'Check the build.',
+      precheck: 'git fetch -q && test -n "\$(git log HEAD..@{u})"',
+      precheckTimeout: const Duration(minutes: 1),
+      lastPrecheck: const FlitCronPrecheck(
+        passed: false,
+        exitCode: 1,
+        output: 'no new commits',
+      ),
       nextRunAt: enabled ? DateTime(2030, 1, 1, 3) : null,
       lastRun: const FlitCronRun(
         id: 'r1',
@@ -187,6 +194,10 @@ void main() {
     expect(find.text('Check the build.'), findsOneWidget);
     expect(find.textContaining('Refused: git push'), findsOneWidget);
     expect(find.textContaining('still going'), findsOneWidget);
+    expect(find.textContaining('git fetch -q'), findsOneWidget);
+    expect(find.text('Timeout 60s · Run now skips the check'), findsOneWidget);
+    expect(find.text('Last check: skipped the run (exit 1)'), findsOneWidget);
+    expect(find.text('no new commits'), findsOneWidget);
     await tester.tap(find.text('CI is red'));
     await tester.pumpAndSettle();
     expect(find.text('open s1'), findsOneWidget);

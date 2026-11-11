@@ -114,6 +114,14 @@ func cronList(ctx context.Context, w io.Writer, c flitv1connect.CronServiceClien
 		} else if r := j.LastRun; r != nil {
 			last = fmt.Sprintf("%s %s: %s", r.StartTime.AsTime().Local().Format("01-02 15:04"), runState(r.State), r.Summary)
 		}
+		// A precheck skip newer than the last run (unrecorded ones aren't runs).
+		if c := j.LastPrecheck; c != nil && !c.Passed && j.RunningSessionId == "" &&
+			(j.LastRun == nil || c.Time.AsTime().After(j.LastRun.StartTime.AsTime())) {
+			last = c.Time.AsTime().Local().Format("01-02 15:04") + " skipped by precheck"
+			if c.ExitCode >= 0 {
+				last += fmt.Sprintf(" (exit %d)", c.ExitCode)
+			}
+		}
 		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", j.Name, sched, next, last)
 	}
 	fmt.Fprintf(tw, "\n(jobs in %s)\n", res.Dir)

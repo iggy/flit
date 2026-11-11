@@ -25,6 +25,9 @@ yolo: false                    # default false
 timezone: Europe/Berlin        # default the server's
 catch_up: 1h                   # default 1h; 0 never catches up
 keep_runs: 50                  # default 50
+precheck: git fetch -q && test -n "$(git log HEAD..@{u})"   # see Prechecks
+precheck_timeout: 1m           # default 1m
+precheck_record: false         # default false
 ---
 Check CI on main and the open PRs. Report anything red, with the failing step.
 ```
@@ -70,16 +73,56 @@ Times are the server's local time unless `timezone` (an IANA name) is set.
   big model.
 - **Overlap**: if a run is still going when the job is due again, that slot
   is recorded as skipped. Runs never stack.
+- **Precheck**: if the job has one, it runs first and can skip the slot
+  (see Prechecks).
 - **Missed runs** (flit was off, the laptop was asleep): when flit starts, a
   job that missed its last slot within `catch_up` runs once, however many
   slots it missed. The same holds while flit runs: after a long sleep, it
   runs once and then goes back to its schedule.
 - **Results**: each run is recorded with a state: ok, needs attention
   (something was refused), failed (the turn ended in an error or was
-  interrupted) or skipped. The summary is the first line of the final reply.
+  interrupted) or skipped (the previous run was still going, or the
+  precheck said no with `precheck_record`). The summary is the first line
+  of the final reply.
 - **Old runs**: the sessions of the newest `keep_runs` runs stay in the
   session list. Older ones are archived. They leave the list but are not
   deleted, so `flit export` and ratings still see them.
+
+## Prechecks: skip a run without starting the model
+
+`precheck` is a shell command flit runs before each scheduled or catch-up
+run, in the run's working directory (`/bin/sh -c`, or `cmd /C` on
+Windows). Exit 0 and the run goes ahead. Any other exit, a timeout
+(`precheck_timeout`, default 1m) or a command that can't start skips that
+slot: no session, no model, no notification. Use it for jobs that usually
+have nothing to do, so polling every few minutes costs nothing:
+
+```yaml
+---
+schedule: every 10m
+project: flit
+precheck: |
+  git fetch -q
+  test -n "$(git log HEAD..@{u})"
+---
+New commits landed on main. Review them and report anything risky.
+```
+
+- **Run now** (the app, `flit cron run`, the `cron` tool) skips the
+  precheck: you asked for a run, so it runs.
+- **Recording skips**: by default a skip is not a run, so a job that
+  polls often doesn't fill its history. The job shows its latest check
+  (passed, or skipped with the exit code and the end of its output) in
+  the app, in `flit cron list` and in the `cron` tool's list. Set
+  `precheck_record: true` to also record each skip as a skipped run. The
+  latest check is kept in memory, so it is empty again after a restart.
+- **Overlap**: if a run is still going when the job is due, the slot is
+  skipped as usual, without running the precheck. If the previous
+  precheck is still running, the slot is dropped.
+- The precheck is not a session command. Shell rules, approval and yolo
+  don't apply to it: it runs as written, like a command in your crontab.
+  For the same reason the `cron` tool can't set or change it (it keeps
+  what the file says); only you can, by editing the file.
 
 ## Permission prompts while unattended
 

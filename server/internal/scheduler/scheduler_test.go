@@ -408,3 +408,92 @@ func TestRestartFailsUnfinishedRuns(t *testing.T) {
 		t.Fatalf("run %+v %v", r, err)
 	}
 }
+
+// waitCheck waits until job's latest precheck is at or after t.
+func (h *harness) waitCheck(job string, t time.Time) Precheck {
+	h.t.Helper()
+	deadline := time.Now().Add(10 * time.Second)
+	for {
+		st, err := h.s.Job(context.Background(), job)
+		if err != nil {
+			h.t.Fatal(err)
+		}
+		if c := st.LastPrecheck; c != nil && !c.At.Before(t) {
+			return *c
+		}
+		if time.Now().After(deadline) {
+			h.t.Fatalf("timed out waiting for %s's precheck; status %+v", job, st)
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+func TestPrecheck(t *testing.T) {
+	h := newHarness(t)
+	h.write("gate", "---\nschedule: every 1m\nprecheck: echo looking; test -f go\n---\nGo.\n")
+	h.write("logged", "---\nschedule: every 1m\nprecheck: echo not today >&2; exit 3\nprecheck_record: true\n---\nGo.\n")
+	h.startScheduler()
+
+	// The checks fail: no model, no session; only "logged" records a run.
+	slot := start.Add(30 * time.Second)
+	h.advance(slot)
+	c := h.waitCheck("gate", slot)
+	if c.Passed || c.ExitCode != 1 || c.Output != "looking" {
+		t.Fatalf("gate precheck %+v", c)
+	}
+	runs := h.waitRuns("logged", "a skipped run", func(r []store.CronRun) bool { return len(r) == 1 })
+	if r := runs[0]; r.State != store.CronSkipped || r.SessionID != "" || r.Summary != "skipped by the precheck: exit 3: not today" ||
+		!r.ScheduledAt.Equal(slot) {
+		t.Fatalf("logged run %+v", r)
+	}
+	if runs, _ := h.st.ListCronRuns(context.Background(), store.DefaultTeamID, "gate", 10, 0); len(runs) != 0 {
+		t.Fatalf("gate recorded runs: %+v", runs)
+	}
+	if list, _ := h.m.List(context.Background(), "", true, 100, 0); len(list) != 0 {
+		t.Fatalf("sessions started: %+v", list)
+	}
+	if n := h.notifications(); len(n) != 0 {
+		t.Fatalf("notified: %+v", n)
+	}
+	if st, _ := h.s.Job(context.Background(), "gate"); !st.Next.Equal(start.Truncate(time.Minute).Add(2 * time.Minute)) {
+		t.Fatalf("next after skip: %v", st.Next)
+	}
+	text, err := h.s.Describe(context.Background())
+	if err != nil || !strings.Contains(text, "precheck: echo looking; test -f go (last 2026-10-21 10:01: skipped the run, exit 1: looking)") {
+		t.Fatalf("describe: %v\n%s", err, text)
+	}
+
+	// Run now ignores the precheck.
+	h.llm.Push(llmtest.Response{Chunks: llmtest.Text("Went anyway.")})
+	if _, err := h.s.Run(context.Background(), "gate"); err != nil {
+		t.Fatal(err)
+	}
+	h.waitRuns("gate", "the manual run", finished(1))
+
+	// It passes in the job's working directory: the run starts.
+	if err := os.WriteFile(filepath.Join(h.s.DataDir, "cron", "gate", "go"), nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	h.llm.Push(llmtest.Response{Chunks: llmtest.Text("Done.")})
+	slot = start.Truncate(time.Minute).Add(2 * time.Minute)
+	h.advance(slot)
+	if c := h.waitCheck("gate", slot); !c.Passed || c.ExitCode != 0 {
+		t.Fatalf("passing precheck %+v", c)
+	}
+	runs = h.waitRuns("gate", "the scheduled run", finished(2))
+	if r := runs[0]; r.State != store.CronOK || r.Summary != "Done." || r.Cause != store.CronCauseSchedule || !r.ScheduledAt.Equal(slot) {
+		t.Fatalf("run after passing precheck %+v", r)
+	}
+}
+
+func TestPrecheckTimeout(t *testing.T) {
+	h := newHarness(t)
+	h.write("slow", "---\nschedule: every 1m\nprecheck: sleep 5\nprecheck_timeout: 100ms\n---\nGo.\n")
+	h.startScheduler()
+	slot := start.Add(30 * time.Second)
+	h.advance(slot)
+	c := h.waitCheck("slow", slot)
+	if c.Passed || c.ExitCode != -1 || !strings.Contains(c.Output, "timed out after 100ms") {
+		t.Fatalf("precheck %+v", c)
+	}
+}
