@@ -128,6 +128,7 @@ class FlitSessionsScreen extends ConsumerWidget {
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
+                          FlitSessionStatusLine(status: s.status),
                           Text(
                             s.workingDir,
                             maxLines: 1,

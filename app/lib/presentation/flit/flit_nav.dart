@@ -163,6 +163,9 @@ class FlitNavPane extends ConsumerWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      subtitle: s.status.isEmpty
+                          ? null
+                          : FlitSessionStatusLine(status: s.status),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: <Widget>[

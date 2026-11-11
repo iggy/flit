@@ -179,7 +179,7 @@ func TestSubagentBuildUsesPermissionsAndTaskModel(t *testing.T) {
 			t.Fatalf("build tools %v lack %s", names, n)
 		}
 	}
-	for _, n := range []string{"agent", "todo", "skill"} {
+	for _, n := range []string{"agent", "todo", "status", "skill"} {
 		if slices.Contains(names, n) {
 			t.Fatalf("build tools %v include %s", names, n)
 		}

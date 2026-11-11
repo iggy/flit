@@ -39,6 +39,9 @@ type Env struct {
 	// Todo receives the agent's task list whenever the todo tool changes
 	// it. May be nil.
 	Todo func([]TodoItem)
+	// Status receives the session's one-line status whenever the status
+	// tool sets it ("" clears it). May be nil.
+	Status func(string)
 	// Diagnose returns a language server's diagnostics for a file the
 	// write or patch tool just changed, formatted for the model, or "" if
 	// there are none. It must return promptly. May be nil.
@@ -148,7 +151,7 @@ type Tool struct {
 
 // All returns the core built-in tools, always offered.
 func All() []Tool {
-	return []Tool{readTool, writeTool, patchTool, listTool, grepTool, shellTool, todoTool}
+	return []Tool{readTool, writeTool, patchTool, listTool, grepTool, shellTool, todoTool, statusTool}
 }
 
 // ReadOnlySet is the part of set that only reads: the ReadOnly tools, and

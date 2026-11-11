@@ -519,6 +519,11 @@ func (s *session) runTool(ctx context.Context, turnID string, set []tools.Tool, 
 				appendErr = err
 			}
 		},
+		Status: func(text string) {
+			if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_StatusUpdated{StatusUpdated: &flitv1.StatusUpdated{Text: text}}}); err != nil {
+				appendErr = err
+			}
+		},
 		ReadDirs: s.readDirs(),
 		Files:    s.fileTracker(),
 		Jobs:     s.jobs,

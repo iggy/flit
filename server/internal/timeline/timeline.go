@@ -284,7 +284,7 @@ func (p *printer) event(ev *flitv1.Event) {
 		c := ev.GetCronRun()
 		p.line(at, 0, "cron run of %s (%s), %s", c.Job, c.ScheduleText,
 			strings.ToLower(strings.TrimPrefix(c.Trigger.String(), "CRON_TRIGGER_")))
-	case ev.GetToolOutput() != nil, ev.GetTodoUpdated() != nil, ev.GetFeedback() != nil, ev.GetPermissionCheck() != nil:
+	case ev.GetToolOutput() != nil, ev.GetTodoUpdated() != nil, ev.GetStatusUpdated() != nil, ev.GetFeedback() != nil, ev.GetPermissionCheck() != nil:
 		// Not timeline material.
 	}
 }

@@ -46,6 +46,7 @@ FlitSession sessionFromProto(pb.Session s) {
     worktreePath: s.worktreePath,
     worktreeBranch: s.worktreeBranch,
     worktreeRemoved: s.worktreeRemoved,
+    status: s.status,
   );
 }
 
@@ -759,6 +760,8 @@ FlitEvent eventFromProto(pb.Event e) {
     case pb.Event_Payload.worktreeSkipped:
     case pb.Event_Payload.worktreeRemoved:
     case pb.Event_Payload.worktreeKept:
+    // The agent's status line; the app shows it from FlitSession.status.
+    case pb.Event_Payload.statusUpdated:
     case pb.Event_Payload.notSet:
       return FlitUnknownEvent(seq: seq, time: time, branchId: branch);
   }
