@@ -20,7 +20,8 @@ working directory are added to the system prompt.
 
 Beyond those: **git** tools (status, diff, log, commit; nothing pushes),
 **web_fetch**, **web_search** through a SearXNG instance (`web.search`; paid
-search APIs aren't supported), a `todo` list, a `cron` tool, the `agent` tool
+search APIs aren't supported), a `todo` list, a `status` tool that sets the
+one-line status shown on the session's card, a `cron` tool, the `agent` tool
 for subagents, [MCP](mcp.md) tools and [skills](skills.md).
 
 Shell commands are split into their parts (chains, pipes, loops) and run
@@ -77,7 +78,7 @@ kinds:
   safety check, yolo mode and prompts exactly like the agent's own; prompts
   show in the session as usual.
 
-Subagents can't start subagents, and don't get `todo` or skills. They run on
+Subagents can't start subagents, and don't get `todo`, `status` or skills. They run on
 `agent.tasks.explore` / `agent.tasks.build` when set, otherwise on the
 session's model. Stopping the turn stops the subagent. Everything a subagent
 does is in the session's event log (`subagent_started`, its events wrapped in

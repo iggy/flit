@@ -249,7 +249,7 @@ func TestTurnWithToolCall(t *testing.T) {
 		t.Fatalf("system prompt: %s", sys.Content)
 	}
 	// The built-ins plus job, skill (flit's own /init skill is always there) and agent.
-	if len(reqs[0].Tools) != 15 || reqs[0].Model != "test-model" {
+	if len(reqs[0].Tools) != 16 || reqs[0].Model != "test-model" {
 		t.Fatalf("first request tools=%d model=%s", len(reqs[0].Tools), reqs[0].Model)
 	}
 	second := reqs[1].Messages
@@ -790,6 +790,30 @@ func TestRolesEffortTodoAndMetrics(t *testing.T) {
 	stored, _ := h.st.GetSession(context.Background(), sess.ID)
 	if stored.Effort != "low" || stored.Role != "reviewer" {
 		t.Fatalf("stored = %+v", stored)
+	}
+}
+
+func TestStatusTool(t *testing.T) {
+	h := newHarness(t)
+	sess := h.create()
+	h.llm.Push(
+		llmtest.Response{Chunks: llmtest.ToolCalls([3]string{"c1", "status", `{"text":"blocked on: which database"}`})},
+		llmtest.Response{Chunks: llmtest.Text("which one?")},
+	)
+	w := h.watch(sess.ID, 0)
+	if _, err := h.m.Send(context.Background(), sess.ID, "add storage"); err != nil {
+		t.Fatal(err)
+	}
+	w.waitTurnEnd()
+	st, ok := find(w.snapshot(), (*flitv1.Event).GetStatusUpdated, notNil)
+	if !ok || st.Text != "blocked on: which database" {
+		t.Fatalf("status event = %v", st)
+	}
+	if got, _ := h.m.Get(context.Background(), sess.ID); got.Status != "blocked on: which database" {
+		t.Fatalf("session status = %q", got.Status)
+	}
+	if stored, _ := h.st.GetSession(context.Background(), sess.ID); stored.Status != "blocked on: which database" {
+		t.Fatalf("stored status = %q", stored.Status)
 	}
 }
 

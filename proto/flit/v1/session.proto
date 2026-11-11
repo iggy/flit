@@ -236,6 +236,9 @@ message Session {
   // The webhook whose delivery started this session (see
   // docs/webhooks.md); empty for other sessions.
   string webhook = 26;
+  // A one-line "doing X / blocked on Y" the agent sets at milestones with
+  // its status tool (see StatusUpdated); empty if it hasn't set one.
+  string status = 27;
 }
 
 message CreateSessionRequest {
@@ -605,7 +608,8 @@ message Event {
     JobOutput job_output = 54;
     JobDone job_done = 55;
     JobNoticeDelivered job_notice_delivered = 56;
-    LongTurn long_turn = 57;
+    StatusUpdated status_updated = 57;
+    LongTurn long_turn = 58;
   }
 }
 
@@ -840,6 +844,14 @@ message Usage {
   // Prompt tokens the server reused from its cache instead of reading
   // again (llama.cpp); part of input_tokens.
   int64 cached_tokens = 10;
+}
+
+// StatusUpdated is the session's one-line status after the agent set it
+// (the status tool): what it is doing or blocked on, for the session list.
+// Session.status repeats the latest one.
+message StatusUpdated {
+  // Empty clears it.
+  string text = 1;
 }
 
 // TodoUpdated is the agent's task list after it changed (the todo tool).
