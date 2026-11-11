@@ -8,7 +8,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 final class _Repo extends Fake implements FlitRepository {
-  static FlitSession _s(String id, String title, String project) => FlitSession(
+  static FlitSession _s(
+    String id,
+    String title,
+    String project, {
+    String status = '',
+  }) => FlitSession(
     id: id,
     title: title,
     workingDir: '/src',
@@ -17,6 +22,7 @@ final class _Repo extends Fake implements FlitRepository {
     state: FlitTaskState.idle,
     lastSeq: 0,
     projectId: project,
+    status: status,
   );
 
   @override
@@ -30,7 +36,7 @@ final class _Repo extends Fake implements FlitRepository {
     expect(projectId, isNull, reason: 'the pane lists every session');
     return <FlitSession>[
       _s('a', 'Fix the build', 'web'),
-      _s('b', 'Add a page', 'web'),
+      _s('b', 'Add a page', 'web', status: 'blocked on: which font'),
       _s('c', 'Try a thing', 'scratch'),
     ];
   }
@@ -91,6 +97,8 @@ void main() {
     // The open session's project is expanded and the session selected.
     expect(find.text('Fix the build'), findsOneWidget);
     expect(find.text('Add a page'), findsOneWidget);
+    // The agent's status line shows under its session.
+    expect(find.text('blocked on: which font'), findsOneWidget);
     expect(
       tester
           .widget<ListTile>(

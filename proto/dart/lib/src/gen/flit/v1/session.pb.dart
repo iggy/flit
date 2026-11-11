@@ -53,6 +53,7 @@ class Session extends $pb.GeneratedMessage {
     $core.String? worktreeBranch,
     $core.bool? worktreeRemoved,
     $core.String? webhook,
+    $core.String? status,
   }) {
     final result = Session._();
     if (id != null) result.id = id;
@@ -81,6 +82,7 @@ class Session extends $pb.GeneratedMessage {
     if (worktreeBranch != null) result.worktreeBranch = worktreeBranch;
     if (worktreeRemoved != null) result.worktreeRemoved = worktreeRemoved;
     if (webhook != null) result.webhook = webhook;
+    if (status != null) result.status = status;
     return result;
   }
 
@@ -126,6 +128,7 @@ class Session extends $pb.GeneratedMessage {
     ..aOS(24, _omitFieldNames ? '' : 'worktreeBranch')
     ..aOB(25, _omitFieldNames ? '' : 'worktreeRemoved')
     ..aOS(26, _omitFieldNames ? '' : 'webhook')
+    ..aOS(27, _omitFieldNames ? '' : 'status')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -405,6 +408,17 @@ class Session extends $pb.GeneratedMessage {
   $core.bool hasWebhook() => $_has(25);
   @$pb.TagNumber(26)
   void clearWebhook() => $_clearField(26);
+
+  /// A one-line "doing X / blocked on Y" the agent sets at milestones with
+  /// its status tool (see StatusUpdated); empty if it hasn't set one.
+  @$pb.TagNumber(27)
+  $core.String get status => $_getSZ(26);
+  @$pb.TagNumber(27)
+  set status($core.String value) => $_setString(26, value);
+  @$pb.TagNumber(27)
+  $core.bool hasStatus() => $_has(26);
+  @$pb.TagNumber(27)
+  void clearStatus() => $_clearField(27);
 }
 
 class CreateSessionRequest extends $pb.GeneratedMessage {
@@ -4046,6 +4060,7 @@ enum Event_Payload {
   jobOutput,
   jobDone,
   jobNoticeDelivered,
+  statusUpdated,
   notSet
 }
 
@@ -4103,6 +4118,7 @@ class Event extends $pb.GeneratedMessage {
     JobOutput? jobOutput,
     JobDone? jobDone,
     JobNoticeDelivered? jobNoticeDelivered,
+    StatusUpdated? statusUpdated,
   }) {
     final result = Event._();
     if (sessionId != null) result.sessionId = sessionId;
@@ -4161,6 +4177,7 @@ class Event extends $pb.GeneratedMessage {
     if (jobDone != null) result.jobDone = jobDone;
     if (jobNoticeDelivered != null)
       result.jobNoticeDelivered = jobNoticeDelivered;
+    if (statusUpdated != null) result.statusUpdated = statusUpdated;
     return result;
   }
 
@@ -4221,6 +4238,7 @@ class Event extends $pb.GeneratedMessage {
     54: Event_Payload.jobOutput,
     55: Event_Payload.jobDone,
     56: Event_Payload.jobNoticeDelivered,
+    57: Event_Payload.statusUpdated,
     0: Event_Payload.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
@@ -4274,7 +4292,8 @@ class Event extends $pb.GeneratedMessage {
       53,
       54,
       55,
-      56
+      56,
+      57
     ])
     ..aOS(1, _omitFieldNames ? '' : 'sessionId')
     ..aInt64(2, _omitFieldNames ? '' : 'seq')
@@ -4378,6 +4397,8 @@ class Event extends $pb.GeneratedMessage {
         subBuilder: JobDone.$_createMessage)
     ..aOM<JobNoticeDelivered>(56, _omitFieldNames ? '' : 'jobNoticeDelivered',
         subBuilder: JobNoticeDelivered.$_createMessage)
+    ..aOM<StatusUpdated>(57, _omitFieldNames ? '' : 'statusUpdated',
+        subBuilder: StatusUpdated.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -4447,6 +4468,7 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(54)
   @$pb.TagNumber(55)
   @$pb.TagNumber(56)
+  @$pb.TagNumber(57)
   Event_Payload whichPayload() => _Event_PayloadByTag[$_whichOneof(0)]!;
   @$pb.TagNumber(10)
   @$pb.TagNumber(11)
@@ -4495,6 +4517,7 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(54)
   @$pb.TagNumber(55)
   @$pb.TagNumber(56)
+  @$pb.TagNumber(57)
   void clearPayload() => $_clearField($_whichOneof(0));
 
   @$pb.TagNumber(1)
@@ -5060,6 +5083,17 @@ class Event extends $pb.GeneratedMessage {
   void clearJobNoticeDelivered() => $_clearField(56);
   @$pb.TagNumber(56)
   JobNoticeDelivered ensureJobNoticeDelivered() => $_ensure(50);
+
+  @$pb.TagNumber(57)
+  StatusUpdated get statusUpdated => $_getN(51);
+  @$pb.TagNumber(57)
+  set statusUpdated(StatusUpdated value) => $_setField(57, value);
+  @$pb.TagNumber(57)
+  $core.bool hasStatusUpdated() => $_has(51);
+  @$pb.TagNumber(57)
+  void clearStatusUpdated() => $_clearField(57);
+  @$pb.TagNumber(57)
+  StatusUpdated ensureStatusUpdated() => $_ensure(51);
 }
 
 /// MessageStarted opens a message. Its text arrives as TextDelta events and
@@ -6711,6 +6745,67 @@ class Usage extends $pb.GeneratedMessage {
   $core.bool hasCachedTokens() => $_has(9);
   @$pb.TagNumber(10)
   void clearCachedTokens() => $_clearField(10);
+}
+
+/// StatusUpdated is the session's one-line status after the agent set it
+/// (the status tool): what it is doing or blocked on, for the session list.
+/// Session.status repeats the latest one.
+class StatusUpdated extends $pb.GeneratedMessage {
+  factory StatusUpdated({
+    $core.String? text,
+  }) {
+    final result = StatusUpdated._();
+    if (text != null) result.text = text;
+    return result;
+  }
+
+  StatusUpdated._();
+
+  factory StatusUpdated.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      StatusUpdated()..mergeFromBuffer(data, registry);
+  factory StatusUpdated.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      StatusUpdated()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'StatusUpdated',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: StatusUpdated.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'text')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  StatusUpdated clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  StatusUpdated copyWith(void Function(StatusUpdated) updates) =>
+      super.copyWith((message) => updates(message as StatusUpdated))
+          as StatusUpdated;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use StatusUpdated() / StatusUpdated.new instead')
+  static StatusUpdated create() => StatusUpdated._();
+  static $pb.GeneratedMessage $_createMessage() => StatusUpdated._();
+  @$core.override
+  StatusUpdated createEmptyInstance() => StatusUpdated._();
+  @$core.pragma('dart2js:noInline')
+  static StatusUpdated getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<StatusUpdated>(
+          StatusUpdated.$_createMessage);
+  static StatusUpdated? _defaultInstance;
+
+  /// Empty clears it.
+  @$pb.TagNumber(1)
+  $core.String get text => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set text($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasText() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearText() => $_clearField(1);
 }
 
 /// TodoUpdated is the agent's task list after it changed (the todo tool).

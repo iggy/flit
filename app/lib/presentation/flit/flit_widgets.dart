@@ -58,6 +58,31 @@ class FlitTaskStateChip extends StatelessWidget {
   }
 }
 
+/// A session's one-line status from its agent ("blocked on: ..."), for
+/// session lists. Shows nothing when there is none.
+class FlitSessionStatusLine extends StatelessWidget {
+  const FlitSessionStatusLine({required this.status, super.key});
+
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    if (status.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final theme = Theme.of(context);
+    return Text(
+      status,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: theme.textTheme.bodySmall?.copyWith(
+        color: theme.colorScheme.primary,
+        fontStyle: FontStyle.italic,
+      ),
+    );
+  }
+}
+
 /// The status strip's cache hits.
 const Key flitCachedKey = Key('flit_cached');
 

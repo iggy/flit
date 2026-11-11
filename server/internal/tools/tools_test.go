@@ -276,6 +276,26 @@ func TestTodo(t *testing.T) {
 	}
 }
 
+func TestStatus(t *testing.T) {
+	env := newEnv(t)
+	got := "unset"
+	env.Status = func(text string) { got = text }
+	r := run(t, env, "status", map[string]any{"text": "  running\n the   tests "})
+	if r.IsError || got != "running the tests" {
+		t.Fatalf("status = %+v, got %q", r, got)
+	}
+	if r := run(t, env, "status", map[string]any{"text": ""}); r.IsError || got != "" || r.Text != "status cleared" {
+		t.Fatalf("clear = %+v, got %q", r, got)
+	}
+	got = "kept"
+	if r := run(t, env, "status", map[string]any{"text": strings.Repeat("é", maxStatus+1)}); !r.IsError || got != "kept" {
+		t.Fatalf("long status = %+v, got %q", r, got)
+	}
+	if r := run(t, env, "status", map[string]any{"text": strings.Repeat("é", maxStatus)}); r.IsError {
+		t.Fatalf("status at the limit refused: %+v", r)
+	}
+}
+
 func TestGit(t *testing.T) {
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("no git")

@@ -54,8 +54,8 @@ func subagentModel(cfg config.Config, info store.Session, kind string) config.Ta
 // subagentTools is what a subagent of kind may use. explore gets only the
 // tools that read, shell limited to the read-only list, and nothing that
 // could ask the user; build gets the session's tools. Neither gets agent
-// (no nesting), todo (the session's list is the agent's) or skills (to keep
-// the prompt short).
+// (no nesting), todo or status (the session's list and status line are the
+// agent's) or skills (to keep the prompt short).
 func (s *session) subagentTools(ctx context.Context, cfg config.Config, info store.Session, kind flitv1.SubagentKind) []tools.Tool {
 	set := tools.All()
 	if cfg.Git.IsEnabled() {
@@ -72,7 +72,7 @@ func (s *session) subagentTools(ctx context.Context, cfg config.Config, info sto
 	}
 	out := set[:0]
 	for _, t := range set {
-		if t.Name != "todo" {
+		if t.Name != "todo" && t.Name != "status" {
 			out = append(out, t)
 		}
 	}

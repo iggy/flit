@@ -58,6 +58,7 @@ func toProto(s store.Session) *flitv1.Session {
 		CronJob:         s.CronID,
 		Webhook:         s.WebhookID,
 		Archived:        s.Archived,
+		Status:          s.Status,
 	}
 }
 

@@ -47,7 +47,12 @@ final class FlitSession {
     this.worktreePath = '',
     this.worktreeBranch = '',
     this.worktreeRemoved = false,
+    this.status = '',
   });
+
+  /// The agent's one-line "doing X / blocked on Y", set with its status
+  /// tool; empty if it hasn't set one.
+  final String status;
 
   /// The worktree was removed; the session can't run turns any more, and
   /// [worktreeBranch] may still hold its commits.
@@ -131,7 +136,8 @@ final class FlitSession {
         other.worktreePath == worktreePath &&
         other.worktreeBranch == worktreeBranch &&
         other.sourceDir == sourceDir &&
-        other.worktreeRemoved == worktreeRemoved;
+        other.worktreeRemoved == worktreeRemoved &&
+        other.status == status;
   }
 
   @override
@@ -154,6 +160,7 @@ final class FlitSession {
     yolo,
     worktreePath,
     worktreeBranch,
+    status,
   );
 
   @override

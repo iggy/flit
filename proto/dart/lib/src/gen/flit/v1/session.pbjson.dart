@@ -352,6 +352,7 @@ const Session$json = {
     {'1': 'worktree_branch', '3': 24, '4': 1, '5': 9, '10': 'worktreeBranch'},
     {'1': 'worktree_removed', '3': 25, '4': 1, '5': 8, '10': 'worktreeRemoved'},
     {'1': 'webhook', '3': 26, '4': 1, '5': 9, '10': 'webhook'},
+    {'1': 'status', '3': 27, '4': 1, '5': 9, '10': 'status'},
   ],
 };
 
@@ -372,7 +373,7 @@ final $typed_data.Uint8List sessionDescriptor = $convert.base64Decode(
     'dmVkEh0KCnNvdXJjZV9kaXIYFiABKAlSCXNvdXJjZURpchIjCg13b3JrdHJlZV9wYXRoGBcgAS'
     'gJUgx3b3JrdHJlZVBhdGgSJwoPd29ya3RyZWVfYnJhbmNoGBggASgJUg53b3JrdHJlZUJyYW5j'
     'aBIpChB3b3JrdHJlZV9yZW1vdmVkGBkgASgIUg93b3JrdHJlZVJlbW92ZWQSGAoHd2ViaG9vax'
-    'gaIAEoCVIHd2ViaG9vaw==');
+    'gaIAEoCVIHd2ViaG9vaxIWCgZzdGF0dXMYGyABKAlSBnN0YXR1cw==');
 
 @$core.Deprecated('Use createSessionRequestDescriptor instead')
 const CreateSessionRequest$json = {
@@ -1633,6 +1634,15 @@ const Event$json = {
       '9': 0,
       '10': 'jobNoticeDelivered'
     },
+    {
+      '1': 'status_updated',
+      '3': 57,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.StatusUpdated',
+      '9': 0,
+      '10': 'statusUpdated'
+    },
   ],
   '8': [
     {'1': 'payload'},
@@ -1699,7 +1709,8 @@ final $typed_data.Uint8List eventDescriptor = $convert.base64Decode(
     'RhcnRlZBIzCgpqb2Jfb3V0cHV0GDYgASgLMhIuZmxpdC52MS5Kb2JPdXRwdXRIAFIJam9iT3V0'
     'cHV0Ei0KCGpvYl9kb25lGDcgASgLMhAuZmxpdC52MS5Kb2JEb25lSABSB2pvYkRvbmUSTwoUam'
     '9iX25vdGljZV9kZWxpdmVyZWQYOCABKAsyGy5mbGl0LnYxLkpvYk5vdGljZURlbGl2ZXJlZEgA'
-    'UhJqb2JOb3RpY2VEZWxpdmVyZWRCCQoHcGF5bG9hZA==');
+    'UhJqb2JOb3RpY2VEZWxpdmVyZWQSPwoOc3RhdHVzX3VwZGF0ZWQYOSABKAsyFi5mbGl0LnYxLl'
+    'N0YXR1c1VwZGF0ZWRIAFINc3RhdHVzVXBkYXRlZEIJCgdwYXlsb2Fk');
 
 @$core.Deprecated('Use messageStartedDescriptor instead')
 const MessageStarted$json = {
@@ -2033,6 +2044,18 @@ final $typed_data.Uint8List usageDescriptor = $convert.base64Decode(
     'RUb2tlbnNQZXJTZWNvbmQSPwocZ2VuZXJhdGlvbl90b2tlbnNfcGVyX3NlY29uZBgIIAEoAVIZ'
     'Z2VuZXJhdGlvblRva2Vuc1BlclNlY29uZBIjCg10aW1pbmdfc291cmNlGAkgASgJUgx0aW1pbm'
     'dTb3VyY2USIwoNY2FjaGVkX3Rva2VucxgKIAEoA1IMY2FjaGVkVG9rZW5z');
+
+@$core.Deprecated('Use statusUpdatedDescriptor instead')
+const StatusUpdated$json = {
+  '1': 'StatusUpdated',
+  '2': [
+    {'1': 'text', '3': 1, '4': 1, '5': 9, '10': 'text'},
+  ],
+};
+
+/// Descriptor for `StatusUpdated`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List statusUpdatedDescriptor =
+    $convert.base64Decode('Cg1TdGF0dXNVcGRhdGVkEhIKBHRleHQYASABKAlSBHRleHQ=');
 
 @$core.Deprecated('Use todoUpdatedDescriptor instead')
 const TodoUpdated$json = {
@@ -3215,6 +3238,7 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.flit.v1.JobOutput': JobOutput$json,
   '.flit.v1.JobDone': JobDone$json,
   '.flit.v1.JobNoticeDelivered': JobNoticeDelivered$json,
+  '.flit.v1.StatusUpdated': StatusUpdated$json,
   '.flit.v1.SendRequest': SendRequest$json,
   '.flit.v1.SendResponse': SendResponse$json,
   '.flit.v1.EditQueuedMessageRequest': EditQueuedMessageRequest$json,

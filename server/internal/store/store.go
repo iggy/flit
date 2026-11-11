@@ -301,6 +301,9 @@ CREATE TABLE learned_fact_injections (
 	PRIMARY KEY (fact_id, session_id)
 );
 `,
+	`
+ALTER TABLE sessions ADD COLUMN status TEXT NOT NULL DEFAULT '';
+`,
 }
 
 func (s *Store) migrate(ctx context.Context) error {
@@ -379,9 +382,12 @@ type Session struct {
 	// WorktreeRemoved says the worktree was deleted (WorktreeRemoved
 	// event); the session can't run turns any more.
 	WorktreeRemoved bool
+	// Status is the agent's one-line status (StatusUpdated); empty if
+	// none.
+	Status string
 }
 
-const sessionCols = `id, team_id, project_id, title, working_dir, provider, model, state, last_seq, created_at, updated_at, effort, role, context_tokens, context_length, mcp_servers, yolo, branch_id, base_commit, cron_id, archived, source_dir, worktree_path, worktree_branch, worktree_removed, webhook_id`
+const sessionCols = `id, team_id, project_id, title, working_dir, provider, model, state, last_seq, created_at, updated_at, effort, role, context_tokens, context_length, mcp_servers, yolo, branch_id, base_commit, cron_id, archived, source_dir, worktree_path, worktree_branch, worktree_removed, webhook_id, status`
 
 func joinNames(names []string) string { return strings.Join(names, "\n") }
 
@@ -397,7 +403,7 @@ func scanSession(row interface{ Scan(...any) error }) (Session, error) {
 	var created, updated int64
 	var mcp string
 	err := row.Scan(&s.ID, &s.TeamID, &s.ProjectID, &s.Title, &s.WorkingDir, &s.Provider, &s.Model,
-		&s.State, &s.LastSeq, &created, &updated, &s.Effort, &s.Role, &s.ContextTokens, &s.ContextLength, &mcp, &s.Yolo, &s.BranchID, &s.BaseCommit, &s.CronID, &s.Archived, &s.SourceDir, &s.WorktreePath, &s.WorktreeBranch, &s.WorktreeRemoved, &s.WebhookID)
+		&s.State, &s.LastSeq, &created, &updated, &s.Effort, &s.Role, &s.ContextTokens, &s.ContextLength, &mcp, &s.Yolo, &s.BranchID, &s.BaseCommit, &s.CronID, &s.Archived, &s.SourceDir, &s.WorktreePath, &s.WorktreeBranch, &s.WorktreeRemoved, &s.WebhookID, &s.Status)
 	s.MCPServers = splitNames(mcp)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Session{}, ErrNotFound
@@ -410,10 +416,10 @@ func scanSession(row interface{ Scan(...any) error }) (Session, error) {
 func (s *Store) CreateSession(ctx context.Context, sess *Session) error {
 	now := time.Now()
 	sess.CreatedAt, sess.UpdatedAt = now, now
-	_, err := s.db.ExecContext(ctx, `INSERT INTO sessions (`+sessionCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+	_, err := s.db.ExecContext(ctx, `INSERT INTO sessions (`+sessionCols+`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		sess.ID, sess.TeamID, sess.ProjectID, sess.Title, sess.WorkingDir, sess.Provider, sess.Model,
 		sess.State, sess.LastSeq, now.UnixNano(), now.UnixNano(), sess.Effort, sess.Role, sess.ContextTokens, sess.ContextLength,
-		joinNames(sess.MCPServers), sess.Yolo, sess.BranchID, sess.BaseCommit, sess.CronID, sess.Archived, sess.SourceDir, sess.WorktreePath, sess.WorktreeBranch, sess.WorktreeRemoved, sess.WebhookID)
+		joinNames(sess.MCPServers), sess.Yolo, sess.BranchID, sess.BaseCommit, sess.CronID, sess.Archived, sess.SourceDir, sess.WorktreePath, sess.WorktreeBranch, sess.WorktreeRemoved, sess.WebhookID, sess.Status)
 	return err
 }
 
@@ -612,7 +618,8 @@ func (s *Store) SessionIDsInStates(ctx context.Context, states ...flitv1.TaskSta
 // AppendEvent stores ev, which must carry the session's next sequence
 // number, and advances the session's last_seq in the same transaction,
 // along with what the event changes: state (TaskStateChanged), context use
-// (Usage), context window (ModelChanged) or active branch (BranchSwitched).
+// (Usage), context window (ModelChanged), active branch (BranchSwitched),
+// role (RoleChanged) or status line (StatusUpdated).
 func (s *Store) AppendEvent(ctx context.Context, sess Session, ev *flitv1.Event) error {
 	payload, err := proto.Marshal(ev)
 	if err != nil {
@@ -652,6 +659,9 @@ func (s *Store) AppendEvent(ctx context.Context, sess Session, ev *flitv1.Event)
 	case ev.GetRoleChanged() != nil:
 		q = `UPDATE sessions SET last_seq = ?, updated_at = ?, role = ? WHERE id = ? AND last_seq = ?`
 		args = []any{ev.Seq, at, ev.GetRoleChanged().Role, ev.SessionId, ev.Seq - 1}
+	case ev.GetStatusUpdated() != nil:
+		q = `UPDATE sessions SET last_seq = ?, updated_at = ?, status = ? WHERE id = ? AND last_seq = ?`
+		args = []any{ev.Seq, at, ev.GetStatusUpdated().Text, ev.SessionId, ev.Seq - 1}
 	}
 	res, err := tx.ExecContext(ctx, q, args...)
 	if err != nil {
