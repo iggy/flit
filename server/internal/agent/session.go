@@ -67,6 +67,14 @@ type session struct {
 	// write and patch tools' read-before-write check (see fileTracker).
 	files       *tools.FileTracker
 	filesBranch string
+	// jobs are the session's background shell jobs; notices are ended
+	// ones the agent hasn't been told about yet, and jobLive counts each
+	// running job's logged output (see jobs.go).
+	jobs    *tools.Jobs
+	notices []tools.JobInfo
+	jobLive map[string]int
+	// jobSeq numbers the session's jobs (see newJobs).
+	jobSeq int
 }
 
 type pendingPrompt struct {
@@ -86,13 +94,16 @@ type promptAnswer struct {
 }
 
 func newSession(m *Manager, info store.Session) *session {
-	return &session{
+	s := &session{
 		m:       m,
 		info:    info,
 		subs:    map[*subscriber]struct{}{},
 		prompts: map[string]pendingPrompt{},
 		tree:    branches.New(nil),
+		jobLive: map[string]int{},
 	}
+	s.jobs = s.newJobs()
+	return s
 }
 
 // loadAllowed rebuilds the session's "allow for this session" patterns

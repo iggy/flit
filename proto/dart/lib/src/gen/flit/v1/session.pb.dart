@@ -1435,6 +1435,129 @@ class CancelQueuedMessageResponse extends $pb.GeneratedMessage {
   static CancelQueuedMessageResponse? _defaultInstance;
 }
 
+class CancelJobRequest extends $pb.GeneratedMessage {
+  factory CancelJobRequest({
+    $core.String? sessionId,
+    $core.String? jobId,
+    $core.String? client,
+  }) {
+    final result = CancelJobRequest._();
+    if (sessionId != null) result.sessionId = sessionId;
+    if (jobId != null) result.jobId = jobId;
+    if (client != null) result.client = client;
+    return result;
+  }
+
+  CancelJobRequest._();
+
+  factory CancelJobRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CancelJobRequest()..mergeFromBuffer(data, registry);
+  factory CancelJobRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CancelJobRequest()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CancelJobRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: CancelJobRequest.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'sessionId')
+    ..aOS(2, _omitFieldNames ? '' : 'jobId')
+    ..aOS(3, _omitFieldNames ? '' : 'client')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CancelJobRequest clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CancelJobRequest copyWith(void Function(CancelJobRequest) updates) =>
+      super.copyWith((message) => updates(message as CancelJobRequest))
+          as CancelJobRequest;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use CancelJobRequest() / CancelJobRequest.new instead')
+  static CancelJobRequest create() => CancelJobRequest._();
+  static $pb.GeneratedMessage $_createMessage() => CancelJobRequest._();
+  @$core.override
+  CancelJobRequest createEmptyInstance() => CancelJobRequest._();
+  @$core.pragma('dart2js:noInline')
+  static CancelJobRequest getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CancelJobRequest>(
+          CancelJobRequest.$_createMessage);
+  static CancelJobRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get sessionId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set sessionId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSessionId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSessionId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get jobId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set jobId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasJobId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearJobId() => $_clearField(2);
+
+  /// Who is cancelling it (shown in JobDone.cancelled_by).
+  @$pb.TagNumber(3)
+  $core.String get client => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set client($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasClient() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearClient() => $_clearField(3);
+}
+
+class CancelJobResponse extends $pb.GeneratedMessage {
+  factory CancelJobResponse() => CancelJobResponse._();
+
+  CancelJobResponse._();
+
+  factory CancelJobResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CancelJobResponse()..mergeFromBuffer(data, registry);
+  factory CancelJobResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CancelJobResponse()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CancelJobResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: CancelJobResponse.$_createMessage)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CancelJobResponse clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CancelJobResponse copyWith(void Function(CancelJobResponse) updates) =>
+      super.copyWith((message) => updates(message as CancelJobResponse))
+          as CancelJobResponse;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use CancelJobResponse() / CancelJobResponse.new instead')
+  static CancelJobResponse create() => CancelJobResponse._();
+  static $pb.GeneratedMessage $_createMessage() => CancelJobResponse._();
+  @$core.override
+  CancelJobResponse createEmptyInstance() => CancelJobResponse._();
+  @$core.pragma('dart2js:noInline')
+  static CancelJobResponse getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CancelJobResponse>(
+          CancelJobResponse.$_createMessage);
+  static CancelJobResponse? _defaultInstance;
+}
+
 class InterruptRequest extends $pb.GeneratedMessage {
   factory InterruptRequest({
     $core.String? sessionId,
@@ -3919,6 +4042,10 @@ enum Event_Payload {
   worktreeKept,
   webhookRun,
   roleChanged,
+  jobStarted,
+  jobOutput,
+  jobDone,
+  jobNoticeDelivered,
   notSet
 }
 
@@ -3972,6 +4099,10 @@ class Event extends $pb.GeneratedMessage {
     WorktreeKept? worktreeKept,
     WebhookRunStarted? webhookRun,
     RoleChanged? roleChanged,
+    JobStarted? jobStarted,
+    JobOutput? jobOutput,
+    JobDone? jobDone,
+    JobNoticeDelivered? jobNoticeDelivered,
   }) {
     final result = Event._();
     if (sessionId != null) result.sessionId = sessionId;
@@ -4025,6 +4156,11 @@ class Event extends $pb.GeneratedMessage {
     if (worktreeKept != null) result.worktreeKept = worktreeKept;
     if (webhookRun != null) result.webhookRun = webhookRun;
     if (roleChanged != null) result.roleChanged = roleChanged;
+    if (jobStarted != null) result.jobStarted = jobStarted;
+    if (jobOutput != null) result.jobOutput = jobOutput;
+    if (jobDone != null) result.jobDone = jobDone;
+    if (jobNoticeDelivered != null)
+      result.jobNoticeDelivered = jobNoticeDelivered;
     return result;
   }
 
@@ -4081,6 +4217,10 @@ class Event extends $pb.GeneratedMessage {
     50: Event_Payload.worktreeKept,
     51: Event_Payload.webhookRun,
     52: Event_Payload.roleChanged,
+    53: Event_Payload.jobStarted,
+    54: Event_Payload.jobOutput,
+    55: Event_Payload.jobDone,
+    56: Event_Payload.jobNoticeDelivered,
     0: Event_Payload.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
@@ -4130,7 +4270,11 @@ class Event extends $pb.GeneratedMessage {
       49,
       50,
       51,
-      52
+      52,
+      53,
+      54,
+      55,
+      56
     ])
     ..aOS(1, _omitFieldNames ? '' : 'sessionId')
     ..aInt64(2, _omitFieldNames ? '' : 'seq')
@@ -4226,6 +4370,14 @@ class Event extends $pb.GeneratedMessage {
         subBuilder: WebhookRunStarted.$_createMessage)
     ..aOM<RoleChanged>(52, _omitFieldNames ? '' : 'roleChanged',
         subBuilder: RoleChanged.$_createMessage)
+    ..aOM<JobStarted>(53, _omitFieldNames ? '' : 'jobStarted',
+        subBuilder: JobStarted.$_createMessage)
+    ..aOM<JobOutput>(54, _omitFieldNames ? '' : 'jobOutput',
+        subBuilder: JobOutput.$_createMessage)
+    ..aOM<JobDone>(55, _omitFieldNames ? '' : 'jobDone',
+        subBuilder: JobDone.$_createMessage)
+    ..aOM<JobNoticeDelivered>(56, _omitFieldNames ? '' : 'jobNoticeDelivered',
+        subBuilder: JobNoticeDelivered.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -4291,6 +4443,10 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(50)
   @$pb.TagNumber(51)
   @$pb.TagNumber(52)
+  @$pb.TagNumber(53)
+  @$pb.TagNumber(54)
+  @$pb.TagNumber(55)
+  @$pb.TagNumber(56)
   Event_Payload whichPayload() => _Event_PayloadByTag[$_whichOneof(0)]!;
   @$pb.TagNumber(10)
   @$pb.TagNumber(11)
@@ -4335,6 +4491,10 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(50)
   @$pb.TagNumber(51)
   @$pb.TagNumber(52)
+  @$pb.TagNumber(53)
+  @$pb.TagNumber(54)
+  @$pb.TagNumber(55)
+  @$pb.TagNumber(56)
   void clearPayload() => $_clearField($_whichOneof(0));
 
   @$pb.TagNumber(1)
@@ -4856,6 +5016,50 @@ class Event extends $pb.GeneratedMessage {
   void clearRoleChanged() => $_clearField(52);
   @$pb.TagNumber(52)
   RoleChanged ensureRoleChanged() => $_ensure(46);
+
+  @$pb.TagNumber(53)
+  JobStarted get jobStarted => $_getN(47);
+  @$pb.TagNumber(53)
+  set jobStarted(JobStarted value) => $_setField(53, value);
+  @$pb.TagNumber(53)
+  $core.bool hasJobStarted() => $_has(47);
+  @$pb.TagNumber(53)
+  void clearJobStarted() => $_clearField(53);
+  @$pb.TagNumber(53)
+  JobStarted ensureJobStarted() => $_ensure(47);
+
+  @$pb.TagNumber(54)
+  JobOutput get jobOutput => $_getN(48);
+  @$pb.TagNumber(54)
+  set jobOutput(JobOutput value) => $_setField(54, value);
+  @$pb.TagNumber(54)
+  $core.bool hasJobOutput() => $_has(48);
+  @$pb.TagNumber(54)
+  void clearJobOutput() => $_clearField(54);
+  @$pb.TagNumber(54)
+  JobOutput ensureJobOutput() => $_ensure(48);
+
+  @$pb.TagNumber(55)
+  JobDone get jobDone => $_getN(49);
+  @$pb.TagNumber(55)
+  set jobDone(JobDone value) => $_setField(55, value);
+  @$pb.TagNumber(55)
+  $core.bool hasJobDone() => $_has(49);
+  @$pb.TagNumber(55)
+  void clearJobDone() => $_clearField(55);
+  @$pb.TagNumber(55)
+  JobDone ensureJobDone() => $_ensure(49);
+
+  @$pb.TagNumber(56)
+  JobNoticeDelivered get jobNoticeDelivered => $_getN(50);
+  @$pb.TagNumber(56)
+  set jobNoticeDelivered(JobNoticeDelivered value) => $_setField(56, value);
+  @$pb.TagNumber(56)
+  $core.bool hasJobNoticeDelivered() => $_has(50);
+  @$pb.TagNumber(56)
+  void clearJobNoticeDelivered() => $_clearField(56);
+  @$pb.TagNumber(56)
+  JobNoticeDelivered ensureJobNoticeDelivered() => $_ensure(50);
 }
 
 /// MessageStarted opens a message. Its text arrives as TextDelta events and
@@ -5852,6 +6056,403 @@ class ModelChanged extends $pb.GeneratedMessage {
 
 /// RoleChanged switched the session's role (SetRole), effective from the
 /// next model call. Session-wide.
+/// JobStarted is a shell command running as a background job: the agent's
+/// turn goes on while it runs. The shell call tool_call_id either asked for
+/// it (background: true) or ran in the foreground for shell.background_after
+/// first (detached; what it printed until then is that call's ToolOutput).
+/// Its output follows as JobOutput, and JobDone when it ends. Jobs outlive
+/// the turn and interrupts; the agent checks on them with its job tool.
+class JobStarted extends $pb.GeneratedMessage {
+  factory JobStarted({
+    $core.String? jobId,
+    $core.String? toolCallId,
+    $core.String? command,
+    $core.String? workdir,
+    $core.bool? detached,
+    $fixnum.Int64? timeoutMs,
+  }) {
+    final result = JobStarted._();
+    if (jobId != null) result.jobId = jobId;
+    if (toolCallId != null) result.toolCallId = toolCallId;
+    if (command != null) result.command = command;
+    if (workdir != null) result.workdir = workdir;
+    if (detached != null) result.detached = detached;
+    if (timeoutMs != null) result.timeoutMs = timeoutMs;
+    return result;
+  }
+
+  JobStarted._();
+
+  factory JobStarted.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      JobStarted()..mergeFromBuffer(data, registry);
+  factory JobStarted.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      JobStarted()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'JobStarted',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: JobStarted.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'jobId')
+    ..aOS(2, _omitFieldNames ? '' : 'toolCallId')
+    ..aOS(3, _omitFieldNames ? '' : 'command')
+    ..aOS(4, _omitFieldNames ? '' : 'workdir')
+    ..aOB(5, _omitFieldNames ? '' : 'detached')
+    ..aInt64(6, _omitFieldNames ? '' : 'timeoutMs')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  JobStarted clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  JobStarted copyWith(void Function(JobStarted) updates) =>
+      super.copyWith((message) => updates(message as JobStarted)) as JobStarted;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use JobStarted() / JobStarted.new instead')
+  static JobStarted create() => JobStarted._();
+  static $pb.GeneratedMessage $_createMessage() => JobStarted._();
+  @$core.override
+  JobStarted createEmptyInstance() => JobStarted._();
+  @$core.pragma('dart2js:noInline')
+  static JobStarted getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<JobStarted>(JobStarted.$_createMessage);
+  static JobStarted? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get jobId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set jobId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasJobId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearJobId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get toolCallId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set toolCallId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasToolCallId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearToolCallId() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.String get command => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set command($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasCommand() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearCommand() => $_clearField(3);
+
+  /// Where it runs, relative to the session's working directory ("." for
+  /// the directory itself).
+  @$pb.TagNumber(4)
+  $core.String get workdir => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set workdir($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasWorkdir() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearWorkdir() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.bool get detached => $_getBF(4);
+  @$pb.TagNumber(5)
+  set detached($core.bool value) => $_setBool(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasDetached() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearDetached() => $_clearField(5);
+
+  /// It is killed after this long (counted from when the command started).
+  @$pb.TagNumber(6)
+  $fixnum.Int64 get timeoutMs => $_getI64(5);
+  @$pb.TagNumber(6)
+  set timeoutMs($fixnum.Int64 value) => $_setInt64(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasTimeoutMs() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearTimeoutMs() => $_clearField(6);
+}
+
+/// JobOutput is output of a background job, as it arrives (stdout and
+/// stderr together). Live output is capped per job; the agent still sees
+/// the start and end of all of it.
+class JobOutput extends $pb.GeneratedMessage {
+  factory JobOutput({
+    $core.String? jobId,
+    $core.String? text,
+  }) {
+    final result = JobOutput._();
+    if (jobId != null) result.jobId = jobId;
+    if (text != null) result.text = text;
+    return result;
+  }
+
+  JobOutput._();
+
+  factory JobOutput.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      JobOutput()..mergeFromBuffer(data, registry);
+  factory JobOutput.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      JobOutput()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'JobOutput',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: JobOutput.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'jobId')
+    ..aOS(2, _omitFieldNames ? '' : 'text')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  JobOutput clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  JobOutput copyWith(void Function(JobOutput) updates) =>
+      super.copyWith((message) => updates(message as JobOutput)) as JobOutput;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use JobOutput() / JobOutput.new instead')
+  static JobOutput create() => JobOutput._();
+  static $pb.GeneratedMessage $_createMessage() => JobOutput._();
+  @$core.override
+  JobOutput createEmptyInstance() => JobOutput._();
+  @$core.pragma('dart2js:noInline')
+  static JobOutput getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<JobOutput>(JobOutput.$_createMessage);
+  static JobOutput? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get jobId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set jobId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasJobId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearJobId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.String get text => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set text($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasText() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearText() => $_clearField(2);
+}
+
+/// JobDone is the end of a background job.
+class JobDone extends $pb.GeneratedMessage {
+  factory JobDone({
+    $core.String? jobId,
+    JobOutcome? outcome,
+    $core.int? exitCode,
+    $core.String? error,
+    $core.String? outputTail,
+    $fixnum.Int64? durationMs,
+    $core.String? cancelledBy,
+  }) {
+    final result = JobDone._();
+    if (jobId != null) result.jobId = jobId;
+    if (outcome != null) result.outcome = outcome;
+    if (exitCode != null) result.exitCode = exitCode;
+    if (error != null) result.error = error;
+    if (outputTail != null) result.outputTail = outputTail;
+    if (durationMs != null) result.durationMs = durationMs;
+    if (cancelledBy != null) result.cancelledBy = cancelledBy;
+    return result;
+  }
+
+  JobDone._();
+
+  factory JobDone.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      JobDone()..mergeFromBuffer(data, registry);
+  factory JobDone.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      JobDone()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'JobDone',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: JobDone.$_createMessage)
+    ..aOS(1, _omitFieldNames ? '' : 'jobId')
+    ..aE<JobOutcome>(2, _omitFieldNames ? '' : 'outcome',
+        enumValues: JobOutcome.values)
+    ..aI(3, _omitFieldNames ? '' : 'exitCode')
+    ..aOS(4, _omitFieldNames ? '' : 'error')
+    ..aOS(5, _omitFieldNames ? '' : 'outputTail')
+    ..aInt64(6, _omitFieldNames ? '' : 'durationMs')
+    ..aOS(7, _omitFieldNames ? '' : 'cancelledBy')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  JobDone clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  JobDone copyWith(void Function(JobDone) updates) =>
+      super.copyWith((message) => updates(message as JobDone)) as JobDone;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use JobDone() / JobDone.new instead')
+  static JobDone create() => JobDone._();
+  static $pb.GeneratedMessage $_createMessage() => JobDone._();
+  @$core.override
+  JobDone createEmptyInstance() => JobDone._();
+  @$core.pragma('dart2js:noInline')
+  static JobDone getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<JobDone>(JobDone.$_createMessage);
+  static JobDone? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get jobId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set jobId($core.String value) => $_setString(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasJobId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearJobId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  JobOutcome get outcome => $_getN(1);
+  @$pb.TagNumber(2)
+  set outcome(JobOutcome value) => $_setField(2, value);
+  @$pb.TagNumber(2)
+  $core.bool hasOutcome() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearOutcome() => $_clearField(2);
+
+  /// For EXITED.
+  @$pb.TagNumber(3)
+  $core.int get exitCode => $_getIZ(2);
+  @$pb.TagNumber(3)
+  set exitCode($core.int value) => $_setSignedInt32(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasExitCode() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearExitCode() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.String get error => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set error($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasError() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearError() => $_clearField(4);
+
+  /// The end of its output (at most a few KB), for display.
+  @$pb.TagNumber(5)
+  $core.String get outputTail => $_getSZ(4);
+  @$pb.TagNumber(5)
+  set outputTail($core.String value) => $_setString(4, value);
+  @$pb.TagNumber(5)
+  $core.bool hasOutputTail() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearOutputTail() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $fixnum.Int64 get durationMs => $_getI64(5);
+  @$pb.TagNumber(6)
+  set durationMs($fixnum.Int64 value) => $_setInt64(5, value);
+  @$pb.TagNumber(6)
+  $core.bool hasDurationMs() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearDurationMs() => $_clearField(6);
+
+  /// For CANCELLED: the client that called CancelJob, or empty when the
+  /// agent cancelled it.
+  @$pb.TagNumber(7)
+  $core.String get cancelledBy => $_getSZ(6);
+  @$pb.TagNumber(7)
+  set cancelledBy($core.String value) => $_setString(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasCancelledBy() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearCancelledBy() => $_clearField(7);
+}
+
+/// JobNoticeDelivered tells the agent that jobs job_ids ended, as user
+/// message message_id (its MessageStarted follows; clients show it as a
+/// notice, not as something the person wrote). Notices are delivered like
+/// queued messages: at the running turn's next step, or, when no turn is
+/// running, by starting one. After an interrupted turn they wait for the next
+/// Send. An empty message_id means the agent already saw the end through its
+/// job tool, so no message is sent.
+class JobNoticeDelivered extends $pb.GeneratedMessage {
+  factory JobNoticeDelivered({
+    $core.Iterable<$core.String>? jobIds,
+    $core.String? messageId,
+  }) {
+    final result = JobNoticeDelivered._();
+    if (jobIds != null) result.jobIds.addAll(jobIds);
+    if (messageId != null) result.messageId = messageId;
+    return result;
+  }
+
+  JobNoticeDelivered._();
+
+  factory JobNoticeDelivered.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      JobNoticeDelivered()..mergeFromBuffer(data, registry);
+  factory JobNoticeDelivered.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      JobNoticeDelivered()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'JobNoticeDelivered',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: JobNoticeDelivered.$_createMessage)
+    ..pPS(1, _omitFieldNames ? '' : 'jobIds')
+    ..aOS(2, _omitFieldNames ? '' : 'messageId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  JobNoticeDelivered clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  JobNoticeDelivered copyWith(void Function(JobNoticeDelivered) updates) =>
+      super.copyWith((message) => updates(message as JobNoticeDelivered))
+          as JobNoticeDelivered;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use JobNoticeDelivered() / JobNoticeDelivered.new instead')
+  static JobNoticeDelivered create() => JobNoticeDelivered._();
+  static $pb.GeneratedMessage $_createMessage() => JobNoticeDelivered._();
+  @$core.override
+  JobNoticeDelivered createEmptyInstance() => JobNoticeDelivered._();
+  @$core.pragma('dart2js:noInline')
+  static JobNoticeDelivered getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<JobNoticeDelivered>(
+          JobNoticeDelivered.$_createMessage);
+  static JobNoticeDelivered? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $pb.PbList<$core.String> get jobIds => $_getList(0);
+
+  @$pb.TagNumber(2)
+  $core.String get messageId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set messageId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasMessageId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearMessageId() => $_clearField(2);
+}
+
 class RoleChanged extends $pb.GeneratedMessage {
   factory RoleChanged({
     $core.String? role,
@@ -10794,6 +11395,15 @@ class SessionServiceApi {
           $pb.ClientContext? ctx, CancelQueuedMessageRequest request) =>
       _client.invoke<CancelQueuedMessageResponse>(ctx, 'SessionService',
           'CancelQueuedMessage', request, CancelQueuedMessageResponse());
+
+  /// CancelJob kills a running background shell job of the session (see
+  /// JobStarted). Its JobDone follows (outcome CANCELLED, cancelled_by the
+  /// client), and the agent gets a notice like for any job that ends.
+  /// NOT_FOUND for an unknown job, FAILED_PRECONDITION once it has ended.
+  $async.Future<CancelJobResponse> cancelJob(
+          $pb.ClientContext? ctx, CancelJobRequest request) =>
+      _client.invoke<CancelJobResponse>(
+          ctx, 'SessionService', 'CancelJob', request, CancelJobResponse());
 
   /// Interrupt stops the running turn, if any. Pending prompts are resolved
   /// as denied.

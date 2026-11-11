@@ -7,6 +7,7 @@ library;
 import 'dart:convert';
 
 import 'package:flit/domain/models/tool_call.dart';
+import 'package:flit/presentation/chat/background_job_panel.dart';
 import 'package:flit/presentation/chat/collapse_footer.dart';
 import 'package:flit/presentation/chat/subagent_card.dart';
 import 'package:flutter/material.dart';
@@ -136,6 +137,7 @@ class _ToolCallCardState extends State<ToolCallCard> {
               ),
             ),
           ),
+          if (tool.job != null) BackgroundJobPanel(job: tool.job!),
           if (_expanded && hasDetails) ...<Widget>[
             Divider(height: 1, color: scheme.outlineVariant),
             Padding(

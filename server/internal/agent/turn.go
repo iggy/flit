@@ -90,8 +90,8 @@ func (s *session) endTurn(e end) {
 		return
 	}
 	// Messages queued during a turn that ended without another model call
-	// start the next one.
-	if len(s.queue) == 0 {
+	// start the next one, and so do notices of jobs that ended meanwhile.
+	if len(s.queue) == 0 && len(s.notices) == 0 {
 		return
 	}
 	_, next, err := s.deliverQueuedLocked()
@@ -521,6 +521,8 @@ func (s *session) runTool(ctx context.Context, turnID string, set []tools.Tool, 
 		},
 		ReadDirs: s.readDirs(),
 		Files:    s.fileTracker(),
+		Jobs:     s.jobs,
+		CallID:   tc.ID,
 		Subagent: func(ctx context.Context, raw json.RawMessage) tools.Result {
 			res, err := s.runSubagent(ctx, turnID, tc.ID, raw)
 			if err != nil {
@@ -596,7 +598,7 @@ func todoStatus(s string) flitv1.TodoStatus {
 // session's enabled MCP servers. extra is system prompt text that goes with
 // them (the skill list, unavailable MCP servers).
 func (s *session) toolSet(ctx context.Context, cfg config.Config, info store.Session) ([]tools.Tool, string, []string) {
-	set := tools.All()
+	set := tools.WithJobs(tools.All())
 	var skillNames []string
 	var extra strings.Builder
 	if cfg.Git.IsEnabled() {

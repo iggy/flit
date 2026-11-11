@@ -33,6 +33,12 @@ matches runs), and an optional small model can rate commands before you're
 asked. These rules reduce prompts; they are not a sandbox. See
 [shell.md](shell.md).
 
+Long commands run as **background jobs** (the agent asks with `background:
+true`, or a command moves there after `shell.background_after`, 60s by
+default). The agent's `job` tool checks on, waits for or cancels them, and
+when one ends the agent gets a notice, starting a turn if none is running.
+See [background jobs](shell.md#background-jobs).
+
 ## Queued messages
 
 You can keep typing while the agent works: a message sent mid-turn is

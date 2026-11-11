@@ -590,6 +590,30 @@ type Shell struct {
 	// Yolo is whether new sessions start in yolo mode, where every command
 	// runs unless a deny rule matches. Sessions can turn it on or off.
 	Yolo bool `yaml:"yolo"`
+	// BackgroundAfter moves a command still running after this long to the
+	// background as a job, so the agent's turn goes on (see docs/shell.md).
+	// 0 turns that off. Default 60s.
+	BackgroundAfter *time.Duration `yaml:"background_after"`
+	// MaxJobs caps how many background jobs one session may have running;
+	// 0 means no cap. Default 4.
+	MaxJobs *int `yaml:"max_jobs"`
+}
+
+// Detach is how long a foreground command runs before it moves to the
+// background (0: never).
+func (s Shell) Detach() time.Duration {
+	if s.BackgroundAfter == nil {
+		return time.Minute
+	}
+	return *s.BackgroundAfter
+}
+
+// JobLimit is the cap on a session's running background jobs (0: none).
+func (s Shell) JobLimit() int {
+	if s.MaxJobs == nil {
+		return 4
+	}
+	return *s.MaxJobs
 }
 
 // ReadOnlyEnabled reports whether the built-in read-only list applies.
@@ -693,12 +717,14 @@ func Default() Config {
 			Subagents: Subagents{Enabled: ptr(true), MaxSteps: 20},
 		},
 		Shell: Shell{
-			Timeout:    2 * time.Minute,
-			MaxTimeout: 30 * time.Minute,
-			Allow:      []string{},
-			Deny:       []string{},
-			ReadOnly:   ptr(true),
-			Default:    "ask",
+			Timeout:         2 * time.Minute,
+			MaxTimeout:      30 * time.Minute,
+			Allow:           []string{},
+			Deny:            []string{},
+			ReadOnly:        ptr(true),
+			BackgroundAfter: ptr(time.Minute),
+			MaxJobs:         ptr(4),
+			Default:         "ask",
 		},
 	}
 }
@@ -773,6 +799,12 @@ func (c *Config) fillDefaults() {
 	}
 	if c.Shell.Default == "" {
 		c.Shell.Default = d.Shell.Default
+	}
+	if c.Shell.BackgroundAfter == nil {
+		c.Shell.BackgroundAfter = d.Shell.BackgroundAfter
+	}
+	if c.Shell.MaxJobs == nil {
+		c.Shell.MaxJobs = d.Shell.MaxJobs
 	}
 	if c.ModelOverridesFile == "" {
 		c.ModelOverridesFile = d.ModelOverridesFile
@@ -949,6 +981,12 @@ func (c Config) Validate() error {
 	}
 	if c.Shell.Timeout < 0 || c.Shell.MaxTimeout < c.Shell.Timeout {
 		return errors.New("shell: need 0 <= timeout <= max_timeout")
+	}
+	if c.Shell.Detach() < 0 {
+		return errors.New("shell.background_after must not be negative")
+	}
+	if c.Shell.JobLimit() < 0 {
+		return errors.New("shell.max_jobs must not be negative")
 	}
 	switch c.Shell.Default {
 	case "ask", "allow", "deny":
@@ -1320,6 +1358,14 @@ shell:
   # Start new sessions in yolo mode: run everything except deny matches.
   # Each session can turn it on or off in the app.
   yolo: false
+  # A command still running after this long moves to the background as a
+  # job: the agent goes on, can check on it, wait for it or cancel it, and
+  # is told when it ends. Jobs are killed after timeout_seconds if the
+  # agent gave one, else max_timeout. 0 turns this off (the agent can still
+  # start jobs itself).
+  background_after: 60s
+  # Background jobs one session may have running at once (0: no cap).
+  max_jobs: 4
 `
 
 // EnsureFile writes the default config to path if no file exists there.

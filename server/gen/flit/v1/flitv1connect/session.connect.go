@@ -42,6 +42,8 @@ const (
 	// SessionServiceCancelQueuedMessageProcedure is the procedure name of the SessionService's
 	// CancelQueuedMessage RPC.
 	SessionServiceCancelQueuedMessageProcedure = "/flit.v1.SessionService/CancelQueuedMessage"
+	// SessionServiceCancelJobProcedure is the procedure name of the SessionService's CancelJob RPC.
+	SessionServiceCancelJobProcedure = "/flit.v1.SessionService/CancelJob"
 	// SessionServiceInterruptProcedure is the procedure name of the SessionService's Interrupt RPC.
 	SessionServiceInterruptProcedure = "/flit.v1.SessionService/Interrupt"
 	// SessionServiceRetryModelCallProcedure is the procedure name of the SessionService's
@@ -142,6 +144,13 @@ var (
 			StreamType: connect.StreamTypeUnary,
 			Schema:     v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("CancelQueuedMessage"),
 			Procedure:  SessionServiceCancelQueuedMessageProcedure,
+		}
+	})
+	sessionServiceCancelJobSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     v1.File_flit_v1_session_proto.Services().ByName("SessionService").Methods().ByName("CancelJob"),
+			Procedure:  SessionServiceCancelJobProcedure,
 		}
 	})
 	sessionServiceInterruptSpec = sync.OnceValue(func() connect.Spec {
@@ -316,6 +325,11 @@ type SessionServiceClient interface {
 	// FAILED_PRECONDITION.
 	EditQueuedMessage(context.Context, *v1.EditQueuedMessageRequest) (*v1.EditQueuedMessageResponse, error)
 	CancelQueuedMessage(context.Context, *v1.CancelQueuedMessageRequest) (*v1.CancelQueuedMessageResponse, error)
+	// CancelJob kills a running background shell job of the session (see
+	// JobStarted). Its JobDone follows (outcome CANCELLED, cancelled_by the
+	// client), and the agent gets a notice like for any job that ends.
+	// NOT_FOUND for an unknown job, FAILED_PRECONDITION once it has ended.
+	CancelJob(context.Context, *v1.CancelJobRequest) (*v1.CancelJobResponse, error)
 	// Interrupt stops the running turn, if any. Pending prompts are resolved
 	// as denied.
 	Interrupt(context.Context, *v1.InterruptRequest) (*v1.InterruptResponse, error)
@@ -458,6 +472,11 @@ type SessionServiceHandler interface {
 	// FAILED_PRECONDITION.
 	EditQueuedMessage(context.Context, *v1.EditQueuedMessageRequest) (*v1.EditQueuedMessageResponse, error)
 	CancelQueuedMessage(context.Context, *v1.CancelQueuedMessageRequest) (*v1.CancelQueuedMessageResponse, error)
+	// CancelJob kills a running background shell job of the session (see
+	// JobStarted). Its JobDone follows (outcome CANCELLED, cancelled_by the
+	// client), and the agent gets a notice like for any job that ends.
+	// NOT_FOUND for an unknown job, FAILED_PRECONDITION once it has ended.
+	CancelJob(context.Context, *v1.CancelJobRequest) (*v1.CancelJobResponse, error)
 	// Interrupt stops the running turn, if any. Pending prompts are resolved
 	// as denied.
 	Interrupt(context.Context, *v1.InterruptRequest) (*v1.InterruptResponse, error)
@@ -560,6 +579,7 @@ func RegisterSessionServiceHandler(server *connect.Server, svc SessionServiceHan
 		connect.Method{Spec: sessionServiceSendSpec(), Handler: adapter.send},
 		connect.Method{Spec: sessionServiceEditQueuedMessageSpec(), Handler: adapter.editQueuedMessage},
 		connect.Method{Spec: sessionServiceCancelQueuedMessageSpec(), Handler: adapter.cancelQueuedMessage},
+		connect.Method{Spec: sessionServiceCancelJobSpec(), Handler: adapter.cancelJob},
 		connect.Method{Spec: sessionServiceInterruptSpec(), Handler: adapter.interrupt},
 		connect.Method{Spec: sessionServiceRetryModelCallSpec(), Handler: adapter.retryModelCall},
 		connect.Method{Spec: sessionServiceEndReasoningSpec(), Handler: adapter.endReasoning},
@@ -627,6 +647,10 @@ func (UnimplementedSessionServiceHandler) EditQueuedMessage(context.Context, *v1
 
 func (UnimplementedSessionServiceHandler) CancelQueuedMessage(context.Context, *v1.CancelQueuedMessageRequest) (*v1.CancelQueuedMessageResponse, error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.CancelQueuedMessage is not implemented")
+}
+
+func (UnimplementedSessionServiceHandler) CancelJob(context.Context, *v1.CancelJobRequest) (*v1.CancelJobResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "flit.v1.SessionService.CancelJob is not implemented")
 }
 
 func (UnimplementedSessionServiceHandler) Interrupt(context.Context, *v1.InterruptRequest) (*v1.InterruptResponse, error) {
@@ -764,6 +788,14 @@ func (c *sessionServiceClient) EditQueuedMessage(ctx context.Context, req *v1.Ed
 func (c *sessionServiceClient) CancelQueuedMessage(ctx context.Context, req *v1.CancelQueuedMessageRequest) (*v1.CancelQueuedMessageResponse, error) {
 	var res v1.CancelQueuedMessageResponse
 	if err := c.client.CallUnary(ctx, sessionServiceCancelQueuedMessageSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *sessionServiceClient) CancelJob(ctx context.Context, req *v1.CancelJobRequest) (*v1.CancelJobResponse, error) {
+	var res v1.CancelJobResponse
+	if err := c.client.CallUnary(ctx, sessionServiceCancelJobSpec(), req, &res); err != nil {
 		return nil, err
 	}
 	return &res, nil
@@ -1005,6 +1037,18 @@ func (h sessionServiceHandler) cancelQueuedMessage(ctx context.Context, _ connec
 		return err
 	}
 	res, err := h.svc.CancelQueuedMessage(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h sessionServiceHandler) cancelJob(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req v1.CancelJobRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.CancelJob(ctx, &req)
 	if err != nil {
 		return err
 	}

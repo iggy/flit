@@ -167,6 +167,12 @@ class FlitChatNotifier extends Notifier<FlitChatState> {
     return _run((r) => r.cancelQueuedMessage(sessionId, queueId));
   }
 
+  /// Kills a running background job; the agent gets a notice.
+  Future<String?> cancelJob(String jobId) {
+    final client = ref.read(flitDeviceNameProvider);
+    return _run((r) => r.cancelJob(sessionId, jobId, client: client));
+  }
+
   /// Stops the running turn.
   Future<String?> interrupt() {
     return _run((r) => r.interrupt(sessionId));

@@ -46,6 +46,12 @@ service SessionService {
   rpc EditQueuedMessage(EditQueuedMessageRequest) returns (EditQueuedMessageResponse);
   rpc CancelQueuedMessage(CancelQueuedMessageRequest) returns (CancelQueuedMessageResponse);
 
+  // CancelJob kills a running background shell job of the session (see
+  // JobStarted). Its JobDone follows (outcome CANCELLED, cancelled_by the
+  // client), and the agent gets a notice like for any job that ends.
+  // NOT_FOUND for an unknown job, FAILED_PRECONDITION once it has ended.
+  rpc CancelJob(CancelJobRequest) returns (CancelJobResponse);
+
   // Interrupt stops the running turn, if any. Pending prompts are resolved
   // as denied.
   rpc Interrupt(InterruptRequest) returns (InterruptResponse);
@@ -321,6 +327,15 @@ message CancelQueuedMessageRequest {
 
 message CancelQueuedMessageResponse {}
 
+message CancelJobRequest {
+  string session_id = 1;
+  string job_id = 2;
+  // Who is cancelling it (shown in JobDone.cancelled_by).
+  string client = 3;
+}
+
+message CancelJobResponse {}
+
 message InterruptRequest {
   string session_id = 1;
 }
@@ -586,6 +601,10 @@ message Event {
     WorktreeKept worktree_kept = 50;
     WebhookRunStarted webhook_run = 51;
     RoleChanged role_changed = 52;
+    JobStarted job_started = 53;
+    JobOutput job_output = 54;
+    JobDone job_done = 55;
+    JobNoticeDelivered job_notice_delivered = 56;
   }
 }
 
@@ -711,6 +730,74 @@ message ModelChanged {
 
 // RoleChanged switched the session's role (SetRole), effective from the
 // next model call. Session-wide.
+// JobStarted is a shell command running as a background job: the agent's
+// turn goes on while it runs. The shell call tool_call_id either asked for
+// it (background: true) or ran in the foreground for shell.background_after
+// first (detached; what it printed until then is that call's ToolOutput).
+// Its output follows as JobOutput, and JobDone when it ends. Jobs outlive
+// the turn and interrupts; the agent checks on them with its job tool.
+message JobStarted {
+  string job_id = 1;
+  string tool_call_id = 2;
+  string command = 3;
+  // Where it runs, relative to the session's working directory ("." for
+  // the directory itself).
+  string workdir = 4;
+  bool detached = 5;
+  // It is killed after this long (counted from when the command started).
+  int64 timeout_ms = 6;
+}
+
+// JobOutput is output of a background job, as it arrives (stdout and
+// stderr together). Live output is capped per job; the agent still sees
+// the start and end of all of it.
+message JobOutput {
+  string job_id = 1;
+  string text = 2;
+}
+
+// JobOutcome is how a background job ended.
+enum JobOutcome {
+  JOB_OUTCOME_UNSPECIFIED = 0;
+  // The command exited by itself; see exit_code.
+  JOB_OUTCOME_EXITED = 1;
+  // It could not be started or waited for; see error.
+  JOB_OUTCOME_FAILED = 2;
+  // Killed when its time ran out (JobStarted.timeout_ms).
+  JOB_OUTCOME_TIMED_OUT = 3;
+  // Killed by the agent's job tool or CancelJob.
+  JOB_OUTCOME_CANCELLED = 4;
+  // flit stopped (or crashed) while it ran; it was killed or is gone.
+  JOB_OUTCOME_LOST = 5;
+}
+
+// JobDone is the end of a background job.
+message JobDone {
+  string job_id = 1;
+  JobOutcome outcome = 2;
+  // For EXITED.
+  int32 exit_code = 3;
+  string error = 4;
+  // The end of its output (at most a few KB), for display.
+  string output_tail = 5;
+  int64 duration_ms = 6;
+  // For CANCELLED: the client that called CancelJob, or empty when the
+  // agent cancelled it.
+  string cancelled_by = 7;
+}
+
+// JobNoticeDelivered tells the agent that jobs job_ids ended, as user
+// message message_id (its MessageStarted follows; clients show it as a
+// notice, not as something the person wrote). Notices are delivered like
+// queued messages: at the running turn's next step, or, when no turn is
+// running, by starting one. After an interrupted turn they wait for the next
+// Send. An empty message_id means the agent already saw the end through its
+// job tool, so no message is sent.
+message JobNoticeDelivered {
+  repeated string job_ids = 1;
+  string message_id = 2;
+}
+
 message RoleChanged {
   // The new role; empty for none.
   string role = 1;

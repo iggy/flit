@@ -15,6 +15,7 @@ library;
 import 'dart:convert';
 
 import 'package:flit/application/flit/flit_branches.dart';
+import 'package:flit/domain/models/background_job.dart';
 import 'package:flit/domain/models/chat_message.dart';
 import 'package:flit/domain/models/deep_equals.dart';
 import 'package:flit/domain/models/flit_event.dart';
@@ -25,6 +26,9 @@ import 'package:flit/domain/models/usage.dart';
 
 /// Live tool output kept per tool call while it runs (the tail is kept).
 const int _liveOutputCap = 16 * 1024;
+
+/// How flit marks where it stopped logging a job's live output.
+const String _jobLiveCut = '[live output stopped here';
 
 /// A prompt the agent is waiting on. Any attached client may answer it; it
 /// disappears from every client when the server records the answer.
@@ -443,7 +447,17 @@ final class FlitFoldState {
     this.keptCount = 0,
     this.subagents = const <String, FlitFoldState>{},
     this.fileToolsDone = 0,
+    this.jobTools = const <String, String>{},
+    this.notices = const <String>{},
   });
+
+  /// Background job id → the shell call that started it (whose card shows
+  /// the job).
+  final Map<String, String> jobTools;
+
+  /// Ids of user messages that are flit's notices about ended background
+  /// jobs: the chat shows them as notices, not as the person's messages.
+  final Set<String> notices;
 
   /// agent tool call id → the fold of its subagent's own conversation
   /// (shown as that tool call's [Subagent.transcript]).
@@ -622,8 +636,12 @@ final class FlitFoldState {
     int? keptCount,
     Map<String, FlitFoldState>? subagents,
     int? fileToolsDone,
+    Map<String, String>? jobTools,
+    Set<String>? notices,
   }) {
     return FlitFoldState(
+      jobTools: jobTools ?? this.jobTools,
+      notices: notices ?? this.notices,
       fileToolsDone: fileToolsDone ?? this.fileToolsDone,
       compacting: clearCompacting ? null : (compacting ?? this.compacting),
       compactions: compactions ?? this.compactions,
@@ -703,6 +721,9 @@ final class FlitFoldState {
         other.keptIndex == keptIndex &&
         other.activeBranch == activeBranch &&
         other.fileToolsDone == fileToolsDone &&
+        shallowMapEquals(other.jobTools, jobTools) &&
+        other.notices.length == notices.length &&
+        other.notices.containsAll(notices) &&
         shallowMapEquals(other.branches, branches) &&
         shallowMapEquals(other.branchChoices, branchChoices);
   }
@@ -806,6 +827,7 @@ bool _transient(FlitEvent e) => switch (e) {
   FlitTextDelta() ||
   FlitReasoningDelta() ||
   FlitToolOutput() ||
+  FlitJobOutput() ||
   FlitPromptProgress() ||
   FlitModelCallWaiting() ||
   FlitUnknownEvent() => true,
@@ -981,8 +1003,56 @@ FlitFoldState _apply(FlitFoldState state, FlitEvent event) {
         result: event.result,
         summary: _toolSummary(s.safety[event.toolCallId], event.truncated),
         subagent: t.subagent,
+        job: t.job,
       ),
     ),
+    FlitJobStarted() => _updateTool(
+      s.copyWith(
+        jobTools: <String, String>{
+          ...s.jobTools,
+          event.jobId: event.toolCallId,
+        },
+      ),
+      event.toolCallId,
+      (t) => t.copyWith(
+        job: BackgroundJob(
+          id: event.jobId,
+          command: event.command,
+          detached: event.detached,
+          startedAt: event.time,
+        ),
+      ),
+    ),
+    FlitJobOutput() => _updateJob(s, event.jobId, (j) {
+      final live = '${j.output}${event.text}';
+      return j.copyWith(
+        output: live.length > _liveOutputCap
+            ? live.substring(live.length - _liveOutputCap)
+            : live,
+      );
+    }),
+    FlitJobDone() => _updateJob(
+      s,
+      event.jobId,
+      (j) => j.copyWith(
+        status: event.status,
+        exitCode: event.exitCode,
+        error: event.error,
+        // Live output isn't kept for a re-fold, and stops at the server's
+        // cap; the tail is the end of it either way.
+        output: j.output.isEmpty
+            ? event.outputTail
+            : j.output.contains(_jobLiveCut)
+            ? '${j.output}\n…\n${event.outputTail}'
+            : null,
+        duration: event.duration,
+        cancelledBy: event.cancelledBy,
+      ),
+    ),
+    FlitJobNoticeDelivered() =>
+      event.messageId.isEmpty
+          ? s
+          : s.copyWith(notices: <String>{...s.notices, event.messageId}),
     FlitSubagentStarted() => _updateTool(
       s.copyWith(
         subagents: <String, FlitFoldState>{
@@ -1359,6 +1429,22 @@ FlitFoldState _countFileTool(FlitFoldState s, String toolCallId) {
     (t) => t.id == toolCallId && flitFileTools.contains(t.name),
   );
   return isFileTool ? s.copyWith(fileToolsDone: s.fileToolsDone + 1) : s;
+}
+
+/// Updates the job of background job [jobId]'s shell call.
+FlitFoldState _updateJob(
+  FlitFoldState s,
+  String jobId,
+  BackgroundJob Function(BackgroundJob) update,
+) {
+  final toolCallId = s.jobTools[jobId];
+  if (toolCallId == null) {
+    return s;
+  }
+  return _updateTool(s, toolCallId, (t) {
+    final job = t.job;
+    return job == null ? t : t.copyWith(job: update(job));
+  });
 }
 
 FlitFoldState _updateTool(

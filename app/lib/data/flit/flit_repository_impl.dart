@@ -167,6 +167,15 @@ final class FlitRepositoryImpl implements FlitRepository {
   }
 
   @override
+  Future<void> cancelJob(String sessionId, String jobId, {String client = ''}) {
+    return flitCall(
+      () => _sessions.cancelJob(
+        pb.CancelJobRequest(sessionId: sessionId, jobId: jobId, client: client),
+      ),
+    );
+  }
+
+  @override
   Future<bool> interrupt(String sessionId) {
     return flitCall(() async {
       final res = await _sessions.interrupt(

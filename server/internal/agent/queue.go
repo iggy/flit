@@ -80,8 +80,9 @@ func (s *session) deliverQueued() error {
 }
 
 // deliverQueuedLocked turns every queued message into a user message, in
-// order. It returns the first event's seq and the first message's id (0
-// and "" when the queue was empty).
+// order, and then pending job notices into one more (see jobs.go). It
+// returns the first event's seq and the first message's id (0 and "" when
+// there was nothing to deliver).
 func (s *session) deliverQueuedLocked() (int64, string, error) {
 	var seq int64
 	var firstID string
@@ -101,6 +102,13 @@ func (s *session) deliverQueuedLocked() (int64, string, error) {
 		if seq == 0 {
 			seq, firstID = ev.Seq, msgID
 		}
+	}
+	nseq, nid, err := s.deliverNoticesLocked()
+	if err != nil {
+		return 0, "", err
+	}
+	if seq == 0 {
+		seq, firstID = nseq, nid
 	}
 	return seq, firstID, nil
 }

@@ -99,6 +99,25 @@ final $typed_data.Uint8List promptDecisionDescriptor = $convert.base64Decode(
     '9NUFRfREVDSVNJT05fQUxMT1cQARIYChRQUk9NUFRfREVDSVNJT05fREVOWRACEiEKHVBST01Q'
     'VF9ERUNJU0lPTl9BTExPV19TRVNTSU9OEAM=');
 
+@$core.Deprecated('Use jobOutcomeDescriptor instead')
+const JobOutcome$json = {
+  '1': 'JobOutcome',
+  '2': [
+    {'1': 'JOB_OUTCOME_UNSPECIFIED', '2': 0},
+    {'1': 'JOB_OUTCOME_EXITED', '2': 1},
+    {'1': 'JOB_OUTCOME_FAILED', '2': 2},
+    {'1': 'JOB_OUTCOME_TIMED_OUT', '2': 3},
+    {'1': 'JOB_OUTCOME_CANCELLED', '2': 4},
+    {'1': 'JOB_OUTCOME_LOST', '2': 5},
+  ],
+};
+
+/// Descriptor for `JobOutcome`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List jobOutcomeDescriptor = $convert.base64Decode(
+    'CgpKb2JPdXRjb21lEhsKF0pPQl9PVVRDT01FX1VOU1BFQ0lGSUVEEAASFgoSSk9CX09VVENPTU'
+    'VfRVhJVEVEEAESFgoSSk9CX09VVENPTUVfRkFJTEVEEAISGQoVSk9CX09VVENPTUVfVElNRURf'
+    'T1VUEAMSGQoVSk9CX09VVENPTUVfQ0FOQ0VMTEVEEAQSFAoQSk9CX09VVENPTUVfTE9TVBAF');
+
 @$core.Deprecated('Use todoStatusDescriptor instead')
 const TodoStatus$json = {
   '1': 'TodoStatus',
@@ -581,6 +600,30 @@ const CancelQueuedMessageResponse$json = {
 /// Descriptor for `CancelQueuedMessageResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List cancelQueuedMessageResponseDescriptor =
     $convert.base64Decode('ChtDYW5jZWxRdWV1ZWRNZXNzYWdlUmVzcG9uc2U=');
+
+@$core.Deprecated('Use cancelJobRequestDescriptor instead')
+const CancelJobRequest$json = {
+  '1': 'CancelJobRequest',
+  '2': [
+    {'1': 'session_id', '3': 1, '4': 1, '5': 9, '10': 'sessionId'},
+    {'1': 'job_id', '3': 2, '4': 1, '5': 9, '10': 'jobId'},
+    {'1': 'client', '3': 3, '4': 1, '5': 9, '10': 'client'},
+  ],
+};
+
+/// Descriptor for `CancelJobRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List cancelJobRequestDescriptor = $convert.base64Decode(
+    'ChBDYW5jZWxKb2JSZXF1ZXN0Eh0KCnNlc3Npb25faWQYASABKAlSCXNlc3Npb25JZBIVCgZqb2'
+    'JfaWQYAiABKAlSBWpvYklkEhYKBmNsaWVudBgDIAEoCVIGY2xpZW50');
+
+@$core.Deprecated('Use cancelJobResponseDescriptor instead')
+const CancelJobResponse$json = {
+  '1': 'CancelJobResponse',
+};
+
+/// Descriptor for `CancelJobResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List cancelJobResponseDescriptor =
+    $convert.base64Decode('ChFDYW5jZWxKb2JSZXNwb25zZQ==');
 
 @$core.Deprecated('Use interruptRequestDescriptor instead')
 const InterruptRequest$json = {
@@ -1554,6 +1597,42 @@ const Event$json = {
       '9': 0,
       '10': 'roleChanged'
     },
+    {
+      '1': 'job_started',
+      '3': 53,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.JobStarted',
+      '9': 0,
+      '10': 'jobStarted'
+    },
+    {
+      '1': 'job_output',
+      '3': 54,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.JobOutput',
+      '9': 0,
+      '10': 'jobOutput'
+    },
+    {
+      '1': 'job_done',
+      '3': 55,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.JobDone',
+      '9': 0,
+      '10': 'jobDone'
+    },
+    {
+      '1': 'job_notice_delivered',
+      '3': 56,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.JobNoticeDelivered',
+      '9': 0,
+      '10': 'jobNoticeDelivered'
+    },
   ],
   '8': [
     {'1': 'payload'},
@@ -1616,7 +1695,11 @@ final $typed_data.Uint8List eventDescriptor = $convert.base64Decode(
     '9rZXB0GDIgASgLMhUuZmxpdC52MS5Xb3JrdHJlZUtlcHRIAFIMd29ya3RyZWVLZXB0Ej0KC3dl'
     'Ymhvb2tfcnVuGDMgASgLMhouZmxpdC52MS5XZWJob29rUnVuU3RhcnRlZEgAUgp3ZWJob29rUn'
     'VuEjkKDHJvbGVfY2hhbmdlZBg0IAEoCzIULmZsaXQudjEuUm9sZUNoYW5nZWRIAFILcm9sZUNo'
-    'YW5nZWRCCQoHcGF5bG9hZA==');
+    'YW5nZWQSNgoLam9iX3N0YXJ0ZWQYNSABKAsyEy5mbGl0LnYxLkpvYlN0YXJ0ZWRIAFIKam9iU3'
+    'RhcnRlZBIzCgpqb2Jfb3V0cHV0GDYgASgLMhIuZmxpdC52MS5Kb2JPdXRwdXRIAFIJam9iT3V0'
+    'cHV0Ei0KCGpvYl9kb25lGDcgASgLMhAuZmxpdC52MS5Kb2JEb25lSABSB2pvYkRvbmUSTwoUam'
+    '9iX25vdGljZV9kZWxpdmVyZWQYOCABKAsyGy5mbGl0LnYxLkpvYk5vdGljZURlbGl2ZXJlZEgA'
+    'UhJqb2JOb3RpY2VEZWxpdmVyZWRCCQoHcGF5bG9hZA==');
 
 @$core.Deprecated('Use messageStartedDescriptor instead')
 const MessageStarted$json = {
@@ -1813,6 +1896,82 @@ final $typed_data.Uint8List modelChangedDescriptor = $convert.base64Decode(
     'CgxNb2RlbENoYW5nZWQSGgoIcHJvdmlkZXIYASABKAlSCHByb3ZpZGVyEhQKBW1vZGVsGAIgAS'
     'gJUgVtb2RlbBIWCgZlZmZvcnQYAyABKAlSBmVmZm9ydBIlCg5jb250ZXh0X2xlbmd0aBgEIAEo'
     'A1INY29udGV4dExlbmd0aA==');
+
+@$core.Deprecated('Use jobStartedDescriptor instead')
+const JobStarted$json = {
+  '1': 'JobStarted',
+  '2': [
+    {'1': 'job_id', '3': 1, '4': 1, '5': 9, '10': 'jobId'},
+    {'1': 'tool_call_id', '3': 2, '4': 1, '5': 9, '10': 'toolCallId'},
+    {'1': 'command', '3': 3, '4': 1, '5': 9, '10': 'command'},
+    {'1': 'workdir', '3': 4, '4': 1, '5': 9, '10': 'workdir'},
+    {'1': 'detached', '3': 5, '4': 1, '5': 8, '10': 'detached'},
+    {'1': 'timeout_ms', '3': 6, '4': 1, '5': 3, '10': 'timeoutMs'},
+  ],
+};
+
+/// Descriptor for `JobStarted`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List jobStartedDescriptor = $convert.base64Decode(
+    'CgpKb2JTdGFydGVkEhUKBmpvYl9pZBgBIAEoCVIFam9iSWQSIAoMdG9vbF9jYWxsX2lkGAIgAS'
+    'gJUgp0b29sQ2FsbElkEhgKB2NvbW1hbmQYAyABKAlSB2NvbW1hbmQSGAoHd29ya2RpchgEIAEo'
+    'CVIHd29ya2RpchIaCghkZXRhY2hlZBgFIAEoCFIIZGV0YWNoZWQSHQoKdGltZW91dF9tcxgGIA'
+    'EoA1IJdGltZW91dE1z');
+
+@$core.Deprecated('Use jobOutputDescriptor instead')
+const JobOutput$json = {
+  '1': 'JobOutput',
+  '2': [
+    {'1': 'job_id', '3': 1, '4': 1, '5': 9, '10': 'jobId'},
+    {'1': 'text', '3': 2, '4': 1, '5': 9, '10': 'text'},
+  ],
+};
+
+/// Descriptor for `JobOutput`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List jobOutputDescriptor = $convert.base64Decode(
+    'CglKb2JPdXRwdXQSFQoGam9iX2lkGAEgASgJUgVqb2JJZBISCgR0ZXh0GAIgASgJUgR0ZXh0');
+
+@$core.Deprecated('Use jobDoneDescriptor instead')
+const JobDone$json = {
+  '1': 'JobDone',
+  '2': [
+    {'1': 'job_id', '3': 1, '4': 1, '5': 9, '10': 'jobId'},
+    {
+      '1': 'outcome',
+      '3': 2,
+      '4': 1,
+      '5': 14,
+      '6': '.flit.v1.JobOutcome',
+      '10': 'outcome'
+    },
+    {'1': 'exit_code', '3': 3, '4': 1, '5': 5, '10': 'exitCode'},
+    {'1': 'error', '3': 4, '4': 1, '5': 9, '10': 'error'},
+    {'1': 'output_tail', '3': 5, '4': 1, '5': 9, '10': 'outputTail'},
+    {'1': 'duration_ms', '3': 6, '4': 1, '5': 3, '10': 'durationMs'},
+    {'1': 'cancelled_by', '3': 7, '4': 1, '5': 9, '10': 'cancelledBy'},
+  ],
+};
+
+/// Descriptor for `JobDone`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List jobDoneDescriptor = $convert.base64Decode(
+    'CgdKb2JEb25lEhUKBmpvYl9pZBgBIAEoCVIFam9iSWQSLQoHb3V0Y29tZRgCIAEoDjITLmZsaX'
+    'QudjEuSm9iT3V0Y29tZVIHb3V0Y29tZRIbCglleGl0X2NvZGUYAyABKAVSCGV4aXRDb2RlEhQK'
+    'BWVycm9yGAQgASgJUgVlcnJvchIfCgtvdXRwdXRfdGFpbBgFIAEoCVIKb3V0cHV0VGFpbBIfCg'
+    'tkdXJhdGlvbl9tcxgGIAEoA1IKZHVyYXRpb25NcxIhCgxjYW5jZWxsZWRfYnkYByABKAlSC2Nh'
+    'bmNlbGxlZEJ5');
+
+@$core.Deprecated('Use jobNoticeDeliveredDescriptor instead')
+const JobNoticeDelivered$json = {
+  '1': 'JobNoticeDelivered',
+  '2': [
+    {'1': 'job_ids', '3': 1, '4': 3, '5': 9, '10': 'jobIds'},
+    {'1': 'message_id', '3': 2, '4': 1, '5': 9, '10': 'messageId'},
+  ],
+};
+
+/// Descriptor for `JobNoticeDelivered`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List jobNoticeDeliveredDescriptor = $convert.base64Decode(
+    'ChJKb2JOb3RpY2VEZWxpdmVyZWQSFwoHam9iX2lkcxgBIAMoCVIGam9iSWRzEh0KCm1lc3NhZ2'
+    'VfaWQYAiABKAlSCW1lc3NhZ2VJZA==');
 
 @$core.Deprecated('Use roleChangedDescriptor instead')
 const RoleChanged$json = {
@@ -2884,6 +3043,11 @@ const $core.Map<$core.String, $core.dynamic> SessionServiceBase$json = {
       '3': '.flit.v1.CancelQueuedMessageResponse'
     },
     {
+      '1': 'CancelJob',
+      '2': '.flit.v1.CancelJobRequest',
+      '3': '.flit.v1.CancelJobResponse'
+    },
+    {
       '1': 'Interrupt',
       '2': '.flit.v1.InterruptRequest',
       '3': '.flit.v1.InterruptResponse'
@@ -3047,12 +3211,18 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.flit.v1.WorktreeKept': WorktreeKept$json,
   '.flit.v1.WebhookRunStarted': WebhookRunStarted$json,
   '.flit.v1.RoleChanged': RoleChanged$json,
+  '.flit.v1.JobStarted': JobStarted$json,
+  '.flit.v1.JobOutput': JobOutput$json,
+  '.flit.v1.JobDone': JobDone$json,
+  '.flit.v1.JobNoticeDelivered': JobNoticeDelivered$json,
   '.flit.v1.SendRequest': SendRequest$json,
   '.flit.v1.SendResponse': SendResponse$json,
   '.flit.v1.EditQueuedMessageRequest': EditQueuedMessageRequest$json,
   '.flit.v1.EditQueuedMessageResponse': EditQueuedMessageResponse$json,
   '.flit.v1.CancelQueuedMessageRequest': CancelQueuedMessageRequest$json,
   '.flit.v1.CancelQueuedMessageResponse': CancelQueuedMessageResponse$json,
+  '.flit.v1.CancelJobRequest': CancelJobRequest$json,
+  '.flit.v1.CancelJobResponse': CancelJobResponse$json,
   '.flit.v1.InterruptRequest': InterruptRequest$json,
   '.flit.v1.InterruptResponse': InterruptResponse$json,
   '.flit.v1.RetryModelCallRequest': RetryModelCallRequest$json,
@@ -3110,30 +3280,31 @@ final $typed_data.Uint8List sessionServiceDescriptor = $convert.base64Decode(
     'USIS5mbGl0LnYxLkVkaXRRdWV1ZWRNZXNzYWdlUmVxdWVzdBoiLmZsaXQudjEuRWRpdFF1ZXVl'
     'ZE1lc3NhZ2VSZXNwb25zZRJgChNDYW5jZWxRdWV1ZWRNZXNzYWdlEiMuZmxpdC52MS5DYW5jZW'
     'xRdWV1ZWRNZXNzYWdlUmVxdWVzdBokLmZsaXQudjEuQ2FuY2VsUXVldWVkTWVzc2FnZVJlc3Bv'
-    'bnNlEkIKCUludGVycnVwdBIZLmZsaXQudjEuSW50ZXJydXB0UmVxdWVzdBoaLmZsaXQudjEuSW'
-    '50ZXJydXB0UmVzcG9uc2USUQoOUmV0cnlNb2RlbENhbGwSHi5mbGl0LnYxLlJldHJ5TW9kZWxD'
-    'YWxsUmVxdWVzdBofLmZsaXQudjEuUmV0cnlNb2RlbENhbGxSZXNwb25zZRJLCgxFbmRSZWFzb2'
-    '5pbmcSHC5mbGl0LnYxLkVuZFJlYXNvbmluZ1JlcXVlc3QaHS5mbGl0LnYxLkVuZFJlYXNvbmlu'
-    'Z1Jlc3BvbnNlEjwKB0NvbXBhY3QSFy5mbGl0LnYxLkNvbXBhY3RSZXF1ZXN0GhguZmxpdC52MS'
-    '5Db21wYWN0UmVzcG9uc2USSwoMQW5zd2VyUHJvbXB0EhwuZmxpdC52MS5BbnN3ZXJQcm9tcHRS'
-    'ZXF1ZXN0Gh0uZmxpdC52MS5BbnN3ZXJQcm9tcHRSZXNwb25zZRI/CghTZXRNb2RlbBIYLmZsaX'
-    'QudjEuU2V0TW9kZWxSZXF1ZXN0GhkuZmxpdC52MS5TZXRNb2RlbFJlc3BvbnNlEkIKCVNldEVm'
-    'Zm9ydBIZLmZsaXQudjEuU2V0RWZmb3J0UmVxdWVzdBoaLmZsaXQudjEuU2V0RWZmb3J0UmVzcG'
-    '9uc2USPAoHU2V0Um9sZRIXLmZsaXQudjEuU2V0Um9sZVJlcXVlc3QaGC5mbGl0LnYxLlNldFJv'
-    'bGVSZXNwb25zZRI8CgdTZXRZb2xvEhcuZmxpdC52MS5TZXRZb2xvUmVxdWVzdBoYLmZsaXQudj'
-    'EuU2V0WW9sb1Jlc3BvbnNlEkgKC01vdmVTZXNzaW9uEhsuZmxpdC52MS5Nb3ZlU2Vzc2lvblJl'
-    'cXVlc3QaHC5mbGl0LnYxLk1vdmVTZXNzaW9uUmVzcG9uc2USMwoEUmF0ZRIULmZsaXQudjEuUm'
-    'F0ZVJlcXVlc3QaFS5mbGl0LnYxLlJhdGVSZXNwb25zZRJWCg5MaXN0TWNwU2VydmVycxIeLmZs'
-    'aXQudjEuTGlzdE1jcFNlcnZlcnNSZXF1ZXN0Gh8uZmxpdC52MS5MaXN0TWNwU2VydmVyc1Jlc3'
-    'BvbnNlIgOQAgESSwoMU2V0TWNwU2VydmVyEhwuZmxpdC52MS5TZXRNY3BTZXJ2ZXJSZXF1ZXN0'
-    'Gh0uZmxpdC52MS5TZXRNY3BTZXJ2ZXJSZXNwb25zZRJKCgpMaXN0U2tpbGxzEhouZmxpdC52MS'
-    '5MaXN0U2tpbGxzUmVxdWVzdBobLmZsaXQudjEuTGlzdFNraWxsc1Jlc3BvbnNlIgOQAgESVwoQ'
-    'UmV0cnlGcm9tTWVzc2FnZRIgLmZsaXQudjEuUmV0cnlGcm9tTWVzc2FnZVJlcXVlc3QaIS5mbG'
-    'l0LnYxLlJldHJ5RnJvbU1lc3NhZ2VSZXNwb25zZRJICgtFZGl0TWVzc2FnZRIbLmZsaXQudjEu'
-    'RWRpdE1lc3NhZ2VSZXF1ZXN0GhwuZmxpdC52MS5FZGl0TWVzc2FnZVJlc3BvbnNlEksKDFN3aX'
-    'RjaEJyYW5jaBIcLmZsaXQudjEuU3dpdGNoQnJhbmNoUmVxdWVzdBodLmZsaXQudjEuU3dpdGNo'
-    'QnJhbmNoUmVzcG9uc2USRwoJR2l0U3RhdHVzEhkuZmxpdC52MS5HaXRTdGF0dXNSZXF1ZXN0Gh'
-    'ouZmxpdC52MS5HaXRTdGF0dXNSZXNwb25zZSIDkAIBEkEKB0dpdERpZmYSFy5mbGl0LnYxLkdp'
-    'dERpZmZSZXF1ZXN0GhguZmxpdC52MS5HaXREaWZmUmVzcG9uc2UiA5ACARJRCg5SZW1vdmVXb3'
-    'JrdHJlZRIeLmZsaXQudjEuUmVtb3ZlV29ya3RyZWVSZXF1ZXN0Gh8uZmxpdC52MS5SZW1vdmVX'
-    'b3JrdHJlZVJlc3BvbnNl');
+    'bnNlEkIKCUNhbmNlbEpvYhIZLmZsaXQudjEuQ2FuY2VsSm9iUmVxdWVzdBoaLmZsaXQudjEuQ2'
+    'FuY2VsSm9iUmVzcG9uc2USQgoJSW50ZXJydXB0EhkuZmxpdC52MS5JbnRlcnJ1cHRSZXF1ZXN0'
+    'GhouZmxpdC52MS5JbnRlcnJ1cHRSZXNwb25zZRJRCg5SZXRyeU1vZGVsQ2FsbBIeLmZsaXQudj'
+    'EuUmV0cnlNb2RlbENhbGxSZXF1ZXN0Gh8uZmxpdC52MS5SZXRyeU1vZGVsQ2FsbFJlc3BvbnNl'
+    'EksKDEVuZFJlYXNvbmluZxIcLmZsaXQudjEuRW5kUmVhc29uaW5nUmVxdWVzdBodLmZsaXQudj'
+    'EuRW5kUmVhc29uaW5nUmVzcG9uc2USPAoHQ29tcGFjdBIXLmZsaXQudjEuQ29tcGFjdFJlcXVl'
+    'c3QaGC5mbGl0LnYxLkNvbXBhY3RSZXNwb25zZRJLCgxBbnN3ZXJQcm9tcHQSHC5mbGl0LnYxLk'
+    'Fuc3dlclByb21wdFJlcXVlc3QaHS5mbGl0LnYxLkFuc3dlclByb21wdFJlc3BvbnNlEj8KCFNl'
+    'dE1vZGVsEhguZmxpdC52MS5TZXRNb2RlbFJlcXVlc3QaGS5mbGl0LnYxLlNldE1vZGVsUmVzcG'
+    '9uc2USQgoJU2V0RWZmb3J0EhkuZmxpdC52MS5TZXRFZmZvcnRSZXF1ZXN0GhouZmxpdC52MS5T'
+    'ZXRFZmZvcnRSZXNwb25zZRI8CgdTZXRSb2xlEhcuZmxpdC52MS5TZXRSb2xlUmVxdWVzdBoYLm'
+    'ZsaXQudjEuU2V0Um9sZVJlc3BvbnNlEjwKB1NldFlvbG8SFy5mbGl0LnYxLlNldFlvbG9SZXF1'
+    'ZXN0GhguZmxpdC52MS5TZXRZb2xvUmVzcG9uc2USSAoLTW92ZVNlc3Npb24SGy5mbGl0LnYxLk'
+    '1vdmVTZXNzaW9uUmVxdWVzdBocLmZsaXQudjEuTW92ZVNlc3Npb25SZXNwb25zZRIzCgRSYXRl'
+    'EhQuZmxpdC52MS5SYXRlUmVxdWVzdBoVLmZsaXQudjEuUmF0ZVJlc3BvbnNlElYKDkxpc3RNY3'
+    'BTZXJ2ZXJzEh4uZmxpdC52MS5MaXN0TWNwU2VydmVyc1JlcXVlc3QaHy5mbGl0LnYxLkxpc3RN'
+    'Y3BTZXJ2ZXJzUmVzcG9uc2UiA5ACARJLCgxTZXRNY3BTZXJ2ZXISHC5mbGl0LnYxLlNldE1jcF'
+    'NlcnZlclJlcXVlc3QaHS5mbGl0LnYxLlNldE1jcFNlcnZlclJlc3BvbnNlEkoKCkxpc3RTa2ls'
+    'bHMSGi5mbGl0LnYxLkxpc3RTa2lsbHNSZXF1ZXN0GhsuZmxpdC52MS5MaXN0U2tpbGxzUmVzcG'
+    '9uc2UiA5ACARJXChBSZXRyeUZyb21NZXNzYWdlEiAuZmxpdC52MS5SZXRyeUZyb21NZXNzYWdl'
+    'UmVxdWVzdBohLmZsaXQudjEuUmV0cnlGcm9tTWVzc2FnZVJlc3BvbnNlEkgKC0VkaXRNZXNzYW'
+    'dlEhsuZmxpdC52MS5FZGl0TWVzc2FnZVJlcXVlc3QaHC5mbGl0LnYxLkVkaXRNZXNzYWdlUmVz'
+    'cG9uc2USSwoMU3dpdGNoQnJhbmNoEhwuZmxpdC52MS5Td2l0Y2hCcmFuY2hSZXF1ZXN0Gh0uZm'
+    'xpdC52MS5Td2l0Y2hCcmFuY2hSZXNwb25zZRJHCglHaXRTdGF0dXMSGS5mbGl0LnYxLkdpdFN0'
+    'YXR1c1JlcXVlc3QaGi5mbGl0LnYxLkdpdFN0YXR1c1Jlc3BvbnNlIgOQAgESQQoHR2l0RGlmZh'
+    'IXLmZsaXQudjEuR2l0RGlmZlJlcXVlc3QaGC5mbGl0LnYxLkdpdERpZmZSZXNwb25zZSIDkAIB'
+    'ElEKDlJlbW92ZVdvcmt0cmVlEh4uZmxpdC52MS5SZW1vdmVXb3JrdHJlZVJlcXVlc3QaHy5mbG'
+    'l0LnYxLlJlbW92ZVdvcmt0cmVlUmVzcG9uc2U=');
