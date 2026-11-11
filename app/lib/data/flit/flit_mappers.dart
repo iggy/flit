@@ -2,6 +2,7 @@
 /// looks at generated protobuf types.
 library;
 
+import 'package:flit/domain/models/background_job.dart';
 import 'package:flit/domain/models/flit_cron.dart';
 import 'package:flit/domain/models/flit_event.dart';
 import 'package:flit/domain/models/flit_git.dart';
@@ -698,6 +699,53 @@ FlitEvent eventFromProto(pb.Event e) {
         report: a.report,
         error: a.error,
         steps: a.steps,
+      );
+    case pb.Event_Payload.jobStarted:
+      final j = e.jobStarted;
+      return FlitJobStarted(
+        seq: seq,
+        time: time,
+        branchId: branch,
+        jobId: j.jobId,
+        toolCallId: j.toolCallId,
+        command: j.command,
+        detached: j.detached,
+      );
+    case pb.Event_Payload.jobOutput:
+      return FlitJobOutput(
+        seq: seq,
+        time: time,
+        branchId: branch,
+        jobId: e.jobOutput.jobId,
+        text: e.jobOutput.text,
+      );
+    case pb.Event_Payload.jobDone:
+      final j = e.jobDone;
+      return FlitJobDone(
+        seq: seq,
+        time: time,
+        branchId: branch,
+        jobId: j.jobId,
+        status: switch (j.outcome) {
+          pb.JobOutcome.JOB_OUTCOME_EXITED => BackgroundJobStatus.exited,
+          pb.JobOutcome.JOB_OUTCOME_TIMED_OUT => BackgroundJobStatus.timedOut,
+          pb.JobOutcome.JOB_OUTCOME_CANCELLED => BackgroundJobStatus.cancelled,
+          pb.JobOutcome.JOB_OUTCOME_LOST => BackgroundJobStatus.lost,
+          _ => BackgroundJobStatus.failed,
+        },
+        exitCode: j.exitCode,
+        error: j.error,
+        outputTail: j.outputTail,
+        duration: Duration(milliseconds: j.durationMs.toInt()),
+        cancelledBy: j.cancelledBy,
+      );
+    case pb.Event_Payload.jobNoticeDelivered:
+      return FlitJobNoticeDelivered(
+        seq: seq,
+        time: time,
+        branchId: branch,
+        jobIds: List<String>.of(e.jobNoticeDelivered.jobIds),
+        messageId: e.jobNoticeDelivered.messageId,
       );
     case pb.Event_Payload.promptCache:
     // Which cron job started the session; the app shows that from

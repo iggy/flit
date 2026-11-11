@@ -52,6 +52,11 @@ type Env struct {
 	// Files, if set, makes write and patch refuse to change an existing
 	// file the read tool hasn't read, or that changed since it did.
 	Files *FileTracker
+	// Jobs runs the session's background shell jobs. Nil means none can
+	// run (subagents): shell runs everything in the foreground.
+	Jobs *Jobs
+	// CallID is the id of the tool call being run.
+	CallID string
 }
 
 // resolveRead is resolve for tools that only read: a path in one of

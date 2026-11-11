@@ -35,6 +35,8 @@ abstract class SessionServiceBase extends $pb.GeneratedService {
       $pb.ServerContext ctx, $2.EditQueuedMessageRequest request);
   $async.Future<$2.CancelQueuedMessageResponse> cancelQueuedMessage(
       $pb.ServerContext ctx, $2.CancelQueuedMessageRequest request);
+  $async.Future<$2.CancelJobResponse> cancelJob(
+      $pb.ServerContext ctx, $2.CancelJobRequest request);
   $async.Future<$2.InterruptResponse> interrupt(
       $pb.ServerContext ctx, $2.InterruptRequest request);
   $async.Future<$2.RetryModelCallResponse> retryModelCall(
@@ -92,6 +94,8 @@ abstract class SessionServiceBase extends $pb.GeneratedService {
         return $2.EditQueuedMessageRequest();
       case 'CancelQueuedMessage':
         return $2.CancelQueuedMessageRequest();
+      case 'CancelJob':
+        return $2.CancelJobRequest();
       case 'Interrupt':
         return $2.InterruptRequest();
       case 'RetryModelCall':
@@ -155,6 +159,8 @@ abstract class SessionServiceBase extends $pb.GeneratedService {
       case 'CancelQueuedMessage':
         return cancelQueuedMessage(
             ctx, request as $2.CancelQueuedMessageRequest);
+      case 'CancelJob':
+        return cancelJob(ctx, request as $2.CancelJobRequest);
       case 'Interrupt':
         return interrupt(ctx, request as $2.InterruptRequest);
       case 'RetryModelCall':

@@ -30,6 +30,9 @@ var shellTool = Tool{
 		if strings.TrimSpace(a.Command) == "" {
 			return errorf("command is empty")
 		}
+		if a.Background && env.Jobs == nil {
+			return errorf("background jobs can't run here; run the command without background")
+		}
 		dir, err := resolve(env.Dir, a.Workdir)
 		if err != nil {
 			return errorf("%v", err)
@@ -58,6 +61,9 @@ var shellTool = Tool{
 			if a.Workdir != "" {
 				detail = fmt.Sprintf("%s\n(in %s)", a.Command, rel(env.Dir, dir))
 			}
+			if a.Background {
+				detail += "\n(as a background job)"
+			}
 			ok, err := env.Approve(ctx, Approval{
 				Title: "Run shell command", Detail: detail, SessionPatterns: check.Patterns, Reason: assessed,
 			})
@@ -72,7 +78,7 @@ var shellTool = Tool{
 			}
 		}
 
-		return runShell(ctx, env, dir, a.Command, a.TimeoutSeconds)
+		return runShell(ctx, env, dir, a.Command, a)
 	},
 }
 
@@ -83,10 +89,20 @@ const shellSchema = `{"type":"object","properties":{
 "timeout_seconds":{"type":"integer","description":"Kill the command after this many seconds (default from config)"}
 },"required":["command"]}`
 
+// shellJobSchema is shellSchema with background, for sessions that can run
+// background jobs.
+const shellJobSchema = `{"type":"object","properties":{
+"command":{"type":"string","description":"The command line"},
+"workdir":{"type":"string","description":"Directory to run in, relative to the working directory (default .)"},
+"timeout_seconds":{"type":"integer","description":"Kill the command after this many seconds (default from config)"},
+"background":{"type":"boolean","description":"Start it as a background job and return its id at once, for servers, watchers and long builds (default false)"}
+},"required":["command"]}`
+
 type shellArgs struct {
 	Command        string `json:"command"`
 	Workdir        string `json:"workdir"`
 	TimeoutSeconds int    `json:"timeout_seconds"`
+	Background     bool   `json:"background"`
 }
 
 // readOnlyShellTool is shell for explore subagents: it runs only commands
@@ -114,40 +130,99 @@ var readOnlyShellTool = Tool{
 		if check.Decision != Allow {
 			return errorf("only read-only commands can run here (%s); use another command or report what you found", check.Reason)
 		}
-		return runShell(ctx, env, dir, a.Command, a.TimeoutSeconds)
+		a.Background = false
+		return runShell(ctx, env, dir, a.Command, a)
 	},
 }
 
 // runShell runs command in dir, already allowed, with the requested
-// timeout in seconds (0: the default).
-func runShell(ctx context.Context, env *Env, dir, command string, timeoutSeconds int) Result {
-	timeout := timeoutFor(timeoutSeconds, env.Shell.Timeout, env.Shell.MaxTimeout)
-	runCtx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-
-	cmd := shellCommand(runCtx, command)
-	cmd.Dir = dir
-	out := &headTail{keep: shellKeep, live: env.Output}
-	cmd.Stdout, cmd.Stderr = out, out
-	cmd.WaitDelay = 2 * time.Second
-	err := cmd.Run()
-
-	text := out.String()
-	if text != "" && !strings.HasSuffix(text, "\n") {
-		text += "\n"
+// timeout in seconds (0: the default). With env.Jobs set, a command that
+// asked for the background starts as a job at once, and one still running
+// after shell.background_after moves to the background.
+func runShell(ctx context.Context, env *Env, dir, command string, a shellArgs) Result {
+	timeout := timeoutFor(a.TimeoutSeconds, env.Shell.Timeout, env.Shell.MaxTimeout)
+	workdir := rel(env.Dir, dir)
+	if a.Background {
+		p, err := startProc(dir, command, nil)
+		if err != nil {
+			return errorf("[failed to run: %v]", err)
+		}
+		info, err := env.Jobs.adopt(p, env.CallID, command, workdir, false, jobTimeout(a.TimeoutSeconds, env), env.Shell.JobLimit())
+		if err != nil {
+			p.kill(JobCancelled, "")
+			<-p.done
+			return errorf("not started: %v", err)
+		}
+		return Result{Text: fmt.Sprintf("[started in the background as job %s; it is killed after %s. "+
+			"You get a notice when it ends; use the job tool to check on it, wait for it or cancel it.]",
+			info.ID, info.Timeout)}
 	}
-	var exitErr *exec.ExitError
-	switch {
-	case ctx.Err() != nil:
-		return Result{Text: text + "[interrupted]", IsError: true}
-	case errors.Is(runCtx.Err(), context.DeadlineExceeded):
-		return Result{Text: text + fmt.Sprintf("[killed: timed out after %s]", timeout), IsError: true}
-	case errors.As(err, &exitErr):
-		return Result{Text: text + fmt.Sprintf("[exit code %d]", exitErr.ExitCode()), IsError: true}
-	case err != nil:
-		return errorf("%s[failed to run: %v]", text, err)
+
+	p, err := startProc(dir, command, env.Output)
+	if err != nil {
+		return errorf("[failed to run: %v]", err)
+	}
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+	var detach <-chan time.Time
+	if after := env.Shell.Detach(); env.Jobs != nil && after > 0 && after < timeout {
+		t := time.NewTimer(after)
+		defer t.Stop()
+		detach = t.C
+	}
+	var stopped string
+	for stopped == "" {
+		select {
+		case <-p.done:
+			stopped = "exited"
+		case <-ctx.Done():
+			p.kill(JobCancelled, "")
+			<-p.done
+			stopped = "[interrupted]"
+		case <-timer.C:
+			p.kill(JobTimedOut, "")
+			<-p.done
+			stopped = fmt.Sprintf("[killed: timed out after %s]", timeout)
+		case <-detach:
+			detach = nil
+			info, err := env.Jobs.adopt(p, env.CallID, command, workdir, true, jobTimeout(a.TimeoutSeconds, env), env.Shell.JobLimit())
+			if err != nil {
+				continue // keep it in the foreground
+			}
+			return Result{Text: withNewline(p.out.String()) + fmt.Sprintf(
+				"[still running after %s: moved to the background as job %s; it is killed after %s. "+
+					"You get a notice when it ends; use the job tool to check on it, wait for it or cancel it.]",
+				env.Shell.Detach(), info.ID, info.Timeout)}
+		}
+	}
+
+	text := withNewline(p.out.String())
+	if stopped != "exited" {
+		return Result{Text: text + stopped, IsError: true}
+	}
+	switch outcome, code, errText, _ := p.result(); {
+	case outcome == JobFailed:
+		return errorf("%s[failed to run: %s]", text, errText)
+	case code != 0:
+		return Result{Text: text + fmt.Sprintf("[exit code %d]", code), IsError: true}
 	}
 	return Result{Text: text + "[exit code 0]"}
+}
+
+// jobTimeout is how long a background job may run: the requested timeout
+// (seconds), capped at shell.max_timeout, or else max_timeout.
+func jobTimeout(requested int, env *Env) time.Duration {
+	if requested > 0 {
+		return timeoutFor(requested, env.Shell.MaxTimeout, env.Shell.MaxTimeout)
+	}
+	return env.Shell.MaxTimeout
+}
+
+func withNewline(s string) string {
+	if s != "" && !strings.HasSuffix(s, "\n") {
+		s += "\n"
+	}
+	return s
 }
 
 // RunCommand runs command with the platform shell in dir, outside any
@@ -187,6 +262,13 @@ type headTail struct {
 	head    []byte
 	tail    []byte
 	dropped int64
+}
+
+// setLive sends later writes to live instead.
+func (h *headTail) setLive(live func(string)) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.live = live
 }
 
 func (h *headTail) Write(p []byte) (int, error) {

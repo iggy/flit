@@ -1,6 +1,7 @@
 # Shell commands: when flit asks
 
-The agent's `shell` tool runs commands with `sh -c` (`cmd /C` on Windows).
+The agent's `shell` tool runs commands with `sh -c` (`cmd /C` on Windows);
+long ones can run in the background (see [Background jobs](#background-jobs)).
 Before each command, flit decides whether to run it, ask you, or refuse.
 These rules exist to cut down on prompts; they are **not a sandbox**.
 
@@ -60,6 +61,53 @@ $DIR -name x` asks, because flit can't know what `$DIR` holds.
 
 Turn the list off with `shell.read_only: false` to decide everything with
 your own `allow` patterns.
+
+## Background jobs
+
+A command doesn't have to hold up the agent's turn while it runs. It
+becomes a **background job** with an id (`job_1`, `job_2`, ... within the
+session) in two ways:
+
+- The agent asks for it: `shell` with `background: true` returns the id at
+  once. Good for dev servers, watchers and long builds.
+- It runs long: a command still running after `shell.background_after`
+  (default 60s) moves to the background, and the agent gets what it printed
+  so far plus the id. `background_after: 0` turns this off. Commands with a
+  shorter `timeout_seconds` (or a `shell.timeout` below it) are killed at
+  their timeout as before.
+
+Background commands go through the same rules and prompts as any other; the
+prompt says "(as a background job)".
+
+While a job runs, the agent's `job` tool checks on it (`status`: how it's
+doing and its output so far; without an id, every job), waits for it
+(`wait`, up to `timeout_seconds`) or kills it (`cancel`). When a job ends
+and the agent hasn't seen that through the job tool, it gets a **notice**
+(a message starting `[flit notice]` with the outcome and the last lines of
+output):
+
+- during a turn, at its next step, like a message you queue;
+- when no turn is running, by starting one, so the agent can react (cron
+  and webhook sessions too);
+- notices pending when you stop a turn wait for your next message.
+
+Jobs outlive turns and Stop. They are killed when:
+
+- their time runs out: the `timeout_seconds` the agent gave, else
+  `shell.max_timeout` (30m by default), counted from the start;
+- the agent or you cancel them (the app's cancel button on the job, or
+  `SessionService.CancelJob`);
+- flit stops. Jobs flit loses track of (a crash) are reported as lost the
+  next time the session loads.
+
+`shell.max_jobs` (default 4, 0 for no cap) limits how many jobs a session
+runs at once; past it, `background: true` fails and long commands stay in
+the foreground. Subagents run everything in the foreground.
+
+In the session log a job is `job_started`, `job_output` (live output, capped
+per job like tool output), `job_done` (outcome, exit code, the last few KB
+of output) and `job_notice_delivered` (which user message carried the
+notice; no message id when the agent saw the end through the job tool).
 
 ## Yolo mode
 

@@ -148,6 +148,27 @@ extension type SessionServiceClient (connect.Transport _transport) {
     );
   }
 
+  /// CancelJob kills a running background shell job of the session (see
+  /// JobStarted). Its JobDone follows (outcome CANCELLED, cancelled_by the
+  /// client), and the agent gets a notice like for any job that ends.
+  /// NOT_FOUND for an unknown job, FAILED_PRECONDITION once it has ended.
+  Future<flitv1session.CancelJobResponse> cancelJob(
+    flitv1session.CancelJobRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.SessionService.cancelJob,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
+
   /// Interrupt stops the running turn, if any. Pending prompts are resolved
   /// as denied.
   Future<flitv1session.InterruptResponse> interrupt(

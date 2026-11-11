@@ -3,6 +3,7 @@
 /// has no gaps, so a client resumes by attaching from `lastSeq + 1`.
 library;
 
+import 'package:flit/domain/models/background_job.dart';
 import 'package:flit/domain/models/flit_session.dart';
 import 'package:flit/domain/models/subagent.dart';
 
@@ -710,7 +711,10 @@ bool flitSessionWide(FlitEvent e) => switch (e) {
   FlitQueuedMessageUpdated() ||
   FlitQueuedMessageDelivered() ||
   FlitBranchCreated() ||
-  FlitBranchSwitched() => true,
+  FlitBranchSwitched() ||
+  FlitJobStarted() ||
+  FlitJobOutput() ||
+  FlitJobDone() => true,
   _ => false,
 };
 
@@ -769,4 +773,80 @@ final class FlitSubagentDone extends FlitEvent {
   final String report;
   final String error;
   final int steps;
+}
+
+/// Shell call [toolCallId] became background job [jobId]: started that
+/// way, or moved there after running long ([detached]). Jobs outlive turns,
+/// so their events apply on every branch.
+final class FlitJobStarted extends FlitEvent {
+  const FlitJobStarted({
+    required super.seq,
+    required this.jobId,
+    required this.toolCallId,
+    this.command = '',
+    this.detached = false,
+    super.time,
+    super.branchId,
+  });
+
+  final String jobId;
+  final String toolCallId;
+  final String command;
+  final bool detached;
+}
+
+/// Output of job [jobId] as it arrives.
+final class FlitJobOutput extends FlitEvent {
+  const FlitJobOutput({
+    required super.seq,
+    required this.jobId,
+    required this.text,
+    super.time,
+    super.branchId,
+  });
+
+  final String jobId;
+  final String text;
+}
+
+/// Job [jobId] ended.
+final class FlitJobDone extends FlitEvent {
+  const FlitJobDone({
+    required super.seq,
+    required this.jobId,
+    required this.status,
+    this.exitCode = 0,
+    this.error = '',
+    this.outputTail = '',
+    this.duration = Duration.zero,
+    this.cancelledBy = '',
+    super.time,
+    super.branchId,
+  });
+
+  final String jobId;
+  final BackgroundJobStatus status;
+  final int exitCode;
+  final String error;
+
+  /// The last few KB of its output.
+  final String outputTail;
+  final Duration duration;
+  final String cancelledBy;
+}
+
+/// The agent was told that jobs [jobIds] ended, as user message
+/// [messageId] (shown as a notice, not as the person's message). Empty
+/// [messageId]: it saw the end itself, no message.
+final class FlitJobNoticeDelivered extends FlitEvent {
+  const FlitJobNoticeDelivered({
+    required super.seq,
+    required this.jobIds,
+    this.messageId = '',
+    super.time,
+    super.branchId,
+  });
+
+  final List<String> jobIds;
+  final String messageId;
 }

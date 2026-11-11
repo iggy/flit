@@ -10,11 +10,13 @@ import 'package:flit/application/flit/flit_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/domain/models/chat_message.dart';
 import 'package:flit/domain/models/flit_session.dart';
+import 'package:flit/presentation/chat/background_job_panel.dart';
 import 'package:flit/presentation/chat/message_bubble.dart';
 import 'package:flit/presentation/flit/flit_branch_controls.dart';
 import 'package:flit/presentation/flit/flit_call_status.dart';
 import 'package:flit/presentation/flit/flit_changes.dart';
 import 'package:flit/presentation/flit/flit_compaction.dart';
+import 'package:flit/presentation/flit/flit_job_notice.dart';
 import 'package:flit/presentation/flit/flit_learn_sheet.dart';
 import 'package:flit/presentation/flit/flit_mcp_sheet.dart';
 import 'package:flit/presentation/flit/flit_model_picker.dart';
@@ -392,7 +394,9 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
     final id = i < fold.messageIds.length ? fold.messageIds[i] : null;
     final choice = id == null ? null : fold.branchChoices[id];
     final user = message.role == MessageRole.user;
-    final canFork = user && id != null && !fold.busy && fold.queued.isEmpty;
+    final notice = id != null && fold.notices.contains(id);
+    final canFork =
+        user && !notice && id != null && !fold.busy && fold.queued.isEmpty;
     final rateable = _rateable(fold, i);
     if (choice == null && !canFork && !rateable) {
       return null;
@@ -705,7 +709,29 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
     );
   }
 
+  /// The id of message [i] if it is a notice about ended background jobs.
+  String? _noticeId(FlitFoldState fold, int i) {
+    final id = i < fold.messageIds.length ? fold.messageIds[i] : null;
+    return id != null && fold.notices.contains(id) ? id : null;
+  }
+
+  Future<void> _cancelJob(String jobId) async {
+    final error = await ref
+        .read(flitChatProvider(widget.sessionId).notifier)
+        .cancelJob(jobId);
+    if (error != null && mounted) {
+      _snack('Could not cancel $jobId: $error');
+    }
+  }
+
   Widget _messageList(FlitFoldState fold, FlitChatNotifier notifier) {
+    return BackgroundJobActions(
+      onCancel: _cancelJob,
+      child: _messageListView(fold, notifier),
+    );
+  }
+
+  Widget _messageListView(FlitFoldState fold, FlitChatNotifier notifier) {
     return ListView(
       controller: _scroll,
       padding: const EdgeInsets.all(12),
@@ -730,7 +756,13 @@ class _FlitChatScreenState extends ConsumerState<FlitChatScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                MessageBubble(message: fold.messages[i]),
+                if (_noticeId(fold, i) case final id?)
+                  FlitJobNoticeView(
+                    key: Key('$flitJobNoticeKeyPrefix$id'),
+                    text: fold.messages[i].text,
+                  )
+                else
+                  MessageBubble(message: fold.messages[i]),
                 ?_messageControls(fold, i, notifier),
               ],
             ),

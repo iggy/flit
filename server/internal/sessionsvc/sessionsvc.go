@@ -74,7 +74,7 @@ func connectErr(err error) error {
 		code = connect.CodeInvalidArgument
 	case errors.Is(err, agent.ErrBusy), errors.Is(err, agent.ErrPromptGone), errors.Is(err, agent.ErrNoCallToRetry), errors.Is(err, agent.ErrQueueGone), errors.Is(err, agent.ErrCantEndReasoning),
 		errors.Is(err, agent.ErrQueued), errors.Is(err, agent.ErrNoWorktree), errors.Is(err, agent.ErrWorktreeGone),
-		errors.Is(err, agent.ErrWorktreeDirty):
+		errors.Is(err, agent.ErrWorktreeDirty), errors.Is(err, agent.ErrJobEnded):
 		code = connect.CodeFailedPrecondition
 	case errors.Is(err, gitx.ErrNoGit):
 		code = connect.CodeFailedPrecondition
@@ -228,6 +228,17 @@ func (s *Service) CancelQueuedMessage(ctx context.Context, req *flitv1.CancelQue
 		return nil, connectErr(err)
 	}
 	return &flitv1.CancelQueuedMessageResponse{}, nil
+}
+
+// CancelJob implements flitv1connect.SessionServiceHandler.
+func (s *Service) CancelJob(ctx context.Context, req *flitv1.CancelJobRequest) (*flitv1.CancelJobResponse, error) {
+	if err := errors.Join(required("session_id", req.SessionId), required("job_id", req.JobId)); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err.Error())
+	}
+	if err := s.M.CancelJob(ctx, req.SessionId, req.JobId, req.Client); err != nil {
+		return nil, connectErr(err)
+	}
+	return &flitv1.CancelJobResponse{}, nil
 }
 
 // Interrupt implements flitv1connect.SessionServiceHandler.

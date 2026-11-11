@@ -82,6 +82,17 @@ abstract final class SessionService {
     flitv1session.CancelQueuedMessageResponse.new,
   );
 
+  /// CancelJob kills a running background shell job of the session (see
+  /// JobStarted). Its JobDone follows (outcome CANCELLED, cancelled_by the
+  /// client), and the agent gets a notice like for any job that ends.
+  /// NOT_FOUND for an unknown job, FAILED_PRECONDITION once it has ended.
+  static const cancelJob = connect.Spec(
+    '/$name/CancelJob',
+    connect.StreamType.unary,
+    flitv1session.CancelJobRequest.new,
+    flitv1session.CancelJobResponse.new,
+  );
+
   /// Interrupt stops the running turn, if any. Pending prompts are resolved
   /// as denied.
   static const interrupt = connect.Spec(

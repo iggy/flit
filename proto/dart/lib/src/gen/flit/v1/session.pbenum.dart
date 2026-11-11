@@ -154,6 +154,48 @@ class PromptDecision extends $pb.ProtobufEnum {
   const PromptDecision._(super.value, super.name);
 }
 
+/// JobOutcome is how a background job ended.
+class JobOutcome extends $pb.ProtobufEnum {
+  static const JobOutcome JOB_OUTCOME_UNSPECIFIED =
+      JobOutcome._(0, _omitEnumNames ? '' : 'JOB_OUTCOME_UNSPECIFIED');
+
+  /// The command exited by itself; see exit_code.
+  static const JobOutcome JOB_OUTCOME_EXITED =
+      JobOutcome._(1, _omitEnumNames ? '' : 'JOB_OUTCOME_EXITED');
+
+  /// It could not be started or waited for; see error.
+  static const JobOutcome JOB_OUTCOME_FAILED =
+      JobOutcome._(2, _omitEnumNames ? '' : 'JOB_OUTCOME_FAILED');
+
+  /// Killed when its time ran out (JobStarted.timeout_ms).
+  static const JobOutcome JOB_OUTCOME_TIMED_OUT =
+      JobOutcome._(3, _omitEnumNames ? '' : 'JOB_OUTCOME_TIMED_OUT');
+
+  /// Killed by the agent's job tool or CancelJob.
+  static const JobOutcome JOB_OUTCOME_CANCELLED =
+      JobOutcome._(4, _omitEnumNames ? '' : 'JOB_OUTCOME_CANCELLED');
+
+  /// flit stopped (or crashed) while it ran; it was killed or is gone.
+  static const JobOutcome JOB_OUTCOME_LOST =
+      JobOutcome._(5, _omitEnumNames ? '' : 'JOB_OUTCOME_LOST');
+
+  static const $core.List<JobOutcome> values = <JobOutcome>[
+    JOB_OUTCOME_UNSPECIFIED,
+    JOB_OUTCOME_EXITED,
+    JOB_OUTCOME_FAILED,
+    JOB_OUTCOME_TIMED_OUT,
+    JOB_OUTCOME_CANCELLED,
+    JOB_OUTCOME_LOST,
+  ];
+
+  static final $core.List<JobOutcome?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 5);
+  static JobOutcome? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const JobOutcome._(super.value, super.name);
+}
+
 class TodoStatus extends $pb.ProtobufEnum {
   static const TodoStatus TODO_STATUS_UNSPECIFIED =
       TodoStatus._(0, _omitEnumNames ? '' : 'TODO_STATUS_UNSPECIFIED');

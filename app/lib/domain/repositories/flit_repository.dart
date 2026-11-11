@@ -41,6 +41,9 @@ abstract interface class FlitRepository {
   Future<void> editQueuedMessage(String sessionId, String queueId, String text);
   Future<void> cancelQueuedMessage(String sessionId, String queueId);
 
+  /// Kills a running background job; the agent is told.
+  Future<void> cancelJob(String sessionId, String jobId, {String client = ''});
+
   /// Stop the running turn. Returns whether one was running.
   Future<bool> interrupt(String sessionId);
 

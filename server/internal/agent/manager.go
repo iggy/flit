@@ -121,15 +121,21 @@ func NewManager(ctx context.Context, st *store.Store, cfg func() config.Config, 
 	return m, nil
 }
 
-// Close interrupts all running turns and waits for them to stop.
+// Close interrupts all running turns, kills background jobs and waits for
+// them to stop.
 func (m *Manager) Close() {
 	m.closing.Store(true)
 	m.mu.Lock()
 	m.closed = true
+	all := make([]*session, 0, len(m.sessions))
 	for _, s := range m.sessions {
 		s.interrupt()
+		all = append(all, s)
 	}
 	m.mu.Unlock()
+	for _, s := range all {
+		s.jobs.Close()
+	}
 	m.turns.Wait()
 }
 
@@ -158,6 +164,9 @@ func (m *Manager) session(ctx context.Context, id string) (*session, error) {
 		return nil, err
 	}
 	if err := s.loadBranches(ctx); err != nil {
+		return nil, err
+	}
+	if err := s.loadJobs(ctx); err != nil {
 		return nil, err
 	}
 	m.sessions[id] = s

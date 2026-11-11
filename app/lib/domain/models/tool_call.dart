@@ -6,6 +6,7 @@
 /// (05-conventions.md).
 library;
 
+import 'package:flit/domain/models/background_job.dart';
 import 'package:flit/domain/models/subagent.dart';
 
 /// Lifecycle of a tool call, folded from `tool.start`/`tool.complete`.
@@ -76,6 +77,7 @@ final class ToolCall {
     this.durationS,
     this.tasks = const <ToolTask>[],
     this.subagent,
+    this.job,
   });
 
   /// Wire `tool_id` — correlates `tool.complete` to `tool.start`.
@@ -109,6 +111,10 @@ final class ToolCall {
   /// The subagent this call (flit's agent tool) runs, once it started.
   final Subagent? subagent;
 
+  /// The background job this call (flit's shell) started, if it became
+  /// one.
+  final BackgroundJob? job;
+
   /// The event fold mutates via copy (ticket P1-01).
   ToolCall copyWith({
     String? id,
@@ -121,6 +127,7 @@ final class ToolCall {
     double? durationS,
     List<ToolTask>? tasks,
     Subagent? subagent,
+    BackgroundJob? job,
   }) {
     return ToolCall(
       id: id ?? this.id,
@@ -133,6 +140,7 @@ final class ToolCall {
       durationS: durationS ?? this.durationS,
       tasks: tasks ?? this.tasks,
       subagent: subagent ?? this.subagent,
+      job: job ?? this.job,
     );
   }
 
@@ -148,6 +156,7 @@ final class ToolCall {
         other.inlineDiff == inlineDiff &&
         other.durationS == durationS &&
         other.subagent == subagent &&
+        other.job == job &&
         _tasksEquals(other.tasks, tasks);
   }
 
@@ -171,6 +180,7 @@ final class ToolCall {
     durationS,
     Object.hashAll(tasks),
     subagent,
+    job,
   );
 
   @override
