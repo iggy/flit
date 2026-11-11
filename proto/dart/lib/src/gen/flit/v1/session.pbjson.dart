@@ -1633,6 +1633,15 @@ const Event$json = {
       '9': 0,
       '10': 'jobNoticeDelivered'
     },
+    {
+      '1': 'long_turn',
+      '3': 57,
+      '4': 1,
+      '5': 11,
+      '6': '.flit.v1.LongTurn',
+      '9': 0,
+      '10': 'longTurn'
+    },
   ],
   '8': [
     {'1': 'payload'},
@@ -1699,7 +1708,8 @@ final $typed_data.Uint8List eventDescriptor = $convert.base64Decode(
     'RhcnRlZBIzCgpqb2Jfb3V0cHV0GDYgASgLMhIuZmxpdC52MS5Kb2JPdXRwdXRIAFIJam9iT3V0'
     'cHV0Ei0KCGpvYl9kb25lGDcgASgLMhAuZmxpdC52MS5Kb2JEb25lSABSB2pvYkRvbmUSTwoUam'
     '9iX25vdGljZV9kZWxpdmVyZWQYOCABKAsyGy5mbGl0LnYxLkpvYk5vdGljZURlbGl2ZXJlZEgA'
-    'UhJqb2JOb3RpY2VEZWxpdmVyZWRCCQoHcGF5bG9hZA==');
+    'UhJqb2JOb3RpY2VEZWxpdmVyZWQSMAoJbG9uZ190dXJuGDkgASgLMhEuZmxpdC52MS5Mb25nVH'
+    'VybkgAUghsb25nVHVybkIJCgdwYXlsb2Fk');
 
 @$core.Deprecated('Use messageStartedDescriptor instead')
 const MessageStarted$json = {
@@ -1958,6 +1968,26 @@ final $typed_data.Uint8List jobDoneDescriptor = $convert.base64Decode(
     'BWVycm9yGAQgASgJUgVlcnJvchIfCgtvdXRwdXRfdGFpbBgFIAEoCVIKb3V0cHV0VGFpbBIfCg'
     'tkdXJhdGlvbl9tcxgGIAEoA1IKZHVyYXRpb25NcxIhCgxjYW5jZWxsZWRfYnkYByABKAlSC2Nh'
     'bmNlbGxlZEJ5');
+
+@$core.Deprecated('Use longTurnDescriptor instead')
+const LongTurn$json = {
+  '1': 'LongTurn',
+  '2': [
+    {'1': 'steps', '3': 1, '4': 1, '5': 5, '10': 'steps'},
+    {
+      '1': 'subagent_tool_call_id',
+      '3': 2,
+      '4': 1,
+      '5': 9,
+      '10': 'subagentToolCallId'
+    },
+  ],
+};
+
+/// Descriptor for `LongTurn`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List longTurnDescriptor = $convert.base64Decode(
+    'CghMb25nVHVybhIUCgVzdGVwcxgBIAEoBVIFc3RlcHMSMQoVc3ViYWdlbnRfdG9vbF9jYWxsX2'
+    'lkGAIgASgJUhJzdWJhZ2VudFRvb2xDYWxsSWQ=');
 
 @$core.Deprecated('Use jobNoticeDeliveredDescriptor instead')
 const JobNoticeDelivered$json = {
@@ -3215,6 +3245,7 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.flit.v1.JobOutput': JobOutput$json,
   '.flit.v1.JobDone': JobDone$json,
   '.flit.v1.JobNoticeDelivered': JobNoticeDelivered$json,
+  '.flit.v1.LongTurn': LongTurn$json,
   '.flit.v1.SendRequest': SendRequest$json,
   '.flit.v1.SendResponse': SendResponse$json,
   '.flit.v1.EditQueuedMessageRequest': EditQueuedMessageRequest$json,

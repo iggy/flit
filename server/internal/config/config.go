@@ -75,7 +75,8 @@ type Config struct {
 // own while it's connected).
 type Notify struct {
 	// Ntfy is an ntfy topic URL (e.g. https://ntfy.sh/my-topic) that cron
-	// run results are posted to. Empty means none.
+	// and webhook run results, and long turns (agent.long_turn_steps), are
+	// posted to. Empty means none.
 	Ntfy string `yaml:"ntfy"`
 	// NtfyHeaders are sent with each post, e.g. Authorization. ${VAR} in a
 	// value is replaced with that environment variable.
@@ -494,8 +495,10 @@ type Agent struct {
 	// ModelPromptAppends adds text to the system prompt for specific
 	// models, keyed "provider/model".
 	ModelPromptAppends map[string]string `yaml:"model_prompt_appends"`
-	// MaxSteps caps model calls per turn.
-	MaxSteps int `yaml:"max_steps"`
+	// LongTurnSteps: every this many model calls in one turn, flit notes
+	// that the turn is running long (it may be looping): in the session,
+	// in the app and by ntfy. Nothing stops the turn. Default 50.
+	LongTurnSteps int `yaml:"long_turn_steps"`
 	// Tool output longer than this is cut down to its head and tail before
 	// the model sees it.
 	// The full output is saved under the data dir (sessions/<id>/
@@ -538,9 +541,10 @@ func (a Agent) ReadBeforeWriteOn() bool { return a.ReadBeforeWrite == nil || *a.
 type Subagents struct {
 	// Enabled offers the agent tool. Default true.
 	Enabled *bool `yaml:"enabled"`
-	// MaxSteps caps a subagent's model calls (1-200); at the cap it is
-	// told to stop and report. Default 20.
-	MaxSteps int `yaml:"max_steps"`
+	// LongTurnSteps: every this many model calls by one subagent, flit
+	// notes that it is running long, like agent.long_turn_steps. Nothing
+	// stops it. Default 20.
+	LongTurnSteps int `yaml:"long_turn_steps"`
 }
 
 // IsEnabled reports whether the agent tool is offered.
@@ -697,7 +701,7 @@ func Default() Config {
 		Agent: Agent{
 			Tasks:              map[string]TaskModel{},
 			ModelPromptAppends: map[string]string{},
-			MaxSteps:           50,
+			LongTurnSteps:      50,
 			ToolOutputMaxBytes: 32 * 1024,
 			ToolOutputMaxLines: 500,
 			RepeatCallNudges:   []int{3, 5, 8},
@@ -714,7 +718,7 @@ func Default() Config {
 				KeepTurns:        2,
 				MaxSummaryTokens: 4096,
 			},
-			Subagents: Subagents{Enabled: ptr(true), MaxSteps: 20},
+			Subagents: Subagents{Enabled: ptr(true), LongTurnSteps: 20},
 		},
 		Shell: Shell{
 			Timeout:         2 * time.Minute,
@@ -736,6 +740,9 @@ func Parse(data []byte) (Config, error) {
 	dec := yaml.NewDecoder(bytes.NewReader(data))
 	dec.KnownFields(true)
 	if err := dec.Decode(&cfg); err != nil && !errors.Is(err, io.EOF) {
+		if strings.Contains(err.Error(), "field max_steps not found") {
+			return Config{}, fmt.Errorf("parse config: %w (agent.max_steps and agent.subagents.max_steps are gone: turns no longer stop at a step count; long_turn_steps says when to tell you one is running long)", err)
+		}
 		return Config{}, fmt.Errorf("parse config: %w", err)
 	}
 	if cfg.Listen == "" {
@@ -754,8 +761,8 @@ func Parse(data []byte) (Config, error) {
 // fillDefaults replaces zero values that YAML may have set explicitly.
 func (c *Config) fillDefaults() {
 	d := Default()
-	if c.Agent.MaxSteps == 0 {
-		c.Agent.MaxSteps = d.Agent.MaxSteps
+	if c.Agent.LongTurnSteps == 0 {
+		c.Agent.LongTurnSteps = d.Agent.LongTurnSteps
 	}
 	if c.Agent.ToolOutputMaxBytes == 0 {
 		c.Agent.ToolOutputMaxBytes = d.Agent.ToolOutputMaxBytes
@@ -769,8 +776,8 @@ func (c *Config) fillDefaults() {
 	if c.Agent.Compaction.Threshold == 0 {
 		c.Agent.Compaction.Threshold = d.Agent.Compaction.Threshold
 	}
-	if c.Agent.Subagents.MaxSteps == 0 {
-		c.Agent.Subagents.MaxSteps = d.Agent.Subagents.MaxSteps
+	if c.Agent.Subagents.LongTurnSteps == 0 {
+		c.Agent.Subagents.LongTurnSteps = d.Agent.Subagents.LongTurnSteps
 	}
 	if c.Agent.Compaction.KeepTurns == 0 {
 		c.Agent.Compaction.KeepTurns = d.Agent.Compaction.KeepTurns
@@ -936,7 +943,7 @@ func (c Config) Validate() error {
 			return fmt.Errorf("agent.tasks.%s.provider %q is not in providers", task, t.Provider)
 		}
 	}
-	if c.Agent.MaxSteps < 0 || c.Agent.ToolOutputMaxBytes < 0 || c.Agent.ToolOutputMaxLines < 0 ||
+	if c.Agent.LongTurnSteps < 0 || c.Agent.ToolOutputMaxBytes < 0 || c.Agent.ToolOutputMaxLines < 0 ||
 		c.Agent.ModelFirstTokenTimeout < 0 || c.Agent.ModelStallTimeout < 0 {
 		return errors.New("agent: limits must not be negative")
 	}
@@ -958,8 +965,8 @@ func (c Config) Validate() error {
 	if cp := c.Agent.Compaction; cp.KeepTurns < 1 || cp.KeepTurns > 50 {
 		return errors.New("agent.compaction.keep_turns must be between 1 and 50")
 	}
-	if n := c.Agent.Subagents.MaxSteps; n < 1 || n > 200 {
-		return errors.New("agent.subagents.max_steps must be between 1 and 200")
+	if c.Agent.Subagents.LongTurnSteps < 0 {
+		return errors.New("agent.subagents.long_turn_steps must not be negative")
 	}
 	if c.Learning.MemoryMaxBytes < 0 || c.Learning.TranscriptMaxBytes < 0 {
 		return errors.New("learning: limits must not be negative")
@@ -1123,7 +1130,8 @@ crons_dir: crons
 webhooks_dir: webhooks
 
 # Notifications flit sends itself, for when the app isn't open. ntfy posts
-# cron and webhook run results (a report, needs attention, failed) to an ntfy topic,
+# cron and webhook run results (a report, needs attention, failed), and
+# turns that run long (agent.long_turn_steps), to an ntfy topic,
 # e.g. https://ntfy.sh/<a-long-random-topic> or your own server; runs with
 # nothing to report stay quiet. Empty means off.
 notify:
@@ -1258,8 +1266,11 @@ agent:
   # Extra system prompt text for specific models ("provider/model"); a
   # provider's prompt_append applies to all its models.
   model_prompt_appends: {}
-  # Maximum model calls in one turn.
-  max_steps: 50
+  # Turns don't stop at a step count. Every long_turn_steps model calls in
+  # one turn, flit notes that the turn is running long (it may be working
+  # hard, or looping): in the session, as an app notification, and by ntfy
+  # (notify.ntfy).
+  long_turn_steps: 50
   # Longer tool output is cut to its head and tail before the model sees it;
   # the full output is saved under the data dir and the note says where.
   tool_output_max_bytes: 32768
@@ -1302,8 +1313,9 @@ agent:
   # session's shell rules and prompts. Subagents can't start subagents.
   subagents:
     enabled: true
-    # Maximum model calls per subagent; at the cap it is told to report.
-    max_steps: 20
+    # Like long_turn_steps, for each subagent's model calls. Subagents don't
+    # stop at a step count either.
+    long_turn_steps: 20
 
 # Memory: lessons flit keeps between sessions, as Markdown files you can
 # edit: <data_dir>/memory/user.md (every session) and

@@ -517,7 +517,8 @@ class SubagentOutcome extends $pb.ProtobufEnum {
   static const SubagentOutcome SUBAGENT_OUTCOME_DONE =
       SubagentOutcome._(1, _omitEnumNames ? '' : 'SUBAGENT_OUTCOME_DONE');
 
-  /// It hit its step cap; report is what it wrote when told to stop.
+  /// It hit its step cap; report is what it wrote when told to stop. Only
+  /// in logs from before subagents ran without a cap.
   static const SubagentOutcome SUBAGENT_OUTCOME_STEP_LIMIT =
       SubagentOutcome._(2, _omitEnumNames ? '' : 'SUBAGENT_OUTCOME_STEP_LIMIT');
 

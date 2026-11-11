@@ -48,7 +48,7 @@ func TestUpdateNested(t *testing.T) {
 
 agent:
     # my steps
-    max_steps: 7
+    long_turn_steps: 7
 
 shell:
     timeout: 5m
@@ -59,7 +59,7 @@ shell:
 	}
 	s := string(out)
 	for _, want := range []string{
-		"    # my steps\n    max_steps: 7\n",
+		"    # my steps\n    long_turn_steps: 7\n",
 		"    compaction:\n      # Compact on its own",
 		"    timeout: 5m\n    max_timeout: 30m\n",
 		"    model_retries: 1\n    # Compaction:",
@@ -68,18 +68,18 @@ shell:
 			t.Errorf("missing %q in:\n%s", want, s)
 		}
 	}
-	// Defaults that come before max_steps are inserted above its comment.
+	// Defaults that come before long_turn_steps are inserted above its comment.
 	if i, j := strings.Index(s, "    effort: \"\""), strings.Index(s, "    # my steps"); i < 0 || i > j {
-		t.Errorf("effort not above max_steps:\n%s", s)
+		t.Errorf("effort not above long_turn_steps:\n%s", s)
 	}
-	if !contains(added, "agent.compaction") || !contains(added, "shell.max_timeout") || !contains(added, "roles_dir") || contains(added, "agent.max_steps") {
+	if !contains(added, "agent.compaction") || !contains(added, "shell.max_timeout") || !contains(added, "roles_dir") || contains(added, "agent.long_turn_steps") {
 		t.Fatalf("added %v", added)
 	}
 	got, err := Parse(out)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Agent.MaxSteps != 7 || got.Shell.Timeout.String() != "5m0s" {
+	if got.Agent.LongTurnSteps != 7 || got.Shell.Timeout.String() != "5m0s" {
 		t.Fatalf("lost user values: %+v %+v", got.Agent, got.Shell)
 	}
 	if _, again, err := Update(out); err != nil || len(again) != 0 {

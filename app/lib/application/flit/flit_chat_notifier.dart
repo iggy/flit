@@ -7,6 +7,8 @@ import 'dart:async';
 
 import 'package:flit/application/flit/flit_fold.dart';
 import 'package:flit/application/flit/flit_providers.dart';
+import 'package:flit/application/notifications/notification_format.dart';
+import 'package:flit/application/notifications/notification_providers.dart';
 import 'package:flit/core/errors/gateway_error.dart';
 import 'package:flit/domain/models/flit_event.dart';
 import 'package:flit/domain/models/flit_session.dart';
@@ -63,6 +65,15 @@ final class FlitChatState {
 
   @override
   int get hashCode => Object.hash(fold, link, linkError);
+}
+
+/// Whether [e] is worth a local notification: new to this client (after
+/// [lastSeq]) and recent, so replaying an old log on attach stays quiet.
+bool notifyLongTurn(FlitLongTurn e, int lastSeq, DateTime now) {
+  final at = e.time;
+  return e.seq > lastSeq &&
+      at != null &&
+      now.difference(at) < const Duration(minutes: 2);
 }
 
 /// Per-session chat state, keyed by session id.
@@ -127,10 +138,27 @@ class FlitChatNotifier extends Notifier<FlitChatState> {
       return;
     }
     _attempt = 0;
+    if (event is FlitLongTurn &&
+        notifyLongTurn(event, state.fold.lastSeq, DateTime.now())) {
+      unawaited(_showLongTurn(event));
+    }
     state = state.copyWith(
       fold: foldFlitEvent(state.fold, event),
       link: FlitLink.live,
     );
+  }
+
+  Future<void> _showLongTurn(FlitLongTurn event) async {
+    if (!ref.read(notificationsEnabledProvider)) {
+      return;
+    }
+    await ref
+        .read(notificationServiceProvider)
+        .show(
+          id: notificationIdFor('long-turn:$sessionId:${event.seq}'),
+          title: 'Long turn',
+          body: notificationBody(longTurnText(event)),
+        );
   }
 
   void _dropped(String? error) {

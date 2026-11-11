@@ -177,7 +177,8 @@ notify:
 ```
 
 flit posts a run that finished with a report, needs attention, or failed.
-Runs with nothing to report are not posted.
+Runs with nothing to report are not posted. Sessions post too when a turn
+runs long (see [long turns](sessions.md#long-turns)).
 
 ## API and CLI
 

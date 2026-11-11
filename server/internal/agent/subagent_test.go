@@ -97,7 +97,7 @@ func TestSubagentExplore(t *testing.T) {
 
 	started, _ := find(evs, (*flitv1.Event).GetSubagentStarted, notNil)
 	if started == nil || started.ToolCallId != "ag1" || started.Kind != flitv1.SubagentKind_SUBAGENT_KIND_EXPLORE ||
-		started.Provider != "fake" || started.Model != "test-model" || started.MaxSteps != 20 {
+		started.Provider != "fake" || started.Model != "test-model" || started.MaxSteps != 0 {
 		t.Fatalf("started %v", started)
 	}
 	results := map[string]*flitv1.ToolCallDone{}
@@ -226,45 +226,6 @@ func TestSubagentYoloSkipsPrompt(t *testing.T) {
 	evs := w.snapshot()
 	if _, ok := find(evs, (*flitv1.Event).GetPromptRequested, notNil); ok {
 		t.Fatal("prompted in yolo mode")
-	}
-}
-
-func TestSubagentStepLimit(t *testing.T) {
-	h := newHarness(t)
-	h.cfg.Agent.Subagents.MaxSteps = 2
-	if err := os.WriteFile(filepath.Join(h.dir, "a.txt"), []byte("a\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	read := func(id string) llmtest.Response {
-		return llmtest.Response{Chunks: llmtest.ToolCalls([3]string{id, "read", `{"path":"a.txt"}`})}
-	}
-	h.llm.Push(
-		agentCall("ag1", `{"kind":"explore","task":"read forever"}`),
-		read("r1"), read("r2"),
-		llmtest.Response{Chunks: llmtest.Text("partial findings")},
-		llmtest.Response{Chunks: llmtest.Text("done")},
-	)
-	sess := h.create()
-	w := h.watch(sess.ID, 0)
-	if _, err := h.m.Send(context.Background(), sess.ID, "go"); err != nil {
-		t.Fatal(err)
-	}
-	w.waitTurnEnd()
-	evs := w.snapshot()
-	reqs := h.llm.Requests()
-	if len(reqs) != 5 {
-		t.Fatalf("%d model calls", len(reqs))
-	}
-	final := reqs[3]
-	if len(final.Tools) != 0 {
-		t.Fatalf("the report call offered tools: %v", sortedToolNames(final))
-	}
-	if last := final.Messages[len(final.Messages)-1]; last.Role != "user" || last.Content != stepLimitNote {
-		t.Fatalf("report call ends with %+v", last)
-	}
-	done, _ := find(evs, (*flitv1.Event).GetSubagentDone, notNil)
-	if done.Outcome != flitv1.SubagentOutcome_SUBAGENT_OUTCOME_STEP_LIMIT || done.Steps != 3 || !strings.Contains(done.Report, "partial findings") {
-		t.Fatalf("done %v", done)
 	}
 }
 

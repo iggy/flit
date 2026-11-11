@@ -1166,9 +1166,27 @@ FlitFoldState _apply(FlitFoldState state, FlitEvent event) {
         ),
       ],
     ),
+    FlitLongTurn() => s.copyWith(
+      messageIds: <String?>[...s.messageIds, null],
+      messageSeqs: <int>[...s.messageSeqs, event.seq],
+      messages: <ChatMessage>[
+        ...s.messages,
+        ChatMessage(
+          role: MessageRole.system,
+          text: '**Long turn:** ${longTurnText(event)}',
+          timestamp: event.time,
+        ),
+      ],
+    ),
     FlitUnknownEvent() || FlitBranchCreated() || FlitBranchSwitched() => s,
   };
 }
+
+/// What a [FlitLongTurn] says, in the chat and in its notification.
+String longTurnText(FlitLongTurn e) =>
+    '${e.subagent ? 'A subagent' : 'The agent'} has made ${e.steps} model '
+    'calls this turn. It may be working hard, or going round in circles; '
+    'nothing was stopped.';
 
 /// Reply text for the call in progress: it has output now.
 FlitFoldState _callOutput(

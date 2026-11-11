@@ -605,6 +605,7 @@ message Event {
     JobOutput job_output = 54;
     JobDone job_done = 55;
     JobNoticeDelivered job_notice_delivered = 56;
+    LongTurn long_turn = 57;
   }
 }
 
@@ -784,6 +785,17 @@ message JobDone {
   // For CANCELLED: the client that called CancelJob, or empty when the
   // agent cancelled it.
   string cancelled_by = 7;
+}
+
+// LongTurn says a turn has made many model calls: one every
+// agent.long_turn_steps calls (agent.subagents.long_turn_steps for a
+// subagent). It may be working hard, or going round in circles. Nothing is
+// stopped; it is for the person to look in on.
+message LongTurn {
+  // Model calls made so far in the turn, or by the subagent.
+  int32 steps = 1;
+  // Set for a subagent: the agent tool call it runs under.
+  string subagent_tool_call_id = 2;
 }
 
 // JobNoticeDelivered tells the agent that jobs job_ids ended, as user
@@ -1392,7 +1404,7 @@ message SubagentStarted {
   string effort = 5;
   // What it was asked to do.
   string task = 6;
-  // Its step cap (agent.subagents.max_steps).
+  // Its step cap, in logs from before subagents ran without one; 0 now.
   int32 max_steps = 7;
 }
 
@@ -1413,7 +1425,8 @@ enum SubagentOutcome {
   SUBAGENT_OUTCOME_UNSPECIFIED = 0;
   // It finished and wrote its report.
   SUBAGENT_OUTCOME_DONE = 1;
-  // It hit its step cap; report is what it wrote when told to stop.
+  // It hit its step cap; report is what it wrote when told to stop. Only
+  // in logs from before subagents ran without a cap.
   SUBAGENT_OUTCOME_STEP_LIMIT = 2;
   // The turn was stopped.
   SUBAGENT_OUTCOME_CANCELLED = 3;
