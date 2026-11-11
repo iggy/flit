@@ -27,6 +27,8 @@ go run ./cmd/flit serve           # first run writes config + token, prints the 
 go run ./cmd/flit token           # print the token again
 ```
 
+Note: `gofmt` has been superseded by `go fmt`
+
 Release-style build (what CI does; must stay cgo-free):
 
 ```sh
