@@ -49,12 +49,22 @@ if the agent was finishing. Queued messages show in every client and can be
 edited or cancelled until then. Stop keeps them queued; they go out first
 with your next message (or press Send with an empty box).
 
+## Long turns
+
+A turn runs until the agent is done or you stop it; there is no step cap.
+Every `agent.long_turn_steps` model calls (default 50) flit records a
+`long_turn` event: the app shows a note in the chat and a local
+notification (with notifications on), and `notify.ntfy`, if set, gets a
+post. The turn goes on; the note is for you to look in and decide whether
+it is working hard or going round in circles. Subagents do the same every
+`agent.subagents.long_turn_steps` calls (default 20).
+
 ## Subagents
 
 The agent can hand a self-contained task to a **subagent** with the `agent`
 tool. A subagent starts with an empty context (a short system prompt and the
-task), works until it's done or reaches `agent.subagents.max_steps` (20; at
-the cap it is told to write its report), and only its final report goes back
+task), works until it's done (see [long turns](#long-turns)), and only its
+final report goes back
 into the agent's context, which keeps that context small. There are two
 kinds:
 

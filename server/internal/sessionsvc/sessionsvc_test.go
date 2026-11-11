@@ -257,7 +257,6 @@ func TestLlamaCppCodingTask(t *testing.T) {
 	cfg := config.Default()
 	cfg.Providers = []config.Provider{{Name: "llama", BaseURL: baseURL, APIKey: os.Getenv("FLIT_TEST_LLAMA_KEY")}}
 	cfg.Agent.Model = model
-	cfg.Agent.MaxSteps = 25
 	cfg.Shell.Default = "deny" // file tools only; never run model-chosen commands here
 	cfg.Shell.Allow = nil
 	cfg.Shell.ReadOnly = new(bool)
@@ -324,7 +323,6 @@ func TestLlamaCppSubagents(t *testing.T) {
 	cfg := config.Default()
 	cfg.Providers = []config.Provider{{Name: "llama", BaseURL: baseURL, APIKey: os.Getenv("FLIT_TEST_LLAMA_KEY")}}
 	cfg.Agent.Model = model
-	cfg.Agent.MaxSteps = 25
 	cfg.Shell.Default = "deny" // the explore subagent's read-only shell still works
 	cfg.Shell.Allow = nil
 	c := start(t, cfg)

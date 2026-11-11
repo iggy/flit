@@ -109,8 +109,8 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 	autoFailed := false
 	for step := 0; ; step++ {
 		cfg := s.m.cfg()
-		if step >= cfg.Agent.MaxSteps {
-			return s.stop(fmt.Sprintf("stopped after %d model calls (agent.max_steps)", step), true)
+		if err := s.noteLongTurn(cfg.Agent.LongTurnSteps, step, ""); err != nil {
+			return end{}, err
 		}
 
 		info := s.snapshot()

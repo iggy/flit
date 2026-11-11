@@ -4061,6 +4061,7 @@ enum Event_Payload {
   jobDone,
   jobNoticeDelivered,
   statusUpdated,
+  longTurn,
   notSet
 }
 
@@ -4119,6 +4120,7 @@ class Event extends $pb.GeneratedMessage {
     JobDone? jobDone,
     JobNoticeDelivered? jobNoticeDelivered,
     StatusUpdated? statusUpdated,
+    LongTurn? longTurn,
   }) {
     final result = Event._();
     if (sessionId != null) result.sessionId = sessionId;
@@ -4178,6 +4180,7 @@ class Event extends $pb.GeneratedMessage {
     if (jobNoticeDelivered != null)
       result.jobNoticeDelivered = jobNoticeDelivered;
     if (statusUpdated != null) result.statusUpdated = statusUpdated;
+    if (longTurn != null) result.longTurn = longTurn;
     return result;
   }
 
@@ -4239,6 +4242,7 @@ class Event extends $pb.GeneratedMessage {
     55: Event_Payload.jobDone,
     56: Event_Payload.jobNoticeDelivered,
     57: Event_Payload.statusUpdated,
+    58: Event_Payload.longTurn,
     0: Event_Payload.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
@@ -4293,7 +4297,8 @@ class Event extends $pb.GeneratedMessage {
       54,
       55,
       56,
-      57
+      57,
+      58
     ])
     ..aOS(1, _omitFieldNames ? '' : 'sessionId')
     ..aInt64(2, _omitFieldNames ? '' : 'seq')
@@ -4399,6 +4404,8 @@ class Event extends $pb.GeneratedMessage {
         subBuilder: JobNoticeDelivered.$_createMessage)
     ..aOM<StatusUpdated>(57, _omitFieldNames ? '' : 'statusUpdated',
         subBuilder: StatusUpdated.$_createMessage)
+    ..aOM<LongTurn>(58, _omitFieldNames ? '' : 'longTurn',
+        subBuilder: LongTurn.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -4469,6 +4476,7 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(55)
   @$pb.TagNumber(56)
   @$pb.TagNumber(57)
+  @$pb.TagNumber(58)
   Event_Payload whichPayload() => _Event_PayloadByTag[$_whichOneof(0)]!;
   @$pb.TagNumber(10)
   @$pb.TagNumber(11)
@@ -4518,6 +4526,7 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(55)
   @$pb.TagNumber(56)
   @$pb.TagNumber(57)
+  @$pb.TagNumber(58)
   void clearPayload() => $_clearField($_whichOneof(0));
 
   @$pb.TagNumber(1)
@@ -5094,6 +5103,17 @@ class Event extends $pb.GeneratedMessage {
   void clearStatusUpdated() => $_clearField(57);
   @$pb.TagNumber(57)
   StatusUpdated ensureStatusUpdated() => $_ensure(51);
+
+  @$pb.TagNumber(58)
+  LongTurn get longTurn => $_getN(52);
+  @$pb.TagNumber(58)
+  set longTurn(LongTurn value) => $_setField(58, value);
+  @$pb.TagNumber(58)
+  $core.bool hasLongTurn() => $_has(52);
+  @$pb.TagNumber(58)
+  void clearLongTurn() => $_clearField(58);
+  @$pb.TagNumber(58)
+  LongTurn ensureLongTurn() => $_ensure(52);
 }
 
 /// MessageStarted opens a message. Its text arrives as TextDelta events and
@@ -6415,6 +6435,80 @@ class JobDone extends $pb.GeneratedMessage {
   $core.bool hasCancelledBy() => $_has(6);
   @$pb.TagNumber(7)
   void clearCancelledBy() => $_clearField(7);
+}
+
+/// LongTurn says a turn has made many model calls: one every
+/// agent.long_turn_steps calls (agent.subagents.long_turn_steps for a
+/// subagent). It may be working hard, or going round in circles. Nothing is
+/// stopped; it is for the person to look in on.
+class LongTurn extends $pb.GeneratedMessage {
+  factory LongTurn({
+    $core.int? steps,
+    $core.String? subagentToolCallId,
+  }) {
+    final result = LongTurn._();
+    if (steps != null) result.steps = steps;
+    if (subagentToolCallId != null)
+      result.subagentToolCallId = subagentToolCallId;
+    return result;
+  }
+
+  LongTurn._();
+
+  factory LongTurn.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      LongTurn()..mergeFromBuffer(data, registry);
+  factory LongTurn.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      LongTurn()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'LongTurn',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: LongTurn.$_createMessage)
+    ..aI(1, _omitFieldNames ? '' : 'steps')
+    ..aOS(2, _omitFieldNames ? '' : 'subagentToolCallId')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  LongTurn clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  LongTurn copyWith(void Function(LongTurn) updates) =>
+      super.copyWith((message) => updates(message as LongTurn)) as LongTurn;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use LongTurn() / LongTurn.new instead')
+  static LongTurn create() => LongTurn._();
+  static $pb.GeneratedMessage $_createMessage() => LongTurn._();
+  @$core.override
+  LongTurn createEmptyInstance() => LongTurn._();
+  @$core.pragma('dart2js:noInline')
+  static LongTurn getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<LongTurn>(LongTurn.$_createMessage);
+  static LongTurn? _defaultInstance;
+
+  /// Model calls made so far in the turn, or by the subagent.
+  @$pb.TagNumber(1)
+  $core.int get steps => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set steps($core.int value) => $_setSignedInt32(0, value);
+  @$pb.TagNumber(1)
+  $core.bool hasSteps() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSteps() => $_clearField(1);
+
+  /// Set for a subagent: the agent tool call it runs under.
+  @$pb.TagNumber(2)
+  $core.String get subagentToolCallId => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set subagentToolCallId($core.String value) => $_setString(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasSubagentToolCallId() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearSubagentToolCallId() => $_clearField(2);
 }
 
 /// JobNoticeDelivered tells the agent that jobs job_ids ended, as user
@@ -10657,7 +10751,7 @@ class SubagentStarted extends $pb.GeneratedMessage {
   @$pb.TagNumber(6)
   void clearTask() => $_clearField(6);
 
-  /// Its step cap (agent.subagents.max_steps).
+  /// Its step cap, in logs from before subagents ran without one; 0 now.
   @$pb.TagNumber(7)
   $core.int get maxSteps => $_getIZ(6);
   @$pb.TagNumber(7)

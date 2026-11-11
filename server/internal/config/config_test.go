@@ -72,6 +72,8 @@ func TestParseErrors(t *testing.T) {
 		"compaction keep":        "agent:\n  compaction:\n    keep_turns: 100\n",
 		"compaction max":         "agent:\n  compaction:\n    max_summary_tokens: -1\n",
 		"compaction unknown":     "agent:\n  compaction:\n    ratio: 0.5\n",
+		"removed max_steps":      "agent:\n  max_steps: 50\n",
+		"removed subagent steps": "agent:\n  subagents:\n    max_steps: 20\n",
 		"negative concurrency":   "providers:\n  - {name: a, base_url: http://x, concurrency: -1}\n",
 		"negative model conc":    "providers:\n  - {name: a, base_url: http://x, models: {m: {concurrency: -1}}}\n",
 		"unknown model key":      "providers:\n  - {name: a, base_url: http://x, models: {m: {parallel: 2}}}\n",
@@ -191,7 +193,7 @@ shell:
 	if !reflect.DeepEqual(cfg.Shell.Allow, []string{"go test*"}) {
 		t.Fatalf("shell.allow = %q; a configured list must replace the default", cfg.Shell.Allow)
 	}
-	if cfg.Agent.MaxSteps != Default().Agent.MaxSteps {
+	if cfg.Agent.LongTurnSteps != Default().Agent.LongTurnSteps {
 		t.Fatalf("agent defaults not applied: %+v", cfg.Agent)
 	}
 }
@@ -423,5 +425,13 @@ func TestLearningFacts(t *testing.T) {
 		if _, err := Parse([]byte(in)); err == nil {
 			t.Errorf("accepted %q", in)
 		}
+	}
+}
+
+// The removed max_steps keys fail with a pointer to long_turn_steps.
+func TestRemovedMaxSteps(t *testing.T) {
+	_, err := Parse([]byte("agent:\n  max_steps: 50\n"))
+	if err == nil || !strings.Contains(err.Error(), "long_turn_steps") {
+		t.Fatalf("err = %v", err)
 	}
 }

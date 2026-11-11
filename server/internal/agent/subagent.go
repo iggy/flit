@@ -25,10 +25,6 @@ When you're done, reply with only your report for the agent: what you found, wit
 	buildPrompt = `You are a subagent of a coding agent. Do the task below in the working directory with your tools. Look before you change anything; prefer patch for edits. Shell commands may need the user's approval; if one is denied, don't retry it unchanged.
 
 When you're done, reply with only your report for the agent: what you changed (files), how you checked it, and anything left undone. Be concise.`
-
-	// stepLimitNote is sent when a subagent hits its step cap; it then
-	// gets one more call, without tools, to write its report.
-	stepLimitNote = "You have used all your steps. Stop now and write your report: what you found or did, and what is left undone."
 )
 
 // subagentKind reads the agent tool's kind argument.
@@ -114,8 +110,9 @@ func (r *subagentRun) append(ev *flitv1.Event) error {
 }
 
 // runSubagent runs the agent tool call callID: a one-shot subagent with a
-// fresh context that works until it answers without tool calls, hits
-// agent.subagents.max_steps, or ctx ends. Its report is the tool result.
+// fresh context that works until it answers without tool calls or ctx
+// ends; every agent.subagents.long_turn_steps model calls the person is told
+// it is running long. Its report is the tool result.
 // The error is only for an event log that can't be written.
 func (s *session) runSubagent(ctx context.Context, turnID, callID string, raw json.RawMessage) (tools.Result, error) {
 	args, err := tools.DecodeAgentArgs(raw)
@@ -132,10 +129,9 @@ func (s *session) runSubagent(ctx context.Context, turnID, callID string, raw js
 
 	cfg, info := s.m.cfg(), s.snapshot()
 	task := subagentModel(cfg, info, args.Kind)
-	maxSteps := cfg.Agent.Subagents.MaxSteps
 	if _, err := s.append(&flitv1.Event{Payload: &flitv1.Event_SubagentStarted{SubagentStarted: &flitv1.SubagentStarted{
 		ToolCallId: callID, Kind: kind, Provider: task.Provider, Model: task.Model, Effort: task.Effort,
-		Task: args.Task, MaxSteps: int32(maxSteps),
+		Task: args.Task,
 	}}}); err != nil {
 		return tools.Result{}, err
 	}
@@ -180,19 +176,14 @@ func (s *session) runSubagent(ctx context.Context, turnID, callID string, raw js
 	}
 	report := ""
 	for step := 0; ; step++ {
-		last := step >= maxSteps
-		if last {
-			if err := r.appendUser(stepLimitNote); err != nil {
-				return tools.Result{}, err
-			}
-		}
 		cfg = s.m.cfg()
+		if err := s.noteLongTurn(cfg.Agent.Subagents.LongTurnSteps, step, callID); err != nil {
+			return tools.Result{}, err
+		}
 		req := llm.Request{
 			Model:    task.Model,
 			Messages: append([]llm.Message{{Role: "system", Content: system}}, buildMessages(r.events)...),
-		}
-		if !last {
-			req.Tools = tools.Definitions(set)
+			Tools:    tools.Definitions(set),
 		}
 		s.m.applyReasoning(&req, task.Provider, task.Model, task.Effort)
 		client := &llm.Client{
@@ -214,11 +205,8 @@ func (s *session) runSubagent(ctx context.Context, turnID, callID string, raw js
 			return fail(err.Error())
 		}
 		report = strings.TrimSpace(res.Text)
-		if last || len(res.ToolCalls) == 0 {
+		if len(res.ToolCalls) == 0 {
 			done.Outcome = flitv1.SubagentOutcome_SUBAGENT_OUTCOME_DONE
-			if last {
-				done.Outcome = flitv1.SubagentOutcome_SUBAGENT_OUTCOME_STEP_LIMIT
-			}
 			break
 		}
 		for _, tc := range res.ToolCalls {
@@ -246,9 +234,6 @@ func (s *session) runSubagent(ctx context.Context, turnID, callID string, raw js
 	}
 	if report == "" {
 		report = "(the subagent finished without a report)"
-	}
-	if done.Outcome == flitv1.SubagentOutcome_SUBAGENT_OUTCOME_STEP_LIMIT {
-		report = fmt.Sprintf("[stopped at its step limit (%d model calls)]\n%s", maxSteps, report)
 	}
 	done.Report = report
 	return finish(tools.Result{Text: report})

@@ -355,7 +355,8 @@ See [docs/webhooks.md](docs/webhooks.md).
 
 ### Notifications (ntfy)
 
-Get cron and webhook results on your phone even when the app is closed:
+Get cron and webhook results, and turns that run long, on your phone even
+when the app is closed:
 
 ```yaml
 notify:

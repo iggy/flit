@@ -850,3 +850,22 @@ final class FlitJobNoticeDelivered extends FlitEvent {
   final List<String> jobIds;
   final String messageId;
 }
+
+/// The turn has made [steps] model calls (a multiple of the server's
+/// agent.long_turn_steps): it may be working hard, or looping. Nothing was
+/// stopped. With [subagentToolCallId] it is the subagent under that agent
+/// tool call that has.
+final class FlitLongTurn extends FlitEvent {
+  const FlitLongTurn({
+    required super.seq,
+    required this.steps,
+    this.subagentToolCallId = '',
+    super.time,
+    super.branchId,
+  });
+
+  final int steps;
+  final String subagentToolCallId;
+
+  bool get subagent => subagentToolCallId.isNotEmpty;
+}

@@ -31,6 +31,7 @@ import (
 	"github.com/iggy/flit/server/internal/lsp"
 	"github.com/iggy/flit/server/internal/mcpclient"
 	"github.com/iggy/flit/server/internal/models"
+	"github.com/iggy/flit/server/internal/notify"
 	"github.com/iggy/flit/server/internal/roles"
 	"github.com/iggy/flit/server/internal/skills"
 	"github.com/iggy/flit/server/internal/store"
@@ -81,6 +82,9 @@ type Manager struct {
 	DataDir string
 	// LSP, if set, checks files the edit tools change. Set before use.
 	LSP *lsp.Manager
+	// Notify, if set, sends notifications worth sending when no app may
+	// be watching (a turn running long). Set before use.
+	Notify func(context.Context, notify.Message)
 
 	// facts learns environment facts from finished turns.
 	facts *facts.Service

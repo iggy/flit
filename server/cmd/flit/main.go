@@ -298,6 +298,7 @@ func serve(ctx context.Context, stderr io.Writer, configPath, dataDirFlag string
 	}
 
 	ntfy := &notify.Ntfy{Config: current, Log: log}
+	sessions.Notify = func(ctx context.Context, m notify.Message) { _ = ntfy.Send(ctx, m) }
 	crons := &scheduler.Scheduler{
 		M: sessions, Store: st, CronsDir: func() string { return relToConfig(current().CronsDir) }, DataDir: dataDir, Log: log,
 		Notify: func(ctx context.Context, m notify.Message) { _ = ntfy.Send(ctx, m) },

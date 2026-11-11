@@ -748,6 +748,14 @@ FlitEvent eventFromProto(pb.Event e) {
         jobIds: List<String>.of(e.jobNoticeDelivered.jobIds),
         messageId: e.jobNoticeDelivered.messageId,
       );
+    case pb.Event_Payload.longTurn:
+      return FlitLongTurn(
+        seq: seq,
+        time: time,
+        branchId: branch,
+        steps: e.longTurn.steps,
+        subagentToolCallId: e.longTurn.subagentToolCallId,
+      );
     case pb.Event_Payload.promptCache:
     // Which cron job started the session; the app shows that from
     // FlitSession.cronJob instead.
