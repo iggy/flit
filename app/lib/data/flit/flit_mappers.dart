@@ -103,6 +103,19 @@ FlitCronJob cronJobFromProto(pb.CronJob j) {
     lastRun: j.hasLastRun() ? cronRunFromProto(j.lastRun) : null,
     error: j.error,
     runningSessionId: j.runningSessionId,
+    precheck: j.precheck,
+    precheckTimeout: Duration(seconds: j.precheckTimeoutSeconds.toInt()),
+    precheckRecord: j.precheckRecord,
+    lastPrecheck: j.hasLastPrecheck()
+        ? FlitCronPrecheck(
+            at: j.lastPrecheck.hasTime()
+                ? j.lastPrecheck.time.toDateTime()
+                : null,
+            passed: j.lastPrecheck.passed,
+            exitCode: j.lastPrecheck.exitCode,
+            output: j.lastPrecheck.output,
+          )
+        : null,
   );
 }
 

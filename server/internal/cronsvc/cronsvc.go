@@ -106,6 +106,15 @@ func JobProto(st scheduler.JobStatus) *flitv1.CronJob {
 	if st.Running != nil {
 		p.RunningSessionId = st.Running.SessionID
 	}
+	if j.Precheck != "" {
+		p.Precheck, p.PrecheckRecord = j.Precheck, j.PrecheckRecord
+		p.PrecheckTimeoutSeconds = int64(j.PrecheckWaitFor() / time.Second)
+	}
+	if c := st.LastPrecheck; c != nil {
+		p.LastPrecheck = &flitv1.CronPrecheck{
+			Time: ts(c.At), Passed: c.Passed, ExitCode: int32(c.ExitCode), Output: c.Output,
+		}
+	}
 	return p
 }
 

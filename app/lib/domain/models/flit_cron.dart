@@ -15,7 +15,7 @@ enum FlitCronRunState {
   /// Could not start, or its turn ended in an error.
   failed,
 
-  /// Not run: the previous run was still going.
+  /// Not run: the previous run was still going, or the precheck said no.
   skipped,
 
   unknown,
@@ -71,6 +71,28 @@ final class FlitCronRun {
   };
 }
 
+/// How a job's precheck went (flit.v1 `CronPrecheck`).
+final class FlitCronPrecheck {
+  const FlitCronPrecheck({
+    required this.passed,
+    this.at,
+    this.exitCode = 0,
+    this.output = '',
+  });
+
+  final DateTime? at;
+
+  /// Exit 0: the run went ahead.
+  final bool passed;
+
+  /// -1 when the command didn't exit on its own (timed out, couldn't
+  /// start).
+  final int exitCode;
+
+  /// The end of its output, or why it couldn't run.
+  final String output;
+}
+
 /// A cron job (one job file on the server).
 final class FlitCronJob {
   const FlitCronJob({
@@ -94,6 +116,10 @@ final class FlitCronJob {
     this.lastRun,
     this.error = '',
     this.runningSessionId = '',
+    this.precheck = '',
+    this.precheckTimeout = Duration.zero,
+    this.precheckRecord = false,
+    this.lastPrecheck,
   });
 
   /// The file name without .md.
@@ -131,6 +157,17 @@ final class FlitCronJob {
 
   /// Set while a run is going.
   final String runningSessionId;
+
+  /// A shell command run before each scheduled run; a non-zero exit skips
+  /// the run without starting the model. Empty means none.
+  final String precheck;
+  final Duration precheckTimeout;
+
+  /// Whether a skip by the precheck is recorded as a skipped run.
+  final bool precheckRecord;
+
+  /// The latest precheck since the server started, if any.
+  final FlitCronPrecheck? lastPrecheck;
 
   bool get isRunning => runningSessionId.isNotEmpty;
 }

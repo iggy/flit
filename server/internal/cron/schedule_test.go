@@ -158,8 +158,16 @@ func TestParseJob(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if j.Ask != AskDeny || j.AskWaitFor() != time.Hour || j.CatchUpWindow() != time.Hour || j.Keep() != 50 {
+	if j.Ask != AskDeny || j.AskWaitFor() != time.Hour || j.CatchUpWindow() != time.Hour || j.Keep() != 50 ||
+		j.Precheck != "" || j.PrecheckWaitFor() != time.Minute || j.PrecheckRecord {
 		t.Errorf("defaults %+v", j)
+	}
+	j, err = Parse([]byte("---\nschedule: every 1h\nprecheck: |\n  git fetch -q\n  test -n \"$(git log HEAD..@{u})\"\nprecheck_timeout: 30s\nprecheck_record: true\n---\nHi\n"), now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if j.Precheck != "git fetch -q\ntest -n \"$(git log HEAD..@{u})\"" || j.PrecheckWaitFor() != 30*time.Second || !j.PrecheckRecord {
+		t.Errorf("precheck %+v", j)
 	}
 
 	for _, tc := range []struct{ file, err string }{
@@ -176,6 +184,9 @@ func TestParseJob(t *testing.T) {
 		{"---\nschedule: daily at 9\nmodel: {provider: x, model: y, temp: 1}\n---\nx", "field temp not found"},
 		{"---\nschedule: daily at 9\ncatch_up: 5\n---\nx", "missing unit"},
 		{"---\nschedule: daily at 9\ncatch_up: soon\n---\nx", "invalid duration"},
+		{"---\nschedule: daily at 9\nprecheck_record: true\n---\nx", "need a precheck"},
+		{"---\nschedule: daily at 9\nprecheck_timeout: 1m\n---\nx", "need a precheck"},
+		{"---\nschedule: daily at 9\nprecheck: \"true\"\nprecheck_timeout: 0\n---\nx", "more than 0"},
 	} {
 		_, err := Parse([]byte(tc.file), now)
 		if err == nil || !strings.Contains(err.Error(), tc.err) {
@@ -206,6 +217,13 @@ func TestListWriteSetEnabled(t *testing.T) {
 	m := jobs[1]
 	if m.Prompt != "Look at # things.\n\n---\nmore" || m.Model.Model != "m: x" || m.Project != "flit" {
 		t.Errorf("round trip: %+v", m)
+	}
+	// The precheck survives a rewrite (the cron tool's edit), multi-line
+	// and with YAML-special characters.
+	pre := loadSpec(t, dir, Spec{Schedule: "every 1h", Prompt: "x", Precheck: "test -f 'a b' # c\n[ -n \"$X\" ]: ok", PrecheckTimeout: "45s", PrecheckRecord: true})
+	if again := Format(SpecOf(pre)); string(again) != string(Format(Spec{Schedule: "every 1h", Prompt: "x", Precheck: pre.Precheck, PrecheckTimeout: "45s", PrecheckRecord: true})) ||
+		pre.Precheck != "test -f 'a b' # c\n[ -n \"$X\" ]: ok" || pre.PrecheckWaitFor() != 45*time.Second || !pre.PrecheckRecord {
+		t.Errorf("precheck round trip: %+v\n%s", pre, again)
 	}
 
 	// SetEnabled keeps comments and adds or replaces the line.
@@ -265,4 +283,21 @@ func TestFinishOneShotPinsIn(t *testing.T) {
 	if j := Load(path); j.Schedule != "at 2026-10-22 09:00" || j.IsEnabled() {
 		t.Fatalf("at: %+v", j)
 	}
+}
+
+// loadSpec writes spec as job "pre" in dir and loads it back.
+func loadSpec(t *testing.T, dir string, spec Spec) Job {
+	t.Helper()
+	path, err := Write(dir, "pre", Format(spec))
+	if err != nil {
+		t.Fatal(err)
+	}
+	j := Load(path)
+	if j.Err != nil {
+		t.Fatalf("%v\n%s", j.Err, Format(spec))
+	}
+	if err := Remove(dir, "pre"); err != nil {
+		t.Fatal(err)
+	}
+	return j
 }

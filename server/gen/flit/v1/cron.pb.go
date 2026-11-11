@@ -85,7 +85,8 @@ const (
 	CronRunState_CRON_RUN_STATE_NEEDS_ATTENTION CronRunState = 3
 	// The run could not start or its turn ended in an error.
 	CronRunState_CRON_RUN_STATE_FAILED CronRunState = 4
-	// Not run: the previous run was still going.
+	// Not run: the previous run was still going, or the precheck said no
+	// (with precheck_record).
 	CronRunState_CRON_RUN_STATE_SKIPPED CronRunState = 5
 )
 
@@ -229,8 +230,17 @@ type CronJob struct {
 	Error string `protobuf:"bytes,21,opt,name=error,proto3" json:"error,omitempty"`
 	// Set while a run is going: its session.
 	RunningSessionId string `protobuf:"bytes,22,opt,name=running_session_id,json=runningSessionId,proto3" json:"running_session_id,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// A shell command run in the working directory before each scheduled or
+	// catch-up run (not manual ones); a non-zero exit skips the run without
+	// starting the model. Empty means no precheck.
+	Precheck               string `protobuf:"bytes,23,opt,name=precheck,proto3" json:"precheck,omitempty"`
+	PrecheckTimeoutSeconds int64  `protobuf:"varint,24,opt,name=precheck_timeout_seconds,json=precheckTimeoutSeconds,proto3" json:"precheck_timeout_seconds,omitempty"`
+	// Whether a skip by the precheck is recorded as a skipped run.
+	PrecheckRecord bool `protobuf:"varint,25,opt,name=precheck_record,json=precheckRecord,proto3" json:"precheck_record,omitempty"`
+	// The latest precheck since the server started, if any.
+	LastPrecheck  *CronPrecheck `protobuf:"bytes,26,opt,name=last_precheck,json=lastPrecheck,proto3" json:"last_precheck,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CronJob) Reset() {
@@ -417,6 +427,106 @@ func (x *CronJob) GetRunningSessionId() string {
 	return ""
 }
 
+func (x *CronJob) GetPrecheck() string {
+	if x != nil {
+		return x.Precheck
+	}
+	return ""
+}
+
+func (x *CronJob) GetPrecheckTimeoutSeconds() int64 {
+	if x != nil {
+		return x.PrecheckTimeoutSeconds
+	}
+	return 0
+}
+
+func (x *CronJob) GetPrecheckRecord() bool {
+	if x != nil {
+		return x.PrecheckRecord
+	}
+	return false
+}
+
+func (x *CronJob) GetLastPrecheck() *CronPrecheck {
+	if x != nil {
+		return x.LastPrecheck
+	}
+	return nil
+}
+
+// CronPrecheck is how a job's precheck went.
+type CronPrecheck struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Time  *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=time,proto3" json:"time,omitempty"`
+	// Exit 0: the run went ahead.
+	Passed bool `protobuf:"varint,2,opt,name=passed,proto3" json:"passed,omitempty"`
+	// -1 when the command didn't exit on its own (timed out, couldn't start).
+	ExitCode int32 `protobuf:"varint,3,opt,name=exit_code,json=exitCode,proto3" json:"exit_code,omitempty"`
+	// The end of its output, or why it couldn't run.
+	Output        string `protobuf:"bytes,4,opt,name=output,proto3" json:"output,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CronPrecheck) Reset() {
+	*x = CronPrecheck{}
+	mi := &file_flit_v1_cron_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CronPrecheck) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CronPrecheck) ProtoMessage() {}
+
+func (x *CronPrecheck) ProtoReflect() protoreflect.Message {
+	mi := &file_flit_v1_cron_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CronPrecheck.ProtoReflect.Descriptor instead.
+func (*CronPrecheck) Descriptor() ([]byte, []int) {
+	return file_flit_v1_cron_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *CronPrecheck) GetTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.Time
+	}
+	return nil
+}
+
+func (x *CronPrecheck) GetPassed() bool {
+	if x != nil {
+		return x.Passed
+	}
+	return false
+}
+
+func (x *CronPrecheck) GetExitCode() int32 {
+	if x != nil {
+		return x.ExitCode
+	}
+	return 0
+}
+
+func (x *CronPrecheck) GetOutput() string {
+	if x != nil {
+		return x.Output
+	}
+	return ""
+}
+
 type CronRun struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Id    string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -443,7 +553,7 @@ type CronRun struct {
 
 func (x *CronRun) Reset() {
 	*x = CronRun{}
-	mi := &file_flit_v1_cron_proto_msgTypes[1]
+	mi := &file_flit_v1_cron_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -455,7 +565,7 @@ func (x *CronRun) String() string {
 func (*CronRun) ProtoMessage() {}
 
 func (x *CronRun) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_cron_proto_msgTypes[1]
+	mi := &file_flit_v1_cron_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -468,7 +578,7 @@ func (x *CronRun) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CronRun.ProtoReflect.Descriptor instead.
 func (*CronRun) Descriptor() ([]byte, []int) {
-	return file_flit_v1_cron_proto_rawDescGZIP(), []int{1}
+	return file_flit_v1_cron_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *CronRun) GetId() string {
@@ -556,7 +666,7 @@ type ListCronJobsRequest struct {
 
 func (x *ListCronJobsRequest) Reset() {
 	*x = ListCronJobsRequest{}
-	mi := &file_flit_v1_cron_proto_msgTypes[2]
+	mi := &file_flit_v1_cron_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -568,7 +678,7 @@ func (x *ListCronJobsRequest) String() string {
 func (*ListCronJobsRequest) ProtoMessage() {}
 
 func (x *ListCronJobsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_cron_proto_msgTypes[2]
+	mi := &file_flit_v1_cron_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -581,7 +691,7 @@ func (x *ListCronJobsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListCronJobsRequest.ProtoReflect.Descriptor instead.
 func (*ListCronJobsRequest) Descriptor() ([]byte, []int) {
-	return file_flit_v1_cron_proto_rawDescGZIP(), []int{2}
+	return file_flit_v1_cron_proto_rawDescGZIP(), []int{3}
 }
 
 type ListCronJobsResponse struct {
@@ -596,7 +706,7 @@ type ListCronJobsResponse struct {
 
 func (x *ListCronJobsResponse) Reset() {
 	*x = ListCronJobsResponse{}
-	mi := &file_flit_v1_cron_proto_msgTypes[3]
+	mi := &file_flit_v1_cron_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -608,7 +718,7 @@ func (x *ListCronJobsResponse) String() string {
 func (*ListCronJobsResponse) ProtoMessage() {}
 
 func (x *ListCronJobsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_cron_proto_msgTypes[3]
+	mi := &file_flit_v1_cron_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -621,7 +731,7 @@ func (x *ListCronJobsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListCronJobsResponse.ProtoReflect.Descriptor instead.
 func (*ListCronJobsResponse) Descriptor() ([]byte, []int) {
-	return file_flit_v1_cron_proto_rawDescGZIP(), []int{3}
+	return file_flit_v1_cron_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ListCronJobsResponse) GetJobs() []*CronJob {
@@ -647,7 +757,7 @@ type GetCronJobRequest struct {
 
 func (x *GetCronJobRequest) Reset() {
 	*x = GetCronJobRequest{}
-	mi := &file_flit_v1_cron_proto_msgTypes[4]
+	mi := &file_flit_v1_cron_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -659,7 +769,7 @@ func (x *GetCronJobRequest) String() string {
 func (*GetCronJobRequest) ProtoMessage() {}
 
 func (x *GetCronJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_cron_proto_msgTypes[4]
+	mi := &file_flit_v1_cron_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -672,7 +782,7 @@ func (x *GetCronJobRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCronJobRequest.ProtoReflect.Descriptor instead.
 func (*GetCronJobRequest) Descriptor() ([]byte, []int) {
-	return file_flit_v1_cron_proto_rawDescGZIP(), []int{4}
+	return file_flit_v1_cron_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GetCronJobRequest) GetName() string {
@@ -691,7 +801,7 @@ type GetCronJobResponse struct {
 
 func (x *GetCronJobResponse) Reset() {
 	*x = GetCronJobResponse{}
-	mi := &file_flit_v1_cron_proto_msgTypes[5]
+	mi := &file_flit_v1_cron_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -703,7 +813,7 @@ func (x *GetCronJobResponse) String() string {
 func (*GetCronJobResponse) ProtoMessage() {}
 
 func (x *GetCronJobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_cron_proto_msgTypes[5]
+	mi := &file_flit_v1_cron_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -716,7 +826,7 @@ func (x *GetCronJobResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCronJobResponse.ProtoReflect.Descriptor instead.
 func (*GetCronJobResponse) Descriptor() ([]byte, []int) {
-	return file_flit_v1_cron_proto_rawDescGZIP(), []int{5}
+	return file_flit_v1_cron_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *GetCronJobResponse) GetJob() *CronJob {
@@ -735,7 +845,7 @@ type RunCronJobRequest struct {
 
 func (x *RunCronJobRequest) Reset() {
 	*x = RunCronJobRequest{}
-	mi := &file_flit_v1_cron_proto_msgTypes[6]
+	mi := &file_flit_v1_cron_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -747,7 +857,7 @@ func (x *RunCronJobRequest) String() string {
 func (*RunCronJobRequest) ProtoMessage() {}
 
 func (x *RunCronJobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_cron_proto_msgTypes[6]
+	mi := &file_flit_v1_cron_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -760,7 +870,7 @@ func (x *RunCronJobRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RunCronJobRequest.ProtoReflect.Descriptor instead.
 func (*RunCronJobRequest) Descriptor() ([]byte, []int) {
-	return file_flit_v1_cron_proto_rawDescGZIP(), []int{6}
+	return file_flit_v1_cron_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *RunCronJobRequest) GetName() string {
@@ -779,7 +889,7 @@ type RunCronJobResponse struct {
 
 func (x *RunCronJobResponse) Reset() {
 	*x = RunCronJobResponse{}
-	mi := &file_flit_v1_cron_proto_msgTypes[7]
+	mi := &file_flit_v1_cron_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -791,7 +901,7 @@ func (x *RunCronJobResponse) String() string {
 func (*RunCronJobResponse) ProtoMessage() {}
 
 func (x *RunCronJobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_cron_proto_msgTypes[7]
+	mi := &file_flit_v1_cron_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -804,7 +914,7 @@ func (x *RunCronJobResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RunCronJobResponse.ProtoReflect.Descriptor instead.
 func (*RunCronJobResponse) Descriptor() ([]byte, []int) {
-	return file_flit_v1_cron_proto_rawDescGZIP(), []int{7}
+	return file_flit_v1_cron_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *RunCronJobResponse) GetRun() *CronRun {
@@ -824,7 +934,7 @@ type SetCronJobEnabledRequest struct {
 
 func (x *SetCronJobEnabledRequest) Reset() {
 	*x = SetCronJobEnabledRequest{}
-	mi := &file_flit_v1_cron_proto_msgTypes[8]
+	mi := &file_flit_v1_cron_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -836,7 +946,7 @@ func (x *SetCronJobEnabledRequest) String() string {
 func (*SetCronJobEnabledRequest) ProtoMessage() {}
 
 func (x *SetCronJobEnabledRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_cron_proto_msgTypes[8]
+	mi := &file_flit_v1_cron_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -849,7 +959,7 @@ func (x *SetCronJobEnabledRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetCronJobEnabledRequest.ProtoReflect.Descriptor instead.
 func (*SetCronJobEnabledRequest) Descriptor() ([]byte, []int) {
-	return file_flit_v1_cron_proto_rawDescGZIP(), []int{8}
+	return file_flit_v1_cron_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *SetCronJobEnabledRequest) GetName() string {
@@ -875,7 +985,7 @@ type SetCronJobEnabledResponse struct {
 
 func (x *SetCronJobEnabledResponse) Reset() {
 	*x = SetCronJobEnabledResponse{}
-	mi := &file_flit_v1_cron_proto_msgTypes[9]
+	mi := &file_flit_v1_cron_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -887,7 +997,7 @@ func (x *SetCronJobEnabledResponse) String() string {
 func (*SetCronJobEnabledResponse) ProtoMessage() {}
 
 func (x *SetCronJobEnabledResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_cron_proto_msgTypes[9]
+	mi := &file_flit_v1_cron_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -900,7 +1010,7 @@ func (x *SetCronJobEnabledResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetCronJobEnabledResponse.ProtoReflect.Descriptor instead.
 func (*SetCronJobEnabledResponse) Descriptor() ([]byte, []int) {
-	return file_flit_v1_cron_proto_rawDescGZIP(), []int{9}
+	return file_flit_v1_cron_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *SetCronJobEnabledResponse) GetJob() *CronJob {
@@ -924,7 +1034,7 @@ type ListCronRunsRequest struct {
 
 func (x *ListCronRunsRequest) Reset() {
 	*x = ListCronRunsRequest{}
-	mi := &file_flit_v1_cron_proto_msgTypes[10]
+	mi := &file_flit_v1_cron_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -936,7 +1046,7 @@ func (x *ListCronRunsRequest) String() string {
 func (*ListCronRunsRequest) ProtoMessage() {}
 
 func (x *ListCronRunsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_cron_proto_msgTypes[10]
+	mi := &file_flit_v1_cron_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -949,7 +1059,7 @@ func (x *ListCronRunsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListCronRunsRequest.ProtoReflect.Descriptor instead.
 func (*ListCronRunsRequest) Descriptor() ([]byte, []int) {
-	return file_flit_v1_cron_proto_rawDescGZIP(), []int{10}
+	return file_flit_v1_cron_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ListCronRunsRequest) GetName() string {
@@ -983,7 +1093,7 @@ type ListCronRunsResponse struct {
 
 func (x *ListCronRunsResponse) Reset() {
 	*x = ListCronRunsResponse{}
-	mi := &file_flit_v1_cron_proto_msgTypes[11]
+	mi := &file_flit_v1_cron_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -995,7 +1105,7 @@ func (x *ListCronRunsResponse) String() string {
 func (*ListCronRunsResponse) ProtoMessage() {}
 
 func (x *ListCronRunsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_flit_v1_cron_proto_msgTypes[11]
+	mi := &file_flit_v1_cron_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1008,7 +1118,7 @@ func (x *ListCronRunsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListCronRunsResponse.ProtoReflect.Descriptor instead.
 func (*ListCronRunsResponse) Descriptor() ([]byte, []int) {
-	return file_flit_v1_cron_proto_rawDescGZIP(), []int{11}
+	return file_flit_v1_cron_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *ListCronRunsResponse) GetRuns() []*CronRun {
@@ -1029,7 +1139,7 @@ var File_flit_v1_cron_proto protoreflect.FileDescriptor
 
 const file_flit_v1_cron_proto_rawDesc = "" +
 	"\n" +
-	"\x12flit/v1/cron.proto\x12\aflit.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xa6\x05\n" +
+	"\x12flit/v1/cron.proto\x12\aflit.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xe1\x06\n" +
 	"\aCronJob\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\bschedule\x18\x02 \x01(\tR\bschedule\x12#\n" +
@@ -1054,7 +1164,16 @@ const file_flit_v1_cron_proto_rawDesc = "" +
 	"\rnext_run_time\x18\x13 \x01(\v2\x1a.google.protobuf.TimestampR\vnextRunTime\x12+\n" +
 	"\blast_run\x18\x14 \x01(\v2\x10.flit.v1.CronRunR\alastRun\x12\x14\n" +
 	"\x05error\x18\x15 \x01(\tR\x05error\x12,\n" +
-	"\x12running_session_id\x18\x16 \x01(\tR\x10runningSessionId\"\xbd\x03\n" +
+	"\x12running_session_id\x18\x16 \x01(\tR\x10runningSessionId\x12\x1a\n" +
+	"\bprecheck\x18\x17 \x01(\tR\bprecheck\x128\n" +
+	"\x18precheck_timeout_seconds\x18\x18 \x01(\x03R\x16precheckTimeoutSeconds\x12'\n" +
+	"\x0fprecheck_record\x18\x19 \x01(\bR\x0eprecheckRecord\x12:\n" +
+	"\rlast_precheck\x18\x1a \x01(\v2\x15.flit.v1.CronPrecheckR\flastPrecheck\"\x8b\x01\n" +
+	"\fCronPrecheck\x12.\n" +
+	"\x04time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\x04time\x12\x16\n" +
+	"\x06passed\x18\x02 \x01(\bR\x06passed\x12\x1b\n" +
+	"\texit_code\x18\x03 \x01(\x05R\bexitCode\x12\x16\n" +
+	"\x06output\x18\x04 \x01(\tR\x06output\"\xbd\x03\n" +
 	"\aCronRun\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x10\n" +
 	"\x03job\x18\x02 \x01(\tR\x03job\x12\x1d\n" +
@@ -1134,54 +1253,57 @@ func file_flit_v1_cron_proto_rawDescGZIP() []byte {
 }
 
 var file_flit_v1_cron_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_flit_v1_cron_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_flit_v1_cron_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_flit_v1_cron_proto_goTypes = []any{
 	(CronAsk)(0),                      // 0: flit.v1.CronAsk
 	(CronRunState)(0),                 // 1: flit.v1.CronRunState
 	(CronTrigger)(0),                  // 2: flit.v1.CronTrigger
 	(*CronJob)(nil),                   // 3: flit.v1.CronJob
-	(*CronRun)(nil),                   // 4: flit.v1.CronRun
-	(*ListCronJobsRequest)(nil),       // 5: flit.v1.ListCronJobsRequest
-	(*ListCronJobsResponse)(nil),      // 6: flit.v1.ListCronJobsResponse
-	(*GetCronJobRequest)(nil),         // 7: flit.v1.GetCronJobRequest
-	(*GetCronJobResponse)(nil),        // 8: flit.v1.GetCronJobResponse
-	(*RunCronJobRequest)(nil),         // 9: flit.v1.RunCronJobRequest
-	(*RunCronJobResponse)(nil),        // 10: flit.v1.RunCronJobResponse
-	(*SetCronJobEnabledRequest)(nil),  // 11: flit.v1.SetCronJobEnabledRequest
-	(*SetCronJobEnabledResponse)(nil), // 12: flit.v1.SetCronJobEnabledResponse
-	(*ListCronRunsRequest)(nil),       // 13: flit.v1.ListCronRunsRequest
-	(*ListCronRunsResponse)(nil),      // 14: flit.v1.ListCronRunsResponse
-	(*timestamppb.Timestamp)(nil),     // 15: google.protobuf.Timestamp
+	(*CronPrecheck)(nil),              // 4: flit.v1.CronPrecheck
+	(*CronRun)(nil),                   // 5: flit.v1.CronRun
+	(*ListCronJobsRequest)(nil),       // 6: flit.v1.ListCronJobsRequest
+	(*ListCronJobsResponse)(nil),      // 7: flit.v1.ListCronJobsResponse
+	(*GetCronJobRequest)(nil),         // 8: flit.v1.GetCronJobRequest
+	(*GetCronJobResponse)(nil),        // 9: flit.v1.GetCronJobResponse
+	(*RunCronJobRequest)(nil),         // 10: flit.v1.RunCronJobRequest
+	(*RunCronJobResponse)(nil),        // 11: flit.v1.RunCronJobResponse
+	(*SetCronJobEnabledRequest)(nil),  // 12: flit.v1.SetCronJobEnabledRequest
+	(*SetCronJobEnabledResponse)(nil), // 13: flit.v1.SetCronJobEnabledResponse
+	(*ListCronRunsRequest)(nil),       // 14: flit.v1.ListCronRunsRequest
+	(*ListCronRunsResponse)(nil),      // 15: flit.v1.ListCronRunsResponse
+	(*timestamppb.Timestamp)(nil),     // 16: google.protobuf.Timestamp
 }
 var file_flit_v1_cron_proto_depIdxs = []int32{
 	0,  // 0: flit.v1.CronJob.ask:type_name -> flit.v1.CronAsk
-	15, // 1: flit.v1.CronJob.next_run_time:type_name -> google.protobuf.Timestamp
-	4,  // 2: flit.v1.CronJob.last_run:type_name -> flit.v1.CronRun
-	1,  // 3: flit.v1.CronRun.state:type_name -> flit.v1.CronRunState
-	2,  // 4: flit.v1.CronRun.trigger:type_name -> flit.v1.CronTrigger
-	15, // 5: flit.v1.CronRun.scheduled_time:type_name -> google.protobuf.Timestamp
-	15, // 6: flit.v1.CronRun.start_time:type_name -> google.protobuf.Timestamp
-	15, // 7: flit.v1.CronRun.finish_time:type_name -> google.protobuf.Timestamp
-	3,  // 8: flit.v1.ListCronJobsResponse.jobs:type_name -> flit.v1.CronJob
-	3,  // 9: flit.v1.GetCronJobResponse.job:type_name -> flit.v1.CronJob
-	4,  // 10: flit.v1.RunCronJobResponse.run:type_name -> flit.v1.CronRun
-	3,  // 11: flit.v1.SetCronJobEnabledResponse.job:type_name -> flit.v1.CronJob
-	4,  // 12: flit.v1.ListCronRunsResponse.runs:type_name -> flit.v1.CronRun
-	5,  // 13: flit.v1.CronService.ListCronJobs:input_type -> flit.v1.ListCronJobsRequest
-	7,  // 14: flit.v1.CronService.GetCronJob:input_type -> flit.v1.GetCronJobRequest
-	9,  // 15: flit.v1.CronService.RunCronJob:input_type -> flit.v1.RunCronJobRequest
-	11, // 16: flit.v1.CronService.SetCronJobEnabled:input_type -> flit.v1.SetCronJobEnabledRequest
-	13, // 17: flit.v1.CronService.ListCronRuns:input_type -> flit.v1.ListCronRunsRequest
-	6,  // 18: flit.v1.CronService.ListCronJobs:output_type -> flit.v1.ListCronJobsResponse
-	8,  // 19: flit.v1.CronService.GetCronJob:output_type -> flit.v1.GetCronJobResponse
-	10, // 20: flit.v1.CronService.RunCronJob:output_type -> flit.v1.RunCronJobResponse
-	12, // 21: flit.v1.CronService.SetCronJobEnabled:output_type -> flit.v1.SetCronJobEnabledResponse
-	14, // 22: flit.v1.CronService.ListCronRuns:output_type -> flit.v1.ListCronRunsResponse
-	18, // [18:23] is the sub-list for method output_type
-	13, // [13:18] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	16, // 1: flit.v1.CronJob.next_run_time:type_name -> google.protobuf.Timestamp
+	5,  // 2: flit.v1.CronJob.last_run:type_name -> flit.v1.CronRun
+	4,  // 3: flit.v1.CronJob.last_precheck:type_name -> flit.v1.CronPrecheck
+	16, // 4: flit.v1.CronPrecheck.time:type_name -> google.protobuf.Timestamp
+	1,  // 5: flit.v1.CronRun.state:type_name -> flit.v1.CronRunState
+	2,  // 6: flit.v1.CronRun.trigger:type_name -> flit.v1.CronTrigger
+	16, // 7: flit.v1.CronRun.scheduled_time:type_name -> google.protobuf.Timestamp
+	16, // 8: flit.v1.CronRun.start_time:type_name -> google.protobuf.Timestamp
+	16, // 9: flit.v1.CronRun.finish_time:type_name -> google.protobuf.Timestamp
+	3,  // 10: flit.v1.ListCronJobsResponse.jobs:type_name -> flit.v1.CronJob
+	3,  // 11: flit.v1.GetCronJobResponse.job:type_name -> flit.v1.CronJob
+	5,  // 12: flit.v1.RunCronJobResponse.run:type_name -> flit.v1.CronRun
+	3,  // 13: flit.v1.SetCronJobEnabledResponse.job:type_name -> flit.v1.CronJob
+	5,  // 14: flit.v1.ListCronRunsResponse.runs:type_name -> flit.v1.CronRun
+	6,  // 15: flit.v1.CronService.ListCronJobs:input_type -> flit.v1.ListCronJobsRequest
+	8,  // 16: flit.v1.CronService.GetCronJob:input_type -> flit.v1.GetCronJobRequest
+	10, // 17: flit.v1.CronService.RunCronJob:input_type -> flit.v1.RunCronJobRequest
+	12, // 18: flit.v1.CronService.SetCronJobEnabled:input_type -> flit.v1.SetCronJobEnabledRequest
+	14, // 19: flit.v1.CronService.ListCronRuns:input_type -> flit.v1.ListCronRunsRequest
+	7,  // 20: flit.v1.CronService.ListCronJobs:output_type -> flit.v1.ListCronJobsResponse
+	9,  // 21: flit.v1.CronService.GetCronJob:output_type -> flit.v1.GetCronJobResponse
+	11, // 22: flit.v1.CronService.RunCronJob:output_type -> flit.v1.RunCronJobResponse
+	13, // 23: flit.v1.CronService.SetCronJobEnabled:output_type -> flit.v1.SetCronJobEnabledResponse
+	15, // 24: flit.v1.CronService.ListCronRuns:output_type -> flit.v1.ListCronRunsResponse
+	20, // [20:25] is the sub-list for method output_type
+	15, // [15:20] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_flit_v1_cron_proto_init() }
@@ -1195,7 +1317,7 @@ func file_flit_v1_cron_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_flit_v1_cron_proto_rawDesc), len(file_flit_v1_cron_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   12,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
