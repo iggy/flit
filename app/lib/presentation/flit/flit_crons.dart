@@ -136,6 +136,18 @@ String flitCronJobSubtitle(FlitCronJob j) {
   return next == null ? schedule : '$schedule · next ${flitCronTime(next)}';
 }
 
+/// The latest precheck in a line: "today 10:01: passed", or "...: skipped
+/// the run (exit 1)".
+String flitCronPrecheckLine(FlitCronPrecheck c) {
+  final at = c.at;
+  final when = at == null ? 'Last check' : 'Last check ${flitCronTime(at)}';
+  if (c.passed) {
+    return '$when: passed';
+  }
+  final why = c.exitCode < 0 ? 'did not finish' : 'exit ${c.exitCode}';
+  return '$when: skipped the run ($why)';
+}
+
 Future<void> _runNow(BuildContext context, WidgetRef ref, String name) async {
   final repository = ref.read(flitRepositoryProvider);
   if (repository == null) {
@@ -421,6 +433,7 @@ class FlitCronJobScreen extends ConsumerWidget {
                   style: theme.textTheme.bodySmall,
                 ),
               ),
+              if (job.precheck.isNotEmpty) _PrecheckTile(job: job),
               const Divider(height: 1),
             ],
             ...runs.when(
@@ -450,6 +463,50 @@ class FlitCronJobScreen extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// A job's precheck: the command, and how it last went.
+class _PrecheckTile extends StatelessWidget {
+  const _PrecheckTile({required this.job});
+
+  final FlitCronJob job;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final last = job.lastPrecheck;
+    final notes = <String>[
+      if (job.precheckTimeout > Duration.zero)
+        'Timeout ${job.precheckTimeout.inSeconds}s',
+      if (job.precheckRecord) 'Skips are recorded as runs',
+      'Run now skips the check',
+    ].join(' · ');
+    return ListTile(
+      leading: const Icon(Icons.rule),
+      title: Text(
+        job.precheck,
+        maxLines: 4,
+        overflow: TextOverflow.ellipsis,
+        style: theme.textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
+      ),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(notes),
+          if (last != null) Text(flitCronPrecheckLine(last)),
+          if (last != null && !last.passed && last.output.isNotEmpty)
+            Text(
+              last.output,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontFamily: 'monospace',
+              ),
+            ),
+        ],
       ),
     );
   }

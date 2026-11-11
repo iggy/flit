@@ -81,6 +81,26 @@ message CronJob {
   string error = 21;
   // Set while a run is going: its session.
   string running_session_id = 22;
+  // A shell command run in the working directory before each scheduled or
+  // catch-up run (not manual ones); a non-zero exit skips the run without
+  // starting the model. Empty means no precheck.
+  string precheck = 23;
+  int64 precheck_timeout_seconds = 24;
+  // Whether a skip by the precheck is recorded as a skipped run.
+  bool precheck_record = 25;
+  // The latest precheck since the server started, if any.
+  CronPrecheck last_precheck = 26;
+}
+
+// CronPrecheck is how a job's precheck went.
+message CronPrecheck {
+  google.protobuf.Timestamp time = 1;
+  // Exit 0: the run went ahead.
+  bool passed = 2;
+  // -1 when the command didn't exit on its own (timed out, couldn't start).
+  int32 exit_code = 3;
+  // The end of its output, or why it couldn't run.
+  string output = 4;
 }
 
 enum CronRunState {
@@ -93,7 +113,8 @@ enum CronRunState {
   CRON_RUN_STATE_NEEDS_ATTENTION = 3;
   // The run could not start or its turn ended in an error.
   CRON_RUN_STATE_FAILED = 4;
-  // Not run: the previous run was still going.
+  // Not run: the previous run was still going, or the precheck said no
+  // (with precheck_record).
   CRON_RUN_STATE_SKIPPED = 5;
 }
 

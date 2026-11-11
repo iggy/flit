@@ -5,7 +5,10 @@
 // The crons directory is rescanned every few seconds and whenever something
 // asks (the API, the cron tool, a config reload), so job files take effect
 // without a restart. A run still going when the job is due again makes that
-// slot a skipped run. When flit starts, a job whose last slot was missed
+// slot a skipped run. A job's precheck command, if set, runs before each
+// scheduled or catch-up run; a non-zero exit skips that slot without
+// starting the model (recorded as a skipped run only with precheck_record).
+// When flit starts, a job whose last slot was missed
 // within its catch_up window runs once, however many slots were missed.
 package scheduler
 
@@ -29,6 +32,7 @@ import (
 	"github.com/iggy/flit/server/internal/cron"
 	"github.com/iggy/flit/server/internal/notify"
 	"github.com/iggy/flit/server/internal/store"
+	"github.com/iggy/flit/server/internal/tools"
 )
 
 // rescanInterval is how often the crons directory is reread.
@@ -69,7 +73,24 @@ type jobState struct {
 	next time.Time
 	// running is the run in progress, if any.
 	running *store.CronRun
+	// checking is set while the precheck for a slot runs.
+	checking bool
+	// lastCheck is the latest precheck, if any since flit started.
+	lastCheck *Precheck
 }
+
+// Precheck is how a job's precheck went.
+type Precheck struct {
+	At     time.Time
+	Passed bool
+	// ExitCode is -1 when it didn't exit on its own.
+	ExitCode int
+	// Output is the end of its output, or why it couldn't run.
+	Output string
+}
+
+// maxPrecheckOutput is how much of a precheck's output is kept.
+const maxPrecheckOutput = 2000
 
 func (s *Scheduler) now() time.Time {
 	if s.Now != nil {
@@ -184,13 +205,13 @@ func (s *Scheduler) rescanLocked(startup bool) {
 		}
 		if startup {
 			if missed := s.missed(j, now); !missed.IsZero() {
-				s.startLocked(js, store.CronCauseCatchUp, missed)
+				s.dueLocked(js, store.CronCauseCatchUp, missed)
 			}
 		}
 		js.next = s.nextAfter(j, now)
 	}
 	for name, js := range s.jobs {
-		if !seen[name] && js.running == nil {
+		if !seen[name] && js.running == nil && !js.checking {
 			delete(s.jobs, name)
 		}
 	}
@@ -231,32 +252,129 @@ func (s *Scheduler) fireDueLocked() {
 			continue
 		}
 		slot := js.next
-		s.startLocked(js, store.CronCauseSchedule, slot)
+		s.dueLocked(js, store.CronCauseSchedule, slot)
 		// Never more than one run for slots missed meanwhile (a sleeping
 		// laptop): the next is the first one after now.
 		js.next = s.nextAfter(js.job, now)
 	}
 }
 
+// dueLocked handles a scheduled or catch-up slot of js: the precheck, if
+// the job has one, decides (in the background) whether it runs.
+func (s *Scheduler) dueLocked(js *jobState, cause string, slot time.Time) {
+	j := js.job
+	if j.Precheck == "" || js.running != nil {
+		s.startLocked(js, cause, slot)
+		return
+	}
+	s.claimLocked(j, cause, slot)
+	if js.checking {
+		s.Log.Info("cron slot dropped; the previous precheck is still going", "job", j.Name, "slot", slot)
+		return
+	}
+	js.checking = true
+	s.runs.Add(1)
+	go func() {
+		defer s.runs.Done()
+		check, ok := s.precheck(j)
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		js.checking = false
+		if s.ctx.Err() != nil || s.jobs[j.Name] != js {
+			return
+		}
+		if !ok {
+			// No working directory: let the run fail and say why.
+			s.launchLocked(js, cause, slot)
+			return
+		}
+		js.lastCheck = &check
+		if check.Passed {
+			s.launchLocked(js, cause, slot)
+			return
+		}
+		s.Log.Info("cron run skipped by its precheck", "job", j.Name, "slot", slot, "exit", check.ExitCode)
+		if !j.PrecheckRecord {
+			return
+		}
+		now := s.now()
+		run := &store.CronRun{
+			ID: newID(), TeamID: store.DefaultTeamID, Job: j.Name, Cause: cause, State: store.CronSkipped,
+			ScheduledAt: slot, StartedAt: now, FinishedAt: now, Summary: "skipped by the precheck: " + check.summary(),
+		}
+		if err := s.Store.CreateCronRun(s.ctx, run); err != nil {
+			s.Log.Error("record skipped cron run", "job", j.Name, "err", err)
+		}
+	}()
+}
+
+// precheck runs j's precheck in its working directory. ok is false when
+// the directory can't be worked out.
+func (s *Scheduler) precheck(j cron.Job) (check Precheck, ok bool) {
+	_, dir, err := s.workDir(j)
+	if err != nil {
+		return Precheck{}, false
+	}
+	out, code, err := tools.RunCommand(s.ctx, dir, j.Precheck, j.PrecheckWaitFor())
+	out = strings.TrimSpace(out)
+	if err != nil {
+		if out != "" {
+			out += "\n"
+		}
+		out += "[" + err.Error() + "]"
+		if s.ctx.Err() == nil {
+			s.Log.Warn("cron precheck did not finish", "job", j.Name, "err", err)
+		}
+	}
+	if n := len(out); n > maxPrecheckOutput {
+		out = "…" + strings.ToValidUTF8(out[n-maxPrecheckOutput:], "")
+	}
+	return Precheck{At: s.now(), Passed: code == 0 && err == nil, ExitCode: code, Output: out}, true
+}
+
+// summary is the check in one line: its exit and last line of output.
+func (c Precheck) summary() string {
+	s := fmt.Sprintf("exit %d", c.ExitCode)
+	if c.ExitCode < 0 {
+		s = "did not finish"
+	}
+	lines := strings.Split(c.Output, "\n")
+	if last := strings.TrimSpace(lines[len(lines)-1]); last != "" {
+		s += ": " + clip(last, 200)
+	}
+	return s
+}
+
+// claimLocked marks slot as handled for j (a one-shot job is done after it).
+func (s *Scheduler) claimLocked(j cron.Job, cause string, slot time.Time) {
+	if cause == store.CronCauseManual {
+		return
+	}
+	if slot.After(s.lastSlot[j.Name]) {
+		s.lastSlot[j.Name] = slot
+	}
+	if j.Sched.OneShot() {
+		// Disabled once it has run (or tried to).
+		if err := cron.FinishOneShot(j.Path, slot.In(j.Loc)); err != nil {
+			s.Log.Error("disable one-shot cron job", "job", j.Name, "err", err)
+		}
+	}
+}
+
 // startLocked starts a run of js for slot, or records it skipped if one is
 // still going.
 func (s *Scheduler) startLocked(js *jobState, cause string, slot time.Time) *store.CronRun {
+	s.claimLocked(js.job, cause, slot)
+	return s.launchLocked(js, cause, slot)
+}
+
+// launchLocked is startLocked once the slot is claimed.
+func (s *Scheduler) launchLocked(js *jobState, cause string, slot time.Time) *store.CronRun {
 	j := js.job
 	now := s.now()
 	run := &store.CronRun{
 		ID: newID(), TeamID: store.DefaultTeamID, Job: j.Name, Cause: cause, State: store.CronRunning,
 		ScheduledAt: slot, StartedAt: now,
-	}
-	if cause != store.CronCauseManual {
-		if slot.After(s.lastSlot[j.Name]) {
-			s.lastSlot[j.Name] = slot
-		}
-		if j.Sched.OneShot() {
-			// Disabled once it has run (or tried to).
-			if err := cron.FinishOneShot(j.Path, slot.In(j.Loc)); err != nil {
-				s.Log.Error("disable one-shot cron job", "job", j.Name, "err", err)
-			}
-		}
 	}
 	if js.running != nil {
 		run.State, run.FinishedAt = store.CronSkipped, now
@@ -302,28 +420,14 @@ func (s *Scheduler) startLocked(js *jobState, cause string, slot time.Time) *sto
 
 // runOptions turns a job into the run's session options.
 func (s *Scheduler) runOptions(j cron.Job, run *store.CronRun) (agent.CronRunOptions, error) {
+	projectID, dir, err := s.workDir(j)
+	if err != nil {
+		return agent.CronRunOptions{}, err
+	}
 	create := agent.CreateOptions{
-		WorkingDir: j.Dir, Role: j.Role, Provider: j.Model.Provider, Model: j.Model.Model, Effort: j.Model.Effort,
-		Yolo: &j.Yolo, CronID: j.Name,
+		ProjectID: projectID, WorkingDir: dir, Role: j.Role, Provider: j.Model.Provider, Model: j.Model.Model,
+		Effort: j.Model.Effort, Yolo: &j.Yolo, CronID: j.Name,
 		Title: j.Name + " · " + run.StartedAt.In(j.Loc).Format("2006-01-02 15:04"),
-	}
-	if j.Project != "" {
-		p, err := s.M.ResolveProject(s.ctx, j.Project)
-		if err != nil {
-			return agent.CronRunOptions{}, err
-		}
-		create.ProjectID = p.ID
-		if create.WorkingDir == "" {
-			create.WorkingDir = p.Dir
-		}
-	}
-	if create.WorkingDir == "" {
-		// Scratch has no directory: each job gets one of its own.
-		dir := filepath.Join(s.DataDir, "cron", j.Name)
-		if err := os.MkdirAll(dir, 0o700); err != nil {
-			return agent.CronRunOptions{}, err
-		}
-		create.WorkingDir = dir
 	}
 	trigger := map[string]flitv1.CronTrigger{
 		store.CronCauseSchedule: flitv1.CronTrigger_CRON_TRIGGER_SCHEDULE,
@@ -335,6 +439,30 @@ func (s *Scheduler) runOptions(j cron.Job, run *store.CronRun) (agent.CronRunOpt
 		ScheduledAt: run.ScheduledAt, RunID: run.ID, Wait: j.Ask == cron.AskWait, AskTimeout: j.AskWaitFor(),
 		Prompt: j.Prompt,
 	}, nil
+}
+
+// workDir is the project (empty: Scratch) and working directory j's runs
+// and prechecks use.
+func (s *Scheduler) workDir(j cron.Job) (projectID, dir string, err error) {
+	dir = j.Dir
+	if j.Project != "" {
+		p, err := s.M.ResolveProject(s.ctx, j.Project)
+		if err != nil {
+			return "", "", err
+		}
+		projectID = p.ID
+		if dir == "" {
+			dir = p.Dir
+		}
+	}
+	if dir == "" {
+		// Scratch has no directory: each job gets one of its own.
+		dir = filepath.Join(s.DataDir, "cron", j.Name)
+		if err := os.MkdirAll(dir, 0o700); err != nil {
+			return "", "", err
+		}
+	}
+	return projectID, dir, nil
 }
 
 // finish records how a run ended, archives old runs' sessions and sends
@@ -398,6 +526,8 @@ type JobStatus struct {
 	// Last is the latest run, if any; Running the one in progress.
 	Last    *store.CronRun
 	Running *store.CronRun
+	// LastPrecheck is the latest precheck since flit started, if any.
+	LastPrecheck *Precheck
 	// Project is the job's project, resolved; ProjectErr why it can't be.
 	Project    agent.ProjectRef
 	ProjectErr error
@@ -423,6 +553,10 @@ func (s *Scheduler) Jobs(ctx context.Context) ([]JobStatus, error) {
 		if js.running != nil {
 			r := *js.running
 			st.Running = &r
+		}
+		if js.lastCheck != nil {
+			c := *js.lastCheck
+			st.LastPrecheck = &c
 		}
 		out = append(out, st)
 	}
@@ -547,6 +681,16 @@ func (s *Scheduler) Describe(ctx context.Context) (string, error) {
 		fmt.Fprintf(&b, ", ask: %s", j.Ask)
 		if j.Yolo {
 			b.WriteString(", yolo")
+		}
+		if j.Precheck != "" {
+			fmt.Fprintf(&b, "\n  precheck: %s", clip(strings.Join(strings.Fields(j.Precheck), " "), 200))
+			if c := st.LastPrecheck; c != nil {
+				verdict := "passed"
+				if !c.Passed {
+					verdict = "skipped the run, " + c.summary()
+				}
+				fmt.Fprintf(&b, " (last %s: %s)", c.At.Format("2006-01-02 15:04"), verdict)
+			}
 		}
 		if !st.Next.IsZero() {
 			fmt.Fprintf(&b, "\n  next run: %s", st.Next.Format("2006-01-02 15:04 MST"))

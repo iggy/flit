@@ -48,6 +48,10 @@ class CronJob extends $pb.GeneratedMessage {
     CronRun? lastRun,
     $core.String? error,
     $core.String? runningSessionId,
+    $core.String? precheck,
+    $fixnum.Int64? precheckTimeoutSeconds,
+    $core.bool? precheckRecord,
+    CronPrecheck? lastPrecheck,
   }) {
     final result = CronJob._();
     if (name != null) result.name = name;
@@ -72,6 +76,11 @@ class CronJob extends $pb.GeneratedMessage {
     if (lastRun != null) result.lastRun = lastRun;
     if (error != null) result.error = error;
     if (runningSessionId != null) result.runningSessionId = runningSessionId;
+    if (precheck != null) result.precheck = precheck;
+    if (precheckTimeoutSeconds != null)
+      result.precheckTimeoutSeconds = precheckTimeoutSeconds;
+    if (precheckRecord != null) result.precheckRecord = precheckRecord;
+    if (lastPrecheck != null) result.lastPrecheck = lastPrecheck;
     return result;
   }
 
@@ -112,6 +121,11 @@ class CronJob extends $pb.GeneratedMessage {
         subBuilder: CronRun.$_createMessage)
     ..aOS(21, _omitFieldNames ? '' : 'error')
     ..aOS(22, _omitFieldNames ? '' : 'runningSessionId')
+    ..aOS(23, _omitFieldNames ? '' : 'precheck')
+    ..aInt64(24, _omitFieldNames ? '' : 'precheckTimeoutSeconds')
+    ..aOB(25, _omitFieldNames ? '' : 'precheckRecord')
+    ..aOM<CronPrecheck>(26, _omitFieldNames ? '' : 'lastPrecheck',
+        subBuilder: CronPrecheck.$_createMessage)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -350,6 +364,149 @@ class CronJob extends $pb.GeneratedMessage {
   $core.bool hasRunningSessionId() => $_has(21);
   @$pb.TagNumber(22)
   void clearRunningSessionId() => $_clearField(22);
+
+  /// A shell command run in the working directory before each scheduled or
+  /// catch-up run (not manual ones); a non-zero exit skips the run without
+  /// starting the model. Empty means no precheck.
+  @$pb.TagNumber(23)
+  $core.String get precheck => $_getSZ(22);
+  @$pb.TagNumber(23)
+  set precheck($core.String value) => $_setString(22, value);
+  @$pb.TagNumber(23)
+  $core.bool hasPrecheck() => $_has(22);
+  @$pb.TagNumber(23)
+  void clearPrecheck() => $_clearField(23);
+
+  @$pb.TagNumber(24)
+  $fixnum.Int64 get precheckTimeoutSeconds => $_getI64(23);
+  @$pb.TagNumber(24)
+  set precheckTimeoutSeconds($fixnum.Int64 value) => $_setInt64(23, value);
+  @$pb.TagNumber(24)
+  $core.bool hasPrecheckTimeoutSeconds() => $_has(23);
+  @$pb.TagNumber(24)
+  void clearPrecheckTimeoutSeconds() => $_clearField(24);
+
+  /// Whether a skip by the precheck is recorded as a skipped run.
+  @$pb.TagNumber(25)
+  $core.bool get precheckRecord => $_getBF(24);
+  @$pb.TagNumber(25)
+  set precheckRecord($core.bool value) => $_setBool(24, value);
+  @$pb.TagNumber(25)
+  $core.bool hasPrecheckRecord() => $_has(24);
+  @$pb.TagNumber(25)
+  void clearPrecheckRecord() => $_clearField(25);
+
+  /// The latest precheck since the server started, if any.
+  @$pb.TagNumber(26)
+  CronPrecheck get lastPrecheck => $_getN(25);
+  @$pb.TagNumber(26)
+  set lastPrecheck(CronPrecheck value) => $_setField(26, value);
+  @$pb.TagNumber(26)
+  $core.bool hasLastPrecheck() => $_has(25);
+  @$pb.TagNumber(26)
+  void clearLastPrecheck() => $_clearField(26);
+  @$pb.TagNumber(26)
+  CronPrecheck ensureLastPrecheck() => $_ensure(25);
+}
+
+/// CronPrecheck is how a job's precheck went.
+class CronPrecheck extends $pb.GeneratedMessage {
+  factory CronPrecheck({
+    $0.Timestamp? time,
+    $core.bool? passed,
+    $core.int? exitCode,
+    $core.String? output,
+  }) {
+    final result = CronPrecheck._();
+    if (time != null) result.time = time;
+    if (passed != null) result.passed = passed;
+    if (exitCode != null) result.exitCode = exitCode;
+    if (output != null) result.output = output;
+    return result;
+  }
+
+  CronPrecheck._();
+
+  factory CronPrecheck.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CronPrecheck()..mergeFromBuffer(data, registry);
+  factory CronPrecheck.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      CronPrecheck()..mergeFromJson(json, registry);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'CronPrecheck',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'flit.v1'),
+      createEmptyInstance: CronPrecheck.$_createMessage)
+    ..aOM<$0.Timestamp>(1, _omitFieldNames ? '' : 'time',
+        subBuilder: $0.Timestamp.$_createMessage)
+    ..aOB(2, _omitFieldNames ? '' : 'passed')
+    ..aI(3, _omitFieldNames ? '' : 'exitCode')
+    ..aOS(4, _omitFieldNames ? '' : 'output')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CronPrecheck clone() => deepCopy();
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  CronPrecheck copyWith(void Function(CronPrecheck) updates) =>
+      super.copyWith((message) => updates(message as CronPrecheck))
+          as CronPrecheck;
+
+  @$core.override
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  @$core.Deprecated('Use CronPrecheck() / CronPrecheck.new instead')
+  static CronPrecheck create() => CronPrecheck._();
+  static $pb.GeneratedMessage $_createMessage() => CronPrecheck._();
+  @$core.override
+  CronPrecheck createEmptyInstance() => CronPrecheck._();
+  @$core.pragma('dart2js:noInline')
+  static CronPrecheck getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CronPrecheck>(
+          CronPrecheck.$_createMessage);
+  static CronPrecheck? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $0.Timestamp get time => $_getN(0);
+  @$pb.TagNumber(1)
+  set time($0.Timestamp value) => $_setField(1, value);
+  @$pb.TagNumber(1)
+  $core.bool hasTime() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearTime() => $_clearField(1);
+  @$pb.TagNumber(1)
+  $0.Timestamp ensureTime() => $_ensure(0);
+
+  /// Exit 0: the run went ahead.
+  @$pb.TagNumber(2)
+  $core.bool get passed => $_getBF(1);
+  @$pb.TagNumber(2)
+  set passed($core.bool value) => $_setBool(1, value);
+  @$pb.TagNumber(2)
+  $core.bool hasPassed() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearPassed() => $_clearField(2);
+
+  /// -1 when the command didn't exit on its own (timed out, couldn't start).
+  @$pb.TagNumber(3)
+  $core.int get exitCode => $_getIZ(2);
+  @$pb.TagNumber(3)
+  set exitCode($core.int value) => $_setSignedInt32(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasExitCode() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearExitCode() => $_clearField(3);
+
+  /// The end of its output, or why it couldn't run.
+  @$pb.TagNumber(4)
+  $core.String get output => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set output($core.String value) => $_setString(3, value);
+  @$pb.TagNumber(4)
+  $core.bool hasOutput() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearOutput() => $_clearField(4);
 }
 
 class CronRun extends $pb.GeneratedMessage {

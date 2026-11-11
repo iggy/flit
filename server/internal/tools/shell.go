@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os/exec"
 	"strings"
 	"sync"
 	"time"
@@ -222,6 +223,34 @@ func withNewline(s string) string {
 		s += "\n"
 	}
 	return s
+}
+
+// RunCommand runs command with the platform shell in dir, outside any
+// session: no rules, no approval, no live output. It returns the head and
+// tail of the output and the exit code; exitCode is -1 and err says why
+// when the command didn't exit on its own (timed out, cancelled, couldn't
+// start).
+func RunCommand(ctx context.Context, dir, command string, timeout time.Duration) (output string, exitCode int, err error) {
+	runCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	cmd := shellCommand(runCtx, command)
+	cmd.Dir = dir
+	out := &headTail{keep: shellKeep}
+	cmd.Stdout, cmd.Stderr = out, out
+	cmd.WaitDelay = 2 * time.Second
+	err = cmd.Run()
+	var exitErr *exec.ExitError
+	switch {
+	case ctx.Err() != nil:
+		return out.String(), -1, ctx.Err()
+	case errors.Is(runCtx.Err(), context.DeadlineExceeded):
+		return out.String(), -1, fmt.Errorf("timed out after %s", timeout)
+	case errors.As(err, &exitErr):
+		return out.String(), exitErr.ExitCode(), nil
+	case err != nil:
+		return out.String(), -1, err
+	}
+	return out.String(), 0, nil
 }
 
 // headTail keeps the first and last keep bytes written to it, counts what
