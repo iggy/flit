@@ -27,6 +27,8 @@ class ProviderKind extends $pb.ProtobufEnum {
       ProviderKind._(3, _omitEnumNames ? '' : 'PROVIDER_KIND_LLAMACPP');
   static const ProviderKind PROVIDER_KIND_GOMODEL =
       ProviderKind._(4, _omitEnumNames ? '' : 'PROVIDER_KIND_GOMODEL');
+  static const ProviderKind PROVIDER_KIND_BEDROCK =
+      ProviderKind._(5, _omitEnumNames ? '' : 'PROVIDER_KIND_BEDROCK');
 
   static const $core.List<ProviderKind> values = <ProviderKind>[
     PROVIDER_KIND_UNSPECIFIED,
@@ -34,10 +36,11 @@ class ProviderKind extends $pb.ProtobufEnum {
     PROVIDER_KIND_OPENROUTER,
     PROVIDER_KIND_LLAMACPP,
     PROVIDER_KIND_GOMODEL,
+    PROVIDER_KIND_BEDROCK,
   ];
 
   static final $core.List<ProviderKind?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 4);
+      $pb.ProtobufEnum.$_initByValueList(values, 5);
   static ProviderKind? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 

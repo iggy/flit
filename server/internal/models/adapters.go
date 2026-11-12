@@ -6,6 +6,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/iggy/flit/server/internal/config"
 )
 
 // Kind is how a provider's /models response is read.
@@ -16,6 +18,7 @@ const (
 	KindOpenRouter Kind = "openrouter"
 	KindLlamaCpp   Kind = "llamacpp"
 	KindGoModel    Kind = "gomodel"
+	KindBedrock    Kind = config.KindBedrock
 )
 
 // defaultEfforts are offered for reasoning models whose provider doesn't

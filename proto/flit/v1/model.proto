@@ -45,6 +45,7 @@ enum ProviderKind {
   PROVIDER_KIND_OPENROUTER = 2;
   PROVIDER_KIND_LLAMACPP = 3;
   PROVIDER_KIND_GOMODEL = 4;
+  PROVIDER_KIND_BEDROCK = 5;
 }
 
 message Provider {

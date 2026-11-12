@@ -54,7 +54,7 @@ func (s *session) assessor(cfg config.Config, turnID, toolCallID string) func(co
 		header, err := provider.Header()
 		var res *llm.Result
 		if err == nil {
-			client := &llm.Client{BaseURL: provider.BaseURL, APIKey: provider.Key(), Header: header, HTTP: s.m.http,
+			client := &llm.Client{BaseURL: provider.BaseURL, AltBaseURL: provider.AltBaseURL(), APIKey: provider.Key(), Header: header, HTTP: s.m.http,
 				Limiter: s.m.limiter, Provider: provider.Name}
 			res, err = client.Stream(ctx, req, llm.Handler{})
 		}

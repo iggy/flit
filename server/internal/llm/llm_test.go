@@ -2,7 +2,9 @@ package llm_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -297,5 +299,67 @@ func TestOnStallRunsBeforeCancel(t *testing.T) {
 	wantStall(t, err, llm.PhaseStreaming)
 	if open != 1 || phase != llm.PhaseStreaming || tr.Tokens != 1 {
 		t.Fatalf("open %d, phase %q, trace %+v", open, phase, tr)
+	}
+}
+
+// A Bedrock Mantle-like endpoint: model "g" is served only under
+// /openai/v1, everything else only under /v1.
+func TestStreamAltRoute(t *testing.T) {
+	var hits []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits = append(hits, r.URL.Path)
+		var req struct{ Model string }
+		_ = json.NewDecoder(r.Body).Decode(&req)
+		alt := strings.HasPrefix(r.URL.Path, "/openai/")
+		if req.Model == "broken" || alt != (req.Model == "g") {
+			code := "model `" + req.Model + "` isn't supported on this route"
+			if req.Model == "broken" {
+				code = "something else"
+			}
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte(`{"error":{"code":"validation_error","message":"` + code + `"}}`))
+			return
+		}
+		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = io.WriteString(w, `data: {"choices":[{"index":0,"delta":{"content":"ok"},"finish_reason":"stop"}]}`+"\n\ndata: [DONE]\n\n")
+	}))
+	defer srv.Close()
+	c := &llm.Client{BaseURL: srv.URL + "/v1", AltBaseURL: srv.URL + "/openai/v1"}
+	stream := func(model string) error {
+		t.Helper()
+		res, err := c.Stream(context.Background(), llm.Request{Model: model}, llm.Handler{})
+		if err == nil && res.Text != "ok" {
+			t.Fatalf("%s: text = %q", model, res.Text)
+		}
+		return err
+	}
+
+	for _, want := range [][]string{
+		{"/v1/chat/completions", "/openai/v1/chat/completions"}, // tries /v1, then the alt
+		{"/openai/v1/chat/completions"},                         // remembered
+	} {
+		hits = nil
+		if err := stream("g"); err != nil {
+			t.Fatal(err)
+		}
+		if strings.Join(hits, " ") != strings.Join(want, " ") {
+			t.Fatalf("g: hits = %v, want %v", hits, want)
+		}
+	}
+	hits = nil
+	if err := stream("m"); err != nil || len(hits) != 1 || hits[0] != "/v1/chat/completions" {
+		t.Fatalf("m: err %v, hits = %v", err, hits)
+	}
+	hits = nil
+	var apiErr *llm.APIError
+	if err := stream("broken"); !errors.As(err, &apiErr) || len(hits) != 1 {
+		t.Fatalf("broken: err %v, hits = %v (other 400s aren't retried)", err, hits)
+	}
+
+	// Without an alt the route error is returned as is.
+	c.AltBaseURL = ""
+	hits = nil
+	if err := stream("g"); !errors.As(err, &apiErr) || len(hits) != 1 {
+		t.Fatalf("no alt: err %v, hits = %v", err, hits)
 	}
 }

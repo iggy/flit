@@ -38,6 +38,8 @@ func kindProto(k models.Kind) flitv1.ProviderKind {
 		return flitv1.ProviderKind_PROVIDER_KIND_LLAMACPP
 	case models.KindGoModel:
 		return flitv1.ProviderKind_PROVIDER_KIND_GOMODEL
+	case models.KindBedrock:
+		return flitv1.ProviderKind_PROVIDER_KIND_BEDROCK
 	}
 	return flitv1.ProviderKind_PROVIDER_KIND_UNSPECIFIED
 }

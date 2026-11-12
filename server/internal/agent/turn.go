@@ -174,7 +174,7 @@ func (s *session) loop(ctx context.Context, turnID string) (end, error) {
 		var text, reasoning strings.Builder
 		var appendErr error
 		client := &llm.Client{
-			BaseURL: provider.BaseURL, APIKey: provider.Key(), Header: header, HTTP: s.m.http,
+			BaseURL: provider.BaseURL, AltBaseURL: provider.AltBaseURL(), APIKey: provider.Key(), Header: header, HTTP: s.m.http,
 			FirstTokenTimeout: cfg.Agent.ModelFirstTokenTimeout, StallTimeout: cfg.Agent.ModelStallTimeout,
 			Limiter: s.m.limiter, Provider: provider.Name,
 		}

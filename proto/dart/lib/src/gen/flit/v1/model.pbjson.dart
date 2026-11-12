@@ -27,6 +27,7 @@ const ProviderKind$json = {
     {'1': 'PROVIDER_KIND_OPENROUTER', '2': 2},
     {'1': 'PROVIDER_KIND_LLAMACPP', '2': 3},
     {'1': 'PROVIDER_KIND_GOMODEL', '2': 4},
+    {'1': 'PROVIDER_KIND_BEDROCK', '2': 5},
   ],
 };
 
@@ -34,7 +35,8 @@ const ProviderKind$json = {
 final $typed_data.Uint8List providerKindDescriptor = $convert.base64Decode(
     'CgxQcm92aWRlcktpbmQSHQoZUFJPVklERVJfS0lORF9VTlNQRUNJRklFRBAAEhgKFFBST1ZJRE'
     'VSX0tJTkRfT1BFTkFJEAESHAoYUFJPVklERVJfS0lORF9PUEVOUk9VVEVSEAISGgoWUFJPVklE'
-    'RVJfS0lORF9MTEFNQUNQUBADEhkKFVBST1ZJREVSX0tJTkRfR09NT0RFTBAE');
+    'RVJfS0lORF9MTEFNQUNQUBADEhkKFVBST1ZJREVSX0tJTkRfR09NT0RFTBAEEhkKFVBST1ZJRE'
+    'VSX0tJTkRfQkVEUk9DSxAF');
 
 @$core.Deprecated('Use modelStateDescriptor instead')
 const ModelState$json = {

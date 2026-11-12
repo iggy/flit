@@ -7,6 +7,7 @@ choosing and tuning models. For the short version, see the
 [README](../README.md#models).
 
 - [Providers](#providers)
+- [Amazon Bedrock](#amazon-bedrock)
 - [Limiting concurrent requests](#limiting-concurrent-requests)
 - [Model discovery and corrections](#model-discovery-and-corrections)
 - [Effort, favorites and per-task models](#effort-favorites-and-per-task-models)
@@ -35,6 +36,41 @@ with every request to it and replace flit's own, e.g. a different
 `User-Agent` for an endpoint that filters on it; `${VAR}` in a value is read
 from the environment.
 
+## Amazon Bedrock
+
+`kind: bedrock` uses one of Bedrock's OpenAI-compatible endpoints with a
+[Bedrock API key](https://docs.aws.amazon.com/bedrock/latest/userguide/api-keys.html)
+(short- or long-term) as the bearer token. Give it a region and an endpoint;
+`base_url` is derived from them, and the key is read from
+`$AWS_BEARER_TOKEN_BEDROCK` unless `api_key` or `api_key_env` says otherwise.
+Models vary by region, so use one provider per region (and endpoint):
+
+```yaml
+providers:
+  - name: bedrock
+    kind: bedrock
+    region: us-west-2
+    endpoint: mantle      # or runtime
+```
+
+- **mantle** (`bedrock-mantle.<region>.api.aws`) lists its models at
+  `/models`. Some models are served only under `/openai/v1` rather than `/v1`;
+  flit finds out on the first call (Mantle refuses the wrong one) and
+  remembers. Claude models aren't listed: Mantle serves them only over the
+  Anthropic Messages API.
+- **runtime** (`bedrock-runtime.<region>.amazonaws.com/openai/v1`) has no
+  `/models`, so flit asks the region's Bedrock control plane
+  (`ListFoundationModels`, `ListInferenceProfiles`, with the same key) and
+  lists models that answer chat completions. Models that can only run through
+  an inference profile appear under the profile ids (`us.openai.gpt-5.5`,
+  `global.openai.gpt-5.5`); calling the bare id fails.
+
+For both, context window, vision and reasoning efforts come from
+`ListFoundationModels` (on Mantle, where an id matches); the context window
+is Bedrock's `maxTokensMaximum`, which is occasionally the output limit
+instead, so correct any that are wrong in `models.yaml`. A model listed in
+your region may still need access granted to your account.
+
 ## Limiting concurrent requests
 
 `concurrency` caps how many requests flit sends to each of a provider's models
@@ -60,7 +96,8 @@ providers:
 ## Model discovery and corrections
 
 flit asks each provider's `/models` endpoint what it offers (with adapters for
-OpenRouter, llama.cpp, including router mode, and gomodel) to learn context
+OpenRouter, llama.cpp, including router mode, gomodel and
+[Amazon Bedrock](#amazon-bedrock)) to learn context
 windows and tool/reasoning support. There is no built-in model list. If a
 provider reports something wrong or nothing at all, correct it in
 `models.yaml` next to the config:
