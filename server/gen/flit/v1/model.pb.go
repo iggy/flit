@@ -32,6 +32,7 @@ const (
 	ProviderKind_PROVIDER_KIND_OPENROUTER  ProviderKind = 2
 	ProviderKind_PROVIDER_KIND_LLAMACPP    ProviderKind = 3
 	ProviderKind_PROVIDER_KIND_GOMODEL     ProviderKind = 4
+	ProviderKind_PROVIDER_KIND_BEDROCK     ProviderKind = 5
 )
 
 // Enum value maps for ProviderKind.
@@ -42,6 +43,7 @@ var (
 		2: "PROVIDER_KIND_OPENROUTER",
 		3: "PROVIDER_KIND_LLAMACPP",
 		4: "PROVIDER_KIND_GOMODEL",
+		5: "PROVIDER_KIND_BEDROCK",
 	}
 	ProviderKind_value = map[string]int32{
 		"PROVIDER_KIND_UNSPECIFIED": 0,
@@ -49,6 +51,7 @@ var (
 		"PROVIDER_KIND_OPENROUTER":  2,
 		"PROVIDER_KIND_LLAMACPP":    3,
 		"PROVIDER_KIND_GOMODEL":     4,
+		"PROVIDER_KIND_BEDROCK":     5,
 	}
 )
 
@@ -1009,13 +1012,14 @@ const file_flit_v1_model_proto_rawDesc = "" +
 	"\bprovider\x18\x01 \x01(\tR\bprovider\x12\x14\n" +
 	"\x05model\x18\x02 \x01(\tR\x05model\";\n" +
 	"\x13UnloadModelResponse\x12$\n" +
-	"\x05model\x18\x01 \x01(\v2\x0e.flit.v1.ModelR\x05model*\x9c\x01\n" +
+	"\x05model\x18\x01 \x01(\v2\x0e.flit.v1.ModelR\x05model*\xb7\x01\n" +
 	"\fProviderKind\x12\x1d\n" +
 	"\x19PROVIDER_KIND_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14PROVIDER_KIND_OPENAI\x10\x01\x12\x1c\n" +
 	"\x18PROVIDER_KIND_OPENROUTER\x10\x02\x12\x1a\n" +
 	"\x16PROVIDER_KIND_LLAMACPP\x10\x03\x12\x19\n" +
-	"\x15PROVIDER_KIND_GOMODEL\x10\x04*\xa6\x01\n" +
+	"\x15PROVIDER_KIND_GOMODEL\x10\x04\x12\x19\n" +
+	"\x15PROVIDER_KIND_BEDROCK\x10\x05*\xa6\x01\n" +
 	"\n" +
 	"ModelState\x12\x1b\n" +
 	"\x17MODEL_STATE_UNSPECIFIED\x10\x00\x12\x18\n" +

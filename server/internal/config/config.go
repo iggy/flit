@@ -145,9 +145,16 @@ type Provider struct {
 	APIKeyEnv string `yaml:"api_key_env"`
 	// Kind says how to read the provider's /models response: auto (the
 	// default: guess from the URL and the response), openai, openrouter,
-	// llamacpp or gomodel. openrouter also fits endpoints that copy
-	// OpenRouter's /models format, such as the Nous Portal.
+	// llamacpp, gomodel or bedrock. openrouter also fits endpoints that
+	// copy OpenRouter's /models format, such as the Nous Portal.
 	Kind string `yaml:"kind"`
+	// Region and Endpoint are for kind bedrock: the AWS region (e.g.
+	// us-west-2) and which of Amazon Bedrock's OpenAI-compatible endpoints
+	// to use, mantle or runtime. base_url is derived from them unless set,
+	// and the key defaults to $AWS_BEARER_TOKEN_BEDROCK (a Bedrock API
+	// key).
+	Region   string `yaml:"region"`
+	Endpoint string `yaml:"endpoint"`
 	// PromptAppend is added to the system prompt for every model on this
 	// provider.
 	PromptAppend string `yaml:"prompt_append"`
@@ -444,7 +451,7 @@ func (w Worktrees) CopyIgnoredDirs() []string {
 }
 
 // ProviderKinds are the accepted Provider.Kind values.
-var ProviderKinds = []string{"auto", "openai", "openrouter", "llamacpp", "gomodel"}
+var ProviderKinds = []string{"auto", "openai", "openrouter", "llamacpp", "gomodel", KindBedrock}
 
 // Tasks are the kinds of work that can have their own model.
 var Tasks = []string{"chat", "planning", "cron", "webhook", "compaction", "search", "permission", "learning", "explore", "build"}
@@ -825,6 +832,9 @@ func (c *Config) fillDefaults() {
 	if c.WebhooksDir == "" {
 		c.WebhooksDir = d.WebhooksDir
 	}
+	for i := range c.Providers {
+		c.Providers[i].fillBedrock()
+	}
 }
 
 // Load reads and parses the config file at path.
@@ -872,6 +882,9 @@ func (c Config) Validate() error {
 			return fmt.Errorf("providers: duplicate name %q", p.Name)
 		}
 		seen[p.Name] = true
+		if err := p.validateBedrock(); err != nil {
+			return fmt.Errorf("providers %q: %w", p.Name, err)
+		}
 		u, err := url.Parse(p.BaseURL)
 		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
 			return fmt.Errorf("providers %q: base_url %q must be an http(s) URL", p.Name, p.BaseURL)
@@ -1090,7 +1103,7 @@ log:
 
 # OpenAI-compatible endpoints. Several can be configured at once. Models are
 # discovered from each one's /models endpoint; kind says how to read it
-# (auto, openai, openrouter, llamacpp, gomodel).
+# (auto, openai, openrouter, llamacpp, gomodel, bedrock).
 providers: []
 #  - name: local
 #    base_url: http://localhost:8080/v1   # e.g. llama.cpp's llama-server
@@ -1099,6 +1112,10 @@ providers: []
 #    api_key_env: OPENROUTER_API_KEY      # or api_key: sk-...
 #    headers:                            # sent with every request; ${VAR} is
 #      User-Agent: my-agent/1.0          # read from the environment
+#  - name: bedrock                       # Amazon Bedrock, with a Bedrock API key
+#    kind: bedrock                       # in $AWS_BEARER_TOKEN_BEDROCK
+#    region: us-west-2
+#    endpoint: mantle                    # or runtime
 #
 # concurrency caps how many requests flit sends to each of a provider's models
 # at once, across all sessions and subagents (0 or unset: no limit); more wait

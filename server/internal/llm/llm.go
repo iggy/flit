@@ -247,7 +247,11 @@ func Retryable(err error) bool {
 // Client talks to one endpoint.
 type Client struct {
 	BaseURL string // e.g. http://localhost:8080/v1
-	APIKey  string // optional
+	// AltBaseURL, if set, is tried when the endpoint says BaseURL's route
+	// doesn't serve the model (Bedrock Mantle serves some models only under
+	// /openai/v1). Whichever root worked is remembered per model.
+	AltBaseURL string
+	APIKey     string // optional
 	// Header is sent with every request, replacing the client's own
 	// (Authorization included).
 	Header http.Header
@@ -311,7 +315,44 @@ func (c *Client) stream(ctx context.Context, req Request, h Handler, w *watch) (
 	if err != nil {
 		return nil, err
 	}
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimSuffix(c.BaseURL, "/")+"/chat/completions", bytes.NewReader(body))
+	base, alt := c.BaseURL, c.AltBaseURL
+	key := routeKey{c.BaseURL, req.Model}
+	if alt != "" {
+		if r, ok := routes.Load(key); ok && r.(string) == alt {
+			base, alt = alt, base
+		}
+	}
+	res, err := c.send(ctx, base, body, h, w)
+	var apiErr *APIError
+	if alt != "" && errors.As(err, &apiErr) && wrongRoute(apiErr) {
+		if res, err = c.send(ctx, alt, body, h, w); err == nil {
+			routes.Store(key, alt)
+		}
+		return res, err
+	}
+	if err == nil && c.AltBaseURL != "" {
+		routes.Store(key, base)
+	}
+	return res, err
+}
+
+// routeKey is a client's BaseURL and a model.
+type routeKey struct{ base, model string }
+
+// routes remembers, per routeKey, which root served the model: BaseURL or
+// AltBaseURL.
+var routes sync.Map
+
+// wrongRoute reports whether the endpoint refused the model because it is
+// served under another path prefix: Bedrock Mantle answers 400 "model `x`
+// isn't supported on this route" before streaming anything.
+func wrongRoute(e *APIError) bool {
+	return e.StatusCode == http.StatusBadRequest && strings.Contains(e.Message, "supported on this route")
+}
+
+// send POSTs a chat completion request to base and reads the stream.
+func (c *Client) send(ctx context.Context, base string, body []byte, h Handler, w *watch) (*Result, error) {
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimSuffix(base, "/")+"/chat/completions", bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}

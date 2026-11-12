@@ -129,7 +129,7 @@ func (s *Service) Run(ctx context.Context, sessionID string, dryRun bool) (Resul
 	}
 	s.applyReasoning(&req, task)
 	client := &llm.Client{
-		BaseURL: provider.BaseURL, APIKey: provider.Key(), Header: header, HTTP: s.http(),
+		BaseURL: provider.BaseURL, AltBaseURL: provider.AltBaseURL(), APIKey: provider.Key(), Header: header, HTTP: s.http(),
 		FirstTokenTimeout: cfg.Agent.ModelFirstTokenTimeout, StallTimeout: cfg.Agent.ModelStallTimeout,
 		Limiter: s.Limiter, Provider: provider.Name,
 	}

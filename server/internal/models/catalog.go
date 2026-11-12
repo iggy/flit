@@ -168,33 +168,46 @@ func (c *Catalog) refreshOne(ctx context.Context, p config.Provider) {
 }
 
 func (c *Catalog) discover(ctx context.Context, p config.Provider, kind Kind) (Kind, []Model, error) {
+	if kind == KindBedrock {
+		list, err := c.discoverBedrock(ctx, p)
+		return kind, list, err
+	}
 	ctx, cancel := context.WithTimeout(ctx, discoveryTimeout)
 	defer cancel()
-	url := strings.TrimSuffix(p.BaseURL, "/") + "/models"
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	body, err := c.get(ctx, p, strings.TrimSuffix(p.BaseURL, "/")+"/models")
 	if err != nil {
 		return kind, nil, err
 	}
+	return parseModels(p.Name, p.BaseURL, kind, body)
+}
+
+// get fetches url from the provider, with its key and headers, and returns
+// the body of a 200 response.
+func (c *Catalog) get(ctx context.Context, p config.Provider, url string) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
 	if err := setHeaders(req, p); err != nil {
-		return kind, nil, err
+		return nil, err
 	}
 	resp, err := c.http.Do(req)
 	if err != nil {
-		return kind, nil, err
+		return nil, err
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 32<<20))
 	if err != nil {
-		return kind, nil, err
+		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
 		msg := strings.TrimSpace(string(body))
 		if len(msg) > 300 {
 			msg = msg[:300] + "…"
 		}
-		return kind, nil, fmt.Errorf("GET %s: HTTP %d: %s", url, resp.StatusCode, msg)
+		return nil, fmt.Errorf("GET %s: HTTP %d: %s", url, resp.StatusCode, msg)
 	}
-	return parseModels(p.Name, p.BaseURL, kind, body)
+	return body, nil
 }
 
 // setHeaders adds the provider's API key and headers to req.

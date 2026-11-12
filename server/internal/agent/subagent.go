@@ -187,7 +187,7 @@ func (s *session) runSubagent(ctx context.Context, turnID, callID string, raw js
 		}
 		s.m.applyReasoning(&req, task.Provider, task.Model, task.Effort)
 		client := &llm.Client{
-			BaseURL: provider.BaseURL, APIKey: provider.Key(), Header: header, HTTP: s.m.http,
+			BaseURL: provider.BaseURL, AltBaseURL: provider.AltBaseURL(), APIKey: provider.Key(), Header: header, HTTP: s.m.http,
 			FirstTokenTimeout: cfg.Agent.ModelFirstTokenTimeout, StallTimeout: cfg.Agent.ModelStallTimeout,
 			Limiter: s.m.limiter, Provider: provider.Name,
 		}

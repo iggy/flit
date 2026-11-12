@@ -282,7 +282,7 @@ func (s *session) summaryCall(ctx context.Context, cfg config.Config, p config.P
 		req.ReturnProgress = true
 	}
 	client := &llm.Client{
-		BaseURL: p.BaseURL, APIKey: p.Key(), Header: header, HTTP: s.m.http,
+		BaseURL: p.BaseURL, AltBaseURL: p.AltBaseURL(), APIKey: p.Key(), Header: header, HTTP: s.m.http,
 		FirstTokenTimeout: cfg.Agent.ModelFirstTokenTimeout, StallTimeout: cfg.Agent.ModelStallTimeout,
 		Limiter: s.m.limiter, Provider: p.Name,
 	}

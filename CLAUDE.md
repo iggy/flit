@@ -70,7 +70,9 @@ Rules:
 - Test agent behaviour against `llmtest`, not a real model. The real-model
   test (`TestLlamaCppCodingTask`) runs only with
   `FLIT_TEST_LLAMA_URL=http://host:8080/v1` (optional
-  `FLIT_TEST_LLAMA_MODEL`, `FLIT_TEST_LLAMA_KEY`).
+  `FLIT_TEST_LLAMA_MODEL`, `FLIT_TEST_LLAMA_KEY`). The Amazon Bedrock one
+  (`TestBedrockLive`) runs only with `FLIT_TEST_BEDROCK_KEY` (a Bedrock API
+  key) and `FLIT_TEST_BEDROCK_REGION`.
 
 ## API (`proto/`)
 
