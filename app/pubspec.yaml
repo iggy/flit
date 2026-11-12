@@ -55,7 +55,7 @@ dependencies:
   crypto: ^3.0.8
   # Phase 9 platform polish. Pinned exact — bump deliberately.
   # P9-01: native desktop window sizing/state (linux/macos/windows only).
-  window_manager: ^0.6.0
+  window_manager: ^0.7.0
   # P9-03: local notifications (background.complete, pending approvals).
   flutter_local_notifications: ^23.0.0
   # P9-08: in-app version/update check reads the bundled build version.
