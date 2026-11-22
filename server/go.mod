@@ -11,7 +11,7 @@ require (
 	golang.org/x/net v0.62.0
 	golang.org/x/oauth2 v0.38.0
 	google.golang.org/protobuf v1.36.12
-	modernc.org/sqlite v1.62.0
+	modernc.org/sqlite v1.63.0
 	mvdan.cc/sh/v3 v3.14.1
 )
 
